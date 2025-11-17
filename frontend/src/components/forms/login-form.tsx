@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { Mail, Lock, Loader } from "lucide-react"
+import { Mail, Lock, Loader } from 'lucide-react'
+import { apiClient } from "@/lib/api-client"
 
 interface LoginFormProps {
   onSuccess: () => void
@@ -29,24 +29,19 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
     setError("")
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
+      const response = await apiClient.client().post('/login', formData)
 
-      if (!response.ok) {
-        throw new Error("Login failed. Please check your credentials.")
-      }
+      const data = response.data
 
-      const data = await response.json()
+      // Success
       localStorage.setItem("auth_token", data.token)
       localStorage.setItem("user", JSON.stringify(data.user))
 
       onSuccess()
       window.location.href = "/dashboard"
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      const message = apiClient.getErrorMessage(err)
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -68,6 +63,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="your@email.com"
             required
+            disabled={isLoading}
           />
         </div>
       </div>
@@ -84,6 +80,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
             className="w-full pl-10 pr-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
             placeholder="••••••••"
             required
+            disabled={isLoading}
           />
         </div>
       </div>

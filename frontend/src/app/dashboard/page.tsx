@@ -1,12 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter } from 'next/navigation'
 import { DashboardHeader } from "@/components/dashboard/header"
 import { QuotationList } from "@/components/dashboard/quotation-list"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { TermsConditionsModal } from "@/components/dashboard/terms-modal"
-import { FileText, CheckCircle, Clock, DollarSign } from "lucide-react"
+import { FileText, CheckCircle, Clock, DollarSign } from 'lucide-react'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -54,7 +54,8 @@ export default function DashboardPage() {
       })
 
       if (response.ok) {
-        const quotations = await response.json()
+        const data = await response.json()
+        const quotations = Array.isArray(data) ? data : data.data || []
         const approved = quotations.filter((q: any) => q.status === "approved").length
         const pending = quotations.filter((q: any) => q.status === "pending").length
         const total = quotations.reduce((sum: number, q: any) => sum + q.total, 0)

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Eye, FileText, Download, Printer } from "lucide-react"
+import { Eye, FileText, Download, Printer } from 'lucide-react'
 import { QuotationSkeleton } from "./quotation-skeleton"
 
 interface Quotation {
@@ -30,7 +30,8 @@ export function QuotationList() {
 
       if (response.ok) {
         const data = await response.json()
-        setQuotations(data)
+        const quotationsList = Array.isArray(data) ? data : data.data || []
+        setQuotations(quotationsList)
       }
     } catch (error) {
       console.error("Failed to fetch quotations:", error)

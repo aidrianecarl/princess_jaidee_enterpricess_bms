@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Mail, Lock, Loader, AlertCircle } from "lucide-react"
+import { useRouter } from 'next/navigation'
+import { Mail, Lock, Loader, AlertCircle } from 'lucide-react'
+import { apiClient } from "@/lib/api-client"
 
 export function AdminAuthForm() {
   const router = useRouter()
@@ -27,24 +27,17 @@ export function AdminAuthForm() {
     setError("")
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/admin-login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
+      const response = await apiClient.admin().post('/admin/login', formData)
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.message || "Login failed")
-      }
+      const data = response.data
 
       localStorage.setItem("admin_token", data.token)
       localStorage.setItem("admin_user", JSON.stringify(data.user))
 
       router.push("/admin/dashboard")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
+      const message = apiClient.getErrorMessage(err)
+      setError(message)
     } finally {
       setIsLoading(false)
     }
@@ -72,7 +65,9 @@ export function AdminAuthForm() {
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-900 mb-2">Email Address</label>
+          <label className="block text-sm font-medium text-neutral-900 mb-2">
+            Email Address
+          </label>
           <div className="relative">
             <Mail className="absolute left-3 top-3 text-neutral-400" size={20} />
             <input
@@ -89,7 +84,9 @@ export function AdminAuthForm() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-900 mb-2">Password</label>
+          <label className="block text-sm font-medium text-neutral-900 mb-2">
+            Password
+          </label>
           <div className="relative">
             <Lock className="absolute left-3 top-3 text-neutral-400" size={20} />
             <input
@@ -114,26 +111,6 @@ export function AdminAuthForm() {
           {isLoading ? "Signing In..." : "Sign In"}
         </button>
       </form>
-
-      {/* Footer */}
-      <div className="pt-4 border-t border-neutral-200">
-        <p className="text-xs text-neutral-500 text-center">
-          Admin credentials required to access this portal.
-          <br />
-          Contact your administrator if you need access.
-        </p>
-      </div>
-
-      {/* Security Notice */}
-      <div className="p-4 bg-neutral-50 rounded-lg space-y-2">
-        <p className="font-semibold text-xs text-neutral-900">Security Tips:</p>
-        <ul className="text-xs text-neutral-600 space-y-1">
-          <li>• Never share your login credentials</li>
-          <li>• Use a strong, unique password</li>
-          <li>• Clear browser cache after logging out</li>
-          <li>• Log out from shared devices</li>
-        </ul>
-      </div>
     </div>
   )
 }
