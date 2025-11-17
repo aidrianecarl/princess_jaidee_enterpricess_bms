@@ -16,7 +16,7 @@ class QuotationSeeder extends Seeder
         $customers = Customer::take(3)->get();
 
         if (!$cashier || $customers->isEmpty()) {
-            return; // Skip if required records don't exist
+            return;
         }
 
         $statuses = ['draft', 'pending', 'approved', 'rejected'];

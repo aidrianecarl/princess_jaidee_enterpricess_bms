@@ -12,11 +12,10 @@ class OrderItemSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get sample order
         $order = Order::first();
 
         if (!$order) {
-            return; // Skip if no orders exist
+            return;
         }
 
         // Add product items

@@ -1,6 +1,15 @@
-import { Star } from "lucide-react"
+"use client"
+
+import { Star } from 'lucide-react'
+import { useState, useEffect } from "react"
 
 export function Testimonials() {
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    setIsVisible(true)
+  }, [])
+
   const testimonials = [
     {
       name: "Maria Santos",
@@ -26,17 +35,31 @@ export function Testimonials() {
   ]
 
   return (
-    <section id="testimonials" className="py-16 px-4 sm:px-6 lg:px-8 bg-neutral-50">
+    <section id="testimonials" className="py-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-red-50">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 text-neutral-900">What Our Customers Say</h2>
+        <h2 
+          className={`text-3xl sm:text-4xl font-bold text-center mb-12 bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent transition-all duration-1000 transform ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          What Our Customers Say
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {testimonials.map((testimonial, i) => (
-            <div key={i} className="bg-white p-8 rounded-xl border border-neutral-200 hover:shadow-lg transition">
+            <div 
+              key={i} 
+              className={`bg-white p-8 rounded-2xl border border-red-100 hover:border-red-400 hover:shadow-xl hover:scale-105 transition-all duration-500 transform ${
+                isVisible ? `opacity-100 translate-y-0 delay-${i * 200}` : 'opacity-0 translate-y-4'
+              }`}
+              style={{
+                transitionDelay: isVisible ? `${i * 200}ms` : '0ms'
+              }}
+            >
               {/* Stars */}
               <div className="flex gap-1 mb-4">
                 {[...Array(testimonial.rating)].map((_, j) => (
-                  <Star key={j} size={18} fill="#dc2626" className="text-primary" />
+                  <Star key={j} size={18} fill="#dc2626" className="text-red-600" />
                 ))}
               </div>
 
@@ -45,7 +68,7 @@ export function Testimonials() {
 
               {/* Author */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center font-bold">
                   {testimonial.avatar}
                 </div>
                 <div>

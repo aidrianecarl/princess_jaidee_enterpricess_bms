@@ -6,6 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { QuotationList } from "@/components/dashboard/quotation-list"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { TermsConditionsModal } from "@/components/dashboard/terms-modal"
+import { QuotationSkeleton } from "@/components/dashboard/quotation-skeleton"
 import { FileText, CheckCircle, Clock, DollarSign } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -33,13 +34,11 @@ export default function DashboardPage() {
       const user = JSON.parse(userData)
       setUser(user)
 
-      // Check if user needs to see terms
       const seenTerms = localStorage.getItem("terms_accepted")
       if (!seenTerms) {
         setShowTerms(true)
       }
 
-      // Fetch dashboard stats
       await fetchStats(token)
       setIsLoading(false)
     }
@@ -74,63 +73,88 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50">
+      <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20">
         <DashboardHeader user={user} />
-        <div className="max-w-7xl mx-auto px-4 py-12">
-          <div className="space-y-4">
+        <main className="max-w-7xl mx-auto px-4 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-24 bg-neutral-200 rounded-lg animate-pulse" />
+              <div key={i} className="h-32 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl animate-pulse" />
             ))}
           </div>
-        </div>
+          <div className="bg-white rounded-2xl border border-red-100 p-6 shadow-lg">
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <QuotationSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </main>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20">
       <DashboardHeader user={user} />
 
       {showTerms && <TermsConditionsModal onAccept={() => setShowTerms(false)} />}
 
       <main className="max-w-7xl mx-auto px-4 py-12">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <StatsCard
-            icon={FileText}
-            label="Total Quotations"
-            value={stats.totalQuotations}
-            color="bg-blue-50 text-blue-600"
-          />
-          <StatsCard
-            icon={CheckCircle}
-            label="Approved"
-            value={stats.approvedQuotations}
-            color="bg-green-50 text-green-600"
-          />
-          <StatsCard
-            icon={Clock}
-            label="Pending"
-            value={stats.pendingQuotations}
-            color="bg-yellow-50 text-yellow-600"
-          />
-          <StatsCard
-            icon={DollarSign}
-            label="Total Spent"
-            value={`₱${stats.totalSpent.toLocaleString()}`}
-            color="bg-primary/10 text-primary"
-          />
+        <div className="mb-12 animate-fadeInUp">
+          <h1 className="text-4xl font-bold text-neutral-900 mb-2">
+            Welcome back, <span className="bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">{user?.first_name}</span>
+          </h1>
+          <p className="text-neutral-600">Here's your quotation overview and recent activity</p>
         </div>
 
-        {/* Quotations Section */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-neutral-900">My Quotations</h2>
-            <button className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <div className="animate-slideUp animation-delay-0">
+            <StatsCard
+              icon={FileText}
+              label="Total Quotations"
+              value={stats.totalQuotations}
+              color="bg-blue-100 text-blue-600"
+            />
+          </div>
+          <div className="animate-slideUp animation-delay-100">
+            <StatsCard
+              icon={CheckCircle}
+              label="Approved"
+              value={stats.approvedQuotations}
+              color="bg-green-100 text-green-600"
+            />
+          </div>
+          <div className="animate-slideUp animation-delay-200">
+            <StatsCard
+              icon={Clock}
+              label="Pending"
+              value={stats.pendingQuotations}
+              color="bg-yellow-100 text-yellow-600"
+            />
+          </div>
+          <div className="animate-slideUp animation-delay-300">
+            <StatsCard
+              icon={DollarSign}
+              label="Total Spent"
+              value={`₱${stats.totalSpent.toLocaleString()}`}
+              color="bg-gradient-to-br from-red-100 to-orange-100 text-red-600"
+            />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-red-100 shadow-lg overflow-hidden animate-fadeInUp">
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-red-100 p-6 flex justify-between items-center">
+            <div>
+              <h2 className="text-2xl font-bold text-neutral-900">My Quotations</h2>
+              <p className="text-sm text-neutral-600 mt-1">Manage and track all your quotations</p>
+            </div>
+            <button className="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition duration-300 font-semibold hover:scale-105">
               Create New
             </button>
           </div>
-          <QuotationList />
+          <div className="p-6">
+            <QuotationList />
+          </div>
         </div>
       </main>
     </div>

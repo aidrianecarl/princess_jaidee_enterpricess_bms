@@ -18,7 +18,7 @@ class JobOrderSeeder extends Seeder
         $order = Order::first();
 
         if (!$designer || !$customer || !$order) {
-            return; // Skip if required records don't exist
+            return;
         }
 
         JobOrder::create([

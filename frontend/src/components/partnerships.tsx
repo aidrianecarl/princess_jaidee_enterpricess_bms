@@ -3,38 +3,71 @@
 import { useState, useEffect } from "react"
 
 export function Partnerships() {
-  const [position, setPosition] = useState(0)
+  const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setPosition((prev) => (prev + 1) % 100)
-    }, 30)
-    return () => clearInterval(interval)
+    setIsVisible(true)
   }, [])
 
-  const logos = ["Nike", "Adidas", "Puma", "Under Armour", "Spalding", "Mikasa", "Wilson"]
+  const logos = [
+    { name: "Nike", img: "/image.png" },
+    { name: "Adidas", img: "/image.png" },
+    { name: "Puma", img: "/image.png" },
+    { name: "Under Armour", img: "/image.png" },
+    { name: "Spalding", img: "/image.png" },
+    { name: "Mikasa", img: "/image.png" },
+    { name: "Wilson", img: "/image.png" },
+  ]
 
   return (
-    <section className="py-16 px-4 sm:px-6 lg:px-8 overflow-hidden">
+    <section className="py-16 px-4 sm:px-6 lg:px-8 overflow-hidden bg-gradient-to-b from-neutral-50 to-white">
       <div className="max-w-7xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12 text-neutral-900">Trusted Partnerships</h2>
+        <h2 
+          className={`text-2xl sm:text-3xl font-bold text-center mb-12 bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent transition-all duration-1000 transform ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
+        >
+          Trusted Partnerships
+        </h2>
 
-        <div className="relative h-24 bg-gradient-to-r from-white via-transparent to-white">
-          <div
-            className="flex gap-8 whitespace-nowrap"
-            style={{
-              transform: `translateX(-${position}%)`,
-              transition: "transform 0.03s linear",
-            }}
-          >
-            {[...logos, ...logos].map((logo, i) => (
-              <div
-                key={i}
-                className="flex-shrink-0 w-32 h-24 flex items-center justify-center bg-neutral-100 rounded-lg font-semibold text-neutral-600"
-              >
-                {logo}
-              </div>
-            ))}
+        <div className="relative overflow-hidden rounded-2xl bg-white border border-red-200 p-8">
+          <style>{`
+            @keyframes smoothScroll {
+              0% {
+                transform: translateX(0);
+              }
+              100% {
+                transform: translateX(-50%);
+              }
+            }
+            
+            .carousel-track {
+              animation: smoothScroll 40s linear infinite;
+              display: flex;
+              gap: 2rem;
+              width: max-content;
+            }
+            
+            .carousel-track:hover {
+              animation-play-state: paused;
+            }
+          `}</style>
+          
+          <div className="overflow-hidden">
+            <div className="carousel-track">
+              {[...logos, ...logos, ...logos].map((logo, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 w-40 h-24 flex items-center justify-center bg-gradient-to-br from-red-50 to-white rounded-xl font-semibold text-neutral-600 border border-red-100 hover:border-red-400 hover:shadow-lg hover:scale-105 transition-all duration-300 overflow-hidden group"
+                >
+                  <img 
+                    src={logo.img || "/placeholder.svg"} 
+                    alt={logo.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

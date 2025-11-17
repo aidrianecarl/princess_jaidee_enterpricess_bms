@@ -10,13 +10,13 @@ class SizesSeeder extends Seeder
     public function run(): void
     {
         $sizes = [
-            ['name' => 'XS', 'abbreviation' => 'XS'],
-            ['name' => 'Small', 'abbreviation' => 'S'],
-            ['name' => 'Medium', 'abbreviation' => 'M'],
-            ['name' => 'Large', 'abbreviation' => 'L'],
-            ['name' => 'Extra Large', 'abbreviation' => 'XL'],
-            ['name' => 'XXL', 'abbreviation' => 'XXL'],
-            ['name' => '3XL', 'abbreviation' => '3XL'],
+            ['name' => 'XS', 'description' => 'Extra Small'],
+            ['name' => 'Small', 'description' => 'Small size'],
+            ['name' => 'Medium', 'description' => 'Medium size'],
+            ['name' => 'Large', 'description' => 'Large size'],
+            ['name' => 'Extra Large', 'description' => 'Extra Large'],
+            ['name' => 'XXL', 'description' => 'Double Extra Large'],
+            ['name' => '3XL', 'description' => 'Triple Extra Large'],
         ];
 
         foreach ($sizes as $size) {

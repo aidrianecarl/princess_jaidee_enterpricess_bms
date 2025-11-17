@@ -13,12 +13,13 @@ class Branch extends Model
     protected $fillable = [
         'name',
         'location',
-        'phone',
+        'phone_number',
         'email',
         'address',
         'zip_code',
-        'is_active',
-        'is_main_branch'
+        'status',
+        'is_main_branch',
+        'manager_id'
     ];
 
     public function users()
@@ -34,5 +35,10 @@ class Branch extends Model
     public function orders()
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function inventory()
+    {
+        return $this->hasMany(Inventory::class);
     }
 }

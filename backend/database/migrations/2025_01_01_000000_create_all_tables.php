@@ -75,6 +75,7 @@ return new class extends Migration
             $table->boolean('is_main_branch')->default(false);
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->timestamps();
+            $table->softDeletes(); // Added softDeletes() to support SoftDeletes trait in Branch model
         });
 
         // Categories

@@ -17,13 +17,13 @@ class OrderSeeder extends Seeder
         $customer = Customer::first();
         $quotation = Quotation::first();
 
-        if (!$cashier || !$customer || !$quotation) {
-            return; // Skip if required records don't exist
+        if (!$cashier || !$customer) {
+            return;
         }
 
         Order::create([
             'order_number' => 'ORD-' . date('Ymd') . '-001',
-            'quotation_id' => $quotation->id,
+            'quotation_id' => $quotation?->id,
             'customer_id' => $customer->id,
             'created_by' => $cashier->id,
             'order_date' => Carbon::now()->toDateString(),

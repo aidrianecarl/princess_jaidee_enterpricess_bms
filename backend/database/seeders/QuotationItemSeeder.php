@@ -12,11 +12,10 @@ class QuotationItemSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get sample quotation
         $quotation = Quotation::first();
 
         if (!$quotation) {
-            return; // Skip if no quotations exist
+            return;
         }
 
         // Add product item
