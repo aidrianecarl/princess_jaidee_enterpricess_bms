@@ -10,6 +10,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\JobOrderController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\UserController;
 
 Route::post('/register', [AuthController::class, 'clientRegister']);
 Route::post('/login', [AuthController::class, 'clientLogin']);
@@ -74,4 +75,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/roles/assign-user', [RolePermissionController::class, 'assignRoleToUser']);
     Route::post('/admin/roles/remove-user', [RolePermissionController::class, 'removeRoleFromUser']);
     Route::post('/admin/roles/assign-permission', [RolePermissionController::class, 'assignPermissionToRole']);
+
+    // Users Management
+    Route::get('/admin/users', [UserController::class, 'index']);
+    Route::get('/admin/users/{id}', [UserController::class, 'show']);
+    Route::post('/admin/users', [UserController::class, 'store']);
+    Route::put('/admin/users/{id}', [UserController::class, 'update']);
+    Route::delete('/admin/users/{id}', [UserController::class, 'destroy']);
+    Route::post('/admin/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
 });

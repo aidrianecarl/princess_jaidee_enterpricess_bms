@@ -1,22 +1,326 @@
 "use client"
+
+import { useEffect, useState } from "react"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
-import { useState } from "react"
+import { Plus, Edit2, Trash2, Lock, Shield } from 'lucide-react'
+import { apiClient } from "@/lib/api-client"
+
+interface Role {
+  id: number
+  name: string
+  description?: string
+  permissions?: any[]
+  created_at: string
+}
+
+interface Permission {
+  id: number
+  name: string
+  description?: string
+}
 
 export default function RolesPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [roles, setRoles] = useState<Role[]>([])
+  const [permissions, setPermissions] = useState<Permission[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null)
+  const [isEditMode, setIsEditMode] = useState(false)
+
+  const [formData, setFormData] = useState({
+    name: "",
+    description: "",
+    permissions: [] as number[],
+  })
+
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true)
+      const [rolesRes, permRes] = await Promise.all([
+        apiClient.get("/admin/roles"),
+        apiClient.get("/admin/permissions"),
+      ])
+
+      setRoles(rolesRes.data.data || [])
+      setPermissions(permRes.data.data || [])
+    } catch (error) {
+      console.error("[v0] Error fetching data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      if (isEditMode && selectedRole) {
+        await apiClient.put(`/admin/roles/${selectedRole.id}`, formData)
+      } else {
+        await apiClient.post("/admin/roles", formData)
+      }
+
+      setIsAddModalOpen(false)
+      resetForm()
+      fetchData()
+    } catch (error) {
+      console.error("[v0] Error saving role:", error)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Are you sure you want to delete this role?")) {
+      try {
+        await apiClient.delete(`/admin/roles/${id}`)
+        fetchData()
+      } catch (error) {
+        console.error("[v0] Error deleting role:", error)
+      }
+    }
+  }
+
+  const handleEdit = (role: Role) => {
+    setSelectedRole(role)
+    setFormData({
+      name: role.name,
+      description: role.description || "",
+      permissions: role.permissions?.map((p) => p.id) || [],
+    })
+    setIsEditMode(true)
+    setIsAddModalOpen(true)
+  }
+
+  const resetForm = () => {
+    setIsAddModalOpen(false)
+    setIsEditMode(false)
+    setSelectedRole(null)
+    setFormData({
+      name: "",
+      description: "",
+      permissions: [],
+    })
+  }
 
   return (
     <div className="flex h-screen">
       <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
       <div className="flex-1 flex flex-col overflow-hidden">
         <AdminHeader user={null} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 overflow-auto p-6">
-          <h1 className="text-3xl font-bold mb-4">Roles & Permissions</h1>
-          <p className="text-neutral-600">Manage user roles and access permissions (RBAC)</p>
-          <div className="mt-8 bg-white rounded-xl p-12 text-center">
-            <p className="text-neutral-600">RBAC management module ready for implementation</p>
+        <main className="flex-1 overflow-auto p-6 bg-neutral-50/50">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-2">
+                Roles & Permissions
+              </h1>
+              <p className="text-neutral-600">Manage user roles and access control</p>
+            </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl font-semibold hover:from-red-700 hover:to-orange-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
+            >
+              <Plus size={20} />
+              Add Role
+            </button>
           </div>
+
+          {/* Roles Grid */}
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 animate-pulse"
+                >
+                  <div className="h-8 bg-neutral-200 rounded mb-4" />
+                  <div className="space-y-2">
+                    <div className="h-4 bg-neutral-200 rounded" />
+                    <div className="h-4 bg-neutral-200 rounded w-2/3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : roles.length === 0 ? (
+            <div className="text-center py-16">
+              <Shield size={48} className="mx-auto text-neutral-300 mb-4" />
+              <p className="text-neutral-600 font-medium mb-4">No roles yet</p>
+              <button
+                onClick={() => setIsAddModalOpen(true)}
+                className="text-red-600 hover:text-red-700 font-semibold"
+              >
+                Create your first role
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeInUp">
+              {roles.map((role) => (
+                <div
+                  key={role.id}
+                  className="bg-white rounded-2xl shadow-sm border border-neutral-200 hover:shadow-xl hover:border-red-200 transition-all duration-300 overflow-hidden group"
+                >
+                  <div className="bg-gradient-to-r from-red-50 to-orange-50 p-6 border-b border-red-100/50">
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="p-3 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg">
+                        <Lock size={20} className="text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-neutral-900 group-hover:text-red-600 transition-colors">
+                          {role.name}
+                        </h3>
+                        {role.description && (
+                          <p className="text-sm text-neutral-600 mt-1">{role.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    {role.permissions && role.permissions.length > 0 ? (
+                      <div>
+                        <p className="text-xs font-semibold text-neutral-600 mb-3">Permissions:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {role.permissions.slice(0, 3).map((perm) => (
+                            <span
+                              key={perm.id}
+                              className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full"
+                            >
+                              {perm.name}
+                            </span>
+                          ))}
+                          {role.permissions.length > 3 && (
+                            <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
+                              +{role.permissions.length - 3} more
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-neutral-500">No permissions assigned</p>
+                    )}
+                  </div>
+
+                  <div className="bg-neutral-50 border-t border-neutral-200 p-4 flex gap-2">
+                    <button
+                      onClick={() => handleEdit(role)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} />
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(role.id)}
+                      className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                      <span className="hidden sm:inline">Delete</span>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add/Edit Modal */}
+          {isAddModalOpen && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+              <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto animate-slideUp">
+                <div className="bg-gradient-to-r from-red-600 to-orange-600 px-8 py-6 flex items-center justify-between sticky top-0">
+                  <h2 className="text-2xl font-bold text-white">
+                    {isEditMode ? "Edit Role" : "Add New Role"}
+                  </h2>
+                  <button onClick={resetForm} className="text-white hover:bg-white/20 p-2 rounded-lg transition">
+                    ✕
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      Role Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none resize-none"
+                      rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-neutral-900 mb-4">
+                      Assign Permissions
+                    </label>
+                    <div className="space-y-2 max-h-48 overflow-y-auto p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                      {permissions.map((permission) => (
+                        <div key={permission.id} className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            id={`perm-${permission.id}`}
+                            checked={formData.permissions.includes(permission.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  permissions: [...formData.permissions, permission.id],
+                                })
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  permissions: formData.permissions.filter((p) => p !== permission.id),
+                                })
+                              }
+                            }}
+                            className="w-4 h-4 rounded border-neutral-300 text-red-600 focus:ring-red-500"
+                          />
+                          <label
+                            htmlFor={`perm-${permission.id}`}
+                            className="flex-1 text-sm font-medium text-neutral-900 cursor-pointer"
+                          >
+                            {permission.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-6 border-t border-neutral-200">
+                    <button
+                      type="button"
+                      onClick={resetForm}
+                      className="flex-1 px-6 py-3 border-2 border-neutral-300 text-neutral-700 font-semibold rounded-lg hover:bg-neutral-50 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white font-semibold rounded-lg hover:from-red-700 hover:to-orange-700 transition"
+                    >
+                      {isEditMode ? "Update Role" : "Create Role"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>

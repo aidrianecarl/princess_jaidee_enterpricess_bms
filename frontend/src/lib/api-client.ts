@@ -75,6 +75,22 @@ class ApiClient {
     )
   }
 
+  public get(url: string, config?: any) {
+    return this.adminInstance.get(url, config)
+  }
+
+  public post(url: string, data?: any, config?: any) {
+    return this.adminInstance.post(url, data, config)
+  }
+
+  public put(url: string, data?: any, config?: any) {
+    return this.adminInstance.put(url, data, config)
+  }
+
+  public delete(url: string, config?: any) {
+    return this.adminInstance.delete(url, config)
+  }
+
   public client() {
     return this.clientInstance
   }

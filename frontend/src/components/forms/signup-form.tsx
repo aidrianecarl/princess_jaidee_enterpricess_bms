@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
-import { Mail, Lock, Phone, Code, Loader } from "lucide-react"
+import { Mail, Lock, Phone, Code, Loader, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { PasswordStrength } from "./password-strength"
 
 interface SignupFormProps {
@@ -12,6 +11,8 @@ interface SignupFormProps {
 
 export function SignupForm({ onSuccess }: SignupFormProps) {
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState("")
   const [formData, setFormData] = useState({
     first_name: "",
@@ -43,7 +44,6 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
     e.preventDefault()
     setError("")
 
-    // Validation
     if (!formData.first_name || !formData.last_name || !formData.username) {
       setError("First name, last name, and username are required")
       return
@@ -77,7 +77,6 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       localStorage.setItem("auth_token", data.token)
       localStorage.setItem("user", JSON.stringify(data.user))
 
-      // Show terms & conditions modal
       localStorage.setItem("show_terms", "true")
       onSuccess()
       window.location.href = "/dashboard"
@@ -89,155 +88,135 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
+    <form onSubmit={handleSubmit} className="space-y-4 max-h-100% pr-2">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium animate-slideDown sticky top-0 z-50">
+          {error}
+        </div>
+      )}
 
-      {/* First and Last Name */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-neutral-900 mb-1">First Name</label>
+          <label className="block text-xs font-bold text-neutral-900 mb-1">First Name</label>
           <input
             type="text"
             name="first_name"
             value={formData.first_name}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full px-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
             placeholder="John"
             required
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-neutral-900 mb-1">Last Name</label>
+          <label className="block text-xs font-bold text-neutral-900 mb-1">Last Name</label>
           <input
             type="text"
             name="last_name"
             value={formData.last_name}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full px-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
             placeholder="Doe"
             required
           />
         </div>
       </div>
 
-      {/* Username */}
       <div>
-        <label className="block text-xs font-medium text-neutral-900 mb-1">Username</label>
+        <label className="block text-xs font-bold text-neutral-900 mb-1">Username</label>
         <div className="relative">
-          <Code className="absolute left-3 top-2.5 text-neutral-400" size={18} />
+          <Code className="absolute left-3 top-2.5 text-red-500" size={18} />
           <input
             type="text"
             name="username"
             value={formData.username}
             onChange={handleChange}
-            className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full pl-10 pr-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
             placeholder="johndoe"
             required
           />
         </div>
       </div>
 
-      {/* Email */}
       <div>
-        <label className="block text-xs font-medium text-neutral-900 mb-1">Email Address</label>
+        <label className="block text-xs font-bold text-neutral-900 mb-1">Email Address</label>
         <div className="relative">
-          <Mail className="absolute left-3 top-2.5 text-neutral-400" size={18} />
+          <Mail className="absolute left-3 top-2.5 text-red-500" size={18} />
           <input
             type="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full pl-10 pr-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
             placeholder="john@example.com"
             required
           />
         </div>
       </div>
 
-      {/* Password */}
       <div>
-        <label className="block text-xs font-medium text-neutral-900 mb-1">Password</label>
+        <label className="block text-xs font-bold text-neutral-900 mb-1">Password</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-2.5 text-neutral-400" size={18} />
+          <Lock className="absolute left-3 top-2.5 text-red-500" size={18} />
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             name="password"
             value={formData.password}
             onChange={handleChange}
-            className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full pl-10 pr-10 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
             placeholder="••••••••"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword(!showPassword)}
+            className="absolute right-3 top-2.5 text-neutral-500 hover:text-red-600 transition"
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
         {formData.password && <PasswordStrength password={formData.password} />}
       </div>
 
-      {/* Confirm Password */}
       <div>
-        <label className="block text-xs font-medium text-neutral-900 mb-1">Confirm Password</label>
+        <label className="block text-xs font-bold text-neutral-900 mb-1">Confirm Password</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-2.5 text-neutral-400" size={18} />
+          <Lock className="absolute left-3 top-2.5 text-red-500" size={18} />
           <input
-            type="password"
+            type={showConfirmPassword ? "text" : "password"}
             name="password_confirmation"
             value={formData.password_confirmation}
             onChange={handleChange}
-            className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
+            className="w-full pl-10 pr-10 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
             placeholder="••••••••"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            className="absolute right-3 top-2.5 text-neutral-500 hover:text-red-600 transition"
+          >
+            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
         </div>
-      </div>
-
-      {/* Phone */}
-      <div>
-        <label className="block text-xs font-medium text-neutral-900 mb-1">Phone Number (Optional)</label>
-        <div className="relative">
-          <Phone className="absolute left-3 top-2.5 text-neutral-400" size={18} />
-          <input
-            type="tel"
-            name="phone_number"
-            value={formData.phone_number}
-            onChange={handleChange}
-            className="w-full pl-10 pr-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-            placeholder="+63 9XX XXX XXXX"
-          />
-        </div>
-      </div>
-
-      {/* Address */}
-      <div>
-        <label className="block text-xs font-medium text-neutral-900 mb-1">Address (Optional)</label>
-        <input
-          type="text"
-          name="address"
-          value={formData.address}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-          placeholder="123 Main St"
-        />
-      </div>
-
-      {/* Zip Code */}
-      <div>
-        <label className="block text-xs font-medium text-neutral-900 mb-1">Zip Code (Optional)</label>
-        <input
-          type="text"
-          name="zip_code"
-          value={formData.zip_code}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-sm"
-          placeholder="12345"
-        />
       </div>
 
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-primary text-white py-2 rounded-lg font-semibold hover:bg-primary-dark transition disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
+        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white py-3 rounded-lg font-bold hover:shadow-lg hover:shadow-red-500/30 transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm group hover:scale-105"
       >
-        {isLoading && <Loader size={18} className="animate-spin" />}
-        {isLoading ? "Creating Account..." : "Create Account"}
+        {isLoading ? (
+          <>
+            <Loader size={18} className="animate-spin" />
+            Creating Account...
+          </>
+        ) : (
+          <>
+            Create Account
+            <ArrowRight size={18} className="group-hover:translate-x-1 transition" />
+          </>
+        )}
       </button>
     </form>
   )
