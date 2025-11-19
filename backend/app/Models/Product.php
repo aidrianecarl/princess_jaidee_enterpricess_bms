@@ -4,16 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
     protected $fillable = [
         'name',
-        'sku',
         'description',
         'category_id',
+        'color_id',
+        'size_id',
         'base_price',
         'unit_cost',
         'quantity_in_stock',
@@ -33,14 +33,14 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
-    public function colors(): BelongsToMany
+    public function color(): BelongsTo
     {
-        return $this->belongsToMany(Color::class, 'product_colors');
+        return $this->belongsTo(Color::class, 'color_id');
     }
 
-    public function sizes(): BelongsToMany
+    public function size(): BelongsTo
     {
-        return $this->belongsToMany(Size::class, 'product_sizes');
+        return $this->belongsTo(Size::class, 'size_id');
     }
 
     public function quotationItems(): HasMany

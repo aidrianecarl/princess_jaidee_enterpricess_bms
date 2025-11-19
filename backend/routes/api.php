@@ -25,6 +25,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/{id}', [ProductController::class, 'show']);
 
+    // Colors and Sizes - Managing Variations
+    Route::get('/colors', [ProductController::class, 'getColors']);
+    Route::post('/colors', [ProductController::class, 'storeColor']);
+    Route::put('/colors/{id}', [ProductController::class, 'updateColor']);
+    Route::delete('/colors/{id}', [ProductController::class, 'destroyColor']);
+
+    Route::get('/sizes', [ProductController::class, 'getSizes']);
+    Route::post('/sizes', [ProductController::class, 'storeSize']);
+    Route::put('/sizes/{id}', [ProductController::class, 'updateSize']);
+    Route::delete('/sizes/{id}', [ProductController::class, 'destroySize']);
+
     // Services
     Route::get('/services', [ServiceController::class, 'index']);
     Route::get('/services/{id}', [ServiceController::class, 'show']);
@@ -35,11 +46,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/quotations', [QuotationController::class, 'store']);
 
     // Products - Admin
+    Route::get('/admin/products', [ProductController::class, 'index']);
     Route::post('/admin/products', [ProductController::class, 'store']);
     Route::put('/admin/products/{id}', [ProductController::class, 'update']);
     Route::delete('/admin/products/{id}', [ProductController::class, 'destroy']);
+    Route::post('/admin/products/{id}/add-stock', [ProductController::class, 'addStock']);
+
+    Route::get('/admin/categories', [ProductController::class, 'getCategories']);
 
     // Services - Admin
+    Route::get('/admin/services', [ServiceController::class, 'index']);
     Route::post('/admin/services', [ServiceController::class, 'store']);
     Route::put('/admin/services/{id}', [ServiceController::class, 'update']);
     Route::delete('/admin/services/{id}', [ServiceController::class, 'destroy']);

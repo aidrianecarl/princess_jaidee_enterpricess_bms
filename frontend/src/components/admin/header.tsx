@@ -21,29 +21,31 @@ export function AdminHeader({ user, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="bg-gradient-to-r from-white via-white to-red-50/30 border-b border-red-100/50 h-20 flex items-center px-6 sticky top-0 z-40 shadow-sm">
+    <header className="bg-gradient-to-r from-white via-white to-red-50/30 border-b border-red-100/50 h-20 flex items-center px-6 sticky top-0 z-40 shadow-sm w-full">
       <div className="flex items-center justify-between w-full">
-        {/* Left */}
-        <button onClick={onMenuClick} className="p-2 hover:bg-red-50/50 rounded-lg transition lg:hidden text-neutral-600 hover:text-red-600">
-          <Menu size={24} />
-        </button>
+        {/* Left - Menu Button + Logo */}
+        <div className="flex items-center gap-4">
+          <button onClick={onMenuClick} className="p-2 hover:bg-red-50/50 rounded-lg transition lg:hidden text-neutral-600 hover:text-red-600">
+            <Menu size={24} />
+          </button>
 
-        {/* Center - Logo */}
-        <div className="hidden lg:flex items-center gap-3 ml-0">
-          <div className="relative w-10 h-10 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-            <Image
-              src="/logo.png"
-              alt="Princess Jaidee Logo"
-              fill
-              className="object-cover"
-            />
+          {/* Logo - Desktop only */}
+          <div className="hidden lg:flex items-center gap-3">
+            <div className="relative w-10 h-10 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+              <Image
+                src="/logo.png"
+                alt="Princess Jaidee Logo"
+                fill
+                className="object-cover"
+              />
+            </div>
+            <span className="font-bold text-lg bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
+              Princess Jaidee
+            </span>
           </div>
-          <span className="font-bold text-lg bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent">
-            Princess Jaidee
-          </span>
         </div>
 
-        {/* Right */}
+        {/* Right - Notifications + User Dropdown */}
         <div className="flex items-center gap-6 ml-auto">
           {/* Notifications */}
           <button className="p-2 hover:bg-red-50/50 rounded-lg relative transition text-neutral-600 hover:text-red-600 group">
@@ -70,7 +72,7 @@ export function AdminHeader({ user, onMenuClick }: HeaderProps) {
             {isDropdownOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl border border-red-100/50 shadow-xl animate-slideDown">
                 <div className="p-4 border-b border-red-100/50">
-                  <p className="font-semibold text-neutral-900">{user?.full_name}</p>
+                  <p className="font-semibold text-neutral-900">{user?.first_name} {user?.last_name}</p>
                   <p className="text-sm text-neutral-600">{user?.email}</p>
                 </div>
 

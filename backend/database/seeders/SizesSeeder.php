@@ -11,10 +11,10 @@ class SizesSeeder extends Seeder
     {
         $sizes = [
             ['name' => 'XS', 'description' => 'Extra Small'],
-            ['name' => 'Small', 'description' => 'Small size'],
-            ['name' => 'Medium', 'description' => 'Medium size'],
-            ['name' => 'Large', 'description' => 'Large size'],
-            ['name' => 'Extra Large', 'description' => 'Extra Large'],
+            ['name' => 'S', 'description' => 'Small size'],
+            ['name' => 'M', 'description' => 'Medium size'],
+            ['name' => 'L', 'description' => 'Large size'],
+            ['name' => 'XL', 'description' => 'Extra Large'],
             ['name' => 'XXL', 'description' => 'Double Extra Large'],
             ['name' => '3XL', 'description' => 'Triple Extra Large'],
         ];

@@ -8,8 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::defaultStringLength(191);
+        
         // Users table
         Schema::create('users', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('first_name');
             $table->string('last_name');
@@ -64,6 +67,7 @@ return new class extends Migration
 
         // Branches
         Schema::create('branches', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('name');
             $table->string('location')->nullable();
@@ -80,16 +84,18 @@ return new class extends Migration
 
         // Categories
         Schema::create('categories', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('restrict');
             $table->timestamps();
         });
 
         // Colors
         Schema::create('colors', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('name');
             $table->string('hex_code')->nullable();
@@ -98,6 +104,7 @@ return new class extends Migration
 
         // Sizes
         Schema::create('sizes', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('name');
             $table->string('description')->nullable();
@@ -106,11 +113,13 @@ return new class extends Migration
 
         // Products
         Schema::create('products', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('name');
-            $table->string('sku')->unique();
             $table->text('description')->nullable();
             $table->foreignId('category_id')->constrained()->onDelete('restrict');
+            $table->foreignId('color_id')->nullable()->constrained('colors')->onDelete('set null');
+            $table->foreignId('size_id')->nullable()->constrained('sizes')->onDelete('set null');
             $table->decimal('base_price', 10, 2);
             $table->decimal('unit_cost', 10, 2)->nullable();
             $table->integer('quantity_in_stock')->default(0);
@@ -123,26 +132,27 @@ return new class extends Migration
             $table->index('status');
         });
 
-        // Product Colors
+        // Product Colors - now stores only color masters, no product_id
         Schema::create('product_colors', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('color_id')->constrained()->onDelete('cascade');
             $table->timestamps();
-            $table->unique(['product_id', 'color_id']);
+            $table->unique(['color_id']);
         });
 
-        // Product Sizes
+        // Product Sizes - now stores only size masters, no product_id
         Schema::create('product_sizes', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('size_id')->constrained()->onDelete('cascade');
             $table->timestamps();
-            $table->unique(['product_id', 'size_id']);
+            $table->unique(['size_id']);
         });
 
         // Services
         Schema::create('services', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
@@ -159,6 +169,7 @@ return new class extends Migration
 
         // Customers
         Schema::create('customers', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained()->onDelete('set null');
             $table->string('company_name')->nullable();
@@ -176,6 +187,7 @@ return new class extends Migration
 
         // Quotations
         Schema::create('quotations', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('quotation_number')->unique();
             $table->foreignId('customer_id')->constrained()->onDelete('restrict');
@@ -199,6 +211,7 @@ return new class extends Migration
 
         // Quotation Items
         Schema::create('quotation_items', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('quotation_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->nullable()->constrained()->onDelete('set null');
@@ -212,6 +225,7 @@ return new class extends Migration
 
         // Orders
         Schema::create('orders', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('order_number')->unique();
             $table->foreignId('quotation_id')->nullable()->constrained()->onDelete('set null');
@@ -233,6 +247,7 @@ return new class extends Migration
 
         // Order Items
         Schema::create('order_items', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
             $table->foreignId('product_id')->nullable()->constrained()->onDelete('set null');
@@ -246,6 +261,7 @@ return new class extends Migration
 
         // Job Orders
         Schema::create('job_orders', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('job_order_number')->unique();
             $table->foreignId('order_id')->constrained()->onDelete('restrict');
@@ -262,6 +278,7 @@ return new class extends Migration
 
         // Payments
         Schema::create('payments', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('restrict');
             $table->decimal('amount', 12, 2);
@@ -275,6 +292,7 @@ return new class extends Migration
 
         // Terms and Conditions
         Schema::create('terms_conditions', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->string('title');
             $table->longText('content');
@@ -285,6 +303,7 @@ return new class extends Migration
 
         // Inventory
         Schema::create('inventory', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('product_id')->constrained()->onDelete('cascade');
             $table->foreignId('branch_id')->nullable()->constrained()->onDelete('cascade');
@@ -296,6 +315,7 @@ return new class extends Migration
 
         // Activity Logs
         Schema::create('activity_logs', function (Blueprint $table) {
+            $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('action');

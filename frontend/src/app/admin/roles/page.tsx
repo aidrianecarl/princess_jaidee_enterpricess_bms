@@ -50,7 +50,7 @@ export default function RolesPage() {
       setRoles(rolesRes.data.data || [])
       setPermissions(permRes.data.data || [])
     } catch (error) {
-      console.error("[v0] Error fetching data:", error)
+      console.error("Error fetching data:", error)
     } finally {
       setIsLoading(false)
     }
@@ -70,7 +70,7 @@ export default function RolesPage() {
       resetForm()
       fetchData()
     } catch (error) {
-      console.error("[v0] Error saving role:", error)
+      console.error("Error saving role:", error)
     }
   }
 
@@ -80,7 +80,7 @@ export default function RolesPage() {
         await apiClient.delete(`/admin/roles/${id}`)
         fetchData()
       } catch (error) {
-        console.error("[v0] Error deleting role:", error)
+        console.error("Error deleting role:", error)
       }
     }
   }
