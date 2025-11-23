@@ -5,6 +5,7 @@ import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { Plus, Edit2, Trash2, Lock, Shield } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
+import { useRouter } from "next/navigation"
 
 interface Role {
   id: number
@@ -28,6 +29,24 @@ export default function RolesPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  const router = useRouter()
+    const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    checkAuth()
+  }, [router])
+
+  const checkAuth = () => {
+    const token = localStorage.getItem("admin_token")
+    const userData = localStorage.getItem("admin_user")
+
+    if (!token || !userData) {
+      router.push("/admin")
+      return
+    }
+    setUser(JSON.parse(userData))
+    setIsLoading(false)
+  }
 
   const [formData, setFormData] = useState({
     name: "",
@@ -108,11 +127,11 @@ export default function RolesPage() {
   }
 
   return (
-    <div className="flex h-screen">
-      <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader user={null} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 overflow-auto p-6 bg-neutral-50/50">
+    <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <div className="flex flex-1 overflow-hidden">
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>

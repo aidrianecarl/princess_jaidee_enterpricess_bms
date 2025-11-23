@@ -1,0 +1,115 @@
+/* Added modern animation utilities for admin pages */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 300ms ease-out forwards;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 300ms ease-out forwards;
+}
+
+.animate-slideUp {
+  animation: slideUp 300ms ease-out forwards;
+}
+
+.animate-slideRight {
+  animation: slideRight 300ms ease-out forwards;
+}
+
+/* Mobile-first responsive improvements */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Ensure proper touch targets on mobile */
+  button,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Improve mobile modal display */
+  .fixed.inset-0 {
+    padding: 1rem;
+  }
+
+  /* Better mobile form inputs */
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .grid-cols-3 {
+    @apply grid-cols-2;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  .dark:bg-neutral-900 {
+    @apply bg-black;
+  }
+
+  .dark:text-white {
+    @apply text-white font-semibold;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

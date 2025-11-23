@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
+import { useRouter } from "next/navigation"
 import { Plus, Edit2, Trash2, Eye, MapPin, Phone, Mail } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
 
@@ -28,7 +29,26 @@ export default function BranchesPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedBranch, setSelectedBranch] = useState<Branch | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
+  const router = useRouter()
+  const [user, setUser] = useState(null)
 
+  useEffect(() => {
+    checkAuth()
+  }, [router])
+
+  const checkAuth = () => {
+    const token = localStorage.getItem("admin_token")
+    const userData = localStorage.getItem("admin_user")
+
+    if (!token || !userData) {
+      router.push("/admin")
+      return
+    }
+    setUser(JSON.parse(userData))
+    setIsLoading(false)
+  }
+
+  
   const [formData, setFormData] = useState({
     name: "",
     location: "",
@@ -49,7 +69,7 @@ export default function BranchesPage() {
       const response = await apiClient.get("/admin/branches")
       setBranches(response.data.data || [])
     } catch (error) {
-      console.error("[v0] Error fetching branches:", error)
+      console.error("Error fetching branches:", error)
     } finally {
       setIsLoading(false)
     }
@@ -79,7 +99,7 @@ export default function BranchesPage() {
       setSelectedBranch(null)
       fetchBranches()
     } catch (error) {
-      console.error("[v0] Error saving branch:", error)
+      console.error("Error saving branch:", error)
     }
   }
 
@@ -89,7 +109,7 @@ export default function BranchesPage() {
         await apiClient.delete(`/admin/branches/${id}`)
         fetchBranches()
       } catch (error) {
-        console.error("[v0] Error deleting branch:", error)
+        console.error("Error deleting branch:", error)
       }
     }
   }
@@ -125,11 +145,11 @@ export default function BranchesPage() {
   }
 
   return (
-    <div className="flex h-screen">
-      <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader user={null} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 overflow-auto p-6 bg-neutral-50/50">
+    <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <div className="flex flex-1 overflow-hidden">
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>

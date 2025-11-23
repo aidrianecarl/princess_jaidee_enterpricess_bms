@@ -60,7 +60,7 @@ export function DashboardOverview() {
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-8 bg-neutral-50/50">
+    <div className="p-6 md:p-8 space-y-8">
       {/* Header */}
       <div className="animate-fadeInUp">
         <h1 className="text-5xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-2">

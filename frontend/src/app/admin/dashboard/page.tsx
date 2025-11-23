@@ -9,7 +9,7 @@ import { DashboardOverview } from "@/components/admin/dashboard-overview"
 export default function AdminDashboard() {
   const router = useRouter()
   const [user, setUser] = useState(null)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
         <div className="animate-spin">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
         </div>
@@ -40,10 +40,10 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="flex h-screen bg-neutral-50">
-      <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+    <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <div className="flex flex-1 overflow-hidden">
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <main className="flex-1 overflow-auto">
           <DashboardOverview />
         </main>

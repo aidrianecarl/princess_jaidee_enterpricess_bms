@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
+import { useRouter } from "next/navigation"
 
 interface Color {
   id: number
@@ -17,8 +18,29 @@ export default function ColorsPage() {
   const [colors, setColors] = useState<Color[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [showModal, setShowModal] = useState(false)
   const [selectedColor, setSelectedColor] = useState<Color | null>(null)
+
+  const router = useRouter()
+    const [user, setUser] = useState(null)
+  
+    useEffect(() => {
+      checkAuth()
+    }, [router])
+  
+    const checkAuth = () => {
+      const token = localStorage.getItem("admin_token")
+      const userData = localStorage.getItem("admin_user")
+  
+      if (!token || !userData) {
+        router.push("/admin")
+        return
+      }
+      setUser(JSON.parse(userData))
+      setIsLoading(false)
+    }
+  
   const [formData, setFormData] = useState({
     name: "",
     hex_code: "#000000",
@@ -56,7 +78,7 @@ export default function ColorsPage() {
       resetForm()
       fetchColors()
     } catch (error) {
-      console.error("[v0] Failed to save color:", error)
+      console.error("Failed to save color:", error)
       setError("Failed to save color")
     }
   }
@@ -67,7 +89,7 @@ export default function ColorsPage() {
         await apiClient.delete(`/colors/${id}`)
         fetchColors()
       } catch (error) {
-        console.error("[v0] Failed to delete color:", error)
+        console.error("Failed to delete color:", error)
         setError("Failed to delete color")
       }
     }
@@ -94,10 +116,10 @@ export default function ColorsPage() {
   )
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-50">
-      <AdminHeader />
+    <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex flex-1 overflow-hidden">
-        <AdminSidebar />
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <main className="flex-1 overflow-auto">
           <div className="p-6">
             <div className="max-w-6xl mx-auto">

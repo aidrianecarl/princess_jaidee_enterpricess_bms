@@ -5,6 +5,8 @@ import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
+import { useRouter } from "next/navigation"
+
 
 interface Size {
   id: number
@@ -14,11 +16,32 @@ interface Size {
 }
 
 export default function SizesPage() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [sizes, setSizes] = useState<Size[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [showModal, setShowModal] = useState(false)
   const [selectedSize, setSelectedSize] = useState<Size | null>(null)
+
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    checkAuth()
+  }, [router])
+
+  const checkAuth = () => {
+    const token = localStorage.getItem("admin_token")
+    const userData = localStorage.getItem("admin_user")
+
+    if (!token || !userData) {
+      router.push("/admin")
+      return
+    }
+    setUser(JSON.parse(userData))
+    setIsLoading(false)
+  }
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -37,7 +60,7 @@ export default function SizesPage() {
       const data = Array.isArray(res.data) ? res.data : (res.data.data || [])
       setSizes(data)
     } catch (error) {
-      console.error("[v0] Failed to fetch sizes:", error)
+      console.error("Failed to fetch sizes:", error)
       setError("Failed to load sizes")
     } finally {
       setIsLoading(false)
@@ -56,7 +79,7 @@ export default function SizesPage() {
       resetForm()
       fetchSizes()
     } catch (error) {
-      console.error("[v0] Failed to save size:", error)
+      console.error("Failed to save size:", error)
       setError("Failed to save size")
     }
   }
@@ -67,7 +90,7 @@ export default function SizesPage() {
         await apiClient.delete(`/sizes/${id}`)
         fetchSizes()
       } catch (error) {
-        console.error("[v0] Failed to delete size:", error)
+        console.error("Failed to delete size:", error)
         setError("Failed to delete size")
       }
     }
@@ -94,10 +117,10 @@ export default function SizesPage() {
   )
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-50">
-      <AdminHeader />
+    <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex flex-1 overflow-hidden">
-        <AdminSidebar />
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <main className="flex-1 overflow-auto">
           <div className="p-6">
             <div className="max-w-6xl mx-auto">

@@ -1,10 +1,22 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, Briefcase, ShoppingCart, Layers, Users, Settings, X, ChevronRight, MapPin, Lock, ChevronDown } from 'lucide-react'
+import { usePathname } from "next/navigation"
+import {
+  LayoutDashboard,
+  Package,
+  Briefcase,
+  ShoppingCart,
+  Layers,
+  Users,
+  X,
+  ChevronRight,
+  MapPin,
+  Lock,
+  ChevronDown,
+} from "lucide-react"
 import { useState } from "react"
-import Image from 'next/image'
+import Image from "next/image"
 
 interface SidebarProps {
   isOpen: boolean
@@ -25,7 +37,7 @@ const menuItems = [
       { label: "Product Categories", href: "/admin/products/categories" },
       { label: "Product Colors", href: "/admin/products/colors" },
       { label: "Product Sizes", href: "/admin/products/sizes" },
-    ]
+    ],
   },
   { icon: Briefcase, label: "Services", href: "/admin/services" },
   { icon: ShoppingCart, label: "Quotations", href: "/admin/quotations" },
@@ -45,43 +57,31 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile Overlay */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-fadeIn"
-          onClick={() => onToggle(false)}
-        />
+        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-fadeIn" onClick={() => onToggle(false)} />
       )}
 
-      {/* Sidebar */}
       <aside
-        className={`fixed lg:static top-20 lg:top-0 inset-y-0 left-0 z-50 w-64 bg-gradient-to-b from-neutral-900 to-neutral-950 text-white transform transition-all duration-300 ease-in-out flex flex-col ${
+        className={`fixed lg:static top-20 lg:top-0 inset-y-0 left-0 z-50 w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white transform transition-all duration-300 ease-in-out flex flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Header - Hidden on lg screens */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-red-600/30 bg-gradient-to-r from-red-600/10 to-orange-600/10 lg:hidden">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 lg:hidden">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 rounded-lg overflow-hidden shadow-lg">
-              <Image
-                src="/logo.png"
-                alt="Princess Jaidee Logo"
-                fill
-                className="object-cover"
-              />
+              <Image src="/princessjd.png" alt="Princess Jaidee Logo" fill className="object-cover" />
             </div>
             <div className="hidden sm:block">
-              <span className="font-bold text-sm bg-gradient-to-r from-red-400 to-orange-400 bg-clip-text text-transparent">
-                PRINCESS
-              </span>
-              <span className="block font-bold text-xs text-red-400">JAIDEE</span>
+              <span className="font-bold text-sm text-red-600">PRINCESS</span>
+              <span className="block font-bold text-xs text-orange-600">JAIDEE</span>
             </div>
           </div>
           <button
             onClick={() => onToggle(false)}
-            className="lg:hidden p-1 hover:bg-red-600/20 rounded-lg transition"
+            className="lg:hidden p-1 hover:bg-neutral-200 dark:hover:bg-neutral-700 rounded-lg transition"
           >
-            <X size={24} className="text-red-400" />
+            <X size={24} className="text-neutral-600 dark:text-neutral-400" />
           </button>
         </div>
 
@@ -101,7 +101,7 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
                       isActive
                         ? "bg-gradient-to-r from-red-600 to-orange-600 text-white"
-                        : "text-neutral-400 hover:bg-neutral-800/50 hover:text-red-400"
+                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600"
                     }`}
                   >
                     <Icon size={20} />
@@ -114,7 +114,7 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
                       isActive
                         ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg"
-                        : "text-neutral-400 hover:bg-neutral-800/50 hover:text-red-400"
+                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600"
                     }`}
                     onClick={() => onToggle(false)}
                   >
@@ -126,15 +126,15 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
 
                 {/* Submenu */}
                 {hasSubmenu && isExpanded && (
-                  <div className="ml-4 mt-2 space-y-1 border-l border-red-600/30 pl-4">
+                  <div className="ml-4 mt-2 space-y-1 border-l border-neutral-200 dark:border-neutral-700 pl-4">
                     {item.submenu?.map((subitem) => (
                       <Link
                         key={subitem.href}
                         href={subitem.href}
                         className={`block px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
                           pathname === subitem.href
-                            ? "bg-red-600/20 text-red-300 font-medium"
-                            : "text-neutral-400 hover:bg-neutral-800/50 hover:text-red-400"
+                            ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium"
+                            : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600"
                         }`}
                         onClick={() => onToggle(false)}
                       >
@@ -149,8 +149,8 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-red-600/30 p-6 bg-gradient-to-r from-red-600/5 to-orange-600/5">
-          <p className="text-xs text-neutral-500 text-center leading-relaxed">
+        <div className="border-t border-neutral-200 dark:border-neutral-800 p-6 bg-neutral-50 dark:bg-neutral-800/50">
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center leading-relaxed">
             &copy; 2025 Princess Jaidee Enterprises. All rights reserved.
           </p>
         </div>

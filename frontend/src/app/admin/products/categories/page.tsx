@@ -5,6 +5,7 @@ import { Plus, Edit, Trash2, Search } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
+import { useRouter } from "next/navigation"
 
 interface Category {
   id: number
@@ -17,6 +18,7 @@ interface Category {
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [showModal, setShowModal] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
@@ -45,6 +47,25 @@ export default function CategoriesPage() {
       setIsLoading(false)
     }
   }
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    checkAuth()
+  }, [router])
+
+  const checkAuth = () => {
+    const token = localStorage.getItem("admin_token")
+    const userData = localStorage.getItem("admin_user")
+
+    if (!token || !userData) {
+      router.push("/admin")
+      return
+    }
+    setUser(JSON.parse(userData))
+    setIsLoading(false)
+  }
+
 
   const handleAddEdit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -97,10 +118,10 @@ export default function CategoriesPage() {
   )
 
   return (
-    <div className="flex h-screen flex-col bg-neutral-50">
-      <AdminHeader />
+    <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex flex-1 overflow-hidden">
-        <AdminSidebar />
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <main className="flex-1 overflow-auto">
           <div className="p-6">
             <div className="max-w-6xl mx-auto">
