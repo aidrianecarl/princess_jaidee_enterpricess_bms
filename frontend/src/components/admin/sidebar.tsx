@@ -62,17 +62,17 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
       )}
 
       <aside
-        className={`fixed lg:static top-20 lg:top-0 inset-y-0 left-0 z-50 w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white transform transition-all duration-300 ease-in-out flex flex-col ${
+        className={`fixed lg:static top-15 lg:top-0 inset-y-0 left-0 z-50 w-64 bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white transform transition-all duration-300 ease-in-out flex flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
         {/* Header - Hidden on lg screens */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 lg:hidden">
+        <div className="h-15 flex items-center justify-between px-6 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800/50 lg:hidden">
           <div className="flex items-center gap-3">
             <div className="relative w-10 h-10 rounded-lg overflow-hidden shadow-lg">
               <Image src="/princessjd.png" alt="Princess Jaidee Logo" fill className="object-cover" />
             </div>
-            <div className="hidden sm:block">
+            <div className="sm:block">
               <span className="font-bold text-sm text-red-600">PRINCESS</span>
               <span className="block font-bold text-xs text-orange-600">JAIDEE</span>
             </div>

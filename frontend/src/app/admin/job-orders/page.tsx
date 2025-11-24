@@ -1,17 +1,37 @@
 "use client"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
-import { useState } from "react"
+import { useState,useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function JobOrdersPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
+  const [user, setUser] = useState(null)
+      
+        useEffect(() => {
+          checkAuth()
+        }, [router])
+      
+        const checkAuth = () => {
+          const token = localStorage.getItem("admin_token")
+          const userData = localStorage.getItem("admin_user")
+      
+          if (!token || !userData) {
+            router.push("/admin")
+            return
+          }
+          setUser(JSON.parse(userData))
+          setIsLoading(false)
+        }
 
   return (
-    <div className="flex h-screen">
-      <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader user={null} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <main className="flex-1 overflow-auto p-6">
+    <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <div className="flex flex-1 overflow-hidden">
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+        <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           <h1 className="text-3xl font-bold mb-4">Job Orders</h1>
           <p className="text-neutral-600">Track production jobs and employee assignments</p>
           <div className="mt-8 bg-white rounded-xl p-12 text-center">

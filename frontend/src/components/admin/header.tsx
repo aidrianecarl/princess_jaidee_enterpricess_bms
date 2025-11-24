@@ -29,7 +29,7 @@ export function AdminHeader({ user, onMenuClick }: HeaderProps) {
   }, [])
 
   return (
-    <header className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 h-16 md:h-20 flex items-center px-4 md:px-6 sticky top-0 z-40 shadow-sm w-full">
+    <header className="bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 h-15 md:h-15 flex items-center px-4 md:px-6 sticky top-0 z-40 shadow-sm w-full">
       <div className="flex items-center justify-between w-full gap-4">
         {/* Left - Menu Button + Logo */}
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
