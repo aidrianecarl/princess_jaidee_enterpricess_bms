@@ -1,7 +1,9 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Plus, Search } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
@@ -38,7 +40,7 @@ export default function CategoriesPage() {
       setIsLoading(true)
       setError("")
       const res = await apiClient.get("/admin/categories")
-      const data = Array.isArray(res.data) ? res.data : (res.data.data || [])
+      const data = Array.isArray(res.data) ? res.data : res.data.data || []
       setCategories(data)
     } catch (error) {
       console.error("[v0] Failed to fetch categories:", error)
@@ -65,7 +67,6 @@ export default function CategoriesPage() {
     setUser(JSON.parse(userData))
     setIsLoading(false)
   }
-
 
   const handleAddEdit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -113,9 +114,7 @@ export default function CategoriesPage() {
     setError("")
   }
 
-  const filteredCategories = categories.filter(cat =>
-    cat.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredCategories = categories.filter((cat) => cat.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
     <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
@@ -146,11 +145,7 @@ export default function CategoriesPage() {
               </div>
 
               {/* Error Message */}
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-                  {error}
-                </div>
-              )}
+              {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{error}</div>}
 
               {/* Search */}
               <div className="mb-6 relative">
@@ -176,15 +171,20 @@ export default function CategoriesPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredCategories.map((category) => (
-                    <div key={category.id} className="bg-white rounded-lg border border-red-200 p-4 hover:shadow-lg transition">
+                    <div
+                      key={category.id}
+                      className="bg-white rounded-lg border border-red-200 p-4 hover:shadow-lg transition"
+                    >
                       <div className="flex justify-between items-start mb-3">
                         <div className="flex-1">
                           <h3 className="font-semibold text-neutral-900">{category.name}</h3>
                           <p className="text-sm text-neutral-500 line-clamp-2">{category.description}</p>
                         </div>
-                        <span className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ml-2 ${
-                          category.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                        }`}>
+                        <span
+                          className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ml-2 ${
+                            category.status === "active" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                          }`}
+                        >
                           {category.status}
                         </span>
                       </div>

@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Search } from "lucide-react"
+import { Plus, Search, X, Trash2 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import Image from "next/image"
 import { AdminHeader } from "@/components/admin/header"
@@ -18,14 +18,19 @@ interface Service {
   description?: string
   base_price: number | string
   category?: string
-  specifications?: any
+  specifications?: Record<string, string> | null
   image_url?: string
   status: "active" | "inactive"
   created_at: string
 }
 
+interface SpecificationEntry {
+  key: string
+  value: string
+}
+
 export default function ServicesPage() {
-   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [services, setServices] = useState<Service[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -44,14 +49,14 @@ export default function ServicesPage() {
     const token = localStorage.getItem("admin_token")
     const userData = localStorage.getItem("admin_user")
 
-    if (!token || !userData){
-    router.push("/admin")
-    return
+    if (!token || !userData) {
+      router.push("/admin")
+      return
+    }
+
+    setUser(JSON.parse(userData))
+    setIsLoading(false)
   }
-  
-  setUser(JSON.parse(userData))
-  setIsLoading(false)
-}
 
   const [formData, setFormData] = useState({
     name: "",
@@ -59,10 +64,12 @@ export default function ServicesPage() {
     description: "",
     base_price: "",
     category: "",
-    specifications: "{}",
     image_url: "",
     status: "active" as "active" | "inactive",
   })
+
+  const [specifications, setSpecifications] = useState<SpecificationEntry[]>([])
+
   const [error, setError] = useState("")
   const [isUploading, setIsUploading] = useState(false)
 
@@ -102,6 +109,42 @@ export default function ServicesPage() {
     }
   }
 
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
+  }
+
+  const specificationsToObject = (specs: SpecificationEntry[]): Record<string, string> => {
+    const obj: Record<string, string> = {}
+    specs.forEach((spec) => {
+      if (spec.key.trim()) {
+        obj[spec.key.trim()] = spec.value.trim()
+      }
+    })
+    return obj
+  }
+
+  const objectToSpecifications = (obj: Record<string, string> | null | undefined): SpecificationEntry[] => {
+    if (!obj || typeof obj !== "object") return []
+    return Object.entries(obj).map(([key, value]) => ({ key, value: String(value) }))
+  }
+
+  const addSpecification = () => {
+    setSpecifications([...specifications, { key: "", value: "" }])
+  }
+
+  const removeSpecification = (index: number) => {
+    setSpecifications(specifications.filter((_, i) => i !== index))
+  }
+
+  const updateSpecification = (index: number, field: "key" | "value", value: string) => {
+    const updated = [...specifications]
+    updated[index][field] = value
+    setSpecifications(updated)
+  }
+
   const handleAddEdit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -114,10 +157,14 @@ export default function ServicesPage() {
       }
 
       const payload = {
-        ...formData,
-        image_url: imageUrl,
+        name: formData.name,
+        slug: formData.slug || generateSlug(formData.name),
+        description: formData.description || null,
         base_price: Number.parseFloat(formData.base_price) || 0,
-        specifications: formData.specifications ? JSON.parse(formData.specifications) : {},
+        category: formData.category || null,
+        specifications: specificationsToObject(specifications),
+        image_url: imageUrl || null,
+        status: formData.status,
       }
 
       if (selectedService) {
@@ -127,9 +174,17 @@ export default function ServicesPage() {
       }
       resetForm()
       fetchServices()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to save service:", error)
-      setError("Failed to save service")
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors
+        const errorMessages = Object.values(errors).flat().join(", ")
+        setError(errorMessages)
+      } else if (error.response?.data?.error) {
+        setError(error.response.data.error)
+      } else {
+        setError("Failed to save service")
+      }
     } finally {
       setIsUploading(false)
     }
@@ -155,10 +210,10 @@ export default function ServicesPage() {
       description: service.description || "",
       base_price: typeof service.base_price === "number" ? service.base_price.toString() : String(service.base_price),
       category: service.category || "",
-      specifications: JSON.stringify(service.specifications || {}),
       image_url: service.image_url || "",
       status: service.status,
     })
+    setSpecifications(objectToSpecifications(service.specifications))
     setImagePreview(service.image_url || "")
     setImageFile(null)
     setShowModal(true)
@@ -172,10 +227,10 @@ export default function ServicesPage() {
       description: "",
       base_price: "",
       category: "",
-      specifications: "{}",
       image_url: "",
       status: "active",
     })
+    setSpecifications([])
     setImageFile(null)
     setImagePreview("")
     setShowModal(false)
@@ -188,6 +243,14 @@ export default function ServicesPage() {
 
   const handleImageUrlChange = (url: string) => {
     setFormData({ ...formData, image_url: url })
+  }
+
+  const handleNameChange = (name: string) => {
+    setFormData({
+      ...formData,
+      name,
+      slug: formData.slug || generateSlug(name),
+    })
   }
 
   const filteredServices = services.filter(
@@ -203,9 +266,9 @@ export default function ServicesPage() {
 
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
-      <AdminHeader user = {user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)}/>
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex flex-1 overflow-hidden">
-        <AdminSidebar isOpen = {isSidebarOpen} onToggle={setIsSidebarOpen} />
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <div className="max-w-7xl mx-auto">
             {/* Header */}
@@ -221,7 +284,7 @@ export default function ServicesPage() {
                   resetForm()
                   setShowModal(true)
                 }}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition font-medium text-sm md:text-base whitespace-nowrap"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition-all duration-300 font-medium text-sm md:text-base whitespace-nowrap hover:scale-105"
               >
                 <Plus size={18} />
                 Add Service
@@ -230,7 +293,7 @@ export default function ServicesPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="mb-6 p-3 md:p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-neutral-800 text-red-700 dark:text-red-400 rounded-lg text-sm md:text-base">
+              <div className="mb-6 p-3 md:p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-neutral-800 text-red-700 dark:text-red-400 rounded-lg text-sm md:text-base animate-slideDown">
                 {error}
               </div>
             )}
@@ -243,7 +306,7 @@ export default function ServicesPage() {
                 placeholder="Search services..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
               />
             </div>
 
@@ -257,11 +320,11 @@ export default function ServicesPage() {
                 <p className="text-neutral-500 dark:text-neutral-400">No services found</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 animate-fadeIn">
                 {filteredServices.map((service) => (
                   <div
                     key={service.id}
-                    className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-neutral-800 overflow-hidden hover:shadow-lg transition flex flex-col"
+                    className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-neutral-800 overflow-hidden hover:shadow-lg hover:shadow-red-200 dark:hover:shadow-red-900/30 transition-all duration-300 flex flex-col hover:border-red-400"
                   >
                     {/* Image */}
                     <div className="relative h-40 sm:h-48 bg-gradient-to-br from-red-50 to-red-100">
@@ -307,13 +370,13 @@ export default function ServicesPage() {
                       <div className="flex gap-2 border-t border-red-100 dark:border-neutral-800 pt-3 mt-auto">
                         <button
                           onClick={() => handleEdit(service)}
-                          className="flex-1 px-2 md:px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition text-xs md:text-sm font-medium"
+                          className="flex-1 px-2 md:px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition text-xs md:text-sm font-medium hover:shadow-md"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(service.id)}
-                          className="flex-1 px-2 md:px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition text-xs md:text-sm font-medium"
+                          className="flex-1 px-2 md:px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition text-xs md:text-sm font-medium hover:shadow-md"
                         >
                           Delete
                         </button>
@@ -327,74 +390,143 @@ export default function ServicesPage() {
         </main>
       </div>
 
-      {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-xl max-w-2xl w-full my-8">
-            <div className="p-4 md:p-6 border-b border-red-200 dark:border-neutral-800">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-2xl w-full my-8 animate-slideUp border border-red-200 dark:border-neutral-800">
+            <div className="p-4 md:p-6 border-b border-red-200 dark:border-neutral-800 flex items-center justify-between bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20">
               <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
                 {selectedService ? "Edit Service" : "Add Service"}
               </h2>
+              <button
+                onClick={resetForm}
+                className="p-1 hover:bg-red-200 dark:hover:bg-red-900/40 rounded-lg transition-all duration-200 text-red-600 hover:text-red-700"
+              >
+                <X size={24} />
+              </button>
             </div>
             <form onSubmit={handleAddEdit} className="p-4 md:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Service Name</label>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                  Service Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Slug</label>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                  Slug (auto-generated if empty)
+                </label>
                 <input
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="e.g., tarpauline-printing"
-                  className="w-full px-3 py-2 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
-                  required
+                  placeholder="e.g., tarpaulin-printing"
+                  className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Category</label>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                    Category
+                  </label>
                   <input
                     type="text"
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                    placeholder="e.g., Printing Services"
+                    className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-neutral-700 mb-2">Base Price</label>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                    Base Price <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     step="0.01"
+                    min="0"
                     value={formData.base_price}
                     onChange={(e) => setFormData({ ...formData, base_price: e.target.value })}
-                    className="w-full px-3 py-2 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                    placeholder="0.00"
+                    className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                     required
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                  Description
+                </label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-3 py-2 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                  placeholder="Describe the service..."
+                  className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                   rows={3}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Service Image</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400">
+                    Specifications
+                  </label>
+                  <button
+                    type="button"
+                    onClick={addSpecification}
+                    className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-200 dark:hover:bg-red-900/40 transition flex items-center gap-1"
+                  >
+                    <Plus size={14} />
+                    Add Specification
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {specifications.length === 0 ? (
+                    <p className="text-xs text-neutral-400 italic">
+                      No specifications added. Click "Add Specification" to add one.
+                    </p>
+                  ) : (
+                    specifications.map((spec, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={spec.key}
+                          onChange={(e) => updateSpecification(index, "key", e.target.value)}
+                          placeholder="e.g., Material"
+                          className="flex-1 px-3 py-2 text-sm border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
+                        />
+                        <input
+                          type="text"
+                          value={spec.value}
+                          onChange={(e) => updateSpecification(index, "value", e.target.value)}
+                          placeholder="e.g., Vinyl"
+                          className="flex-1 px-3 py-2 text-sm border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeSpecification(index)}
+                          className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                  Service Image
+                </label>
                 <ImageUpload
                   value={imageFile}
                   onChange={handleImageChange}
@@ -404,29 +536,35 @@ export default function ServicesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-neutral-700 mb-2">Status</label>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">Status</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as "active" | "inactive" })}
-                  className="w-full px-3 py-2 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                  className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                 >
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
 
-              <div className="flex gap-2 pt-4 border-t border-red-100">
+              {error && (
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-4 border-t border-red-100 dark:border-neutral-800">
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 px-4 py-2 border border-red-200 text-neutral-700 rounded-lg hover:bg-neutral-50 transition"
+                  className="flex-1 px-4 py-2 border border-red-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all duration-200"
                   disabled={isUploading}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition font-medium disabled:opacity-50"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition-all duration-200 font-medium disabled:opacity-50 hover:scale-105"
                   disabled={isUploading}
                 >
                   {isUploading ? "Saving..." : selectedService ? "Update" : "Add"}

@@ -9,6 +9,7 @@ use App\Models\Size;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
@@ -169,6 +170,36 @@ class ProductController extends Controller
         ], 200);
     }
 
+    public function uploadImage(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:5120',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $file = $request->file('image');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            
+            // Store in public/products directory
+            $path = Storage::disk('public')->putFileAs('products', $file, $filename);
+            
+            $imageUrl = asset('storage/' . $path);
+
+            return response()->json([
+                'message' => 'Image uploaded successfully',
+                'image_url' => $imageUrl,
+                'url' => $imageUrl,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // Add stock to product
     public function addStock(Request $request, $id)
     {
         $product = Product::find($id);
@@ -198,17 +229,22 @@ class ProductController extends Controller
         }
     }
 
-    public function getColors()
+    // Get all categories
+    public function getCategories()
     {
-        $colors = Color::all();
-        return response()->json($colors, 200);
+        $categories = Category::all();
+        return response()->json([
+            'success' => true,
+            'data' => $categories
+        ], 200);
     }
 
-    public function storeColor(Request $request)
+    public function storeCategory(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|unique:colors,name',
-            'hex_code' => 'nullable|string|regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
+            'name' => 'required|string|unique:categories,name',
+            'description' => 'nullable|string',
+            'status' => 'in:active,inactive',
         ]);
 
         if ($validator->fails()) {
@@ -216,31 +252,34 @@ class ProductController extends Controller
         }
 
         try {
-            $color = Color::create([
+            $category = Category::create([
                 'name' => $request->name,
-                'hex_code' => $request->hex_code,
+                'description' => $request->description,
+                'status' => $request->status ?? 'active',
+                'created_by' => Auth::id(),
             ]);
 
             return response()->json([
-                'message' => 'Color created successfully',
-                'color' => $color,
+                'message' => 'Category created successfully',
+                'category' => $category,
             ], 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function updateColor(Request $request, $id)
+    public function updateCategory(Request $request, $id)
     {
-        $color = Color::find($id);
+        $category = Category::find($id);
 
-        if (!$color) {
-            return response()->json(['error' => 'Color not found'], 404);
+        if (!$category) {
+            return response()->json(['error' => 'Category not found'], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'name' => 'string|unique:colors,name,' . $id,
-            'hex_code' => 'nullable|string|regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/',
+            'name' => 'string|unique:categories,name,' . $id,
+            'description' => 'nullable|string',
+            'status' => 'in:active,inactive',
         ]);
 
         if ($validator->fails()) {
@@ -248,43 +287,99 @@ class ProductController extends Controller
         }
 
         try {
-            $color->update($request->only(['name', 'hex_code']));
+            $category->update($request->only(['name', 'description', 'status']));
 
             return response()->json([
-                'message' => 'Color updated successfully',
-                'color' => $color,
+                'message' => 'Category updated successfully',
+                'category' => $category,
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
 
-    public function destroyColor($id)
+    public function destroyCategory($id)
     {
-        $color = Color::find($id);
+        $category = Category::find($id);
 
-        if (!$color) {
-            return response()->json(['error' => 'Color not found'], 404);
+        if (!$category) {
+            return response()->json(['error' => 'Category not found'], 404);
         }
 
-        // Check if color is being used by products
-        if ($color->products()->exists()) {
-            return response()->json(['error' => 'Cannot delete color that is assigned to products'], 422);
+        // Check if category is being used by products
+        if ($category->products()->exists()) {
+            return response()->json(['error' => 'Cannot delete category that has products assigned'], 422);
         }
 
-        $color->delete();
+        $category->delete();
 
         return response()->json([
-            'message' => 'Color deleted successfully',
+            'message' => 'Category deleted successfully',
         ], 200);
     }
 
+    // Get all colors
+    // Get all colors
+    public function getColors()
+    {
+        $colors = Color::all();
+        return response()->json($colors, 200);
+    }
+
+
+    // Create color
+    public function storeColor(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'hex_code' => 'required|string|max:7',
+    ]);
+
+    $color = Color::create([
+        'name' => $request->name,
+        'hex_code' => $request->hex_code,
+    ]);
+
+    return response()->json($color, 201);
+}
+
+
+    // Update color
+    public function updateColor(Request $request, $id)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'hex_code' => 'required|string|max:7',
+    ]);
+
+    $color = Color::findOrFail($id);
+    $color->update([
+        'name' => $request->name,
+        'hex_code' => $request->hex_code,
+    ]);
+
+    return response()->json($color);
+}
+
+
+    // Delete color
+    public function destroyColor($id)
+{
+    $color = Color::findOrFail($id);
+    $color->delete();
+
+    return response()->json(['message' => 'Color deleted successfully']);
+}
+
+
+    // Get all sizes
     public function getSizes()
     {
         $sizes = Size::all();
         return response()->json($sizes, 200);
     }
 
+    // Create size
     public function storeSize(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -311,6 +406,7 @@ class ProductController extends Controller
         }
     }
 
+    // Update size
     public function updateSize(Request $request, $id)
     {
         $size = Size::find($id);
@@ -340,6 +436,7 @@ class ProductController extends Controller
         }
     }
 
+    // Delete size
     public function destroySize($id)
     {
         $size = Size::find($id);
@@ -357,16 +454,6 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Size deleted successfully',
-        ], 200);
-    }
-
-    // Get all categories
-    public function getCategories()
-    {
-        $categories = Category::all();
-        return response()->json([
-            'success' => true,
-            'data' => $categories
         ], 200);
     }
 }

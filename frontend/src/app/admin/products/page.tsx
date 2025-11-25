@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
-import { Plus, Search, AlertCircle, TrendingUp } from "lucide-react"
+import { Plus, Search, AlertCircle, TrendingUp, X } from "lucide-react"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { apiClient } from "@/lib/api-client"
@@ -39,6 +39,9 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState([])
   const [colors, setColors] = useState([])
   const [sizes, setSizes] = useState([])
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>("")
+  const [isUploading, setIsUploading] = useState(false)
 
   const router = useRouter()
   const [user, setUser] = useState(null)
@@ -58,7 +61,6 @@ export default function ProductsPage() {
     setUser(JSON.parse(userData))
     setIsLoading(false)
   }
-
 
   const [formData, setFormData] = useState({
     name: "",
@@ -109,26 +111,46 @@ export default function ProductsPage() {
     }
   }
 
+  const uploadImage = async (file: File): Promise<string> => {
+    const formDataUpload = new FormData()
+    formDataUpload.append("image", file)
+
+    try {
+      const res = await apiClient.post("/admin/products/upload-image", formDataUpload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      })
+      return res.data.image_url || res.data.url
+    } catch (error) {
+      console.error("Failed to upload image:", error)
+      throw new Error("Failed to upload image")
+    }
+  }
+
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      await apiClient.post("/admin/products", formData)
+      setIsUploading(true)
+
+      let imageUrl = formData.image_url
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile)
+      }
+
+      const payload = {
+        ...formData,
+        image_url: imageUrl,
+      }
+
+      await apiClient.post("/admin/products", payload)
       setShowCreateModal(false)
-      setFormData({
-        name: "",
-        description: "",
-        category_id: "",
-        color_id: "",
-        size_id: "",
-        base_price: "",
-        unit_cost: "",
-        quantity_in_stock: "",
-        image_url: "",
-        status: "active",
-      })
+      resetForm()
       fetchData()
     } catch (error) {
       console.error("Failed to create product:", error)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -136,12 +158,26 @@ export default function ProductsPage() {
     e.preventDefault()
     if (!selectedProduct) return
     try {
-      await apiClient.put(`/admin/products/${selectedProduct.id}`, formData)
+      setIsUploading(true)
+
+      let imageUrl = formData.image_url
+      if (imageFile) {
+        imageUrl = await uploadImage(imageFile)
+      }
+
+      const payload = {
+        ...formData,
+        image_url: imageUrl,
+      }
+
+      await apiClient.put(`/admin/products/${selectedProduct.id}`, payload)
       setShowEditModal(false)
-      setSelectedProduct(null)
+      resetForm()
       fetchData()
     } catch (error) {
       console.error("Failed to update product:", error)
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -186,6 +222,8 @@ export default function ProductsPage() {
       image_url: product.image_url || "",
       status: product.status,
     })
+    setImagePreview(product.image_url || "")
+    setImageFile(null)
     setShowEditModal(true)
   }
 
@@ -193,6 +231,38 @@ export default function ProductsPage() {
     setSelectedProduct(product)
     setStockQuantity("")
     setShowStockModal(true)
+  }
+
+  const resetForm = () => {
+    setSelectedProduct(null)
+    setFormData({
+      name: "",
+      description: "",
+      category_id: "",
+      color_id: "",
+      size_id: "",
+      base_price: "",
+      unit_cost: "",
+      quantity_in_stock: "",
+      image_url: "",
+      status: "active",
+    })
+    setImageFile(null)
+    setImagePreview("")
+    setShowCreateModal(false)
+    setShowEditModal(false)
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   const getStockStatus = (quantity: number) => {
@@ -224,7 +294,7 @@ export default function ProductsPage() {
               </div>
               <button
                 onClick={() => {
-                  setSelectedProduct(null)
+                  resetForm()
                   setShowCreateModal(true)
                 }}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 md:px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg hover:shadow-red-200 hover:scale-105 transition-all duration-300 font-medium text-sm md:text-base whitespace-nowrap"
@@ -242,7 +312,7 @@ export default function ProductsPage() {
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
+                className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 transition-all"
               />
             </div>
 
@@ -262,18 +332,21 @@ export default function ProductsPage() {
                   return (
                     <div
                       key={product.id}
-                      className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-neutral-800 overflow-hidden hover:shadow-lg transition-all duration-300 animate-fadeIn flex flex-col"
+                      className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-neutral-800 overflow-hidden hover:shadow-lg hover:shadow-red-200 dark:hover:shadow-red-900/30 transition-all duration-300 animate-fadeIn flex flex-col hover:border-red-400"
                       style={{ animationDelay: `${index * 50}ms` }}
                     >
                       {/* Image */}
                       <div className="relative h-40 sm:h-48 bg-gradient-to-br from-red-50 to-red-100 overflow-hidden">
                         {product.image_url ? (
                           <Image
-                            src={product.image_url || "/placeholder.svg"}
-                            alt={product.name}
-                            fill
-                            className="object-cover group-hover:scale-110 transition-transform duration-300"
-                          />
+  src={product.image_url || "/placeholder.svg"}
+  alt={product.name}
+  fill
+  className="object-cover group-hover:scale-110 transition-transform duration-300"
+  loading="eager"
+  priority
+/>
+
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <div className="text-center">
@@ -333,19 +406,19 @@ export default function ProductsPage() {
                         <div className="flex gap-2 border-t border-red-100 dark:border-neutral-800 pt-3 mt-auto">
                           <button
                             onClick={() => handleStockClick(product)}
-                            className="flex-1 px-2 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition text-xs md:text-sm font-medium"
+                            className="flex-1 px-2 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded hover:bg-blue-100 dark:hover:bg-blue-900/40 transition text-xs md:text-sm font-medium hover:shadow-md"
                           >
                             Stock
                           </button>
                           <button
                             onClick={() => handleEditClick(product)}
-                            className="flex-1 px-2 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition text-xs md:text-sm font-medium"
+                            className="flex-1 px-2 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition text-xs md:text-sm font-medium hover:shadow-md"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDeleteProduct(product.id)}
-                            className="flex-1 px-2 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition text-xs md:text-sm font-medium"
+                            className="flex-1 px-2 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition text-xs md:text-sm font-medium hover:shadow-md"
                           >
                             Delete
                           </button>
@@ -364,7 +437,9 @@ export default function ProductsPage() {
       {showCreateModal && (
         <ProductModal
           isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
+          onClose={() => {
+            resetForm()
+          }}
           onSubmit={handleCreateProduct}
           formData={formData}
           setFormData={setFormData}
@@ -372,6 +447,9 @@ export default function ProductsPage() {
           colors={colors}
           sizes={sizes}
           title="Create New Product"
+          imagePreview={imagePreview}
+          onImageChange={handleImageChange}
+          isUploading={isUploading}
         />
       )}
 
@@ -379,7 +457,9 @@ export default function ProductsPage() {
       {showEditModal && (
         <ProductModal
           isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
+          onClose={() => {
+            resetForm()
+          }}
           onSubmit={handleEditProduct}
           formData={formData}
           setFormData={setFormData}
@@ -387,17 +467,29 @@ export default function ProductsPage() {
           colors={colors}
           sizes={sizes}
           title="Edit Product"
+          imagePreview={imagePreview}
+          onImageChange={handleImageChange}
+          isUploading={isUploading}
         />
       )}
 
       {/* Add Stock Modal */}
       {showStockModal && selectedProduct && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn">
-          <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-xl max-w-md w-full animate-slideUp">
-            <div className="p-6 border-b border-red-100 dark:border-neutral-800">
-              <h2 className="text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-md w-full animate-slideUp border border-red-200 dark:border-neutral-800">
+            <div className="p-6 border-b border-red-200 dark:border-neutral-800 flex items-center justify-between bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20">
+              <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
                 Add Stock - {selectedProduct.name}
               </h2>
+              <button
+                onClick={() => {
+                  setShowStockModal(false)
+                  setSelectedProduct(null)
+                }}
+                className="p-1 hover:bg-red-200 dark:hover:bg-red-900/40 rounded-lg transition-all duration-200 text-red-600"
+              >
+                <X size={24} />
+              </button>
             </div>
             <form onSubmit={handleAddStock} className="p-6 space-y-4">
               <div>
@@ -409,7 +501,7 @@ export default function ProductsPage() {
                   value={stockQuantity}
                   onChange={(e) => setStockQuantity(e.target.value)}
                   placeholder="Enter quantity to add"
-                  className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                  className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                   required
                   min="1"
                 />
@@ -421,13 +513,13 @@ export default function ProductsPage() {
                     setShowStockModal(false)
                     setSelectedProduct(null)
                   }}
-                  className="flex-1 px-4 py-2 border border-red-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
+                  className="flex-1 px-4 py-2 border border-red-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition font-medium"
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition-all duration-200 font-medium hover:scale-105"
                 >
                   Add Stock
                 </button>
@@ -440,7 +532,6 @@ export default function ProductsPage() {
   )
 }
 
-// Product Modal Component
 interface ProductModalProps {
   isOpen: boolean
   onClose: () => void
@@ -451,6 +542,9 @@ interface ProductModalProps {
   colors: any[]
   sizes: any[]
   title: string
+  imagePreview: string
+  onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  isUploading: boolean
 }
 
 function ProductModal({
@@ -463,16 +557,25 @@ function ProductModal({
   colors,
   sizes,
   title,
+  imagePreview,
+  onImageChange,
+  isUploading,
 }: ProductModalProps) {
   if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn overflow-y-auto">
-      <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-xl max-w-2xl w-full my-8 animate-slideUp">
-        <div className="p-6 border-b border-red-100 dark:border-neutral-800">
-          <h2 className="text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+      <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-2xl w-full my-8 animate-slideUp border border-red-200 dark:border-neutral-800">
+        <div className="p-6 border-b border-red-200 dark:border-neutral-800 flex items-center justify-between bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20">
+          <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
             {title}
           </h2>
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-red-200 dark:hover:bg-red-900/40 rounded-lg transition-all duration-200 text-red-600 hover:text-red-700"
+          >
+            <X size={24} />
+          </button>
         </div>
         <form onSubmit={onSubmit} className="p-6 space-y-4 max-h-96 overflow-y-auto">
           <div>
@@ -484,7 +587,7 @@ function ProductModal({
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Product name"
-              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
               required
             />
           </div>
@@ -494,7 +597,7 @@ function ProductModal({
             <select
               value={formData.category_id}
               onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
               required
             >
               <option value="">Select category</option>
@@ -506,13 +609,13 @@ function ProductModal({
             </select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Color</label>
               <select
                 value={formData.color_id}
                 onChange={(e) => setFormData({ ...formData, color_id: e.target.value })}
-                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
               >
                 <option value="">Select color</option>
                 {colors.map((color: any) => (
@@ -522,13 +625,12 @@ function ProductModal({
                 ))}
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Size</label>
               <select
                 value={formData.size_id}
                 onChange={(e) => setFormData({ ...formData, size_id: e.target.value })}
-                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
               >
                 <option value="">Select size</option>
                 {sizes.map((size: any) => (
@@ -540,7 +642,7 @@ function ProductModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">
                 Base Price
@@ -551,47 +653,71 @@ function ProductModal({
                 value={formData.base_price}
                 onChange={(e) => setFormData({ ...formData, base_price: e.target.value })}
                 placeholder="0.00"
-                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                 required
               />
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Unit Cost</label>
+              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Quantity</label>
               <input
                 type="number"
-                step="0.01"
-                value={formData.unit_cost}
-                onChange={(e) => setFormData({ ...formData, unit_cost: e.target.value })}
-                placeholder="0.00"
-                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+                value={formData.quantity_in_stock}
+                onChange={(e) => setFormData({ ...formData, quantity_in_stock: e.target.value })}
+                placeholder="0"
+                className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
+                required
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">
-              Quantity in Stock
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+              Product Image
             </label>
-            <input
-              type="number"
-              value={formData.quantity_in_stock}
-              onChange={(e) => setFormData({ ...formData, quantity_in_stock: e.target.value })}
-              placeholder="0"
-              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Image URL</label>
-            <input
-              type="text"
-              value={formData.image_url}
-              onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-              placeholder="https://example.com/image.jpg"
-              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
-            />
+            <div className="border-2 border-dashed border-red-300 dark:border-red-900/50 rounded-lg p-4 text-center hover:border-red-400 dark:hover:border-red-800 transition-all">
+              {imagePreview ? (
+                <div className="relative">
+                  <img src={imagePreview || "/placeholder.svg"} alt="Preview" className="max-h-40 mx-auto rounded-lg" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({ ...formData, image_url: "" })
+                    }}
+                    className="mt-2 text-sm text-red-600 hover:text-red-700 font-medium"
+                  >
+                    Clear Image
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+                    Click to upload or drag and drop
+                  </p>
+                  <input type="file" accept="image/*" onChange={onImageChange} className="hidden" id="product-image" />
+                  <label
+                    htmlFor="product-image"
+                    className="text-sm text-red-600 hover:text-red-700 cursor-pointer font-medium"
+                  >
+                    Select Image
+                  </label>
+                </div>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={onImageChange}
+                className="hidden"
+                id="product-image-input"
+              />
+              <label htmlFor="product-image-input" className="block mt-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={onImageChange}
+                  className="block w-full text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-red-900/20 dark:file:text-red-400"
+                />
+              </label>
+            </div>
           </div>
 
           <div>
@@ -600,24 +726,39 @@ function ProductModal({
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Product description"
-              rows={3}
-              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600"
+              rows={2}
+              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Status</label>
+            <select
+              value={formData.status}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="discontinued">Discontinued</option>
+            </select>
           </div>
 
           <div className="flex gap-2 pt-4 border-t border-red-100 dark:border-neutral-800">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 border border-red-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-400 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition"
+              className="flex-1 px-4 py-2 border border-red-200 dark:border-neutral-800 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-all duration-200"
+              disabled={isUploading}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg transition font-medium"
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition-all duration-200 font-medium disabled:opacity-50 hover:scale-105"
+              disabled={isUploading}
             >
-              Save Product
+              {isUploading ? "Saving..." : "Save Product"}
             </button>
           </div>
         </form>

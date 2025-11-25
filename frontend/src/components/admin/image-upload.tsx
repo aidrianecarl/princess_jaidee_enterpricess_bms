@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState, useRef } from "react"
 import { Upload, X } from "lucide-react"
-import Image from "next/image"
 
 interface ImageUploadProps {
   value: string | File | null
@@ -16,7 +15,6 @@ interface ImageUploadProps {
 export function ImageUpload({ value, onChange, onImageUrlChange, previewUrl }: ImageUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string>(previewUrl || "")
-  const [isLoading, setIsLoading] = useState(false)
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -68,7 +66,7 @@ export function ImageUpload({ value, onChange, onImageUrlChange, previewUrl }: I
 
         {preview ? (
           <div className="relative w-full h-64 rounded-lg overflow-hidden bg-neutral-100 dark:bg-neutral-800">
-            <Image src={preview || "/placeholder.svg"} alt="Preview" fill className="object-contain" />
+            <img src={preview || "/placeholder.svg"} alt="Preview" className="w-full h-full object-contain" />
           </div>
         ) : (
           <div onClick={() => fileInputRef.current?.click()} className="space-y-2">

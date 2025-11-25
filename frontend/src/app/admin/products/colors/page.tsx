@@ -1,7 +1,9 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
-import { Plus, Edit, Trash2, Search } from 'lucide-react'
+import { Plus, Search } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
@@ -23,24 +25,24 @@ export default function ColorsPage() {
   const [selectedColor, setSelectedColor] = useState<Color | null>(null)
 
   const router = useRouter()
-    const [user, setUser] = useState(null)
-  
-    useEffect(() => {
-      checkAuth()
-    }, [router])
-  
-    const checkAuth = () => {
-      const token = localStorage.getItem("admin_token")
-      const userData = localStorage.getItem("admin_user")
-  
-      if (!token || !userData) {
-        router.push("/admin")
-        return
-      }
-      setUser(JSON.parse(userData))
-      setIsLoading(false)
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    checkAuth()
+  }, [router])
+
+  const checkAuth = () => {
+    const token = localStorage.getItem("admin_token")
+    const userData = localStorage.getItem("admin_user")
+
+    if (!token || !userData) {
+      router.push("/admin")
+      return
     }
-  
+    setUser(JSON.parse(userData))
+    setIsLoading(false)
+  }
+
   const [formData, setFormData] = useState({
     name: "",
     hex_code: "#000000",
@@ -55,8 +57,8 @@ export default function ColorsPage() {
     try {
       setIsLoading(true)
       setError("")
-      const res = await apiClient.get("/colors")
-      const data = Array.isArray(res.data) ? res.data : (res.data.data || [])
+      const res = await apiClient.get("/admin/colors")
+      const data = Array.isArray(res.data) ? res.data : res.data.data || []
       setColors(data)
     } catch (error) {
       console.error("[v0] Failed to fetch colors:", error)
@@ -71,9 +73,9 @@ export default function ColorsPage() {
     try {
       setError("")
       if (selectedColor) {
-        await apiClient.put(`/colors/${selectedColor.id}`, formData)
+        await apiClient.put(`/admin/colors/${selectedColor.id}`, formData)
       } else {
-        await apiClient.post("/colors", formData)
+        await apiClient.post("/admin/colors", formData)
       }
       resetForm()
       fetchColors()
@@ -86,7 +88,7 @@ export default function ColorsPage() {
   const handleDelete = async (id: number) => {
     if (confirm("Are you sure you want to delete this color?")) {
       try {
-        await apiClient.delete(`/colors/${id}`)
+        await apiClient.delete(`/admin/colors/${id}`)
         fetchColors()
       } catch (error) {
         console.error("Failed to delete color:", error)
@@ -111,9 +113,7 @@ export default function ColorsPage() {
     setError("")
   }
 
-  const filteredColors = colors.filter(color =>
-    color.name.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  const filteredColors = colors.filter((color) => color.name.toLowerCase().includes(searchTerm.toLowerCase()))
 
   return (
     <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
@@ -144,11 +144,7 @@ export default function ColorsPage() {
               </div>
 
               {/* Error Message */}
-              {error && (
-                <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-                  {error}
-                </div>
-              )}
+              {error && <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">{error}</div>}
 
               {/* Search */}
               <div className="mb-6 relative">
@@ -174,7 +170,10 @@ export default function ColorsPage() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredColors.map((color) => (
-                    <div key={color.id} className="bg-white rounded-lg border border-red-200 overflow-hidden hover:shadow-lg transition">
+                    <div
+                      key={color.id}
+                      className="bg-white rounded-lg border border-red-200 overflow-hidden hover:shadow-lg transition"
+                    >
                       <div className="h-24 w-full" style={{ backgroundColor: color.hex_code || "#cccccc" }} />
                       <div className="p-4">
                         <h3 className="font-semibold text-neutral-900 mb-1">{color.name}</h3>
