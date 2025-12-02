@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Eye, FileText, Download, Printer } from 'lucide-react'
+import { Eye, FileText, Download, Printer } from "lucide-react"
 import { QuotationSkeleton } from "./quotation-skeleton"
+import { QuotationViewModal } from "./quotation-view-modal"
 
 interface Quotation {
   id: number
@@ -10,12 +11,20 @@ interface Quotation {
   total: number
   status: string
   created_at: string
+  customer: any
+  items: any[]
+  subtotal: number
+  discount: number
+  tax: number
+  notes: string
 }
 
 export function QuotationList() {
   const [quotations, setQuotations] = useState<Quotation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [filter, setFilter] = useState("all")
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
     fetchQuotations()
@@ -45,6 +54,26 @@ export function QuotationList() {
     return q.status === filter
   })
 
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "bg-green-100 text-green-700"
+      case "pending":
+        return "bg-yellow-100 text-yellow-700"
+      case "rejected":
+        return "bg-red-100 text-red-700"
+      case "draft":
+        return "bg-gray-100 text-gray-700"
+      default:
+        return "bg-blue-100 text-blue-700"
+    }
+  }
+
+  const handleViewQuotation = (quotation: Quotation) => {
+    setSelectedQuotation(quotation)
+    setIsModalOpen(true)
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -56,72 +85,83 @@ export function QuotationList() {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {["all", "draft", "pending", "approved", "rejected"].map((status) => (
-          <button
-            key={status}
-            onClick={() => setFilter(status)}
-            className={`px-4 py-2 rounded-lg font-medium transition ${
-              filter === status ? "bg-primary text-white" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-            }`}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* List */}
-      {filteredQuotations.length === 0 ? (
-        <div className="text-center py-12">
-          <FileText size={48} className="mx-auto mb-4 text-neutral-300" />
-          <p className="text-neutral-600">No quotations found</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filteredQuotations.map((quotation) => (
-            <div
-              key={quotation.id}
-              className="flex items-center justify-between p-4 bg-neutral-50 rounded-lg border border-neutral-200 hover:border-primary/30 transition"
+    <>
+      <div className="space-y-4">
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-6 flex-wrap border-b border-gray-200 pb-4">
+          {["all", "draft", "pending", "approved", "rejected"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filter === status
+                  ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
             >
-              <div className="flex-1">
-                <p className="font-semibold text-neutral-900">{quotation.quotation_number}</p>
-                <p className="text-sm text-neutral-600">{new Date(quotation.created_at).toLocaleDateString()}</p>
-              </div>
-
-              <div className="text-right mr-6">
-                <p className="font-bold text-neutral-900">₱{quotation.total.toLocaleString()}</p>
-                <span
-                  className={`text-xs font-medium px-2 py-1 rounded ${
-                    quotation.status === "approved"
-                      ? "bg-green-100 text-green-700"
-                      : quotation.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : quotation.status === "rejected"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-neutral-200 text-neutral-700"
-                  }`}
-                >
-                  {quotation.status}
-                </span>
-              </div>
-
-              <div className="flex gap-2">
-                <button className="p-2 hover:bg-neutral-200 rounded-lg transition" title="View">
-                  <Eye size={18} className="text-neutral-600" />
-                </button>
-                <button className="p-2 hover:bg-neutral-200 rounded-lg transition" title="Download PDF">
-                  <Download size={18} className="text-neutral-600" />
-                </button>
-                <button className="p-2 hover:bg-neutral-200 rounded-lg transition" title="Print">
-                  <Printer size={18} className="text-neutral-600" />
-                </button>
-              </div>
-            </div>
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
           ))}
         </div>
-      )}
-    </div>
+
+        {/* List */}
+        {filteredQuotations.length === 0 ? (
+          <div className="text-center py-12">
+            <FileText size={48} className="mx-auto mb-4 text-gray-300" />
+            <p className="text-gray-600 font-medium">No quotations found</p>
+            <p className="text-sm text-gray-500 mt-1">Create your first quotation to get started</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredQuotations.map((quotation) => (
+              <div
+                key={quotation.id}
+                className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:border-red-300 hover:shadow-md transition group"
+              >
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 group-hover:text-red-600 transition">
+                    {quotation.quotation_number}
+                  </p>
+                  <p className="text-sm text-gray-600">{new Date(quotation.created_at).toLocaleDateString()}</p>
+                </div>
+
+                <div className="text-right mr-6 hidden sm:block">
+                  <p className="font-bold text-gray-900">₱{Number(quotation.total).toLocaleString()}</p>
+                  <span
+                    className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${getStatusColor(quotation.status)}`}
+                  >
+                    {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
+                  </span>
+                </div>
+
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleViewQuotation(quotation)}
+                    className="p-2 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-lg transition"
+                    title="View"
+                  >
+                    <Eye size={18} />
+                  </button>
+                  <button
+                    className="p-2 hover:bg-orange-100 text-gray-600 hover:text-orange-600 rounded-lg transition"
+                    title="Download PDF"
+                  >
+                    <Download size={18} />
+                  </button>
+                  <button
+                    className="p-2 hover:bg-blue-100 text-gray-600 hover:text-blue-600 rounded-lg transition"
+                    title="Print"
+                  >
+                    <Printer size={18} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <QuotationViewModal quotation={selectedQuotation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+    </>
   )
 }
