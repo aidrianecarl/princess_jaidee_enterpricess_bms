@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation"
 interface Product {
   id: number
   name: string
+  description?: string
   image_url?: string
   category: { id: number; name: string }
   color?: { id: number; name: string; hex_code?: string }
@@ -212,7 +213,7 @@ export default function ProductsPage() {
     setSelectedProduct(product)
     setFormData({
       name: product.name,
-      description: "",
+      description: product.description || "",
       category_id: product.category?.id.toString() || "",
       color_id: product.color?.id.toString() || "",
       size_id: product.size?.id.toString() || "",
@@ -342,7 +343,7 @@ export default function ProductsPage() {
   src={product.image_url || "/placeholder.svg"}
   alt={product.name}
   fill
-  className="object-cover group-hover:scale-110 transition-transform duration-300"
+  className="object-contain w-full h-full group-hover:scale-110 transition-transform duration-300"
   loading="eager"
   priority
 />
@@ -721,15 +722,20 @@ function ProductModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Description</label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Product description"
-              rows={2}
-              className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
-            />
-          </div>
+  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+    Description
+  </label>
+  <textarea
+    value={formData.description}
+    onChange={(e) =>
+      setFormData({ ...formData, description: e.target.value })
+    }
+    placeholder="Write product description..."
+    className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
+    rows={4}
+  />
+</div>
+
 
           <div>
             <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-1">Status</label>
