@@ -7,7 +7,8 @@ import { QuotationList } from "@/components/dashboard/quotation-list"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { TermsConditionsModal } from "@/components/dashboard/terms-modal"
 import { QuotationSkeleton } from "@/components/dashboard/quotation-skeleton"
-import { FileText, CheckCircle, Clock, DollarSign, Plus } from "lucide-react"
+import { FileText, CheckCircle, Clock, DollarSign, Plus, Send } from "lucide-react"
+import { Toaster } from "@/components/ui/toaster"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -16,7 +17,8 @@ export default function DashboardPage() {
     totalQuotations: 0,
     approvedQuotations: 0,
     pendingQuotations: 0,
-    totalSpent: 0,
+    draftQuotations: 0,
+    totalValue: 0,
   })
   const [showTerms, setShowTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -57,13 +59,15 @@ export default function DashboardPage() {
         const quotations = Array.isArray(data) ? data : data.data || []
         const approved = quotations.filter((q: any) => q.status === "approved").length
         const pending = quotations.filter((q: any) => q.status === "pending").length
-        const total = quotations.reduce((sum: number, q: any) => sum + (q.total || 0), 0)
+        const draft = quotations.filter((q: any) => q.status === "draft").length
+        const total = quotations.reduce((sum: number, q: any) => sum + (Number(q.total) || 0), 0)
 
         setStats({
           totalQuotations: quotations.length,
           approvedQuotations: approved,
           pendingQuotations: pending,
-          totalSpent: total,
+          draftQuotations: draft,
+          totalValue: total,
         })
       }
     } catch (error) {
@@ -132,7 +136,7 @@ export default function DashboardPage() {
           <div className="animate-slideUp animation-delay-200">
             <StatsCard
               icon={Clock}
-              label="Pending"
+              label="Pending Review"
               value={stats.pendingQuotations}
               color="from-yellow-100 to-yellow-50 text-yellow-600"
             />
@@ -140,33 +144,45 @@ export default function DashboardPage() {
           <div className="animate-slideUp animation-delay-300">
             <StatsCard
               icon={DollarSign}
-              label="Total Quotation Value"
-              value={`₱${stats.totalSpent.toLocaleString()}`}
+              label="Total Value"
+              value={`₱${stats.totalValue.toLocaleString()}`}
               color="from-red-100 to-orange-100 text-red-600"
             />
           </div>
         </div>
 
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <button
+            onClick={() => (window.location.href = "/dashboard/quotations/create")}
+            className="flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-2xl hover:shadow-lg hover:shadow-red-500/30 transition duration-300 font-semibold hover:scale-[1.02] group"
+          >
+            <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-lg">Create New Quotation</span>
+          </button>
+          <div className="flex items-center justify-center gap-3 p-6 bg-white border-2 border-dashed border-red-200 text-red-600 rounded-2xl">
+            <Send size={20} />
+            <span className="text-sm">
+              <strong>{stats.draftQuotations}</strong> draft quotations ready to send for approval
+            </span>
+          </div>
+        </div>
+
         {/* Quotations Section */}
         <div className="bg-white rounded-2xl border border-red-100 shadow-lg overflow-hidden animate-fadeInUp">
-          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-red-100 p-6 flex justify-between items-center">
+          <div className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-red-100 p-6">
             <div>
               <h2 className="text-2xl font-bold text-neutral-900">My Quotations</h2>
               <p className="text-sm text-neutral-600 mt-1">Manage and track all your quotations</p>
             </div>
-            <button
-              onClick={() => (window.location.href = "/dashboard/quotations/create")}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition duration-300 font-semibold hover:scale-105"
-            >
-              <Plus size={20} />
-              Create New
-            </button>
           </div>
           <div className="p-6">
             <QuotationList />
           </div>
         </div>
       </main>
+
+      <Toaster />
     </div>
   )
 }

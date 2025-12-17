@@ -58,7 +58,7 @@ export function AdminAuthForm() {
           <div className="flex justify-center mb-6">
             <div className="relative w-20 h-20 rounded-2xl overflow-hidden shadow-lg transform hover:scale-105 transition-transform duration-300">
               <Image
-                src="/logo.png"
+                src="/princessjd.png"
                 alt="Princess Jaidee Enterprises Logo"
                 fill
                 className="object-cover"

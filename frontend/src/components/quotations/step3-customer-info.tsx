@@ -9,7 +9,6 @@ interface Step3Props {
 
 export default function Step3CustomerInfo({ formData, setFormData }: Step3Props) {
   useEffect(() => {
-    // Load user info on mount
     const user = JSON.parse(localStorage.getItem("user") || "{}")
     if (!formData.customer || !formData.customer.name) {
       setFormData({
@@ -40,16 +39,18 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Step 3: Your Information</h2>
-        <p className="text-gray-600">Your details have been pre-filled. Please update if needed.</p>
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">Step 3: Your Information</h2>
+        <p className="text-sm sm:text-base text-gray-600">
+          Your details have been pre-filled from your profile. Please update if needed.
+        </p>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-800">
+      <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 text-sm text-red-900">
         <p className="font-semibold mb-1">Auto-filled from your profile</p>
-        <p>You can edit any information below</p>
+        <p>You can edit any information below. This will be used for delivery and official quotation records.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         {/* Full Name */}
         <div className="md:col-span-2">
           <label className="block text-sm font-semibold text-gray-900 mb-2">Full Name</label>
@@ -57,7 +58,7 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
             type="text"
             value={formData.customer?.name || ""}
             onChange={(e) => handleChange("name", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
           />
         </div>
 
@@ -68,7 +69,7 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
             type="email"
             value={formData.customer?.email || ""}
             onChange={(e) => handleChange("email", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
           />
         </div>
 
@@ -79,7 +80,7 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
             type="tel"
             value={formData.customer?.phone || ""}
             onChange={(e) => handleChange("phone", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
           />
         </div>
 
@@ -90,7 +91,7 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
             type="text"
             value={formData.customer?.address || ""}
             onChange={(e) => handleChange("address", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
           />
         </div>
 
@@ -101,7 +102,7 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
             type="text"
             value={formData.customer?.city || ""}
             onChange={(e) => handleChange("city", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
           />
         </div>
 
@@ -112,7 +113,7 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
             type="text"
             value={formData.customer?.province || ""}
             onChange={(e) => handleChange("province", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
           />
         </div>
 
@@ -123,15 +124,15 @@ export default function Step3CustomerInfo({ formData, setFormData }: Step3Props)
             type="text"
             value={formData.customer?.zip_code || ""}
             onChange={(e) => handleChange("zip_code", e.target.value)}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="w-full px-4 py-3 border border-red-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
           />
         </div>
       </div>
 
       {/* Address Verification */}
-      <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800">
+      <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
         <p className="font-semibold mb-1">Please verify your address</p>
-        <p>Ensure all information is correct. This will be used for delivery and official quotation records.</p>
+        <p>Ensure all information is correct before proceeding to the review step.</p>
       </div>
     </div>
   )

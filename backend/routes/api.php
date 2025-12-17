@@ -44,6 +44,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/quotations', [QuotationController::class, 'index']);
     Route::get('/quotations/{id}', [QuotationController::class, 'show']);
     Route::post('/quotations', [QuotationController::class, 'store']);
+    Route::put('/quotations/{id}', [QuotationController::class, 'update']); // Added update route for quotations
+    Route::post('/quotations/upload-logo', [QuotationController::class, 'uploadLogo']);
+
+    Route::get('/quotations/next-number', [QuotationController::class, 'getNextQuotationNumber']);
 
     // Products - Admin
     Route::get('/admin/products', [ProductController::class, 'index']);

@@ -8,6 +8,8 @@ use App\Models\Customer;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class QuotationController extends Controller
 {
@@ -16,7 +18,7 @@ class QuotationController extends Controller
     {
         $userId = auth()->id();
         
-        $query = Quotation::with(['customer', 'items'])
+        $query = Quotation::with(['customer', 'items.product', 'items.service'])
             ->whereHas('creator', function ($q) use ($userId) {
                 $q->where('id', $userId);
             });
@@ -30,6 +32,11 @@ class QuotationController extends Controller
         }
 
         $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
+        
+        $quotations->getCollection()->transform(function ($quotation) {
+            $quotation->items_count = $quotation->items->count();
+            return $quotation;
+        });
 
         return response()->json($quotations, 200);
     }
@@ -37,18 +44,37 @@ class QuotationController extends Controller
     // Get single quotation
     public function show($id)
     {
-        $quotation = Quotation::with(['customer', 'items'])->find($id);
+        $quotation = Quotation::with(['customer', 'items.product', 'items.service'])->find($id);
 
         if (!$quotation) {
             return response()->json(['error' => 'Quotation not found'], 404);
         }
+        
+        $quotation->items_count = $quotation->items->count();
 
         return response()->json($quotation, 200);
     }
 
-    // Create quotation
+    public function getNextQuotationNumber()
+    {
+        $lastQuotation = Quotation::orderBy('id', 'desc')->first();
+        $nextNumber = $lastQuotation ? $lastQuotation->id + 1 : 1;
+        $quotationNumber = 'QT-' . date('Ymd') . '-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+        
+        return response()->json([
+            'quotation_number' => $quotationNumber,
+            'date' => date('Y-m-d'),
+        ], 200);
+    }
+
     public function store(Request $request)
     {
+        $items = $request->items;
+        if (is_string($items)) {
+            $items = json_decode($items, true);
+            $request->merge(['items' => $items]);
+        }
+
         $validator = Validator::make($request->all(), [
             'customer_name' => 'required|string',
             'customer_email' => 'nullable|email',
@@ -57,6 +83,13 @@ class QuotationController extends Controller
             'customer_city' => 'nullable|string',
             'customer_province' => 'nullable|string',
             'customer_zip_code' => 'nullable|string',
+            'business_name' => 'required|string',
+            'business_address' => 'nullable|string',
+            'business_city' => 'nullable|string',
+            'business_state' => 'nullable|string',
+            'business_postal' => 'nullable|string',
+            'business_phone' => 'nullable|string',
+            'business_email' => 'nullable|email',
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'nullable|exists:products,id',
             'items.*.service_id' => 'nullable|exists:services,id',
@@ -64,7 +97,9 @@ class QuotationController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.customization' => 'nullable|string',
             'items.*.design_cost' => 'nullable|numeric|min:0',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'discount' => 'nullable|numeric|min:0|max:100',
+            'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'valid_until' => 'nullable|date',
         ]);
@@ -106,7 +141,27 @@ class QuotationController extends Controller
                 ]);
             }
 
-            $quotationNumber = 'QT-' . date('Ymd') . '-' . str_pad(Quotation::count() + 1, 5, '0', STR_PAD_LEFT);
+            $logoUrl = null;
+            if ($request->hasFile('logo')) {
+                $logo = $request->file('logo');
+                $filename = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
+                
+                // Store in storage/app/public/logos directory
+                $path = $logo->storeAs('logos', $filename, 'public');
+                
+                // URL to access the file (accessible via public/storage/logos/filename.ext)
+                $logoUrl = Storage::disk('public')->url($path);
+                
+                Log::info('Logo uploaded successfully', [
+                    'path' => $path,
+                    'url' => $logoUrl,
+                    'storage_path' => storage_path('app/public/' . $path)
+                ]);
+            }
+
+            $lastQuotation = Quotation::orderBy('id', 'desc')->first();
+            $nextNumber = $lastQuotation ? $lastQuotation->id + 1 : 1;
+            $quotationNumber = 'QT-' . date('Ymd') . '-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
 
             $subtotal = 0;
             foreach ($request->items as $item) {
@@ -117,17 +172,27 @@ class QuotationController extends Controller
                 $subtotal += $lineTotal;
             }
 
-            $discount = ($request->discount ?? 0);
-            $discountAmount = ($discount / 100) * $subtotal;
-            $tax = 0; // Can be calculated based on business rules
-            $total = $subtotal - $discountAmount + $tax;
+            $discount = $request->discount ?? 0;
+            $discountAmount = 0;
+            $tax = 0;
+            $total = $subtotal;
+            $paidAmount = $request->paid_amount ?? 0;
 
             $quotation = Quotation::create([
                 'quotation_number' => $quotationNumber,
                 'customer_id' => $customer->id,
                 'created_by' => $userId,
+                'logo_url' => $logoUrl,
+                'business_name' => $request->business_name,
+                'business_address' => $request->business_address,
+                'business_city' => $request->business_city,
+                'business_state' => $request->business_state,
+                'business_postal' => $request->business_postal,
+                'business_phone' => $request->business_phone,
+                'business_email' => $request->business_email,
                 'subtotal' => $subtotal,
                 'discount' => $discount,
+                'paid_amount' => $paidAmount,
                 'tax' => $tax,
                 'total' => $total,
                 'currency' => 'PHP',
@@ -153,11 +218,212 @@ class QuotationController extends Controller
                     'line_total' => $lineTotal,
                 ]);
             }
+            
+            $quotation->load(['customer', 'items.product', 'items.service']);
+            $quotation->items_count = $quotation->items->count();
 
             return response()->json([
                 'message' => 'Quotation created successfully',
-                'quotation' => $quotation->load(['customer', 'items']),
+                'quotation' => $quotation,
             ], 201);
+        } catch (\Exception $e) {
+            Log::error('Quotation creation error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+            ]);
+            return response()->json([
+                'error' => 'Failed to create quotation',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+    
+    public function update(Request $request, $id)
+    {
+        $quotation = Quotation::with(['items'])->find($id);
+
+        if (!$quotation) {
+            return response()->json(['error' => 'Quotation not found'], 404);
+        }
+        
+        // Only allow editing if status is draft
+        if ($quotation->status !== 'draft') {
+            return response()->json(['error' => 'Can only edit draft quotations'], 403);
+        }
+
+        $items = $request->items;
+        if (is_string($items)) {
+            $items = json_decode($items, true);
+            $request->merge(['items' => $items]);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'customer_name' => 'sometimes|required|string',
+            'customer_email' => 'nullable|email',
+            'customer_phone' => 'nullable|string',
+            'customer_address' => 'nullable|string',
+            'customer_city' => 'nullable|string',
+            'customer_province' => 'nullable|string',
+            'customer_zip_code' => 'nullable|string',
+            'business_name' => 'sometimes|required|string',
+            'business_address' => 'nullable|string',
+            'business_city' => 'nullable|string',
+            'business_state' => 'nullable|string',
+            'business_postal' => 'nullable|string',
+            'business_phone' => 'nullable|string',
+            'business_email' => 'nullable|email',
+            'items' => 'sometimes|required|array|min:1',
+            'items.*.product_id' => 'nullable|exists:products,id',
+            'items.*.service_id' => 'nullable|exists:services,id',
+            'items.*.quantity' => 'required|integer|min:1',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.customization' => 'nullable|string',
+            'items.*.design_cost' => 'nullable|numeric|min:0',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'notes' => 'nullable|string',
+            'valid_until' => 'nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            // Update customer if provided
+            if ($request->has('customer_name')) {
+                $quotation->customer->update([
+                    'company_name' => $request->customer_name,
+                    'contact_person' => $request->customer_name,
+                    'email' => $request->customer_email,
+                    'phone_number' => $request->customer_phone,
+                    'address' => $request->customer_address,
+                    'city' => $request->customer_city,
+                    'province' => $request->customer_province,
+                    'zip_code' => $request->customer_zip_code,
+                ]);
+            }
+
+            if ($request->hasFile('logo')) {
+                // Delete old logo if exists
+                if ($quotation->logo_url) {
+                    // Extract the path from the URL
+                    $oldPath = str_replace('/storage/', '', parse_url($quotation->logo_url, PHP_URL_PATH));
+                    Storage::disk('public')->delete($oldPath);
+                    Log::info('Old logo deleted', ['path' => $oldPath]);
+                }
+                
+                // Upload new logo
+                $logo = $request->file('logo');
+                $filename = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
+                $path = $logo->storeAs('logos', $filename, 'public');
+                $quotation->logo_url = Storage::disk('public')->url($path);
+                
+                Log::info('Logo updated successfully', [
+                    'path' => $path,
+                    'url' => $quotation->logo_url
+                ]);
+            }
+
+            // Update items if provided
+            if ($request->has('items')) {
+                // Delete existing items
+                $quotation->items()->delete();
+                
+                $subtotal = 0;
+                foreach ($request->items as $item) {
+                    $lineTotal = $item['quantity'] * $item['unit_price'];
+                    if (isset($item['design_cost'])) {
+                        $lineTotal += $item['design_cost'];
+                    }
+                    $subtotal += $lineTotal;
+
+                    QuotationItem::create([
+                        'quotation_id' => $quotation->id,
+                        'product_id' => $item['product_id'] ?? null,
+                        'service_id' => $item['service_id'] ?? null,
+                        'description' => $item['customization'] ?? null,
+                        'quantity' => $item['quantity'],
+                        'unit_price' => $item['unit_price'],
+                        'line_total' => $lineTotal,
+                    ]);
+                }
+                
+                // Update quotation totals
+                $quotation->subtotal = $subtotal;
+                $quotation->total = $subtotal;
+            }
+
+            if ($request->has('business_name')) {
+                $quotation->business_name = $request->business_name;
+            }
+            if ($request->has('business_address')) {
+                $quotation->business_address = $request->business_address;
+            }
+            if ($request->has('business_city')) {
+                $quotation->business_city = $request->business_city;
+            }
+            if ($request->has('business_state')) {
+                $quotation->business_state = $request->business_state;
+            }
+            if ($request->has('business_postal')) {
+                $quotation->business_postal = $request->business_postal;
+            }
+            if ($request->has('business_phone')) {
+                $quotation->business_phone = $request->business_phone;
+            }
+            if ($request->has('business_email')) {
+                $quotation->business_email = $request->business_email;
+            }
+
+            // Update other fields
+            if ($request->has('notes')) {
+                $quotation->notes = $request->notes;
+            }
+            
+            if ($request->has('valid_until')) {
+                $quotation->valid_until = $request->valid_until;
+            }
+
+            $quotation->save();
+            $quotation->load(['customer', 'items.product', 'items.service']);
+            $quotation->items_count = $quotation->items->count();
+
+            return response()->json([
+                'message' => 'Quotation updated successfully',
+                'quotation' => $quotation,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Quotation update error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'quotation_id' => $id,
+                'user_id' => auth()->id(),
+            ]);
+            return response()->json([
+                'error' => 'Failed to update quotation',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function uploadLogo(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'logo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $logo = $request->file('logo');
+            $filename = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
+            $path = $logo->storeAs('logos', $filename, 'public');
+            
+            return response()->json([
+                'message' => 'Logo uploaded successfully',
+                'logo_url' => 'storage/logos/' . $filename,
+            ], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -185,6 +451,9 @@ class QuotationController extends Controller
             'status' => $request->status,
             'scheduled_send_date' => $request->scheduled_date,
         ]);
+        
+        $quotation->load(['customer', 'items.product', 'items.service']);
+        $quotation->items_count = $quotation->items->count();
 
         return response()->json([
             'message' => 'Quotation status updated',

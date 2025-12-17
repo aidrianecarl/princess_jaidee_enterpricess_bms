@@ -22,6 +22,9 @@ interface Service {
   image_url?: string
   status: "active" | "inactive"
   created_at: string
+  has_design?: boolean
+  has_team?: boolean
+  has_sizes?: boolean
 }
 
 interface SpecificationEntry {
@@ -66,6 +69,9 @@ export default function ServicesPage() {
     category: "",
     image_url: "",
     status: "active" as "active" | "inactive",
+    has_design: false,
+    has_team: false,
+    has_sizes: false,
   })
 
   const [specifications, setSpecifications] = useState<SpecificationEntry[]>([])
@@ -165,6 +171,9 @@ export default function ServicesPage() {
         specifications: specificationsToObject(specifications),
         image_url: imageUrl || null,
         status: formData.status,
+        has_design: formData.has_design,
+        has_team: formData.has_team,
+        has_sizes: formData.has_sizes,
       }
 
       if (selectedService) {
@@ -212,6 +221,9 @@ export default function ServicesPage() {
       category: service.category || "",
       image_url: service.image_url || "",
       status: service.status,
+      has_design: service.has_design || false,
+      has_team: service.has_team || false,
+      has_sizes: service.has_sizes || false,
     })
     setSpecifications(objectToSpecifications(service.specifications))
     setImagePreview(service.image_url || "")
@@ -229,6 +241,9 @@ export default function ServicesPage() {
       category: "",
       image_url: "",
       status: "active",
+      has_design: false,
+      has_team: false,
+      has_sizes: false,
     })
     setSpecifications([])
     setImageFile(null)
@@ -306,7 +321,7 @@ export default function ServicesPage() {
                 placeholder="Search services..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 transition-all"
+                className="w-full pl-10 pr-4 py-2 md:py-3 text-sm md:text-base border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 transition-all duration-200"
               />
             </div>
 
@@ -344,7 +359,7 @@ export default function ServicesPage() {
                         className={`absolute top-2 right-2 text-xs px-2 py-1 rounded-full font-medium ${
                           service.status === "active"
                             ? "bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400"
-                            : "bg-red-100 dark:bg-red-900/20 text-red-700 dark:text-red-400"
+                            : "bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400"
                         }`}
                       >
                         {service.status}
@@ -545,6 +560,58 @@ export default function ServicesPage() {
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-3">Service Requirements</p>
+
+                <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <input
+                    type="checkbox"
+                    id="has_design"
+                    checked={formData.has_design || false}
+                    onChange={(e) => setFormData({ ...formData, has_design: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
+                  />
+                  <label htmlFor="has_design" className="flex-1 cursor-pointer">
+                    <p className="font-semibold text-neutral-900 dark:text-white">Requires Design</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      Customer can upload or request design service
+                    </p>
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <input
+                    type="checkbox"
+                    id="has_team"
+                    checked={formData.has_team || false}
+                    onChange={(e) => setFormData({ ...formData, has_team: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
+                  />
+                  <label htmlFor="has_team" className="flex-1 cursor-pointer">
+                    <p className="font-semibold text-neutral-900 dark:text-white">Requires Team Members</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      Customer must provide team roster with sizes
+                    </p>
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                  <input
+                    type="checkbox"
+                    id="has_sizes"
+                    checked={formData.has_sizes || false}
+                    onChange={(e) => setFormData({ ...formData, has_sizes: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
+                  />
+                  <label htmlFor="has_sizes" className="flex-1 cursor-pointer">
+                    <p className="font-semibold text-neutral-900 dark:text-white">Requires Size Specifications</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                      Customer must specify dimensions (width, height, etc.)
+                    </p>
+                  </label>
+                </div>
               </div>
 
               {error && (
