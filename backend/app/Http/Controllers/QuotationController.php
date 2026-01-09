@@ -549,4 +549,27 @@ class QuotationController extends Controller
             'message' => 'Quotation deleted successfully',
         ], 200);
     }
+
+    // Admin view all pending quotations
+    public function adminIndex(Request $request)
+    {
+        $query = Quotation::with(['customer', 'items.product', 'items.service', 'creator']);
+
+        if ($request->has('search')) {
+            $query->where('quotation_number', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('status') && $request->status !== '') {
+            $query->where('status', $request->status);
+        }
+
+        $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
+        
+        $quotations->getCollection()->transform(function ($quotation) {
+            $quotation->items_count = $quotation->items->count();
+            return $quotation;
+        });
+
+        return response()->json($quotations, 200);
+    }
 }

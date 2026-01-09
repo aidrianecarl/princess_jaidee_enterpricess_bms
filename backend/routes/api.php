@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/services/upload-image', [ServiceController::class, 'uploadImage']);
 
     // Quotations - Admin
+    Route::get('/admin/quotations', [QuotationController::class, 'adminIndex']);
     Route::put('/admin/quotations/{id}/status', [QuotationController::class, 'updateStatus']);
     Route::delete('/admin/quotations/{id}', [QuotationController::class, 'destroy']);
 
@@ -94,6 +95,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/job-orders', [JobOrderController::class, 'index']);
     Route::get('/admin/job-orders/{id}', [JobOrderController::class, 'show']);
     Route::post('/admin/job-orders', [JobOrderController::class, 'store']);
+    Route::post('/admin/job-orders/{jobOrderId}/complete-item', [JobOrderController::class, 'completeItem']);
     Route::put('/admin/job-orders/{id}/status', [JobOrderController::class, 'updateStatus']);
     Route::delete('/admin/job-orders/{id}', [JobOrderController::class, 'destroy']);
 
