@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { LogOut, User, Settings, ChevronDown, Bell, Menu, X, Home } from "lucide-react"
+import { LogOut, User, ChevronDown, Bell, Menu, X, Home } from "lucide-react"
 import Link from "next/link"
 
 interface HeaderProps {
@@ -38,12 +38,12 @@ export function DashboardHeader({ user }: HeaderProps) {
 
           <div className="flex items-center gap-4">
             {/* Home Link */}
-            <Link
+            {/* <Link
               href="/dashboard"
               className="hidden md:flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-50 transition group"
             >
               <Home size={20} className="text-neutral-600 group-hover:text-red-600 transition" />
-            </Link>
+            </Link> */}
 
             {/* Notifications */}
             <button className="hidden md:flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-50 transition relative group">
@@ -80,7 +80,7 @@ export function DashboardHeader({ user }: HeaderProps) {
                   </div>
 
                   <Link
-                    href="#"
+                    href="/dashboard/account"
                     className="flex items-center gap-3 px-4 py-3 text-neutral-700 hover:bg-red-50 transition duration-200 group"
                   >
                     <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center group-hover:scale-110 transition">
@@ -89,19 +89,6 @@ export function DashboardHeader({ user }: HeaderProps) {
                     <div>
                       <p className="text-sm font-medium">Manage Account</p>
                       <p className="text-xs text-neutral-500">Update profile info</p>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="#"
-                    className="flex items-center gap-3 px-4 py-3 text-neutral-700 hover:bg-purple-50 transition duration-200 group"
-                  >
-                    <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center group-hover:scale-110 transition">
-                      <Settings size={18} className="text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Settings</p>
-                      <p className="text-xs text-neutral-500">Preferences</p>
                     </div>
                   </Link>
 
@@ -122,12 +109,12 @@ export function DashboardHeader({ user }: HeaderProps) {
             </div>
 
             {/* Mobile menu button */}
-            <button
+            {/* <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 rounded-lg hover:bg-red-50 transition"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

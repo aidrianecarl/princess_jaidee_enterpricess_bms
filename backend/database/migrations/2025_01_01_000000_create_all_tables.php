@@ -192,12 +192,21 @@ return new class extends Migration
             $table->string('quotation_number')->unique();
             $table->foreignId('customer_id')->constrained()->onDelete('restrict');
             $table->foreignId('created_by')->constrained('users')->onDelete('restrict');
+            $table->string('business_name')->nullable();
+            $table->string('business_address')->nullable();
+            $table->string('business_city')->nullable();
+            $table->string('business_state')->nullable();
+            $table->string('business_postal')->nullable();
+            $table->string('business_phone')->nullable();
+            $table->string('business_email')->nullable();
+            $table->string('logo_url')->nullable();
+            $table->decimal('paid_amount', 10, 2)->default(0);
             $table->decimal('subtotal', 12, 2);
             $table->decimal('discount', 10, 2)->default(0);
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('total', 12, 2);
             $table->string('currency')->default('PHP');
-            $table->enum('status', ['draft', 'pending', 'approved', 'rejected', 'expired'])->default('draft');
+            $table->enum('status', ['draft', 'pending_approval', 'approved', 'rejected', 'expired'])->default('draft');
             $table->text('notes')->nullable();
             $table->text('terms_conditions')->nullable();
             $table->date('valid_until')->nullable();
@@ -331,8 +340,10 @@ return new class extends Migration
         });
     }
 
-    public function down(): void
+        public function down(): void
     {
+        Schema::disableForeignKeyConstraints();
+
         Schema::dropIfExists('activity_logs');
         Schema::dropIfExists('inventory');
         Schema::dropIfExists('terms_conditions');
@@ -356,5 +367,8 @@ return new class extends Migration
         Schema::dropIfExists('permissions');
         Schema::dropIfExists('roles');
         Schema::dropIfExists('users');
+
+        Schema::enableForeignKeyConstraints();
     }
+
 };

@@ -86,7 +86,7 @@ export function Footer() {
               </div>
               <div className="flex items-start gap-2 hover:translate-x-1 transition-transform duration-300">
                 <MapPin size={18} className="text-red-500 mt-1" />
-                <span>Calinog, Iloilo, Philippines</span>
+                <span>X2C4+775, Calle Nueva, Sorsogon City, Sorsogon</span>
               </div>
             </div>
           </div>

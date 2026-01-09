@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { X, Download, Printer } from "lucide-react"
+import { useState, useRef } from "react"
+import { X, Download, Printer, Loader2 } from "lucide-react"
 
 interface Quotation {
   id: number
@@ -15,6 +15,7 @@ interface Quotation {
   status: string
   created_at: string
   notes: string
+  logo?: string
 }
 
 interface QuotationViewModalProps {
@@ -25,132 +26,173 @@ interface QuotationViewModalProps {
 
 export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationViewModalProps) {
   const [isPrinting, setIsPrinting] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const printRef = useRef<HTMLDivElement>(null)
 
   if (!isOpen || !quotation) return null
 
   const handlePrint = () => {
-    window.print()
+    setIsPrinting(true)
+    setTimeout(() => {
+      window.print()
+      setIsPrinting(false)
+    }, 500)
   }
 
   const handleDownloadPDF = async () => {
-    setIsPrinting(true)
+    setIsDownloading(true)
     try {
-        const element = document.getElementById(`quotation-${quotation.id}`)
-        if (!element) return
+      const html2canvas = (await import("html2canvas")).default
+      const jsPDF = (await import("jspdf")).default
 
-        // Dynamic import (browser only)
-        const html2pdf = (await import("html2pdf.js")).default
+      const element = printRef.current
+      if (!element) return
 
-        const opt = {
-        margin: 10,
-        filename: `${quotation.quotation_number}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { orientation: "portrait", unit: "mm", format: "a4" },
-        }
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      })
 
-        html2pdf().set(opt).from(element).save()
+      const imgData = canvas.toDataURL("image/png")
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      })
+
+      const pdfWidth = pdf.internal.pageSize.getWidth()
+      const pdfHeight = pdf.internal.pageSize.getHeight()
+      const imgWidth = canvas.width
+      const imgHeight = canvas.height
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
+      const imgX = (pdfWidth - imgWidth * ratio) / 2
+      const imgY = 10
+
+      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio)
+      pdf.save(`${quotation.quotation_number}.pdf`)
     } catch (error) {
-        console.error("Failed to generate PDF:", error)
+      console.error("Failed to generate PDF:", error)
     } finally {
-        setIsPrinting(false)
+      setIsDownloading(false)
     }
-    }
-
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white p-6 flex justify-between items-center sticky top-0 z-10">
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto flex flex-col my-auto">
+        {/* Header - Sticky */}
+        <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white p-6 flex justify-between items-center sticky top-0 z-10 flex-shrink-0">
           <h2 className="text-2xl font-bold">{quotation.quotation_number}</h2>
           <button onClick={onClose} className="p-2 hover:bg-red-700 rounded-lg transition">
             <X size={24} />
           </button>
         </div>
 
-        {/* Content */}
-        <div id={`quotation-${quotation.id}`} className="p-8 print:p-0 space-y-6">
-          {/* Quotation Details */}
-          <div className="grid grid-cols-2 gap-6 mb-8">
+        {/* Action Buttons - Sticky below header */}
+        <div className="bg-white border-b border-gray-200 p-4 flex gap-2 sticky top-[70px] z-10 flex-shrink-0 print:hidden flex-wrap sm:flex-nowrap">
+          <button
+            onClick={handleDownloadPDF}
+            disabled={isDownloading}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download size={18} />
+                Download PDF
+              </>
+            )}
+          </button>
+          <button
+            onClick={handlePrint}
+            disabled={isPrinting}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          >
+            {isPrinting ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                Printing...
+              </>
+            ) : (
+              <>
+                <Printer size={18} />
+                Print
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Content - Scrollable */}
+        <div
+          id={`quotation-${quotation.id}`}
+          ref={printRef}
+          className="flex-1 overflow-y-auto p-6 sm:p-8 print:p-0 space-y-6"
+        >
+          {/* Header Section */}
+          <div className="flex justify-between items-start mb-8 print:mb-6">
             <div>
-              <p className="text-sm text-gray-600">Quotation Number</p>
-              <p className="font-bold text-lg">{quotation.quotation_number}</p>
+              {quotation.logo && (
+                <img
+                  src={quotation.logo || "/placeholder.svg"}
+                  alt="Company Logo"
+                  className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-4"
+                  onError={(e) => {
+                    const img = e.target as HTMLImageElement
+                    img.style.display = "none"
+                  }}
+                />
+              )}
+              <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Quotation</h3>
+              <p className="text-lg sm:text-xl text-gray-600">{quotation.quotation_number}</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Date</p>
-              <p className="font-bold text-lg">{new Date(quotation.created_at).toLocaleDateString()}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Status</p>
-              <p
-                className={`font-bold text-lg capitalize ${
-                  quotation.status === "approved"
-                    ? "text-green-600"
-                    : quotation.status === "pending"
-                      ? "text-yellow-600"
-                      : quotation.status === "rejected"
-                        ? "text-red-600"
-                        : "text-gray-600"
-                }`}
-              >
-                {quotation.status}
+            <div className="text-right">
+              <p className="text-sm text-gray-600 mb-1">
+                <span className="font-semibold">Date:</span>{" "}
+                {new Date(quotation.created_at).toLocaleDateString("en-US", {
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })}
               </p>
             </div>
+          </div>
+
+          {/* Customer/Company Info */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8 pb-8 border-b-2 border-gray-200">
             <div>
-              <p className="text-sm text-gray-600">Total Amount</p>
-              <p className="font-bold text-lg text-red-600">₱{Number(quotation.total).toLocaleString()}</p>
+              <h4 className="font-semibold text-gray-900 mb-3">Bill To</h4>
+              <p className="text-gray-700 font-medium">{quotation.customer?.name}</p>
+              {quotation.customer?.address && <p className="text-gray-600 text-sm">{quotation.customer.address}</p>}
+              {quotation.customer?.email && <p className="text-gray-600 text-sm">{quotation.customer.email}</p>}
+              {quotation.customer?.phone && <p className="text-gray-600 text-sm">{quotation.customer.phone}</p>}
             </div>
           </div>
 
-          {/* Customer Information */}
-          <div className="bg-gray-50 p-6 rounded-lg">
-            <h3 className="font-bold text-gray-900 mb-4">Customer Information</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Name</p>
-                <p className="font-semibold">{quotation.customer?.company_name}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Email</p>
-                <p className="font-semibold">{quotation.customer?.email}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Phone</p>
-                <p className="font-semibold">{quotation.customer?.phone_number}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Address</p>
-                <p className="font-semibold">{quotation.customer?.address}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Items */}
-          <div>
-            <h3 className="font-bold text-gray-900 mb-4">Quotation Items</h3>
-            <div className="border border-gray-200 rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-gray-200">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-900">Item</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Unit Price</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Qty</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-900">Total</th>
+          {/* Items Table */}
+          <div className="mb-8">
+            <h4 className="font-semibold text-gray-900 mb-4">Items</h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b-2 border-gray-300">
+                    <th className="text-left py-2 text-gray-700 font-semibold">Description</th>
+                    <th className="text-right py-2 text-gray-700 font-semibold">Qty</th>
+                    <th className="text-right py-2 text-gray-700 font-semibold">Unit Price</th>
+                    <th className="text-right py-2 text-gray-700 font-semibold">Amount</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {quotation.items?.map((item: any, index: number) => (
-                    <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <p className="font-semibold text-gray-900">{item.product?.name || item.service?.name}</p>
-                        {item.description && <p className="text-sm text-gray-600 mt-1">{item.description}</p>}
-                      </td>
-                      <td className="px-4 py-3 text-right">₱{Number(item.unit_price).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right">{item.quantity}</td>
-                      <td className="px-4 py-3 text-right font-semibold">
-                        ₱{Number(item.line_total).toLocaleString()}
-                      </td>
+                  {quotation.items.map((item: any, index: number) => (
+                    <tr key={index} className="border-b border-gray-200">
+                      <td className="py-3 text-gray-700">{item.name}</td>
+                      <td className="text-right py-3 text-gray-700">{item.quantity}</td>
+                      <td className="text-right py-3 text-gray-700">₱{Number(item.unit_price).toLocaleString()}</td>
+                      <td className="text-right py-3 text-gray-700">₱{Number(item.amount).toLocaleString()}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -158,70 +200,63 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
             </div>
           </div>
 
-          {/* Totals */}
+          {/* Totals Section */}
           <div className="flex justify-end">
-            <div className="w-full sm:w-80 space-y-2 bg-gray-50 p-6 rounded-lg">
-              <div className="flex justify-between text-gray-700">
-                <span>Subtotal:</span>
-                <span className="font-semibold">₱{Number(quotation.subtotal).toLocaleString()}</span>
+            <div className="w-full sm:w-80 space-y-2 border-t-2 border-gray-300 pt-4">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Subtotal</span>
+                <span className="text-gray-900 font-semibold">₱{Number(quotation.subtotal).toLocaleString()}</span>
               </div>
               {quotation.discount > 0 && (
-                <div className="flex justify-between text-orange-700">
-                  <span>Discount:</span>
-                  <span className="font-semibold">-₱{Number(quotation.discount).toLocaleString()}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Discount</span>
+                  <span className="text-gray-900 font-semibold">-₱{Number(quotation.discount).toLocaleString()}</span>
                 </div>
               )}
               {quotation.tax > 0 && (
-                <div className="flex justify-between text-blue-700">
-                  <span>Tax:</span>
-                  <span className="font-semibold">+₱{Number(quotation.tax).toLocaleString()}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Tax</span>
+                  <span className="text-gray-900 font-semibold">₱{Number(quotation.tax).toLocaleString()}</span>
                 </div>
               )}
-              <div className="border-t border-gray-300 pt-2 flex justify-between">
-                <span className="font-bold text-gray-900">Total:</span>
-                <span className="text-2xl font-bold text-red-600">₱{Number(quotation.total).toLocaleString()}</span>
+              <div className="flex justify-between text-lg font-bold border-t-2 border-gray-300 pt-2">
+                <span className="text-gray-900">Total Due</span>
+                <span className="bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
+                  ₱{Number(quotation.total).toLocaleString()}
+                </span>
               </div>
             </div>
           </div>
 
           {/* Notes */}
           {quotation.notes && (
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 font-semibold mb-2">Notes:</p>
-              <p className="text-gray-700">{quotation.notes}</p>
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <h4 className="font-semibold text-gray-900 mb-2">Notes</h4>
+              <p className="text-gray-600 text-sm whitespace-pre-line">{quotation.notes}</p>
             </div>
           )}
 
-          {/* Footer */}
-          <div className="border-t border-gray-200 pt-6 text-center text-sm text-gray-600">
-            <p>Thank you for your business!</p>
-            <p className="mt-2">This quotation is valid for 30 days from the date of issue.</p>
+          {/* Status Badge */}
+          <div className="mt-8 pt-8 border-t border-gray-200 flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Status</p>
+              <span
+                className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${
+                  quotation.status === "approved"
+                    ? "bg-green-100 text-green-700"
+                    : quotation.status === "pending"
+                      ? "bg-yellow-100 text-yellow-700"
+                      : quotation.status === "rejected"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-gray-100 text-gray-700"
+                }`}
+              >
+                {quotation.status === "pending"
+                  ? "Pending"
+                  : quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
+              </span>
+            </div>
           </div>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="bg-gray-50 border-t border-gray-200 p-6 flex gap-3 print:hidden sticky bottom-0">
-          <button
-            onClick={handlePrint}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-          >
-            <Printer size={20} />
-            Print
-          </button>
-          <button
-            onClick={handleDownloadPDF}
-            disabled={isPrinting}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition font-semibold"
-          >
-            <Download size={20} />
-            {isPrinting ? "Generating..." : "Download PDF"}
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gray-300 text-gray-900 rounded-lg hover:bg-gray-400 transition font-semibold"
-          >
-            Close
-          </button>
         </div>
       </div>
     </div>

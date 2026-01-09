@@ -38,21 +38,20 @@ export const quotationFormSchema = z
     // Quotation Details
     quoteNumber: z.string().min(1, "Quote number is required"),
     quoteDate: z.string().min(1, "Quote date is required"),
-    dueDate: z.string().min(1, "Due date is required"),
+    validUntil: z.string().min(1, "Valid until date is required"), // Updated from dueDate to validUntil
 
     // Line Items
     lineItems: z.array(quotationLineItemSchema).min(1, "At least one item is required").max(100, "Too many items"),
   })
   .refine(
     (data) => {
-      // Validate that dueDate is after quoteDate
       const quoteDate = new Date(data.quoteDate)
-      const dueDate = new Date(data.dueDate)
-      return dueDate >= quoteDate
+      const validUntil = new Date(data.validUntil)
+      return validUntil >= quoteDate
     },
     {
-      message: "Due date must be on or after quote date",
-      path: ["dueDate"],
+      message: "Valid until date must be on or after quote date",
+      path: ["validUntil"],
     },
   )
 

@@ -19,7 +19,14 @@ class QuotationSeeder extends Seeder
             return;
         }
 
-        $statuses = ['draft', 'pending', 'approved', 'rejected'];
+        // ✅ MUST match ENUM exactly
+        $statuses = [
+            'draft',
+            'pending_approval',
+            'approved',
+            'rejected',
+        ];
+
         $index = 0;
 
         foreach ($customers as $customer) {
@@ -35,7 +42,7 @@ class QuotationSeeder extends Seeder
                 'status' => $statuses[$index % count($statuses)],
                 'notes' => 'Quotation for sports jerseys and custom printing services',
                 'terms_conditions' => 'Standard business terms apply. 50% deposit required.',
-                'valid_until' => Carbon::now()->addDays(30)->toDateString(),
+                'valid_until' => Carbon::now()->addDays(30),
                 'scheduled_send_date' => null,
                 'sent_at' => $index === 0 ? Carbon::now() : null,
             ]);

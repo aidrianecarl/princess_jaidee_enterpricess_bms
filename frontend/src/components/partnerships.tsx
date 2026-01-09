@@ -10,13 +10,14 @@ export function Partnerships() {
   }, [])
 
   const logos = [
-    { name: "Nike", img: "/image.png" },
-    { name: "Adidas", img: "/image.png" },
-    { name: "Puma", img: "/image.png" },
-    { name: "Under Armour", img: "/image.png" },
-    { name: "Spalding", img: "/image.png" },
-    { name: "Mikasa", img: "/image.png" },
-    { name: "Wilson", img: "/image.png" },
+    { name: "SSU", img: "/partnership-logo/ssulogo.png" },
+    { name: "CCDI", img: "/partnership-logo/ccdilogo.png" },
+    { name: "SSU", img: "/partnership-logo/ssulogo.png" },
+    { name: "CCDI", img: "/partnership-logo/ccdilogo.png" },
+    { name: "SSU", img: "/partnership-logo/ssulogo.png" },
+    { name: "CCDI", img: "/partnership-logo/ccdilogo.png" },
+    { name: "SSU", img: "/partnership-logo/ssulogo.png" },
+    { name: "CCDI", img: "/partnership-logo/ccdilogo.png" },
   ]
 
   return (
@@ -63,7 +64,7 @@ export function Partnerships() {
                   <img 
                     src={logo.img || "/placeholder.svg"} 
                     alt={logo.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    className="max-w-full max-h-full object-contain p-3 group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
               ))}

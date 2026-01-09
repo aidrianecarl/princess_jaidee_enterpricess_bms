@@ -150,4 +150,47 @@ class UserController extends Controller
             ], 404);
         }
     }
+
+    // Change user password
+    public function changePassword(Request $request, $id)
+    {
+        try {
+            $user = User::findOrFail($id);
+
+            // Validate the request
+            $validated = $request->validate([
+                'current_password' => 'required|min:6',
+                'new_password' => 'required|min:8|different:current_password',
+                'new_password_confirmation' => 'required|same:new_password',
+            ]);
+
+            // Check if current password is correct
+            if (!Hash::check($validated['current_password'], $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Current password is incorrect',
+                ], 422);
+            }
+
+            // Update password
+            $user->password = Hash::make($validated['new_password']);
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password changed successfully',
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }

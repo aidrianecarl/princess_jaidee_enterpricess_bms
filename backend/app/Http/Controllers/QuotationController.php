@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class QuotationController extends Controller
 {
@@ -57,9 +58,24 @@ class QuotationController extends Controller
 
     public function getNextQuotationNumber()
     {
-        $lastQuotation = Quotation::orderBy('id', 'desc')->first();
-        $nextNumber = $lastQuotation ? $lastQuotation->id + 1 : 1;
-        $quotationNumber = 'QT-' . date('Ymd') . '-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+        $today = Carbon::today()->format('Ymd');
+        
+        // Get the last quotation created today
+        $lastQuotation = Quotation::whereDate('created_at', Carbon::today())
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        // If last quotation exists and was created today, increment the sequence number
+        if ($lastQuotation) {
+            // Extract the sequence number from quotation_number format: QT-YYYYMMDD-#####
+            preg_match('/QT-\d+-(\d+)$/', $lastQuotation->quotation_number, $matches);
+            $sequenceNumber = isset($matches[1]) ? intval($matches[1]) + 1 : 1;
+        } else {
+            // Reset to 1 if no quotation created today (new day)
+            $sequenceNumber = 1;
+        }
+        
+        $quotationNumber = 'QT-' . $today . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
         
         return response()->json([
             'quotation_number' => $quotationNumber,
@@ -76,7 +92,7 @@ class QuotationController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'customer_name' => 'required|string',
+            'customer_name' => 'nullable|string',
             'customer_email' => 'nullable|email',
             'customer_phone' => 'nullable|string',
             'customer_address' => 'nullable|string',
@@ -91,20 +107,25 @@ class QuotationController extends Controller
             'business_phone' => 'nullable|string',
             'business_email' => 'nullable|email',
             'items' => 'required|array|min:1',
-            'items.*.product_id' => 'nullable|exists:products,id',
-            'items.*.service_id' => 'nullable|exists:services,id',
+            'items.*.product_id' => 'nullable|integer',
+            'items.*.service_id' => 'nullable|integer',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.customization' => 'nullable|string',
             'items.*.design_cost' => 'nullable|numeric|min:0',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'discount' => 'nullable|numeric|min:0|max:100',
+            'discount' => 'nullable|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'valid_until' => 'nullable|date',
+            'status' => 'nullable|in:draft,pending_approval',
         ]);
 
         if ($validator->fails()) {
+            Log::warning('Quotation validation failed', [
+                'errors' => $validator->errors(),
+                'request_data' => $request->except(['logo']),
+            ]);
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
@@ -143,29 +164,63 @@ class QuotationController extends Controller
 
             $logoUrl = null;
             if ($request->hasFile('logo')) {
-                $logo = $request->file('logo');
-                $filename = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
-                
-                // Store in storage/app/public/logos directory
-                $path = $logo->storeAs('logos', $filename, 'public');
-                
-                // URL to access the file (accessible via public/storage/logos/filename.ext)
-                $logoUrl = Storage::disk('public')->url($path);
-                
-                Log::info('Logo uploaded successfully', [
-                    'path' => $path,
-                    'url' => $logoUrl,
-                    'storage_path' => storage_path('app/public/' . $path)
-                ]);
+                try {
+                    $logo = $request->file('logo');
+                    
+                    if ($logo && $logo->isValid()) {
+                        // Ensure the quotations/logos directory exists
+                        $logosDir = storage_path('app/public/quotations/logos');
+                        if (!is_dir($logosDir)) {
+                            @mkdir($logosDir, 0755, true);
+                        }
+                        
+                        $filename = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
+                        
+                        // Store the file in storage/public/quotations/logos
+                        $path = $logo->storeAs('quotations/logos', $filename, 'public');
+                        
+                        if ($path) {
+                            $logoUrl = Storage::disk('public')->url($path);
+                            
+                            Log::info('Logo uploaded successfully', [
+                                'path' => $path,
+                                'url' => $logoUrl,
+                                'filename' => $filename,
+                            ]);
+                        } else {
+                            Log::warning('Logo file could not be stored', ['filename' => $filename]);
+                        }
+                    } else {
+                        Log::warning('Uploaded logo file is invalid', ['error' => $logo->getError()]);
+                    }
+                } catch (\Exception $logoException) {
+                    Log::warning('Logo upload failed, continuing without logo', [
+                        'error' => $logoException->getMessage(),
+                        'trace' => $logoException->getTraceAsString(),
+                    ]);
+                    // Continue without logo if upload fails
+                }
             }
 
-            $lastQuotation = Quotation::orderBy('id', 'desc')->first();
-            $nextNumber = $lastQuotation ? $lastQuotation->id + 1 : 1;
-            $quotationNumber = 'QT-' . date('Ymd') . '-' . str_pad($nextNumber, 5, '0', STR_PAD_LEFT);
+            $lastQuotation = Quotation::whereDate('created_at', Carbon::today())
+                ->orderBy('id', 'desc')
+                ->first();
+            
+            // If last quotation exists and was created today, increment the sequence number
+            if ($lastQuotation) {
+                // Extract the sequence number from quotation_number format: QT-YYYYMMDD-#####
+                preg_match('/QT-\d+-(\d+)$/', $lastQuotation->quotation_number, $matches);
+                $sequenceNumber = isset($matches[1]) ? intval($matches[1]) + 1 : 1;
+            } else {
+                // Reset to 1 if no quotation created today (new day)
+                $sequenceNumber = 1;
+            }
+            
+            $quotationNumber = 'QT-' . Carbon::today()->format('Ymd') . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
 
             $subtotal = 0;
             foreach ($request->items as $item) {
-                $lineTotal = $item['quantity'] * $item['unit_price'];
+                $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
                 if (isset($item['design_cost'])) {
                     $lineTotal += $item['design_cost'];
                 }
@@ -177,6 +232,8 @@ class QuotationController extends Controller
             $tax = 0;
             $total = $subtotal;
             $paidAmount = $request->paid_amount ?? 0;
+
+            $status = $request->status ?? 'draft';
 
             $quotation = Quotation::create([
                 'quotation_number' => $quotationNumber,
@@ -196,23 +253,23 @@ class QuotationController extends Controller
                 'tax' => $tax,
                 'total' => $total,
                 'currency' => 'PHP',
-                'status' => 'draft',
+                'status' => $status,
                 'notes' => $request->notes,
                 'valid_until' => $request->valid_until,
             ]);
 
             // Add items
             foreach ($request->items as $item) {
-                $lineTotal = $item['quantity'] * $item['unit_price'];
+                $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
                 if (isset($item['design_cost'])) {
                     $lineTotal += $item['design_cost'];
                 }
 
                 QuotationItem::create([
                     'quotation_id' => $quotation->id,
-                    'product_id' => $item['product_id'] ?? null,
-                    'service_id' => $item['service_id'] ?? null,
-                    'description' => $item['customization'] ?? null,
+                    'product_id' => !empty($item['product_id']) ? $item['product_id'] : null,
+                    'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
+                    'description' => $item['customization'] ?? $item['description'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'line_total' => $lineTotal,
@@ -273,8 +330,8 @@ class QuotationController extends Controller
             'business_phone' => 'nullable|string',
             'business_email' => 'nullable|email',
             'items' => 'sometimes|required|array|min:1',
-            'items.*.product_id' => 'nullable|exists:products,id',
-            'items.*.service_id' => 'nullable|exists:services,id',
+            'items.*.product_id' => 'nullable|integer',
+            'items.*.service_id' => 'nullable|integer',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.customization' => 'nullable|string',
@@ -306,22 +363,37 @@ class QuotationController extends Controller
             if ($request->hasFile('logo')) {
                 // Delete old logo if exists
                 if ($quotation->logo_url) {
-                    // Extract the path from the URL
-                    $oldPath = str_replace('/storage/', '', parse_url($quotation->logo_url, PHP_URL_PATH));
-                    Storage::disk('public')->delete($oldPath);
-                    Log::info('Old logo deleted', ['path' => $oldPath]);
+                    // Extract the path from the URL and delete the file
+                    try {
+                        $oldPath = str_replace('/storage/', '', parse_url($quotation->logo_url, PHP_URL_PATH));
+                        if (Storage::disk('public')->exists($oldPath)) {
+                            Storage::disk('public')->delete($oldPath);
+                            Log::info('Old logo deleted', ['path' => $oldPath]);
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to delete old logo', ['error' => $e->getMessage()]);
+                    }
                 }
                 
-                // Upload new logo
                 $logo = $request->file('logo');
-                $filename = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
-                $path = $logo->storeAs('logos', $filename, 'public');
-                $quotation->logo_url = Storage::disk('public')->url($path);
-                
-                Log::info('Logo updated successfully', [
-                    'path' => $path,
-                    'url' => $quotation->logo_url
-                ]);
+                if ($logo && $logo->isValid()) {
+                    // Ensure the quotations/logos directory exists
+                    $logosDir = storage_path('app/public/quotations/logos');
+                    if (!is_dir($logosDir)) {
+                        @mkdir($logosDir, 0755, true);
+                    }
+                    
+                    $filename = time() . '_' . uniqid() . '.' . $logo->getClientOriginalExtension();
+                    $path = $logo->storeAs('quotations/logos', $filename, 'public');
+                    
+                    if ($path) {
+                        $quotation->logo_url = Storage::disk('public')->url($path);
+                        Log::info('New logo uploaded successfully', [
+                            'path' => $path,
+                            'url' => $quotation->logo_url
+                        ]);
+                    }
+                }
             }
 
             // Update items if provided
@@ -331,7 +403,7 @@ class QuotationController extends Controller
                 
                 $subtotal = 0;
                 foreach ($request->items as $item) {
-                    $lineTotal = $item['quantity'] * $item['unit_price'];
+                    $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
                     if (isset($item['design_cost'])) {
                         $lineTotal += $item['design_cost'];
                     }
@@ -339,9 +411,9 @@ class QuotationController extends Controller
 
                     QuotationItem::create([
                         'quotation_id' => $quotation->id,
-                        'product_id' => $item['product_id'] ?? null,
-                        'service_id' => $item['service_id'] ?? null,
-                        'description' => $item['customization'] ?? null,
+                        'product_id' => !empty($item['product_id']) ? $item['product_id'] : null,
+                        'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
+                        'description' => $item['customization'] ?? $item['description'] ?? null,
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
                         'line_total' => $lineTotal,

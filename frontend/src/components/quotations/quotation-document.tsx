@@ -31,6 +31,7 @@ interface LineItem {
   unitPrice: number
   amount: number
   image?: string
+  designCost?: number // Added for design cost
 }
 
 interface FormData {
@@ -50,8 +51,10 @@ interface FormData {
   businessEmail: string
   quoteNumber: string
   quoteDate: string
-  dueDate: string
   logo?: File
+  logoUrl?: string
+  notes?: string // Added notes field
+  validUntil: string // Added validUntil to interface
 }
 
 function QuotationDocumentSkeleton() {
@@ -174,9 +177,11 @@ function QuotationDocumentSkeleton() {
   )
 }
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
 interface QuotationFormData {
+  quoteNumber: string
+  quoteDate: string
   clientName: string
   clientAddress: string
   clientCity: string
@@ -191,20 +196,18 @@ interface QuotationFormData {
   businessPostal: string
   businessPhone: string
   businessEmail: string
-  quoteNumber: string
-  quoteDate: string
-  dueDate: string
+  validUntil: string // Added validUntil to interface
   logo?: File
+  logoUrl?: string // Added for existing logo URL
+  notes?: string // Added notes field
 }
 
-export function QuotationDocument() {
-  // Changed from QuotationDocumentV2 to QuotationDocument
-  const router = useRouter() // Added useRouter hook
+export function QuotationDocument({ existingQuotation }: { existingQuotation?: any }) {
+  const router = useRouter()
 
   const [formData, setFormData] = useState<QuotationFormData>({
     quoteNumber: "",
     quoteDate: new Date().toISOString().split("T")[0],
-    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     clientName: "",
     clientAddress: "",
     clientCity: "",
@@ -219,36 +222,161 @@ export function QuotationDocument() {
     businessPostal: "",
     businessPhone: "",
     businessEmail: "",
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Added default validUntil
+    notes: "", // Initialize notes
   })
 
   const [lineItems, setLineItems] = useState<LineItem[]>([])
   const [logoPreview, setLogoPreview] = useState<string>("")
+
   const [showProductModal, setShowProductModal] = useState(false)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showSendModal, setShowSendModal] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const isEditMode = !!existingQuotation // Determine edit mode based on existingQuotation
   const printRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
+  const [isSending, setIsSending] = useState(false) // Added state for sending
+  const [showSendApprovalModal, setShowSendApprovalModal] = useState(false) // Added state for approval modal
+  const [isNavigating, setIsNavigating] = useState(false) // Added state for navigation
+
+  const getInitialFormData = (): QuotationFormData => ({
+    quoteNumber: "",
+    quoteDate: new Date().toISOString().split("T")[0],
+    clientName: "",
+    clientAddress: "",
+    clientCity: "",
+    clientState: "",
+    clientPostal: "",
+    clientPhone: "",
+    clientEmail: "",
+    businessName: "Princess Jaidee",
+    businessAddress: "",
+    businessCity: "",
+    businessState: "",
+    businessPostal: "",
+    businessPhone: "",
+    businessEmail: "",
+    validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+    notes: "",
+  })
 
   useEffect(() => {
+    // Clear sessionStorage and form on page load to ensure fresh start
+    sessionStorage.removeItem("quotationDraft")
+    if (!existingQuotation) {
+      setFormData(getInitialFormData())
+      setLineItems([])
+      setLogoPreview("")
+    }
+  }, [existingQuotation])
+
+  useEffect(() => {
+    if (existingQuotation) {
+      const parseDate = (dateStr: string | null | undefined, fallback: Date = new Date()) => {
+        if (!dateStr) return fallback.toISOString().split("T")[0]
+        const date = new Date(dateStr)
+        return isNaN(date.getTime()) ? fallback.toISOString().split("T")[0] : date.toISOString().split("T")[0]
+      }
+
+      setFormData({
+        quoteNumber: existingQuotation.quotation_number || "",
+        quoteDate: parseDate(existingQuotation.quote_date),
+        clientName: existingQuotation.customer_name || "",
+        clientAddress: existingQuotation.customer_address || "",
+        clientCity: existingQuotation.customer_city || "",
+        clientState: existingQuotation.customer_province || "",
+        clientPostal: existingQuotation.customer_zip_code || "",
+        clientPhone: existingQuotation.customer_phone || "",
+        clientEmail: existingQuotation.customer_email || "",
+        businessName: existingQuotation.business_name || "Princess Jaidee",
+        businessAddress: existingQuotation.business_address || "",
+        businessCity: existingQuotation.business_city || "",
+        businessState: existingQuotation.business_state || "",
+        businessPostal: existingQuotation.business_postal || "",
+        businessPhone: existingQuotation.business_phone || "",
+        businessEmail: existingQuotation.business_email || "",
+        validUntil: parseDate(existingQuotation.valid_until, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+        logoUrl: existingQuotation.logo_url || "",
+        notes: existingQuotation.notes || "", // Load notes
+      })
+
+      // Load existing line items if they exist
+      if (existingQuotation.items && Array.isArray(existingQuotation.items)) {
+        const loadedItems = existingQuotation.items.map((item: any) => ({
+          id: item.id?.toString() || Date.now().toString(),
+          type: item.product_id ? "product" : "service",
+          productId: item.product_id,
+          serviceId: item.service_id,
+          name: item.product?.name || item.service?.name || "Custom Item",
+          description: item.customization || item.product?.description || item.service?.description || "",
+          quantity: item.quantity,
+          unitPrice: item.unit_price,
+          amount: item.quantity * item.unitPrice,
+          image: item.product?.image_url,
+          designCost: item.design_cost || 0, // Load design cost
+        }))
+        setLineItems(loadedItems)
+      }
+      if (existingQuotation?.logo_url) {
+        setLogoPreview(existingQuotation.logo_url)
+      }
+    } else {
+      const savedData = sessionStorage.getItem("quotationPreviewData")
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData)
+          setFormData(parsedData.formData)
+          setLineItems(parsedData.lineItems)
+          setLogoPreview(parsedData.logoPreview || "")
+        } catch (error) {
+          console.error("[v0] Error restoring quotation data:", error)
+        }
+      }
+    }
+
     const timer = setTimeout(() => {
       setIsPageLoading(false)
-    }, 1000)
+    }, 500)
+
     return () => clearTimeout(timer)
-  }, [])
+  }, [existingQuotation])
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Don't prevent default - let navigation happen naturally
+      // Only prevent actual page reload
+      if (!isNavigating && (lineItems.length > 0 || formData.clientName)) {
+        e.preventDefault()
+        e.returnValue = ""
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload)
+  }, [lineItems, formData, isNavigating])
 
   useEffect(() => {
     const fetchNextQuotationNumber = async () => {
       try {
         const token = localStorage.getItem("token")
-        const response = await fetch(`${apiUrl}/api/quotations/next-number`, {
+        if (!token) {
+          console.log("[v0] Token not available yet, using fallback quotation number")
+          setFormData((prev) => ({
+            ...prev,
+            quoteNumber: `QT-${new Date().toISOString().split("T")[0]}-001`, // Changed fallback format
+            quoteDate: new Date().toISOString().split("T")[0],
+          }))
+          return
+        }
+
+        const response = await fetch(`${apiUrl}/quotations/next-number`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -259,16 +387,15 @@ export function QuotationDocument() {
           setFormData((prev) => ({
             ...prev,
             quoteNumber: data.quotation_number,
-            quoteDate: data.date, // Assuming the backend provides the correct date
+            quoteDate: data.date,
           }))
         } else {
-          // Handle error: maybe set a default or show an error message
-          console.error("[v0] Failed to fetch next quotation number:", response.status, await response.text())
-          // Optionally set default values or error state
+          const errorText = await response.text()
+          console.error("[v0] Failed to fetch next quotation number:", response.status, errorText)
           setFormData((prev) => ({
             ...prev,
-            quoteNumber: `QT-${new Date().getTime()}`, // Fallback
-            quoteDate: new Date().toISOString().split("T")[0], // Fallback
+            quoteNumber: `QT-${new Date().toISOString().split("T")[0]}-001`, // Changed fallback format
+            quoteDate: new Date().toISOString().split("T")[0],
           }))
           toast({
             title: "Error",
@@ -278,27 +405,29 @@ export function QuotationDocument() {
         }
       } catch (error) {
         console.error("[v0] Error fetching next quotation number:", error)
-        // Optionally set default values or error state
         setFormData((prev) => ({
           ...prev,
-          quoteNumber: `QT-${new Date().getTime()}`, // Fallback
-          quoteDate: new Date().toISOString().split("T")[0], // Fallback
+          quoteNumber: `QT-${new Date().toISOString().split("T")[0]}-001`, // Changed fallback format
+          quoteDate: new Date().toISOString().split("T")[0],
         }))
         toast({
           title: "Error",
-          description: "An network error occurred while fetching quotation number. Using default.",
+          description: "A network error occurred while fetching quotation number. Using default.",
           variant: "destructive",
         })
       }
     }
 
-    fetchNextQuotationNumber()
-  }, [])
+    if (!isEditMode) {
+      // Only fetch if not in edit mode
+      fetchNextQuotationNumber()
+    }
+  }, [isEditMode, toast])
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setFormData({ ...formData, logo: file })
+      setFormData({ ...formData, logo: file, logoUrl: "" }) // Clear logoUrl if a new file is uploaded
       const reader = new FileReader()
       reader.onloadend = () => {
         setLogoPreview(reader.result as string)
@@ -321,18 +450,18 @@ export function QuotationDocument() {
         type: item.type,
         name: item.name,
         description: item.description,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
+        quantity: Number(item.quantity),
+        unitPrice: Number(item.unitPrice),
+        designCost: item.designCost, // Include designCost for validation
       })),
     }
 
     const result = quotationFormSchema.safeParse(formDataWithItems)
-    if (!result.success && result.error?.errors) {
+    if (!result.success) {
       const newErrors: Record<string, string> = {}
-      result.error.errors.forEach((error) => {
-        // Ensure path is an array before joining
-        const path = Array.isArray(error.path) ? error.path.join(".") : String(error.path)
-        newErrors[path] = error.message
+      result.error.issues.forEach((issue) => {
+        const path = issue.path.join(".")
+        newErrors[path] = issue.message
       })
       setErrors(newErrors)
       return false
@@ -362,7 +491,16 @@ export function QuotationDocument() {
       })
       return
     }
-    setShowPreviewModal(true)
+    setIsNavigating(true) // Set navigation flag
+    const previewData = {
+      formData,
+      lineItems,
+      subtotal,
+      totalDue,
+      logoPreview, // Include logoPreview in preview data
+    }
+    sessionStorage.setItem("quotationPreviewData", JSON.stringify(previewData))
+    router.push(`/dashboard/quotations/preview`)
   }
 
   const handlePrint = () => {
@@ -393,7 +531,6 @@ export function QuotationDocument() {
 
     setIsDownloading(true)
     try {
-      // Import html2canvas and jspdf dynamically
       const html2canvas = (await import("html2canvas")).default
       const jsPDF = (await import("jspdf")).default
 
@@ -449,7 +586,7 @@ export function QuotationDocument() {
       })
       return
     }
-    setShowSendModal(true)
+    setShowSendApprovalModal(true)
   }
 
   const confirmSave = async () => {
@@ -462,13 +599,24 @@ export function QuotationDocument() {
           description: "Please log in to save quotations",
           variant: "destructive",
         })
+        setIsSaving(false)
+        return
+      }
+
+      if (!lineItems || lineItems.length === 0) {
+        toast({
+          title: "Validation Error",
+          description: "Please add at least one item to the quotation",
+          variant: "destructive",
+        })
+        setIsSaving(false)
         return
       }
 
       const formDataToSend = new FormData()
 
       // Add customer fields
-      formDataToSend.append("customer_name", formData.clientName)
+      formDataToSend.append("customer_name", formData.clientName || "")
       formDataToSend.append("customer_email", formData.clientEmail || "")
       formDataToSend.append("customer_phone", formData.clientPhone || "")
       formDataToSend.append("customer_address", formData.clientAddress || "")
@@ -477,7 +625,7 @@ export function QuotationDocument() {
       formDataToSend.append("customer_zip_code", formData.clientPostal || "")
 
       // Add business fields
-      formDataToSend.append("business_name", formData.businessName)
+      formDataToSend.append("business_name", formData.businessName || "")
       formDataToSend.append("business_address", formData.businessAddress || "")
       formDataToSend.append("business_city", formData.businessCity || "")
       formDataToSend.append("business_state", formData.businessState || "")
@@ -485,67 +633,223 @@ export function QuotationDocument() {
       formDataToSend.append("business_phone", formData.businessPhone || "")
       formDataToSend.append("business_email", formData.businessEmail || "")
 
-      // Add logo if exists
-      if (formData.logo) {
+      if (formData.logo && formData.logo instanceof File) {
+        console.log("[v0] Appending logo file to FormData")
         formDataToSend.append("logo", formData.logo)
+      } else if (formData.logoUrl) {
+        console.log("[v0] Logo URL already exists, skipping re-upload:", formData.logoUrl)
       }
 
-      // Add other fields
-      formDataToSend.append("notes", "")
-      formDataToSend.append("valid_until", formData.dueDate || "")
+      formDataToSend.append("notes", formData.notes || "")
+      formDataToSend.append("valid_until", formData.validUntil || "")
+
+      formDataToSend.append(
+        "items",
+        JSON.stringify(
+          lineItems.map((item, index) => ({
+            product_id: item.productId || null,
+            service_id: item.serviceId || null,
+            customization: item.description || "",
+            quantity: Number(item.quantity) || 1,
+            unit_price: Number(item.unitPrice) || 0,
+            design_cost: Number(item.designCost) || 0,
+            sort_order: index,
+          })),
+        ),
+      )
+
+      const url = isEditMode
+        ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/quotations`
+
+      const method = isEditMode ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method: "POST", // Always POST for new creations or updates using _method
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: (() => {
+          if (method === "PUT") {
+            formDataToSend.append("_method", "PUT")
+          }
+          return formDataToSend
+        })(),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
+        const errorMessages = data.errors
+          ? Object.entries(data.errors)
+              .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+              .join("\n")
+          : data.message || "Failed to save quotation"
+
+        toast({
+          title: "Validation Error",
+          description: errorMessages,
+          variant: "destructive",
+        })
+        setIsSaving(false)
+        return
+      }
+
+      toast({
+        title: "Success",
+        description: "Quotation saved as draft successfully",
+      })
+
+      sessionStorage.removeItem("quotationDraft")
+      sessionStorage.removeItem("quotationPreviewData")
+      setFormData(getInitialFormData())
+      setLineItems([])
+      setLogoPreview("")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      router.push("/dashboard")
+    } catch (error: any) {
+      console.log("[v0] Save error:", error.message)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save quotation",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const confirmSendForApproval = async () => {
+    setIsSending(true)
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to send quotations",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // First save the quotation as draft if it's new
+      const formDataToSend = new FormData()
+
+      // Add customer fields
+      formDataToSend.append("customer_name", formData.clientName || "")
+      formDataToSend.append("customer_email", formData.clientEmail || "")
+      formDataToSend.append("customer_phone", formData.clientPhone || "")
+      formDataToSend.append("customer_address", formData.clientAddress || "")
+      formDataToSend.append("customer_city", formData.clientCity || "")
+      formDataToSend.append("customer_province", formData.clientState || "")
+      formDataToSend.append("customer_zip_code", formData.clientPostal || "")
+
+      // Add business fields
+      formDataToSend.append("business_name", formData.businessName || "")
+      formDataToSend.append("business_address", formData.businessAddress || "")
+      formDataToSend.append("business_city", formData.businessCity || "")
+      formDataToSend.append("business_state", formData.businessState || "")
+      formDataToSend.append("business_postal", formData.businessPostal || "")
+      formDataToSend.append("business_phone", formData.businessPhone || "")
+      formDataToSend.append("business_email", formData.businessEmail || "")
+
+      if (formData.logo && formData.logo instanceof File) {
+        console.log("[v0] Appending logo file to FormData for send")
+        formDataToSend.append("logo", formData.logo)
+      } else if (formData.logoUrl) {
+        console.log("[v0] Logo URL already exists, skipping re-upload:", formData.logoUrl)
+      }
+
+      formDataToSend.append("notes", formData.notes || "")
+      formDataToSend.append("valid_until", formData.validUntil || "")
+      formDataToSend.append("status", "pending_approval")
 
       // Add items as JSON string
-      const itemsPayload = lineItems.map((item) => ({
-        product_id: item.type === "product" ? item.productId : null,
-        service_id: item.type === "service" ? item.serviceId : null,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        customization: item.description,
-      }))
-      formDataToSend.append("items", JSON.stringify(itemsPayload))
+      formDataToSend.append(
+        "items",
+        JSON.stringify(
+          lineItems.map((item, index) => ({
+            product_id: item.productId || null,
+            service_id: item.serviceId || null,
+            customization: item.description || "",
+            quantity: Number(item.quantity) || 1,
+            unit_price: Number(item.unitPrice) || 0,
+            design_cost: Number(item.designCost) || 0,
+            sort_order: index,
+          })),
+        ),
+      )
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quotations`, {
+      const url = isEditMode
+        ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/quotations`
+
+      const method = isEditMode ? "PUT" : "POST"
+
+      const response = await fetch(url, {
         method: "POST",
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: formDataToSend,
+        body: (() => {
+          if (method === "PUT") {
+            formDataToSend.append("_method", "PUT")
+          }
+          return formDataToSend
+        })(),
       })
 
-      if (response.ok) {
-        const data = await response.json()
+      const data = await response.json()
+
+      if (!response.ok) {
+        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
+        const errorMessages = data.errors
+          ? Object.entries(data.errors)
+              .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+              .join("\n")
+          : data.message || "Failed to send quotation"
+
         toast({
-          title: "Success",
-          description: `Quotation ${data.quotation?.quotation_number || formData.quoteNumber} saved as draft`,
-        })
-        // Redirect to dashboard
-        setTimeout(() => {
-          window.location.href = "/dashboard"
-        }, 1500)
-      } else {
-        const errorData = await response.json()
-        toast({
-          title: "Error",
-          description: errorData.message || "Failed to save quotation",
+          title: "Validation Error",
+          description: errorMessages,
           variant: "destructive",
         })
+        setIsSending(false)
+        return
       }
-    } catch (error) {
-      console.error("[v0] Save error:", error)
+
+      toast({
+        title: "Success",
+        description: "Quotation sent to admin for approval successfully",
+      })
+
+      sessionStorage.removeItem("quotationDraft")
+      sessionStorage.removeItem("quotationPreviewData")
+      setFormData(getInitialFormData())
+      setLineItems([])
+      setLogoPreview("")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      setShowSendModal(false)
+
+      router.push("/dashboard")
+    } catch (error: any) {
+      console.log("[v0] Send error:", error.message)
       toast({
         title: "Error",
-        description: "An error occurred while saving",
+        description: error.message || "Failed to send quotation",
         variant: "destructive",
       })
     } finally {
-      setIsSaving(false)
-      setShowConfirmDialog(false)
+      setIsSending(false)
     }
   }
 
   const addLineItem = (item: Omit<LineItem, "id" | "amount">) => {
-    const amount = item.quantity * item.unitPrice
+    const amount = (item.quantity || 1) * (item.unitPrice || 0)
     setLineItems([
       ...lineItems,
       {
@@ -569,7 +873,21 @@ export function QuotationDocument() {
           ? {
               ...item,
               quantity,
-              amount: quantity * item.unitPrice,
+              amount: quantity * (item.unitPrice || 0),
+            }
+          : item,
+      ),
+    )
+  }
+
+  const updateLineItemDesignCost = (id: string, designCost: number) => {
+    setLineItems(
+      lineItems.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              designCost,
+              amount: (item.quantity || 1) * (item.unitPrice || 0) + designCost,
             }
           : item,
       ),
@@ -593,7 +911,7 @@ export function QuotationDocument() {
                 className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-red-600 font-semibold rounded-lg transition transform hover:scale-105 shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-                <span className="hidden sm:inline">Save Draft</span>
+                <span className="hidden sm:inline">{isEditMode ? "Update" : "Save Draft"}</span>
               </button>
               <button
                 onClick={handlePreview}
@@ -638,7 +956,7 @@ export function QuotationDocument() {
         {/* Document Viewer */}
         <div
           ref={printRef}
-          className="bg-white rounded-2xl shadow-2xl overflow-hidden print:shadow-none print:rounded-none"
+          className="bg-white rounded-2xl shadow-2xl overflow-hidden print:shadow-none print:rounded-none print-content"
         >
           {/* Document Header */}
           <div className="p-8 border-b-4 border-red-200">
@@ -651,11 +969,18 @@ export function QuotationDocument() {
                       src={logoPreview || "/placeholder.svg"}
                       alt="Company Logo"
                       className="w-32 h-32 object-contain rounded-lg border-2 border-red-200"
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement
+                        if (img.src !== "/placeholder.svg") {
+                          console.log("[v0] Logo failed to load from URL:", logoPreview)
+                          img.src = "/placeholder.svg"
+                        }
+                      }}
                     />
                     <button
                       onClick={() => {
                         setLogoPreview("")
-                        setFormData({ ...formData, logo: undefined })
+                        setFormData({ ...formData, logo: undefined, logoUrl: "" }) // Clear both logo file and URL
                       }}
                       className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition"
                     >
@@ -863,11 +1188,12 @@ export function QuotationDocument() {
                   <p className="text-xs font-bold text-gray-500 uppercase mb-2">Due Date</p>
                   <input
                     type="date"
-                    value={formData.dueDate}
-                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                    className={`text-lg font-semibold text-gray-900 bg-transparent border-b-2 ${errors.dueDate ? "border-red-500" : "border-gray-300"} focus:border-red-600 outline-none transition w-full`}
+                    value={formData.validUntil} // Changed from formData.dueDate to formData.validUntil
+                    onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })} // Changed from dueDate to validUntil
+                    className={`text-lg font-semibold text-gray-900 bg-transparent border-b-2 ${errors.validUntil ? "border-red-500" : "border-gray-300"} focus:border-red-600 outline-none transition w-full`} // Changed from dueDate to validUntil
                   />
-                  {errors.dueDate && <p className="text-xs text-red-500 mt-1">{errors.dueDate}</p>}
+                  {errors.validUntil && <p className="text-xs text-red-500 mt-1">{errors.validUntil}</p>}{" "}
+                  {/* Changed from dueDate to validUntil */}
                 </div>
               </div>
             </div>
@@ -875,7 +1201,6 @@ export function QuotationDocument() {
 
           {/* Line Items Table */}
           <div className="p-8">
-            {/* Updated Items Section with print styles and fixed Unit Price */}
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               Items
               <span className="text-sm font-normal text-gray-500">
@@ -910,6 +1235,12 @@ export function QuotationDocument() {
                           src={item.image || "/placeholder.svg"}
                           alt={item.name}
                           className="w-12 h-12 object-cover rounded border border-gray-200"
+                          onError={(e) => {
+                            const img = e.target as HTMLImageElement
+                            if (img.src !== "/placeholder.svg") {
+                              img.src = "/placeholder.svg"
+                            }
+                          }}
                         />
                       )}
                       <div>
@@ -935,7 +1266,7 @@ export function QuotationDocument() {
                     <div className="col-span-2 flex items-center justify-end">
                       <input
                         type="text"
-                        value={`₱${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                        value={`₱${(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                         disabled
                         className="w-full px-3 py-2 text-right bg-gray-100 border-2 border-gray-200 rounded-lg font-semibold text-gray-700 cursor-not-allowed print:bg-transparent print:border-0 print:text-gray-900"
                         title="Unit price is fixed from product/service"
@@ -945,7 +1276,11 @@ export function QuotationDocument() {
                     {/* Amount Column */}
                     <div className="col-span-2 flex items-center justify-end">
                       <p className="font-bold text-gray-900">
-                        ₱{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ₱
+                        {(item.amount || 0).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </p>
                     </div>
 
@@ -980,6 +1315,21 @@ export function QuotationDocument() {
                 <Plus size={20} />
                 Add Service
               </button>
+            </div>
+
+            {/* Notes Section */}
+            <div className="mt-8 print:hidden">
+              <label htmlFor="notes" className="block text-sm font-semibold text-gray-700 mb-2">
+                Notes/Comments
+              </label>
+              <textarea
+                id="notes"
+                value={formData.notes || ""}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="Add any additional notes or comments..."
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 outline-none resize-none"
+                rows={4}
+              />
             </div>
           </div>
 
@@ -1023,6 +1373,7 @@ export function QuotationDocument() {
             quantity: 1,
             unitPrice: product.base_price,
             image: product.image_url,
+            designCost: product.design_cost, // Pass design_cost
           })
         }}
       />
@@ -1040,174 +1391,13 @@ export function QuotationDocument() {
             quantity: 1,
             unitPrice: service.base_price,
             image: service.image_url,
+            designCost: service.design_cost, // Pass design_cost
           })
         }}
       />
 
       {/* Preview Modal - Full Screen with Zoom */}
-      <Dialog open={showPreviewModal} onOpenChange={setShowPreviewModal}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden p-0">
-          <div className="flex flex-col h-full">
-            {/* Preview Header with Exit Button */}
-            <div className="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-red-600 to-orange-500">
-              <DialogTitle className="text-2xl font-bold text-white">Preview Quotation</DialogTitle>
-              <button
-                onClick={() => setShowPreviewModal(false)}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-red-600 font-semibold rounded-lg transition"
-              >
-                <X size={18} />
-                Exit Preview
-              </button>
-            </div>
-
-            {/* Preview Content - Zoomed View Only */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gray-100">
-              <div className="max-w-4xl mx-auto bg-white shadow-2xl rounded-xl p-8">
-                {/* Logo and Header */}
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    {logoPreview && (
-                      <img
-                        src={logoPreview || "/placeholder.svg"}
-                        alt="Company Logo"
-                        className="w-24 h-24 object-contain mb-4"
-                      />
-                    )}
-                    <h3 className="text-3xl font-bold text-gray-900 mb-1">Quotation</h3>
-                    <p className="text-xl text-gray-600">{formData.quoteNumber}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600 mb-1">
-                      <span className="font-semibold">Date:</span> {new Date(formData.quoteDate).toLocaleDateString()}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <span className="font-semibold">Valid Until:</span>{" "}
-                      {new Date(formData.dueDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-
-                {/* From and Bill To Section */}
-                <div className="grid grid-cols-2 gap-8 mb-8 pb-8 border-b-2 border-gray-200">
-                  <div>
-                    <h4 className="font-bold text-red-600 mb-3 uppercase text-sm">From:</h4>
-                    <p className="text-lg font-semibold text-gray-900">{formData.businessName}</p>
-                    <p className="text-gray-600 text-sm mt-2">{formData.businessAddress}</p>
-                    <p className="text-gray-600 text-sm">
-                      {formData.businessCity}, {formData.businessState} {formData.businessPostal}
-                    </p>
-                    <p className="text-gray-600 text-sm mt-2">{formData.businessPhone}</p>
-                    <p className="text-gray-600 text-sm">{formData.businessEmail}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-red-600 mb-3 uppercase text-sm">Bill To:</h4>
-                    <p className="text-lg font-semibold text-gray-900">{formData.clientName}</p>
-                    <p className="text-gray-600 text-sm mt-2">{formData.clientAddress}</p>
-                    <p className="text-gray-600 text-sm">
-                      {formData.clientCity}, {formData.clientState} {formData.clientPostal}
-                    </p>
-                    <p className="text-gray-600 text-sm mt-2">{formData.clientPhone}</p>
-                    <p className="text-gray-600 text-sm">{formData.clientEmail}</p>
-                  </div>
-                </div>
-
-                {/* Items Table */}
-                <div className="mb-8">
-                  <h4 className="font-bold text-gray-900 mb-4 text-lg">Items</h4>
-                  <div className="border-2 border-gray-200 rounded-lg overflow-hidden">
-                    <table className="w-full">
-                      <thead className="bg-gradient-to-r from-red-600 to-orange-500 text-white">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-semibold">Item</th>
-                          <th className="text-center px-4 py-3 font-semibold">Qty</th>
-                          <th className="text-right px-4 py-3 font-semibold">Unit Price</th>
-                          <th className="text-right px-4 py-3 font-semibold">Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {lineItems.map((item, index) => (
-                          <tr key={item.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                {item.image && (
-                                  <img
-                                    src={item.image || "/placeholder.svg"}
-                                    alt={item.name}
-                                    className="w-12 h-12 object-cover rounded"
-                                  />
-                                )}
-                                <div>
-                                  <p className="font-semibold text-gray-900">{item.name}</p>
-                                  {item.description && <p className="text-xs text-gray-600">{item.description}</p>}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 text-center text-gray-700">{item.quantity}</td>
-                            <td className="px-4 py-3 text-right text-gray-700">
-                              ₱
-                              {item.unitPrice.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </td>
-                            <td className="px-4 py-3 text-right font-semibold text-gray-900">
-                              ₱
-                              {item.amount.toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* Totals Section */}
-                <div className="flex justify-end">
-                  <div className="w-80">
-                    <div className="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 rounded-lg p-6">
-                      <div className="flex justify-between mb-3 text-gray-700">
-                        <span className="font-semibold">Subtotal:</span>
-                        <span className="font-semibold">
-                          ₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      <div className="border-t-2 border-red-300 pt-3 flex justify-between">
-                        <span className="text-xl font-bold text-gray-900">Total:</span>
-                        <span className="text-2xl font-bold text-red-600">
-                          ₱{totalDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Preview Footer Actions */}
-            <div className="flex gap-3 justify-end px-6 py-4 border-t bg-gray-50">
-              <button
-                onClick={handleDownloadPDF}
-                disabled={isDownloading}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
-              >
-                {isDownloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                Download PDF
-              </button>
-              <button
-                onClick={handlePrint}
-                disabled={isPrinting}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition disabled:opacity-50"
-              >
-                {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
-                Print
-              </button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Preview modal code removed - now uses /dashboard/quotations/preview page */}
 
       {/* Settings Modal - Enhanced */}
       <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
@@ -1222,15 +1412,17 @@ export function QuotationDocument() {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Default Currency</label>
               <select className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 outline-none">
-                <option value="PHP">PHP (₱) - Philippine Peso</option>
-                <option value="USD">USD ($) - US Dollar</option>
-                <option value="EUR">EUR (€) - Euro</option>
+                <option value="PHP">₱ - Philippine Peso</option>
+                <option value="USD">$ - US Dollar</option>
+                <option value="EUR">€ - Euro</option>
               </select>
             </div>
 
             {/* Payment Terms */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Default Payment Terms (Days)</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Default Quotation Validity (Days)
+              </label>
               <input
                 type="number"
                 defaultValue={30}
@@ -1242,7 +1434,7 @@ export function QuotationDocument() {
 
             {/* Terms & Conditions */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Terms & Conditions</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Default Terms & Conditions</label>
               <textarea
                 className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 outline-none resize-none"
                 rows={4}
@@ -1253,7 +1445,7 @@ export function QuotationDocument() {
 
             {/* Footer Notes */}
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Footer Notes</label>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Default Footer Notes</label>
               <textarea
                 className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 outline-none resize-none"
                 rows={2}
@@ -1381,14 +1573,49 @@ export function QuotationDocument() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={showSendApprovalModal} onOpenChange={setShowSendApprovalModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Send for Approval</DialogTitle>
+            <DialogDescription>
+              Do you want to send quotation <span className="font-bold text-gray-900">{formData.quoteNumber}</span> to
+              admin for approval?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
+            <button
+              onClick={() => setShowSendApprovalModal(false)}
+              disabled={isSending}
+              className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
+            >
+              No, Cancel
+            </button>
+            <button
+              onClick={confirmSendForApproval}
+              disabled={isSending}
+              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Yes, Send for Approval"
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Save Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Save Quotation as Draft?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to save quotation{" "}
-              <span className="font-bold text-gray-900">{formData.quoteNumber}</span> as draft?
+              Are you sure you want to save this quotation as a draft?
               <br />
               <br />
               You can send it for admin approval later from the dashboard.

@@ -197,7 +197,13 @@ export function QuotationList() {
                     {quotation.quotation_number}
                   </p>
                   <div className="flex items-center gap-3 text-sm text-gray-600 mt-1">
-                    <span>{new Date(quotation.created_at).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(quotation.created_at).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </span>
                     <span className="flex items-center gap-1 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs font-medium">
                       <Package size={12} />
                       {quotation.items_count || 0} items
@@ -210,7 +216,9 @@ export function QuotationList() {
                   <span
                     className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${getStatusColor(quotation.status)}`}
                   >
-                    {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
+                    {quotation.status === "pending"
+                      ? "Pending"
+                      : quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
                   </span>
                 </div>
 

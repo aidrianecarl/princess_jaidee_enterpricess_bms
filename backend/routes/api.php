@@ -41,13 +41,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/services/{id}', [ServiceController::class, 'show']);
 
     // Quotations - Client
-    Route::get('/quotations', [QuotationController::class, 'index']);
-    Route::get('/quotations/{id}', [QuotationController::class, 'show']);
-    Route::post('/quotations', [QuotationController::class, 'store']);
-    Route::put('/quotations/{id}', [QuotationController::class, 'update']); // Added update route for quotations
-    Route::post('/quotations/upload-logo', [QuotationController::class, 'uploadLogo']);
-
     Route::get('/quotations/next-number', [QuotationController::class, 'getNextQuotationNumber']);
+    Route::post('/quotations/upload-logo', [QuotationController::class, 'uploadLogo']);
+    
+    Route::get('/quotations', [QuotationController::class, 'index']);
+    Route::post('/quotations', [QuotationController::class, 'store']);
+    Route::get('/quotations/{id}', [QuotationController::class, 'show']);
+    Route::put('/quotations/{id}', [QuotationController::class, 'update']);
+
+    // Users - Profile Management
+    Route::get('/users/{id}', [UserController::class, 'show']);
+    Route::put('/users/{id}', [UserController::class, 'update']);
+    Route::post('/users/{id}/change-password', [UserController::class, 'changePassword']);
 
     // Products - Admin
     Route::get('/admin/products', [ProductController::class, 'index']);
