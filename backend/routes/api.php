@@ -16,14 +16,15 @@ Route::post('/register', [AuthController::class, 'clientRegister']);
 Route::post('/login', [AuthController::class, 'clientLogin']);
 Route::post('/admin/login', [AuthController::class, 'adminLogin']);
 
+Route::get('/products', [ProductController::class, 'index']);
+Route::get('/products/{id}', [ProductController::class, 'show']);
+Route::get('/services', [ServiceController::class, 'index']);
+Route::get('/services/{id}', [ServiceController::class, 'show']);
+
 // Protected routes - All subsequent routes require valid Sanctum token
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'getCurrentUser']);
-
-    // Products
-    Route::get('/products', [ProductController::class, 'index']);
-    Route::get('/products/{id}', [ProductController::class, 'show']);
 
     // Colors and Sizes - Managing Variations
     Route::get('/colors', [ProductController::class, 'getColors']);
@@ -36,10 +37,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/sizes/{id}', [ProductController::class, 'updateSize']);
     Route::delete('/sizes/{id}', [ProductController::class, 'destroySize']);
 
-    // Services
-    Route::get('/services', [ServiceController::class, 'index']);
-    Route::get('/services/{id}', [ServiceController::class, 'show']);
-
     // Quotations - Client
     Route::get('/quotations/next-number', [QuotationController::class, 'getNextQuotationNumber']);
     Route::post('/quotations/upload-logo', [QuotationController::class, 'uploadLogo']);
@@ -50,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/quotations/{id}', [QuotationController::class, 'update']);
 
     // Users - Profile Management
+    Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/employees', [UserController::class, 'getEmployees']);
     Route::get('/users/{id}', [UserController::class, 'show']);
     Route::put('/users/{id}', [UserController::class, 'update']);
     Route::post('/users/{id}/change-password', [UserController::class, 'changePassword']);
@@ -81,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Quotations - Admin
     Route::get('/admin/quotations', [QuotationController::class, 'adminIndex']);
+    Route::get('/admin/quotations/{id}', [QuotationController::class, 'adminShow']);
     Route::put('/admin/quotations/{id}/status', [QuotationController::class, 'updateStatus']);
     Route::delete('/admin/quotations/{id}', [QuotationController::class, 'destroy']);
 

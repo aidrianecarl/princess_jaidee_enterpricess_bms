@@ -228,6 +228,7 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->integer('quantity');
             $table->decimal('unit_price', 10, 2);
+            $table->decimal('design_cost', 10, 2)->default(0)->nullable();
             $table->decimal('line_total', 12, 2);
             $table->timestamps();
         });
@@ -273,6 +274,7 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->id();
             $table->string('job_order_number')->unique();
+            $table->foreignId('quotation_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('order_id')->constrained()->onDelete('restrict');
             $table->foreignId('customer_id')->constrained()->onDelete('restrict');
             $table->foreignId('assigned_to')->nullable()->constrained('users')->onDelete('set null');
@@ -340,7 +342,7 @@ return new class extends Migration
         });
     }
 
-        public function down(): void
+    public function down(): void
     {
         Schema::disableForeignKeyConstraints();
 

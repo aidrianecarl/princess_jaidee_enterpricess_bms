@@ -258,7 +258,6 @@ class QuotationController extends Controller
                 'valid_until' => $request->valid_until,
             ]);
 
-            // Add items
             foreach ($request->items as $item) {
                 $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
                 if (isset($item['design_cost'])) {
@@ -272,6 +271,7 @@ class QuotationController extends Controller
                     'description' => $item['customization'] ?? $item['description'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'design_cost' => $item['design_cost'] ?? 0,
                     'line_total' => $lineTotal,
                 ]);
             }
@@ -416,6 +416,7 @@ class QuotationController extends Controller
                         'description' => $item['customization'] ?? $item['description'] ?? null,
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
+                        'design_cost' => $item['design_cost'] ?? 0,
                         'line_total' => $lineTotal,
                     ]);
                 }
@@ -511,8 +512,7 @@ class QuotationController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:draft,pending,approved,rejected,expired',
-            'scheduled_date' => 'nullable|date',
+            'status' => 'required|in:draft,pending_approval,approved,rejected',
         ]);
 
         if ($validator->fails()) {
@@ -521,14 +521,13 @@ class QuotationController extends Controller
 
         $quotation->update([
             'status' => $request->status,
-            'scheduled_send_date' => $request->scheduled_date,
         ]);
         
-        $quotation->load(['customer', 'items.product', 'items.service']);
+        $quotation->load(['customer', 'items.product', 'items.service', 'creator']);
         $quotation->items_count = $quotation->items->count();
 
         return response()->json([
-            'message' => 'Quotation status updated',
+            'message' => 'Quotation status updated successfully',
             'quotation' => $quotation,
         ], 200);
     }
@@ -554,15 +553,15 @@ class QuotationController extends Controller
     public function adminIndex(Request $request)
     {
         $query = Quotation::with(['customer', 'items.product', 'items.service', 'creator']);
-
+        
         if ($request->has('search')) {
             $query->where('quotation_number', 'like', '%' . $request->search . '%');
         }
-
+        
         if ($request->has('status') && $request->status !== '') {
             $query->where('status', $request->status);
         }
-
+        
         $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
         
         $quotations->getCollection()->transform(function ($quotation) {
@@ -571,5 +570,17 @@ class QuotationController extends Controller
         });
 
         return response()->json($quotations, 200);
+    }
+
+    // Admin view single quotation
+    public function adminShow($id)
+    {
+        $quotation = Quotation::with(['customer', 'items.product', 'items.service', 'creator'])->find($id);
+
+        if (!$quotation) {
+            return response()->json(['error' => 'Quotation not found'], 404);
+        }
+
+        return response()->json($quotation, 200);
     }
 }

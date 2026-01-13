@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Search, X, ShoppingCart } from "lucide-react"
+import { Search, X, ShoppingCart, AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface Product {
@@ -23,6 +23,7 @@ export function ProductSelectorModal({ isOpen, onClose, onSelect }: ProductSelec
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -32,24 +33,44 @@ export function ProductSelectorModal({ isOpen, onClose, onSelect }: ProductSelec
 
   const fetchProducts = async () => {
     setIsLoading(true)
+    setError(null)
     try {
       const token = localStorage.getItem("auth_token")
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/products?status=active`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
       })
-      if (response.ok) {
-        const data = await response.json()
-        // Handle both paginated and non-paginated responses
-        const productsList = data.data || data
-        setProducts(Array.isArray(productsList) ? productsList : [])
-        setFilteredProducts(Array.isArray(productsList) ? productsList : [])
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("[v0] Products API response:", data)
+
+      let productsList = []
+      if (data.data && Array.isArray(data.data)) {
+        productsList = data.data
+      } else if (data.pagination && Array.isArray(data.data)) {
+        productsList = data.data
+      } else if (Array.isArray(data)) {
+        productsList = data
+      }
+
+      setProducts(productsList)
+      setFilteredProducts(productsList)
+
+      if (productsList.length === 0) {
+        setError("No products found. Please create products first.")
       }
     } catch (error) {
       console.error("[v0] Failed to fetch products:", error)
+      setError("Failed to load products. Please try again.")
+      setProducts([])
+      setFilteredProducts([])
     } finally {
       setIsLoading(false)
     }
@@ -117,6 +138,17 @@ export function ProductSelectorModal({ isOpen, onClose, onSelect }: ProductSelec
                 </div>
               ))}
             </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-48">
+              <AlertCircle size={48} className="text-red-400 mb-3" />
+              <p className="text-red-600 text-lg font-semibold">{error}</p>
+              <button
+                onClick={fetchProducts}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Try Again
+              </button>
+            </div>
           ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredProducts.map((product) => (
@@ -166,7 +198,9 @@ export function ProductSelectorModal({ isOpen, onClose, onSelect }: ProductSelec
             <div className="flex flex-col items-center justify-center h-48">
               <ShoppingCart size={48} className="text-gray-300 mb-3" />
               <p className="text-gray-500 text-lg">No products found</p>
-              <p className="text-sm text-gray-400 mt-1">Try a different search term</p>
+              <p className="text-sm text-gray-400 mt-1">
+                Try a different search term or create products in the admin panel
+              </p>
             </div>
           )}
         </div>

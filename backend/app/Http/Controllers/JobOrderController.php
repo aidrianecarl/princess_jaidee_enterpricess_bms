@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JobOrder;
 use App\Models\JobOrderItem;
+use App\Models\Quotation;
 use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -22,10 +23,16 @@ class JobOrderController extends Controller
             }
 
             if ($request->has('status')) {
-                $query->where('status', $request->status);
+                $status = $request->status === 'in_progress' ? 'in-progress' : $request->status;
+                $query->where('status', $status);
             }
 
             $jobOrders = $query->orderBy('created_at', 'desc')->get();
+
+            $jobOrders = $jobOrders->map(function($jobOrder) {
+                $jobOrder->status = str_replace('-', '_', $jobOrder->status);
+                return $jobOrder;
+            });
 
             return response()->json([
                 'data' => $jobOrders,
@@ -45,6 +52,8 @@ class JobOrderController extends Controller
                 return response()->json(['error' => 'Job Order not found'], 404);
             }
 
+            $jobOrder->status = str_replace('-', '_', $jobOrder->status);
+
             return response()->json($jobOrder, 200);
         } catch (\Exception $e) {
             Log::error('Error fetching job order: ' . $e->getMessage());
@@ -55,11 +64,12 @@ class JobOrderController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'quotation_id' => 'required|exists:quotations,id',
-            'assigned_to_id' => 'required|exists:users,id',
+            'quotation_id' => 'nullable|exists:quotations,id',
+            'order_id' => 'nullable|exists:orders,id',
+            'customer_id' => 'required|exists:customers,id',
+            'assigned_to' => 'required|exists:users,id',
             'start_date' => 'required|date',
             'due_date' => 'required|date|after:start_date',
-            'items' => 'required|array',
         ]);
 
         if ($validator->fails()) {
@@ -72,38 +82,39 @@ class JobOrderController extends Controller
             $jobOrder = JobOrder::create([
                 'job_order_number' => $jobNumber,
                 'quotation_id' => $request->quotation_id,
-                'assigned_to' => $request->assigned_to_id,
+                'order_id' => $request->order_id,
+                'customer_id' => $request->customer_id,
+                'assigned_to' => $request->assigned_to,
                 'start_date' => $request->start_date,
                 'due_date' => $request->due_date,
                 'status' => 'pending',
                 'notes' => $request->notes ?? null,
             ]);
 
-            // Create job order items from quotation items
-            if ($request->has('items')) {
-                foreach ($request->items as $item) {
-                    JobOrderItem::create([
-                        'job_order_id' => $jobOrder->id,
-                        'product_id' => $item['product_id'] ?? null,
-                        'service_id' => $item['service_id'] ?? null,
-                        'description' => $item['description'] ?? null,
-                        'quantity' => $item['quantity'] ?? 1,
-                        'unit_price' => $item['unit_price'] ?? 0,
-                        'line_total' => ($item['quantity'] ?? 1) * ($item['unit_price'] ?? 0),
-                        'completed' => false,
-                    ]);
+            if ($request->quotation_id) {
+                $quotation = Quotation::with('items')->find($request->quotation_id);
+                if ($quotation && $quotation->items) {
+                    foreach ($quotation->items as $item) {
+                        JobOrderItem::create([
+                            'job_order_id' => $jobOrder->id,
+                            'product_id' => $item->product_id,
+                            'service_id' => $item->service_id,
+                            'description' => $item->description,
+                            'quantity' => $item->quantity,
+                            'unit_price' => $item->unit_price,
+                        ]);
+                    }
                 }
             }
 
-            $jobOrder->load(['assignedTo', 'customer', 'items.product', 'items.service']);
-
             return response()->json([
-                'message' => 'Job Order created successfully',
-                'jobOrder' => $jobOrder,
+                'success' => true,
+                'message' => 'Job order created successfully',
+                'data' => $jobOrder
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Job Order creation error: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('Error creating job order: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to create job order', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -164,7 +175,7 @@ class JobOrderController extends Controller
         }
 
         $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,in_progress,on_hold,completed,cancelled',
+            'status' => 'required|in:pending,in_progress,in-progress,on_hold,completed,cancelled',
         ]);
 
         if ($validator->fails()) {
@@ -172,7 +183,9 @@ class JobOrderController extends Controller
         }
 
         try {
-            if ($request->status === 'completed') {
+            $status = $request->status === 'in_progress' ? 'in-progress' : $request->status;
+
+            if ($status === 'completed') {
                 // Mark all uncompleted items as completed and reduce stock
                 $items = JobOrderItem::where('job_order_id', $id)->where('completed', false)->get();
                 
@@ -193,14 +206,15 @@ class JobOrderController extends Controller
 
                 // Set completed date
                 $jobOrder->update([
-                    'status' => $request->status,
+                    'status' => $status,
                     'completed_date' => now(),
                 ]);
             } else {
-                $jobOrder->update(['status' => $request->status]);
+                $jobOrder->update(['status' => $status]);
             }
 
             $jobOrder->load(['assignedTo', 'customer', 'items.product', 'items.service']);
+            $jobOrder->status = str_replace('-', '_', $jobOrder->status);
 
             return response()->json([
                 'message' => 'Job Order updated successfully',

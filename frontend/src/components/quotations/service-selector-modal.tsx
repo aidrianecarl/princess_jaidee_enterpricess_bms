@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { Search, X, Briefcase } from "lucide-react"
+import { Search, X, Briefcase, AlertCircle } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface Service {
@@ -23,6 +23,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
   const [filteredServices, setFilteredServices] = useState<Service[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isOpen) {
@@ -32,24 +33,42 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
 
   const fetchServices = async () => {
     setIsLoading(true)
+    setError(null)
     try {
       const token = localStorage.getItem("auth_token")
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/services`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/services?status=active`, {
         headers: {
           "Content-Type": "application/json",
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
       })
-      if (response.ok) {
-        const data = await response.json()
-        // Handle both paginated and non-paginated responses
-        const servicesList = data.data || data
-        setServices(Array.isArray(servicesList) ? servicesList : [])
-        setFilteredServices(Array.isArray(servicesList) ? servicesList : [])
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const data = await response.json()
+      console.log("[v0] Services API response:", data)
+
+      let servicesList = []
+      if (data.data && Array.isArray(data.data)) {
+        servicesList = data.data
+      } else if (Array.isArray(data)) {
+        servicesList = data
+      }
+
+      setServices(servicesList)
+      setFilteredServices(servicesList)
+
+      if (servicesList.length === 0) {
+        setError("No services found. Please create services first.")
       }
     } catch (error) {
       console.error("[v0] Failed to fetch services:", error)
+      setError("Failed to load services. Please try again.")
+      setServices([])
+      setFilteredServices([])
     } finally {
       setIsLoading(false)
     }
@@ -117,6 +136,17 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                 </div>
               ))}
             </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-48">
+              <AlertCircle size={48} className="text-red-400 mb-3" />
+              <p className="text-red-600 text-lg font-semibold">{error}</p>
+              <button
+                onClick={fetchServices}
+                className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"
+              >
+                Try Again
+              </button>
+            </div>
           ) : filteredServices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredServices.map((service) => (
@@ -166,7 +196,9 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
             <div className="flex flex-col items-center justify-center h-48">
               <Briefcase size={48} className="text-gray-300 mb-3" />
               <p className="text-gray-500 text-lg">No services found</p>
-              <p className="text-sm text-gray-400 mt-1">Try a different search term</p>
+              <p className="text-sm text-gray-400 mt-1">
+                Try a different search term or create services in the admin panel
+              </p>
             </div>
           )}
         </div>

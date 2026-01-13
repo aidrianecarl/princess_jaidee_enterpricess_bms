@@ -3,8 +3,28 @@
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
-import { CheckCircle, Circle, Clock, AlertCircle, Calendar, User } from "lucide-react"
+import { CheckCircle, Circle, Clock, AlertCircle, Calendar, User, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+
+const JobOrderSkeleton = () => (
+  <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 animate-pulse">
+    <div className="flex items-start justify-between mb-3">
+      <div className="flex-1">
+        <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-20 mb-2" />
+        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-32" />
+      </div>
+      <div className="h-6 bg-neutral-200 dark:bg-neutral-700 rounded w-24" />
+    </div>
+    <div className="space-y-2 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-48" />
+      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-40" />
+    </div>
+    <div className="space-y-2">
+      <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded w-full" />
+      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-32" />
+    </div>
+  </div>
+)
 
 export default function JobOrdersPage() {
   const [jobOrders, setJobOrders] = useState<any[]>([])
@@ -82,14 +102,15 @@ export default function JobOrdersPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status.replace("_", "-")
+    switch (normalizedStatus) {
       case "pending":
         return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-      case "in_progress":
+      case "in-progress":
         return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
       case "completed":
         return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-      case "on_hold":
+      case "on-hold":
         return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
       default:
         return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
@@ -97,12 +118,13 @@ export default function JobOrdersPage() {
   }
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status.replace("_", "-")
+    switch (normalizedStatus) {
       case "completed":
         return <CheckCircle size={18} />
       case "pending":
         return <Circle size={18} />
-      case "in_progress":
+      case "in-progress":
         return <Clock size={18} />
       default:
         return <AlertCircle size={18} />
@@ -119,22 +141,23 @@ export default function JobOrdersPage() {
     <AdminLayout>
       <div className="space-y-6 p-4 md:p-6 lg:p-8">
         {/* Header */}
-        <div className="space-y-2">
+        <div className="space-y-2 animate-fade-in">
           <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Job Orders Management</h1>
           <p className="text-neutral-600 dark:text-neutral-400">Track job progress and mark items as complete</p>
         </div>
 
         {/* Filters */}
-        <div className="flex flex-wrap gap-2">
-          {["pending", "in_progress", "completed", "all"].map((filter) => (
+        <div className="flex flex-wrap gap-2 animate-slide-up">
+          {["pending", "in_progress", "completed", "all"].map((filter, idx) => (
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
                 statusFilter === filter
                   ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg"
                   : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
               }`}
+              style={{ transitionDelay: `${idx * 50}ms` }}
             >
               {filter === "in_progress" ? "In Progress" : filter.charAt(0).toUpperCase() + filter.slice(1)}
             </button>
@@ -144,24 +167,21 @@ export default function JobOrdersPage() {
         {/* Job Orders Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {isLoading ? (
-            <div className="col-span-full flex items-center justify-center p-12">
-              <div className="animate-spin">
-                <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full" />
-              </div>
-            </div>
+            Array.from({ length: 6 }).map((_, i) => <JobOrderSkeleton key={i} />)
           ) : jobOrders.length === 0 ? (
             <div className="col-span-full flex items-center justify-center p-12 text-neutral-500 dark:text-neutral-400">
               <p>No job orders found</p>
             </div>
           ) : (
-            jobOrders.map((jobOrder) => (
+            jobOrders.map((jobOrder, idx) => (
               <div
                 key={jobOrder.id}
-                className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 hover:shadow-lg transition-shadow cursor-pointer"
+                className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 hover:shadow-lg hover:border-red-300 dark:hover:border-red-700 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 animate-fade-in"
                 onClick={() => {
                   setSelectedJobOrder(jobOrder)
                   setShowModal(true)
                 }}
+                style={{ animationDelay: `${idx * 50}ms` }}
               >
                 {/* Header */}
                 <div className="flex items-start justify-between mb-3">
@@ -222,8 +242,8 @@ export default function JobOrdersPage() {
 
       {/* Modal */}
       {showModal && selectedJobOrder && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
             <div className="sticky top-0 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-6 flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-neutral-900 dark:text-white">
@@ -235,7 +255,7 @@ export default function JobOrdersPage() {
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 text-2xl"
+                className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 text-2xl hover:scale-110 active:scale-95 transition-transform"
               >
                 ✕
               </button>
@@ -309,7 +329,7 @@ export default function JobOrdersPage() {
                         key={idx}
                         onClick={() => !item.completed && handleCompleteItem(selectedJobOrder.id, item.id)}
                         disabled={isUpdating}
-                        className={`w-full flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left ${
+                        className={`w-full flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left hover:scale-102 ${
                           item.completed
                             ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
                             : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-red-400 dark:hover:border-red-600"
@@ -360,7 +380,7 @@ export default function JobOrdersPage() {
               <div className="sticky bottom-0 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 p-6 flex gap-3">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 font-semibold transition"
+                  className="flex-1 px-4 py-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 font-semibold transition hover:scale-105 active:scale-95"
                 >
                   Close
                 </button>
@@ -368,10 +388,19 @@ export default function JobOrdersPage() {
                   <button
                     onClick={() => handleCompleteJobOrder(selectedJobOrder.id)}
                     disabled={isUpdating}
-                    className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
                   >
-                    <CheckCircle size={18} />
-                    Mark Job Complete
+                    {isUpdating ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Completing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={18} />
+                        Mark Job Complete
+                      </>
+                    )}
                   </button>
                 )}
               </div>

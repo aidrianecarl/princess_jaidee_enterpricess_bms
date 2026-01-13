@@ -10,6 +10,7 @@ class JobOrder extends Model
 {
     protected $fillable = [
         'job_order_number',
+        'quotation_id',
         'order_id',
         'customer_id',
         'assigned_to',
@@ -26,6 +27,11 @@ class JobOrder extends Model
         'due_date' => 'date',
         'completed_date' => 'date',
     ];
+
+    public function quotation(): BelongsTo
+    {
+        return $this->belongsTo(Quotation::class);
+    }
 
     public function order(): BelongsTo
     {

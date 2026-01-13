@@ -193,4 +193,24 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    public function getEmployees()
+    {
+        try {
+            $users = User::where('user_type', 'employee')
+                ->where('status', 'active')
+                ->select('id', 'first_name', 'last_name', 'email', 'user_type')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $users
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

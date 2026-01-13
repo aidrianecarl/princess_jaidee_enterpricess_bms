@@ -647,8 +647,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         "items",
         JSON.stringify(
           lineItems.map((item, index) => ({
-            product_id: item.productId || null,
-            service_id: item.serviceId || null,
+            product_id: item.type === "product" ? item.productId || null : null,
+            service_id: item.type === "service" ? item.serviceId || null : null,
             customization: item.description || "",
             quantity: Number(item.quantity) || 1,
             unit_price: Number(item.unitPrice) || 0,
@@ -662,20 +662,19 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
         : `${process.env.NEXT_PUBLIC_API_URL}/quotations`
 
-      const method = isEditMode ? "PUT" : "POST"
+      if (isEditMode) {
+        formDataToSend.append("_method", "PUT")
+      }
+
+      console.log("[v0] Saving quotation:", { isEditMode, url, itemsCount: lineItems.length })
 
       const response = await fetch(url, {
-        method: "POST", // Always POST for new creations or updates using _method
+        method: "POST",
         headers: {
           Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: (() => {
-          if (method === "PUT") {
-            formDataToSend.append("_method", "PUT")
-          }
-          return formDataToSend
-        })(),
+        body: formDataToSend,
       })
 
       const data = await response.json()
@@ -699,7 +698,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       toast({
         title: "Success",
-        description: "Quotation saved as draft successfully",
+        description: isEditMode ? "Quotation updated successfully" : "Quotation saved as draft successfully",
       })
 
       sessionStorage.removeItem("quotationDraft")
@@ -719,6 +718,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       })
     } finally {
       setIsSaving(false)
+      setShowConfirmDialog(false)
     }
   }
 
