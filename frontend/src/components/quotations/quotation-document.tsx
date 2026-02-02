@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail } from "lucide-react"
+import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown } from "lucide-react"
 import { ProductSelectorModal } from "./product-selector-modal"
 import { ServiceSelectorModal } from "./service-selector-modal"
 import { quotationFormSchema } from "@/lib/validations/quotation"
@@ -32,6 +32,24 @@ interface LineItem {
   amount: number
   image?: string
   designCost?: number // Added for design cost
+  serviceRequirements?: {
+    designFile: File | null
+    designPreview: string
+    teamRoster: Array<{ id: string; name: string; number: string | number; sizeTop?: string; sizeBottom?: string }>
+    sizeSpecifications: { 
+      top?: string
+      bottom?: string
+      width?: number
+      height?: number
+      totalSqft?: number
+      totalPrice?: number
+    }
+    designConsultation?: {
+      needed: boolean
+      notes: string
+      price: number
+    }
+  }
 }
 
 interface FormData {
@@ -245,6 +263,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [isSending, setIsSending] = useState(false) // Added state for sending
   const [showSendApprovalModal, setShowSendApprovalModal] = useState(false) // Added state for approval modal
   const [isNavigating, setIsNavigating] = useState(false) // Added state for navigation
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editingRoster, setEditingRoster] = useState<LineItem["serviceRequirements"]["teamRoster"] | null>(null)
+  const [expandedImageItem, setExpandedImageItem] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
   const getInitialFormData = (): QuotationFormData => ({
     quoteNumber: "",
@@ -654,6 +677,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             unit_price: Number(item.unitPrice) || 0,
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
+            design_file_url: item.serviceRequirements?.designPreview || null,
+            team_roster: item.serviceRequirements?.teamRoster || null,
+            size_specifications: item.serviceRequirements?.sizeSpecifications || null,
           })),
         ),
       )
@@ -779,6 +805,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             unit_price: Number(item.unitPrice) || 0,
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
+            design_file_url: item.serviceRequirements?.designPreview || null,
+            team_roster: item.serviceRequirements?.teamRoster || null,
+            size_specifications: item.serviceRequirements?.sizeSpecifications || null,
           })),
         ),
       )
@@ -901,50 +930,47 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="sticky top-16 z-40 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg print:hidden pointer-events-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4 py-3">
+        <div className="w-full px-2 sm:px-4 lg:px-8">
+          <div className="flex items-center justify-between gap-1 sm:gap-2 py-2 md:py-3 overflow-x-auto">
             {/* Left side buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={handleSaveDraft}
                 disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-red-600 font-semibold rounded-lg transition transform hover:scale-105 shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
               >
-                {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                {isSaving ? <Loader2 size={16} className="animate-spin sm:w-5 sm:h-5" /> : <Save size={16} className="sm:w-5 sm:h-5" />}
                 <span className="hidden sm:inline">{isEditMode ? "Update" : "Save Draft"}</span>
+                <span className="inline sm:hidden">Save</span>
               </button>
               <button
                 onClick={handlePreview}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-red-600 font-semibold rounded-lg transition transform hover:scale-105 shadow-md cursor-pointer"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
               >
-                <Eye size={18} />
+                <Eye size={16} className="sm:w-5 sm:h-5" />
                 <span className="hidden sm:inline">Preview</span>
+                <span className="inline sm:hidden">View</span>
               </button>
               <button
                 onClick={handlePrint}
                 disabled={isPrinting}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-red-600 font-semibold rounded-lg transition transform hover:scale-105 shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
               >
-                {isPrinting ? <Loader2 size={18} className="animate-spin" /> : <Printer size={18} />}
+                {isPrinting ? <Loader2 size={16} className="animate-spin sm:w-5 sm:h-5" /> : <Printer size={16} className="sm:w-5 sm:h-5" />}
                 <span className="hidden sm:inline">Print</span>
+                <span className="inline sm:hidden">Prt</span>
               </button>
             </div>
 
             {/* Right side buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={handleSend}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-red-600 font-semibold rounded-lg transition transform hover:scale-105 shadow-md cursor-pointer"
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
               >
-                <Mail size={18} />
+                <Mail size={16} className="sm:w-5 sm:h-5" />
                 <span className="hidden sm:inline">Send</span>
-              </button>
-              <button
-                onClick={() => setShowSettingsModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-red-600 font-semibold rounded-lg transition transform hover:scale-105 shadow-md cursor-pointer"
-              >
-                <Settings size={18} />
-                <span className="hidden sm:inline">Settings</span>
+                <span className="inline sm:hidden">Snd</span>
               </button>
             </div>
           </div>
@@ -1227,92 +1253,199 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                 </div>
               ) : (
                 lineItems.map((item) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-3 mb-4 pb-4 border-b border-gray-200">
-                    {/* Description Column */}
-                    <div className="col-span-5 flex gap-3">
-                      {item.image && (
-                        <img
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          className="w-12 h-12 object-cover rounded border border-gray-200"
-                          onError={(e) => {
-                            const img = e.target as HTMLImageElement
-                            if (img.src !== "/placeholder.svg") {
-                              img.src = "/placeholder.svg"
+                  <div key={item.id} className="mb-4 pb-4 border-b border-gray-200 print:break-inside-avoid">
+                    {/* Main Row - Collapsible */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                      {/* Expand Button */}
+                      {item.type === "service" && item.serviceRequirements?.teamRoster?.length > 0 && (
+                        <button
+                          onClick={() => {
+                            const newExpanded = new Set(expandedItems)
+                            if (newExpanded.has(item.id)) {
+                              newExpanded.delete(item.id)
+                            } else {
+                              newExpanded.add(item.id)
                             }
+                            setExpandedItems(newExpanded)
                           }}
-                        />
+                          className="p-1 hover:bg-gray-100 rounded transition print:hidden"
+                        >
+                          <ChevronDown
+                            size={18}
+                            className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
+                          />
+                        </button>
                       )}
-                      <div>
-                        <p className="font-semibold text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.description}</p>
+
+                      {/* Name & Category Column */}
+                      <div className="flex-1 flex gap-2 md:gap-3 min-w-0">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 text-sm md:text-base truncate">{item.name}</p>
+                          <p className="text-xs md:text-sm text-gray-600">{item.type === "service" ? "Service" : "Product"}</p>
+                        </div>
+                      </div>
+
+                      {/* Quantity Column - Editable */}
+                      <div className="flex items-center justify-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
+                          }
+                          className="w-16 md:w-20 px-2 py-1 md:py-2 border-2 border-gray-300 rounded-lg text-center text-sm focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900"
+                        />
+                      </div>
+
+                      {/* Unit Price Column - Hidden but blank disabled input */}
+                      <div className="hidden md:flex items-center justify-end flex-shrink-0">
+                        <input
+                          type="text"
+                          placeholder="Admin will fill"
+                          disabled
+                          className="w-24 px-2 py-1 border-2 border-gray-300 rounded-lg text-right bg-gray-50 text-xs focus:border-red-600 outline-none print:border-0 print:bg-transparent print:text-gray-900"
+                        />
+                      </div>
+
+                      {/* Amount Column - Hidden but blank disabled input */}
+                      <div className="hidden lg:flex items-center justify-end flex-shrink-0">
+                        <input
+                          type="text"
+                          placeholder="Admin will fill"
+                          disabled
+                          className="w-24 px-2 py-1 border-2 border-gray-300 rounded-lg text-right bg-gray-50 text-xs focus:border-red-600 outline-none print:border-0 print:bg-transparent print:text-gray-900"
+                        />
+                      </div>
+
+                      {/* Actions Column */}
+                      <div className="flex items-center gap-1 print:hidden flex-shrink-0">
+                        {item.type === "service" && item.serviceRequirements?.teamRoster?.length > 0 && (
+                          <button
+                            onClick={() => {
+                              setEditingItemId(item.id)
+                              setEditingRoster(item.serviceRequirements?.teamRoster || null)
+                            }}
+                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-1.5 md:p-2 rounded-lg transition"
+                            title="Edit roster"
+                          >
+                            <Edit2 size={16} className="md:w-5 md:h-5" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => removeLineItem(item.id)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 md:p-2 rounded-lg transition"
+                          title="Remove item"
+                        >
+                          <Trash2 size={16} className="md:w-5 md:h-5" />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Quantity Column - Editable */}
-                    <div className="col-span-2 flex items-center justify-center">
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
-                        }
-                        className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900"
-                      />
-                    </div>
+                    {/* Collapsible Roster Details */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.teamRoster && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200">
+                          <p className="text-xs font-bold text-gray-700 uppercase mb-3">Team Roster Details</p>
+                          <div className="space-y-2">
+                            {/* Header Row - Hidden on mobile */}
+                            <div className="hidden md:grid grid-cols-4 gap-3 px-2 py-2 bg-gray-200 rounded-md">
+                              <p className="text-xs font-semibold text-gray-700">Name</p>
+                              <p className="text-xs font-semibold text-gray-700">Jersey #</p>
+                              <p className="text-xs font-semibold text-gray-700">Top Size</p>
+                              <p className="text-xs font-semibold text-gray-700">Bottom Size</p>
+                            </div>
+                            
+                            {/* Roster Items */}
+                            {item.serviceRequirements.teamRoster.map((member) => (
+                              <div key={member.id} className="flex flex-col md:grid md:grid-cols-4 gap-2 md:gap-3 px-2 py-2 bg-white rounded-md border border-gray-200">
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-gray-500 md:hidden">Name</span>
+                                  <span className="font-medium text-gray-900 text-sm">{member.name}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-gray-500 md:hidden">Jersey #</span>
+                                  <span className="font-medium text-gray-900 text-sm">#{member.number}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-gray-500 md:hidden">Top Size</span>
+                                  <span className="text-gray-700 text-sm">{member.sizeTop || "-"}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-gray-500 md:hidden">Bottom Size</span>
+                                  <span className="text-gray-700 text-sm">{member.sizeBottom || "-"}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
 
-                    {/* Unit Price Column - Disabled (fixed price) */}
-                    <div className="col-span-2 flex items-center justify-end">
-                      <input
-                        type="text"
-                        value={`₱${(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                        disabled
-                        className="w-full px-3 py-2 text-right bg-gray-100 border-2 border-gray-200 rounded-lg font-semibold text-gray-700 cursor-not-allowed print:bg-transparent print:border-0 print:text-gray-900"
-                        title="Unit price is fixed from product/service"
-                      />
-                    </div>
+                          {/* Design Image Preview */}
+                          {item.serviceRequirements?.designPreview && (
+                            <div className="mt-4 pt-4 border-t border-gray-300">
+                              <p className="text-xs font-bold text-gray-700 uppercase mb-2">Design</p>
+                              <img
+                                src={item.serviceRequirements.designPreview || "/placeholder.svg"}
+                                alt="Design preview"
+                                onClick={() => setSelectedImage(item.serviceRequirements?.designPreview || null)}
+                                className="h-20 w-auto rounded-md border border-gray-300 cursor-pointer hover:shadow-lg transition"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
-                    {/* Amount Column */}
-                    <div className="col-span-2 flex items-center justify-end">
-                      <p className="font-bold text-gray-900">
-                        ₱
-                        {(item.amount || 0).toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                    </div>
+                    {/* Tarpaulin Details Collapsible */}
+                    {expandedItems.has(item.id) && 
+                     item.serviceRequirements?.sizeSpecifications?.width &&
+                     item.serviceRequirements?.sizeSpecifications?.height && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-3 border border-blue-200">
+                          <p className="text-xs font-bold text-blue-700 uppercase mb-3">Tarpaulin Specifications</p>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-blue-600">Width</span>
+                              <span className="text-sm font-medium text-gray-900">{item.serviceRequirements.sizeSpecifications.width} ft</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-blue-600">Height</span>
+                              <span className="text-sm font-medium text-gray-900">{item.serviceRequirements.sizeSpecifications.height} ft</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-blue-600">Total Sq Ft</span>
+                              <span className="text-sm font-medium text-gray-900">{item.serviceRequirements.sizeSpecifications.totalSqft} sq ft</span>
+                            </div>
+                          </div>
 
-                    {/* Actions Column */}
-                    <div className="col-span-1 flex items-center justify-center print:hidden">
-                      <button
-                        onClick={() => removeLineItem(item.id)}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-100 p-2 rounded-lg transition"
-                        title="Remove item"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                          {/* Tarpaulin Design Image */}
+                          {item.serviceRequirements?.designPreview && (
+                            <div className="pt-3 border-t border-blue-300">
+                              <p className="text-xs font-semibold text-blue-700 mb-2">Design</p>
+                              <img
+                                src={item.serviceRequirements.designPreview || "/placeholder.svg"}
+                                alt="Tarpaulin design"
+                                onClick={() => setSelectedImage(item.serviceRequirements?.designPreview || null)}
+                                className="h-24 w-auto rounded-md border border-blue-300 cursor-pointer hover:shadow-lg transition"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))
               )}
             </div>
 
             {/* Add Items Buttons */}
-            <div className="flex gap-3 mb-8 print:hidden">
+            <div className="flex gap-3 mb-8 print:hidden justify-center md:justify-start">
               <button
-                onClick={() => setShowProductModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold rounded-lg hover:from-red-700 hover:to-orange-600 transition shadow-lg"
+                onClick={() => {
+                  setShowServiceModal(true)
+                }}
+                className="flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-600 transition shadow-lg text-sm md:text-base"
               >
-                <Plus size={20} />
-                Add Product
-              </button>
-              <button
-                onClick={() => setShowServiceModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-600 transition shadow-lg"
-              >
-                <Plus size={20} />
+                <Plus size={18} className="md:w-5 md:h-5" />
                 Add Service
               </button>
             </div>
@@ -1378,20 +1511,107 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         }}
       />
 
+      {/* Image Viewer Modal */}
+      {selectedImage && (
+        <div
+          onClick={() => setSelectedImage(null)}
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000] p-4"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-2xl max-h-[80vh] bg-white rounded-lg overflow-hidden"
+          >
+            <img
+              src={selectedImage || "/placeholder.svg"}
+              alt="Expanded view"
+              className="w-full h-full object-contain"
+            />
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute top-4 right-4 bg-red-600 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-red-700 transition"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Service Selector Modal */}
       <ServiceSelectorModal
         isOpen={showServiceModal}
         onClose={() => setShowServiceModal(false)}
-        onSelect={(service) => {
+        onSelect={(service, serviceData) => {
+          // Build description with service data
+          let description = service.description || ""
+          
+          // Add requirement details to description
+          if (service.requires_design && serviceData.designPreview) {
+            description += "\n✓ Design provided"
+          }
+          if (serviceData.designConsultation?.needed) {
+            description += "\n✓ Design Consultation (₱500)"
+            if (serviceData.designConsultation.notes) {
+              description += `\n  Design Notes: ${serviceData.designConsultation.notes}`
+            }
+          }
+          if (service.requires_team && serviceData.teamRoster.length > 0) {
+            description += `\n✓ Team roster: ${serviceData.teamRoster.length} players`
+            // Add team member details
+            const rosterText = serviceData.teamRoster
+              .map((m) => {
+                let sizeInfo = ""
+                if (m.sizeTop || m.sizeBottom) {
+                  sizeInfo = ` (${m.sizeTop || "-"}/${m.sizeBottom || "-"})`
+                }
+                return `  • ${m.name} #${m.number}${sizeInfo}`
+              })
+              .join("\n")
+            description += "\n" + rosterText
+          }
+          
+          // Check if this is a tarpaulin service
+          const specs = typeof service.specifications === "string" 
+            ? JSON.parse(service.specifications) 
+            : service.specifications
+          const isTarpaulin = specs?.size_type === "tarpaulin"
+          
+          if (service.requires_size) {
+            if (isTarpaulin && serviceData.sizeSpecifications.width && serviceData.sizeSpecifications.height) {
+              description += `\n✓ Tarpaulin Size: ${serviceData.sizeSpecifications.width}ft × ${serviceData.sizeSpecifications.height}ft`
+              description += `\n  Total: ${serviceData.sizeSpecifications.totalSqft} sq ft = ₱${serviceData.sizeSpecifications.totalPrice?.toLocaleString()}`
+            } else if (serviceData.sizeSpecifications.top || serviceData.sizeSpecifications.bottom) {
+              description += `\n✓ Sizes: Top ${serviceData.sizeSpecifications.top || "N/A"} / Bottom ${serviceData.sizeSpecifications.bottom || "N/A"}`
+            }
+          }
+          
+          // Calculate unit price (may be adjusted for tarpaulin)
+          let unitPrice = service.base_price
+          if (isTarpaulin && serviceData.sizeSpecifications.totalPrice) {
+            unitPrice = serviceData.sizeSpecifications.totalPrice
+          }
+          
+          // Add design consultation price
+          if (serviceData.designConsultation?.needed) {
+            unitPrice += serviceData.designConsultation.price
+          }
+          
           addLineItem({
             type: "service",
             serviceId: service.id,
             name: service.name,
-            description: service.description || "",
+            description,
             quantity: 1,
-            unitPrice: service.base_price,
+            unitPrice,
             image: service.image_url,
-            designCost: service.design_cost, // Pass design_cost
+            designCost: service.design_cost,
+            // Store service requirement data for later
+            serviceRequirements: {
+              designFile: serviceData.designFile,
+              designPreview: serviceData.designPreview,
+              teamRoster: serviceData.teamRoster,
+              sizeSpecifications: serviceData.sizeSpecifications,
+              designConsultation: serviceData.designConsultation,
+            },
           })
         }}
       />

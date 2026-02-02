@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Plus, ChevronDown, ChevronUp, Send, Download } from "lucide-react"
 import type { Service } from "@/types/service"
 import type { QuotationItem } from "@/types/quotation"
-import { ServiceRequirementsModal } from "./service-requirements-modal"
+import ServiceRequirementsModal from "@/components/quotations/service-requirements-modal" // Import ServiceRequirementsModal
 
 interface QuotationBuilderProps {
   services: Service[]

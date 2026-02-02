@@ -2,8 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Save, Eye, Settings, Loader2, Printer, Mail, X, Upload, Plus, Trash2, Download } from "lucide-react"
-import { ProductSelectorModal } from "./product-selector-modal"
+import { Save, Eye, Settings, Loader2, Printer, Mail, X, Upload, Plus, Trash2, Download, ChevronDown, ChevronUp } from "lucide-react"
 import { ServiceSelectorModal } from "./service-selector-modal"
 import { quotationFormSchema } from "@/lib/validations/quotation"
 import {
@@ -30,6 +29,9 @@ interface LineItem {
   amount: number
   image?: string
   lineTotal?: number // Added for consistency with backend mapping
+  designFileUrl?: string
+  teamRoster?: Array<{ name: string; number: string | number }>
+  sizeSpecifications?: { top?: string; bottom?: string }
 }
 
 interface FormData {
@@ -95,8 +97,8 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
     logoUrl: existingQuotation?.logo_url || "",
   })
   const [lineItems, setLineItems] = useState<LineItem[]>([])
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [logoPreview, setLogoPreview] = useState<string>(existingQuotation?.logo_url || "")
-  const [showProductModal, setShowProductModal] = useState(false)
   const [showServiceModal, setShowServiceModal] = useState(false)
   const [showConfirmDialog, setShowConfirmDialog] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -110,6 +112,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
   const printRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const [isEditMode, setIsEditMode] = useState(!!existingQuotation) // Renamed from isEditMode to setIsEditMode for consistency
+  const [showProductModal, setShowProductModal] = useState(false) // Declared showProductModal variable
 
   useEffect(() => {
     // Set up form data if editing an existing quotation
@@ -414,6 +417,9 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
         quantity: item.quantity,
         unit_price: item.unitPrice,
         customization: item.description,
+        design_file_url: item.designFileUrl || null,
+        team_roster: item.teamRoster ? JSON.stringify(item.teamRoster) : null,
+        size_specifications: item.sizeSpecifications ? JSON.stringify(item.sizeSpecifications) : null,
       }))
       console.log("Items payload for update:", itemsPayload)
       formDataToSend.append("items", JSON.stringify(itemsPayload))
@@ -571,12 +577,21 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
         amount,
       },
     ])
-    setShowProductModal(false)
     setShowServiceModal(false)
   }
 
   const removeLineItem = (id: string) => {
     setLineItems(lineItems.filter((item) => item.id !== id))
+  }
+
+  const toggleItemExpanded = (id: string) => {
+    const newExpanded = new Set(expandedItems)
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id)
+    } else {
+      newExpanded.add(id)
+    }
+    setExpandedItems(newExpanded)
   }
 
   const updateLineItemQuantity = (id: string, quantity: number) => {
@@ -930,63 +945,158 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
                 </div>
               ) : (
                 lineItems.map((item) => (
-                  <div key={item.id} className="grid grid-cols-12 gap-3 mb-4 pb-4 border-b border-gray-200">
-                    {/* Description Column */}
-                    <div className="col-span-5 flex gap-3">
-                      {item.image && (
-                        <img
-                          src={item.image || "/placeholder.svg"}
-                          alt={item.name}
-                          className="w-12 h-12 object-cover rounded border border-gray-200"
+                  <div key={item.id} className="mb-4 border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Main Row - Table Grid */}
+                    <div className="grid grid-cols-12 gap-3 p-4 bg-white hover:bg-gray-50 transition">
+                      {/* Description Column */}
+                      <div className="col-span-5 flex gap-3">
+                        {item.image && (
+                          <img
+                            src={item.image || "/placeholder.svg"}
+                            alt={item.name}
+                            className="w-12 h-12 object-cover rounded border border-gray-200"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900">{item.name}</p>
+                          <p className="text-sm text-gray-600 line-clamp-2">{item.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Quantity Column - Editable */}
+                      <div className="col-span-2 flex items-center justify-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
+                          }
+                          className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900"
                         />
-                      )}
-                      <div>
-                        <p className="font-semibold text-gray-900">{item.name}</p>
-                        <p className="text-sm text-gray-600">{item.description}</p>
+                      </div>
+
+                      {/* Unit Price Column - Fixed */}
+                      <div className="col-span-2 flex items-center justify-end">
+                        <input
+                          type="text"
+                          value={`₱${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          disabled
+                          className="w-full px-3 py-2 text-right bg-gray-100 border-2 border-gray-200 rounded-lg font-semibold text-gray-700 cursor-not-allowed print:bg-transparent print:border-0 print:text-gray-900"
+                          title="Unit price is fixed from product/service"
+                        />
+                      </div>
+
+                      {/* Amount Column */}
+                      <div className="col-span-2 flex items-center justify-end">
+                        <p className="font-bold text-gray-900">
+                          ₱{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+
+                      {/* Actions Column */}
+                      <div className="col-span-1 flex items-center justify-center gap-1 print:hidden">
+                        <button
+                          onClick={() => toggleItemExpanded(item.id)}
+                          className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-2 rounded-lg transition"
+                          title={expandedItems.has(item.id) ? "Hide details" : "Show details"}
+                        >
+                          {expandedItems.has(item.id) ? (
+                            <ChevronUp size={18} />
+                          ) : (
+                            <ChevronDown size={18} />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => removeLineItem(item.id)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-100 p-2 rounded-lg transition"
+                          title="Remove item"
+                        >
+                          <Trash2 size={18} />
+                        </button>
                       </div>
                     </div>
 
-                    {/* Quantity Column - Editable */}
-                    <div className="col-span-2 flex items-center justify-center">
-                      <input
-                        type="number"
-                        min="1"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
-                        }
-                        className="w-20 px-3 py-2 border-2 border-gray-300 rounded-lg text-center focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900"
-                      />
-                    </div>
+                    {/* Expandable Details Section */}
+                    {expandedItems.has(item.id) && (
+                      <div className="border-t border-gray-200 bg-gray-50 p-4 print:hidden space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Service Details</p>
+                            <div className="bg-white p-3 rounded border border-gray-200 space-y-2">
+                              <p className="text-sm text-gray-700">
+                                <span className="font-medium">Type:</span> Service
+                              </p>
+                              {item.description && (
+                                <p className="text-sm text-gray-600">{item.description}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-600 uppercase mb-2">Pricing Breakdown</p>
+                            <div className="bg-white p-3 rounded border border-gray-200 space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-700">Unit Price:</span>
+                                <span className="font-medium">₱{item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-700">Quantity:</span>
+                                <span className="font-medium">{item.quantity}</span>
+                              </div>
+                              <div className="flex justify-between text-sm border-t border-gray-200 pt-2 font-semibold">
+                                <span className="text-gray-900">Total:</span>
+                                <span className="text-blue-600">₱{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
-                    {/* Unit Price Column - Fixed */}
-                    <div className="col-span-2 flex items-center justify-end">
-                      <input
-                        type="text"
-                        value={`₱${item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                        disabled
-                        className="w-full px-3 py-2 text-right bg-gray-100 border-2 border-gray-200 rounded-lg font-semibold text-gray-700 cursor-not-allowed print:bg-transparent print:border-0 print:text-gray-900"
-                        title="Unit price is fixed from product/service"
-                      />
-                    </div>
+                        {/* Service Requirements */}
+                        {(item.designFileUrl || item.teamRoster || item.sizeSpecifications) && (
+                          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                            <p className="text-xs font-semibold text-blue-600 uppercase mb-3">Service Requirements</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              {/* Design */}
+                              {item.designFileUrl && (
+                                <div className="bg-white p-3 rounded border border-blue-200">
+                                  <p className="text-xs font-medium text-gray-600 mb-2">Design File</p>
+                                  <img src={item.designFileUrl || "/placeholder.svg"} alt="Design" className="w-full h-24 object-cover rounded border border-gray-200" />
+                                </div>
+                              )}
 
-                    {/* Amount Column */}
-                    <div className="col-span-2 flex items-center justify-end">
-                      <p className="font-bold text-gray-900">
-                        ₱{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                    </div>
+                              {/* Team Roster */}
+                              {item.teamRoster && item.teamRoster.length > 0 && (
+                                <div className="bg-white p-3 rounded border border-purple-200">
+                                  <p className="text-xs font-medium text-gray-600 mb-2">Team Roster ({item.teamRoster.length})</p>
+                                  <div className="space-y-1 max-h-24 overflow-y-auto">
+                                    {item.teamRoster.map((member, idx) => (
+                                      <p key={idx} className="text-xs text-gray-700">
+                                        {member.name} #{member.number}
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                    {/* Actions Column */}
-                    <div className="col-span-1 flex items-center justify-center print:hidden">
-                      <button
-                        onClick={() => removeLineItem(item.id)}
-                        className="text-red-600 hover:text-red-800 hover:bg-red-100 p-2 rounded-lg transition"
-                        title="Remove item"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                              {/* Sizes */}
+                              {item.sizeSpecifications && (item.sizeSpecifications.top || item.sizeSpecifications.bottom) && (
+                                <div className="bg-white p-3 rounded border border-amber-200">
+                                  <p className="text-xs font-medium text-gray-600 mb-2">Size Specifications</p>
+                                  <div className="space-y-1">
+                                    {item.sizeSpecifications.top && (
+                                      <p className="text-xs text-gray-700"><span className="font-medium">Top:</span> {item.sizeSpecifications.top}</p>
+                                    )}
+                                    {item.sizeSpecifications.bottom && (
+                                      <p className="text-xs text-gray-700"><span className="font-medium">Bottom:</span> {item.sizeSpecifications.bottom}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))
               )}
@@ -994,13 +1104,6 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
 
             {/* Add Items Buttons */}
             <div className="flex gap-3 mb-8 print:hidden">
-              <button
-                onClick={() => setShowProductModal(true)}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white font-semibold rounded-lg hover:from-red-700 hover:to-orange-600 transition shadow-lg"
-              >
-                <Plus size={20} />
-                Add Product
-              </button>
               <button
                 onClick={() => setShowServiceModal(true)}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-500 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-600 transition shadow-lg"
@@ -1038,36 +1141,40 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
         </div>
       </div>
 
-      {/* Product Selector Modal */}
-      <ProductSelectorModal
-        isOpen={showProductModal}
-        onClose={() => setShowProductModal(false)}
-        onSelect={(product) => {
-          addLineItem({
-            type: "product",
-            productId: product.id,
-            name: product.name,
-            description: product.description || "",
-            quantity: 1,
-            unitPrice: product.base_price,
-            image: product.image_url,
-          })
-        }}
-      />
-
       {/* Service Selector Modal */}
       <ServiceSelectorModal
         isOpen={showServiceModal}
         onClose={() => setShowServiceModal(false)}
-        onSelect={(service) => {
+        onSelect={(service, serviceData) => {
+          let description = service.description || ""
+          
+          // Build description with service requirements
+          const requirementDetails: string[] = []
+          if (service.requires_design && serviceData.designFile) {
+            requirementDetails.push("✓ Design provided")
+          }
+          if (service.requires_team_roster && serviceData.teamRoster && serviceData.teamRoster.length > 0) {
+            requirementDetails.push(`✓ Team roster: ${serviceData.teamRoster.length} players`)
+          }
+          if (service.requires_size_specifications && serviceData.sizeSpecifications) {
+            requirementDetails.push(`✓ Sizes: Top ${serviceData.sizeSpecifications.top || 'N/A'} / Bottom ${serviceData.sizeSpecifications.bottom || 'N/A'}`)
+          }
+          
+          if (requirementDetails.length > 0) {
+            description += "\n" + requirementDetails.join("\n")
+          }
+          
           addLineItem({
             type: "service",
             serviceId: service.id,
             name: service.name,
-            description: service.description || "",
+            description,
             quantity: 1,
             unitPrice: service.base_price,
             image: service.image_url,
+            designFileUrl: serviceData.designFile ? URL.createObjectURL(serviceData.designFile) : undefined,
+            teamRoster: serviceData.teamRoster,
+            sizeSpecifications: serviceData.sizeSpecifications,
           })
         }}
       />

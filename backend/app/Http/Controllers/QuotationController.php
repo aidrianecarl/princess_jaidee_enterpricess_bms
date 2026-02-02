@@ -273,6 +273,9 @@ class QuotationController extends Controller
                     'unit_price' => $item['unit_price'],
                     'design_cost' => $item['design_cost'] ?? 0,
                     'line_total' => $lineTotal,
+                    'design_file_url' => $item['design_file_url'] ?? null,
+                    'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
+                    'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
                 ]);
             }
             
@@ -418,6 +421,9 @@ class QuotationController extends Controller
                         'unit_price' => $item['unit_price'],
                         'design_cost' => $item['design_cost'] ?? 0,
                         'line_total' => $lineTotal,
+                        'design_file_url' => $item['design_file_url'] ?? null,
+                        'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
+                        'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
                     ]);
                 }
                 

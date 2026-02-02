@@ -1,6 +1,7 @@
 export interface QuotationItem {
   id: string
   serviceId: number
+  serviceDescription?: string
   serviceName: string
   quantity: number
   unitPrice: number
@@ -8,7 +9,7 @@ export interface QuotationItem {
   designFileUrl?: string
   teamRoster?: Array<{
     name: string
-    position: string
+    number: string | number
     size?: string
   }>
   sizeSpecifications?: {
@@ -19,7 +20,7 @@ export interface QuotationItem {
 
 export interface TeamMember {
   name: string
-  position: string
+  number: string | number
   size?: string
 }
 
