@@ -4,7 +4,6 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
-  Package,
   Briefcase,
   ShoppingCart,
   Layers,
@@ -14,6 +13,7 @@ import {
   MapPin,
   Lock,
   ChevronDown,
+  Package,
 } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image"
@@ -28,17 +28,6 @@ const menuItems = [
   { icon: MapPin, label: "Branches", href: "/admin/branches" },
   { icon: Lock, label: "Roles & Permissions", href: "/admin/roles" },
   { icon: Users, label: "Members", href: "/admin/members" },
-  {
-    icon: Package,
-    label: "Products",
-    href: "/admin/products",
-    submenu: [
-      { label: "All Products", href: "/admin/products" },
-      { label: "Product Categories", href: "/admin/products/categories" },
-      { label: "Product Colors", href: "/admin/products/colors" },
-      { label: "Product Sizes", href: "/admin/products/sizes" },
-    ],
-  },
   { icon: Briefcase, label: "Services", href: "/admin/services" },
   { icon: ShoppingCart, label: "Quotations", href: "/admin/quotations" },
   { icon: Layers, label: "Sales/Orders", href: "/admin/orders" },

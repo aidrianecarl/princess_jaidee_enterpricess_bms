@@ -78,23 +78,23 @@ export function Navbar() {
                 Testimonials
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-600 to-red-400 group-hover:w-full transition-all duration-300"></span>
               </Link>
-              <a href="#contact" className={`${isDarkMode ? 'text-neutral-300 hover:text-red-400' : 'text-neutral-600 hover:text-red-600'} transition-colors duration-300 relative group`}>
+              {/* <a href="#contact" className={`${isDarkMode ? 'text-neutral-300 hover:text-red-400' : 'text-neutral-600 hover:text-red-600'} transition-colors duration-300 relative group`}>
                 Contact
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-600 to-red-400 group-hover:w-full transition-all duration-300"></span>
-              </a>
+              </a> */}
             </div>
           )}
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
             {/* Dark Mode Toggle */}
-            <button
+            {/* <button
               onClick={toggleDarkMode}
               className={`p-2 rounded-lg transition-all duration-300 ${isDarkMode ? 'bg-red-600/20 text-red-400 hover:bg-red-600/30' : 'hover:bg-red-50 text-neutral-600'}`}
               aria-label="Toggle dark mode"
             >
               {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            </button> */}
 
             {/* Notifications */}
             {isAdminPage && (

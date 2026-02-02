@@ -10,19 +10,24 @@ class Service extends Model
 {
     protected $fillable = [
         'name',
-        'slug',
         'description',
-        'base_price',
         'category',
+        'base_price',
         'specifications',
+        'requires_design',
+        'requires_team',
+        'requires_size',
         'image_url',
         'status',
         'created_by',
     ];
 
     protected $casts = [
-        'base_price' => 'decimal:2',
+        'base_price' => 'float',
         'specifications' => 'array',
+        'requires_design' => 'boolean',
+        'requires_team' => 'boolean',
+        'requires_size' => 'boolean',
     ];
 
     public function quotationItems(): HasMany

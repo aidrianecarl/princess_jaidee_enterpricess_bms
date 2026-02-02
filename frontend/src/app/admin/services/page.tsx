@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Plus, Search, X, Trash2 } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
@@ -14,17 +13,16 @@ import { useRouter } from "next/navigation"
 interface Service {
   id: number
   name: string
-  slug: string
   description?: string
-  base_price: number | string
   category?: string
+  base_price: number
   specifications?: Record<string, string> | null
   image_url?: string
   status: "active" | "inactive"
+  requires_design: boolean
+  requires_team: boolean
+  requires_size: boolean
   created_at: string
-  has_design?: boolean
-  has_team?: boolean
-  has_sizes?: boolean
 }
 
 interface SpecificationEntry {
@@ -63,21 +61,21 @@ export default function ServicesPage() {
 
   const [formData, setFormData] = useState({
     name: "",
-    slug: "",
     description: "",
-    base_price: "",
     category: "",
+    base_price: "",
     image_url: "",
     status: "active" as "active" | "inactive",
-    has_design: false,
-    has_team: false,
-    has_sizes: false,
+    requires_design: false,
+    requires_team: false,
+    requires_size: false,
   })
 
   const [specifications, setSpecifications] = useState<SpecificationEntry[]>([])
 
   const [error, setError] = useState("")
   const [isUploading, setIsUploading] = useState(false)
+  const [showViewModal, setShowViewModal] = useState(false)
 
   useEffect(() => {
     fetchServices()
@@ -89,6 +87,7 @@ export default function ServicesPage() {
       setError("")
       const res = await apiClient.get("/admin/services")
       const data = Array.isArray(res.data) ? res.data : res.data.data || []
+      console.log("[v0] Fetched services:", data)
       setServices(data)
     } catch (error) {
       console.error("Failed to fetch services:", error)
@@ -113,13 +112,6 @@ export default function ServicesPage() {
       console.error("Failed to upload image:", error)
       throw new Error("Failed to upload image")
     }
-  }
-
-  const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "")
   }
 
   const specificationsToObject = (specs: SpecificationEntry[]): Record<string, string> => {
@@ -164,16 +156,15 @@ export default function ServicesPage() {
 
       const payload = {
         name: formData.name,
-        slug: formData.slug || generateSlug(formData.name),
         description: formData.description || null,
-        base_price: Number.parseFloat(formData.base_price) || 0,
         category: formData.category || null,
+        base_price: formData.base_price ? Number.parseFloat(formData.base_price) : 0,
         specifications: specificationsToObject(specifications),
         image_url: imageUrl || null,
         status: formData.status,
-        has_design: formData.has_design,
-        has_team: formData.has_team,
-        has_sizes: formData.has_sizes,
+        requires_design: formData.requires_design,
+        requires_team: formData.requires_team,
+        requires_size: formData.requires_size,
       }
 
       if (selectedService) {
@@ -199,31 +190,18 @@ export default function ServicesPage() {
     }
   }
 
-  const handleDelete = async (id: number) => {
-    if (confirm("Are you sure you want to delete this service?")) {
-      try {
-        await apiClient.delete(`/admin/services/${id}`)
-        fetchServices()
-      } catch (error) {
-        console.error("Failed to delete service:", error)
-        setError("Failed to delete service")
-      }
-    }
-  }
-
   const handleEdit = (service: Service) => {
     setSelectedService(service)
     setFormData({
       name: service.name,
-      slug: service.slug,
       description: service.description || "",
-      base_price: typeof service.base_price === "number" ? service.base_price.toString() : String(service.base_price),
       category: service.category || "",
+      base_price: typeof service.base_price === "number" ? service.base_price.toString() : String(service.base_price),
       image_url: service.image_url || "",
       status: service.status,
-      has_design: service.has_design || false,
-      has_team: service.has_team || false,
-      has_sizes: service.has_sizes || false,
+      requires_design: service.requires_design || false,
+      requires_team: service.requires_team || false,
+      requires_size: service.requires_size || false,
     })
     setSpecifications(objectToSpecifications(service.specifications))
     setImagePreview(service.image_url || "")
@@ -231,24 +209,39 @@ export default function ServicesPage() {
     setShowModal(true)
   }
 
+  const handleView = (service: Service) => {
+    setSelectedService(service)
+    setShowViewModal(true)
+  }
+
+  const handleDelete = async (serviceId: number) => {
+    try {
+      await apiClient.delete(`/admin/services/${serviceId}`)
+      fetchServices()
+    } catch (error) {
+      console.error("Failed to delete service:", error)
+      setError("Failed to delete service")
+    }
+  }
+
   const resetForm = () => {
     setSelectedService(null)
     setFormData({
       name: "",
-      slug: "",
       description: "",
-      base_price: "",
       category: "",
+      base_price: "",
       image_url: "",
       status: "active",
-      has_design: false,
-      has_team: false,
-      has_sizes: false,
+      requires_design: false,
+      requires_team: false,
+      requires_size: false,
     })
     setSpecifications([])
     setImageFile(null)
     setImagePreview("")
     setShowModal(false)
+    setShowViewModal(false)
     setError("")
   }
 
@@ -260,12 +253,8 @@ export default function ServicesPage() {
     setFormData({ ...formData, image_url: url })
   }
 
-  const handleNameChange = (name: string) => {
-    setFormData({
-      ...formData,
-      name,
-      slug: formData.slug || generateSlug(name),
-    })
+  const handleNameChange = (value: string) => {
+    setFormData({ ...formData, name: value })
   }
 
   const filteredServices = services.filter(
@@ -273,11 +262,6 @@ export default function ServicesPage() {
       service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (service.category && service.category.toLowerCase().includes(searchTerm.toLowerCase())),
   )
-
-  const formatPrice = (price: number | string): string => {
-    const numPrice = typeof price === "string" ? Number.parseFloat(price) : price
-    return isNaN(numPrice) ? "0.00" : numPrice.toFixed(2)
-  }
 
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
@@ -339,7 +323,7 @@ export default function ServicesPage() {
                 {filteredServices.map((service) => (
                   <div
                     key={service.id}
-                    className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-neutral-800 overflow-hidden hover:shadow-lg hover:shadow-red-200 dark:hover:shadow-red-900/30 transition-all duration-300 flex flex-col hover:border-red-400"
+                    className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-neutral-800 overflow-hidden hover:shadow-lg hover:shadow-red-200 dark:hover:shadow-red-950/30 transition-all duration-300 flex flex-col hover:border-red-400"
                   >
                     {/* Image */}
                     <div className="relative h-40 sm:h-48 bg-gradient-to-br from-red-50 to-red-100">
@@ -376,24 +360,37 @@ export default function ServicesPage() {
                           {service.category}
                         </p>
                       )}
-                      <p className="text-xs md:text-sm text-neutral-500 dark:text-neutral-400 mb-3 line-clamp-2">
+                      <p className="text-xs md:text-sm text-neutral-500 dark:text-neutral-400 mb-2 line-clamp-2">
                         {service.description}
                       </p>
                       <p className="text-base md:text-lg font-bold text-red-600 dark:text-red-400 mb-3">
-                        ₱{formatPrice(service.base_price)}
+                        ₱{typeof service.base_price === "number" ? service.base_price.toFixed(2) : "0.00"}
                       </p>
+                      <div className="space-y-2 mb-3">
+                        {service.requires_design && (
+                          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">📎 Design Required</p>
+                        )}
+                        {service.requires_team && (
+                          <p className="text-xs text-green-600 dark:text-green-400 font-medium">👥 Team Roster Required</p>
+                        )}
+                        {service.requires_size && (
+                          <p className="text-xs text-purple-600 dark:text-purple-400 font-medium">📏 Sizes Required</p>
+                        )}
+                      </div>
                       <div className="flex gap-2 border-t border-red-100 dark:border-neutral-800 pt-3 mt-auto">
                         <button
-                          onClick={() => handleEdit(service)}
-                          className="flex-1 px-2 md:px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition text-xs md:text-sm font-medium hover:shadow-md"
+                          onClick={() => handleView(service)}
+                          className="flex-1 px-2 md:px-3 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-all duration-200"
+                          disabled={isUploading}
                         >
-                          Edit
+                          View
                         </button>
                         <button
-                          onClick={() => handleDelete(service.id)}
-                          className="flex-1 px-2 md:px-3 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded hover:bg-red-100 dark:hover:bg-red-900/40 transition text-xs md:text-sm font-medium hover:shadow-md"
+                          onClick={() => handleEdit(service)}
+                          className="flex-1 px-2 md:px-3 py-2 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 rounded-lg hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition-all duration-200"
+                          disabled={isUploading}
                         >
-                          Delete
+                          Edit
                         </button>
                       </div>
                     </div>
@@ -427,7 +424,7 @@ export default function ServicesPage() {
                 <input
                   type="text"
                   value={formData.name}
-                  onChange={(e) => handleNameChange(e.target.value)}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                   required
                 />
@@ -435,22 +432,8 @@ export default function ServicesPage() {
 
               <div>
                 <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
-                  Slug (auto-generated if empty)
+                  Category
                 </label>
-                <input
-                  type="text"
-                  value={formData.slug}
-                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="e.g., tarpaulin-printing"
-                  className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
-                    Category
-                  </label>
                   <input
                     type="text"
                     value={formData.category}
@@ -459,6 +442,7 @@ export default function ServicesPage() {
                     className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                   />
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
                     Base Price <span className="text-red-500">*</span>
@@ -473,7 +457,6 @@ export default function ServicesPage() {
                     className="w-full px-3 py-2 border border-red-200 dark:border-neutral-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-600 dark:bg-neutral-800 dark:text-white transition-all"
                     required
                   />
-                </div>
               </div>
 
               <div>
@@ -568,54 +551,47 @@ export default function ServicesPage() {
                 <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <input
                     type="checkbox"
-                    id="has_design"
-                    checked={formData.has_design || false}
-                    onChange={(e) => setFormData({ ...formData, has_design: e.target.checked })}
+                    id="requires_design"
+                    checked={formData.requires_design || false}
+                    onChange={(e) => setFormData({ ...formData, requires_design: e.target.checked })}
                     className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
                   />
-                  <label htmlFor="has_design" className="flex-1 cursor-pointer">
+                  <label htmlFor="requires_design" className="flex-1 cursor-pointer">
                     <p className="font-semibold text-neutral-900 dark:text-white">Requires Design</p>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Customer can upload or request design service
-                    </p>
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                  <input
-                    type="checkbox"
-                    id="has_team"
-                    checked={formData.has_team || false}
-                    onChange={(e) => setFormData({ ...formData, has_team: e.target.checked })}
-                    className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
-                  />
-                  <label htmlFor="has_team" className="flex-1 cursor-pointer">
-                    <p className="font-semibold text-neutral-900 dark:text-white">Requires Team Members</p>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Customer must provide team roster with sizes
-                    </p>
                   </label>
                 </div>
 
                 <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
                   <input
                     type="checkbox"
-                    id="has_sizes"
-                    checked={formData.has_sizes || false}
-                    onChange={(e) => setFormData({ ...formData, has_sizes: e.target.checked })}
+                    id="requires_team"
+                    checked={formData.requires_team || false}
+                    onChange={(e) => setFormData({ ...formData, requires_team: e.target.checked })}
                     className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
                   />
-                  <label htmlFor="has_sizes" className="flex-1 cursor-pointer">
-                    <p className="font-semibold text-neutral-900 dark:text-white">Requires Size Specifications</p>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      Customer must specify dimensions (width, height, etc.)
-                    </p>
+                  <label htmlFor="requires_team" className="flex-1 cursor-pointer">
+                    <p className="font-semibold text-neutral-900 dark:text-white">Requires Team Roster</p>
                   </label>
                 </div>
+
+                <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                  <input
+                    type="checkbox"
+                    id="requires_size"
+                    checked={formData.requires_size || false}
+                    onChange={(e) => setFormData({ ...formData, requires_size: e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-600"
+                  />
+                  <label htmlFor="requires_size" className="flex-1 cursor-pointer">
+                    <p className="font-semibold text-neutral-900 dark:text-white">Requires Size Specifications</p>
+                  </label>
+                </div>
+
+
               </div>
 
               {error && (
-                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg text-sm">
+                <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-neutral-800 text-red-700 dark:text-red-400 rounded-lg text-sm">
                   {error}
                 </div>
               )}
@@ -638,6 +614,147 @@ export default function ServicesPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Service Modal */}
+      {showViewModal && selectedService && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto animate-fadeIn">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-2xl w-full my-8 animate-slideUp border border-red-200 dark:border-neutral-800">
+            <div className="p-4 md:p-6 border-b border-red-200 dark:border-neutral-800 flex items-center justify-between bg-gradient-to-r from-red-50 to-red-100 dark:from-red-950/20 dark:to-red-900/20">
+              <h2 className="text-lg md:text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent">
+                Service Details
+              </h2>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="p-1 hover:bg-red-200 dark:hover:bg-red-900/40 rounded-lg transition-all duration-200 text-red-600 hover:text-red-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="p-4 md:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {/* Image */}
+              {selectedService.image_url && (
+                <div className="relative h-48 w-full rounded-lg overflow-hidden">
+                  <Image
+                    src={selectedService.image_url || "/placeholder.svg"}
+                    alt={selectedService.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Service Name */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                  Service Name
+                </label>
+                <p className="text-base font-semibold text-neutral-900 dark:text-white">
+                  {selectedService.name}
+                </p>
+              </div>
+
+              {/* Category */}
+              {selectedService.category && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                    Category
+                  </label>
+                  <p className="text-base text-neutral-900 dark:text-white">
+                    {selectedService.category}
+                  </p>
+                </div>
+              )}
+
+              {/* Base Price */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                  Base Price
+                </label>
+                <p className="text-base font-semibold text-red-600 dark:text-red-400">
+                  ₱{typeof selectedService.base_price === "number" ? selectedService.base_price.toFixed(2) : "0.00"}
+                </p>
+              </div>
+
+              {/* Description */}
+              {selectedService.description && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                    Description
+                  </label>
+                  <p className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">
+                    {selectedService.description}
+                  </p>
+                </div>
+              )}
+
+              {/* Specifications */}
+              {selectedService.specifications && Object.keys(selectedService.specifications).length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                    Specifications
+                  </label>
+                  <div className="space-y-2">
+                    {Object.entries(selectedService.specifications).map(([key, value]) => (
+                      <div key={key} className="flex justify-between items-start p-2 bg-neutral-50 dark:bg-neutral-800 rounded">
+                        <span className="font-medium text-neutral-700 dark:text-neutral-300">{key}:</span>
+                        <span className="text-neutral-600 dark:text-neutral-400">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Service Requirements */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-3">
+                  Service Requirements
+                </label>
+                <div className="space-y-2">
+                  <div className={`p-3 rounded-lg border ${selectedService.requires_design ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'}`}>
+                    <p className={`text-sm font-medium ${selectedService.requires_design ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                      {selectedService.requires_design ? '✓ Requires Design' : '○ No Design Required'}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg border ${selectedService.requires_team ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'}`}>
+                    <p className={`text-sm font-medium ${selectedService.requires_team ? 'text-green-700 dark:text-green-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                      {selectedService.requires_team ? '✓ Requires Team Roster' : '○ No Team Roster Required'}
+                    </p>
+                  </div>
+                  <div className={`p-3 rounded-lg border ${selectedService.requires_size ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800' : 'bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'}`}>
+                    <p className={`text-sm font-medium ${selectedService.requires_size ? 'text-purple-700 dark:text-purple-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                      {selectedService.requires_size ? '✓ Requires Sizes' : '○ No Sizes Required'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-400 mb-2">
+                  Status
+                </label>
+                <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedService.status === 'active'
+                    ? 'bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+                    : 'bg-red-100 dark:bg-red-950/20 text-red-700 dark:text-red-400'
+                }`}>
+                  {selectedService.status}
+                </span>
+              </div>
+
+              <div className="flex gap-2 pt-4 border-t border-red-100 dark:border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setShowViewModal(false)}
+                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition-all duration-200 font-medium hover:scale-105"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -49,7 +49,7 @@ export function ProductSelectorModal({ isOpen, onClose, onSelect }: ProductSelec
       }
 
       const data = await response.json()
-      console.log("[v0] Products API response:", data)
+      console.log("Products API response:", data)
 
       let productsList = []
       if (data.data && Array.isArray(data.data)) {
@@ -67,7 +67,7 @@ export function ProductSelectorModal({ isOpen, onClose, onSelect }: ProductSelec
         setError("No products found. Please create products first.")
       }
     } catch (error) {
-      console.error("[v0] Failed to fetch products:", error)
+      console.error("Failed to fetch products:", error)
       setError("Failed to load products. Please try again.")
       setProducts([])
       setFilteredProducts([])

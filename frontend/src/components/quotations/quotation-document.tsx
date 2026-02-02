@@ -215,7 +215,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     clientPostal: "",
     clientPhone: "",
     clientEmail: "",
-    businessName: "Princess Jaidee",
+    businessName: "",
     businessAddress: "",
     businessCity: "",
     businessState: "",
@@ -256,7 +256,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     clientPostal: "",
     clientPhone: "",
     clientEmail: "",
-    businessName: "Princess Jaidee",
+    businessName: "",
     businessAddress: "",
     businessCity: "",
     businessState: "",
@@ -295,7 +295,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         clientPostal: existingQuotation.customer_zip_code || "",
         clientPhone: existingQuotation.customer_phone || "",
         clientEmail: existingQuotation.customer_email || "",
-        businessName: existingQuotation.business_name || "Princess Jaidee",
+        businessName: existingQuotation.business_name || "",
         businessAddress: existingQuotation.business_address || "",
         businessCity: existingQuotation.business_city || "",
         businessState: existingQuotation.business_state || "",
@@ -336,7 +336,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           setLineItems(parsedData.lineItems)
           setLogoPreview(parsedData.logoPreview || "")
         } catch (error) {
-          console.error("[v0] Error restoring quotation data:", error)
+          console.error("Error restoring quotation data:", error)
         }
       }
     }
@@ -367,7 +367,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       try {
         const token = localStorage.getItem("token")
         if (!token) {
-          console.log("[v0] Token not available yet, using fallback quotation number")
+          console.log("Token not available yet, using fallback quotation number")
           setFormData((prev) => ({
             ...prev,
             quoteNumber: `QT-${new Date().toISOString().split("T")[0]}-001`, // Changed fallback format
@@ -391,7 +391,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           }))
         } else {
           const errorText = await response.text()
-          console.error("[v0] Failed to fetch next quotation number:", response.status, errorText)
+          console.error("Failed to fetch next quotation number:", response.status, errorText)
           setFormData((prev) => ({
             ...prev,
             quoteNumber: `QT-${new Date().toISOString().split("T")[0]}-001`, // Changed fallback format
@@ -404,7 +404,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           })
         }
       } catch (error) {
-        console.error("[v0] Error fetching next quotation number:", error)
+        console.error("Error fetching next quotation number:", error)
         setFormData((prev) => ({
           ...prev,
           quoteNumber: `QT-${new Date().toISOString().split("T")[0]}-001`, // Changed fallback format
@@ -566,7 +566,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         description: "PDF downloaded successfully",
       })
     } catch (error) {
-      console.error("[v0] PDF generation error:", error)
+      console.error("PDF generation error:", error)
       toast({
         title: "Error",
         description: "Failed to generate PDF",
@@ -634,10 +634,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("business_email", formData.businessEmail || "")
 
       if (formData.logo && formData.logo instanceof File) {
-        console.log("[v0] Appending logo file to FormData")
+        console.log("Appending logo file to FormData")
         formDataToSend.append("logo", formData.logo)
       } else if (formData.logoUrl) {
-        console.log("[v0] Logo URL already exists, skipping re-upload:", formData.logoUrl)
+        console.log("Logo URL already exists, skipping re-upload:", formData.logoUrl)
       }
 
       formDataToSend.append("notes", formData.notes || "")
@@ -666,7 +666,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         formDataToSend.append("_method", "PUT")
       }
 
-      console.log("[v0] Saving quotation:", { isEditMode, url, itemsCount: lineItems.length })
+      console.log("Saving quotation:", { isEditMode, url, itemsCount: lineItems.length })
 
       const response = await fetch(url, {
         method: "POST",
@@ -680,7 +680,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       const data = await response.json()
 
       if (!response.ok) {
-        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
+        console.log("Backend validation errors:", data.errors || data.message || data)
         const errorMessages = data.errors
           ? Object.entries(data.errors)
               .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
@@ -710,7 +710,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       router.push("/dashboard")
     } catch (error: any) {
-      console.log("[v0] Save error:", error.message)
+      console.log("Save error:", error.message)
       toast({
         title: "Error",
         description: error.message || "Failed to save quotation",
@@ -757,10 +757,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("business_email", formData.businessEmail || "")
 
       if (formData.logo && formData.logo instanceof File) {
-        console.log("[v0] Appending logo file to FormData for send")
+        console.log("Appending logo file to FormData for send")
         formDataToSend.append("logo", formData.logo)
       } else if (formData.logoUrl) {
-        console.log("[v0] Logo URL already exists, skipping re-upload:", formData.logoUrl)
+        console.log("Logo URL already exists, skipping re-upload:", formData.logoUrl)
       }
 
       formDataToSend.append("notes", formData.notes || "")
@@ -806,7 +806,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       const data = await response.json()
 
       if (!response.ok) {
-        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
+        console.log("Backend validation errors:", data.errors || data.message || data)
         const errorMessages = data.errors
           ? Object.entries(data.errors)
               .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
@@ -837,7 +837,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       router.push("/dashboard")
     } catch (error: any) {
-      console.log("[v0] Send error:", error.message)
+      console.log("Send error:", error.message)
       toast({
         title: "Error",
         description: error.message || "Failed to send quotation",
@@ -972,7 +972,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       onError={(e) => {
                         const img = e.target as HTMLImageElement
                         if (img.src !== "/placeholder.svg") {
-                          console.log("[v0] Logo failed to load from URL:", logoPreview)
+                          console.log("Logo failed to load from URL:", logoPreview)
                           img.src = "/placeholder.svg"
                         }
                       }}

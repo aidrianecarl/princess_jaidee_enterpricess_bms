@@ -1,53 +1,66 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, Trash2, Download, Send } from "lucide-react"
-
-interface Product {
-  id: number
-  name: string
-  base_price: number
-  sku: string
-}
-
-interface Service {
-  id: number
-  name: string
-  base_price: number
-  slug: string
-}
-
-interface QuotationItem {
-  id: string
-  type: "product" | "service"
-  itemId: number
-  name: string
-  quantity: number
-  unitPrice: number
-  lineTotal: number
-}
+import { Plus, ChevronDown, ChevronUp, Send, Download } from "lucide-react"
+import type { Service } from "@/types/service"
+import type { QuotationItem } from "@/types/quotation"
+import { ServiceRequirementsModal } from "./service-requirements-modal"
 
 interface QuotationBuilderProps {
-  products: Product[]
   services: Service[]
 }
 
-export function QuotationBuilder({ products, services }: QuotationBuilderProps) {
+export function QuotationBuilder({ services }: QuotationBuilderProps) {
   const [items, setItems] = useState<QuotationItem[]>([])
   const [discount, setDiscount] = useState(0)
   const [notes, setNotes] = useState("")
+  const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false)
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
-  const addItem = (type: "product" | "service", item: Product | Service) => {
+  const handleServiceClick = (service: Service) => {
+    if (service.requires_design || service.requires_team || service.requires_size) {
+      setSelectedService(service)
+      setShowRequirementsModal(true)
+    } else {
+      addItemDirectly(service)
+    }
+  }
+
+  const addItemDirectly = (service: Service) => {
     const newItem: QuotationItem = {
       id: Math.random().toString(),
-      type,
-      itemId: item.id,
-      name: item.name,
+      serviceId: service.id,
+      serviceName: service.name,
       quantity: 1,
-      unitPrice: item.base_price,
-      lineTotal: item.base_price,
+      unitPrice: service.base_price,
+      lineTotal: service.base_price * 1,
     }
     setItems([...items, newItem])
+  }
+
+  const handleRequirementsConfirm = (data: {
+    quantity: number
+    designFileUrl?: string
+    teamRoster?: Array<{ name: string; position: string; size?: string }>
+    sizeSpecifications?: { top?: string; bottom?: string }
+  }) => {
+    if (!selectedService) return
+
+    const newItem: QuotationItem = {
+      id: Math.random().toString(),
+      serviceId: selectedService.id,
+      serviceName: selectedService.name,
+      quantity: data.quantity,
+      unitPrice: selectedService.base_price,
+      lineTotal: selectedService.base_price * data.quantity,
+      designFileUrl: data.designFileUrl,
+      teamRoster: data.teamRoster,
+      sizeSpecifications: data.sizeSpecifications,
+    }
+    setItems([...items, newItem])
+    setSelectedService(null)
+    setShowRequirementsModal(false)
   }
 
   const removeItem = (id: string) => {
@@ -68,6 +81,30 @@ export function QuotationBuilder({ products, services }: QuotationBuilderProps) 
     )
   }
 
+  const updateUnitPrice = (id: string, unitPrice: number) => {
+    setItems(
+      items.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              unitPrice,
+              lineTotal: unitPrice * item.quantity,
+            }
+          : item,
+      ),
+    )
+  }
+
+  const toggleItemExpand = (id: string) => {
+    const newExpanded = new Set(expandedItems)
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id)
+    } else {
+      newExpanded.add(id)
+    }
+    setExpandedItems(newExpanded)
+  }
+
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0)
   const total = subtotal - discount
 
@@ -75,33 +112,9 @@ export function QuotationBuilder({ products, services }: QuotationBuilderProps) 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Selection Panel */}
       <div className="lg:col-span-2 space-y-8">
-        {/* Products */}
-        <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="text-xl font-bold mb-4 text-neutral-900">Products</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:border-primary/30 transition"
-              >
-                <div className="flex-1">
-                  <p className="font-semibold text-neutral-900">{product.name}</p>
-                  <p className="text-sm text-neutral-600">₱{product.base_price}</p>
-                </div>
-                <button
-                  onClick={() => addItem("product", product)}
-                  className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition"
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Services */}
         <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="text-xl font-bold mb-4 text-neutral-900">Services</h2>
+          <h2 className="text-xl font-bold mb-4 text-neutral-900">Available Services</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {services.map((service) => (
               <div
@@ -110,10 +123,18 @@ export function QuotationBuilder({ products, services }: QuotationBuilderProps) 
               >
                 <div className="flex-1">
                   <p className="font-semibold text-neutral-900">{service.name}</p>
-                  <p className="text-sm text-neutral-600">₱{service.base_price}</p>
+                  {service.requires_design && (
+                    <p className="text-xs text-blue-600">📎 Requires Design</p>
+                  )}
+                  {service.requires_team && (
+                    <p className="text-xs text-green-600">👥 Requires Team Roster</p>
+                  )}
+                  {service.requires_size && (
+                    <p className="text-xs text-purple-600">📏 Requires Sizes</p>
+                  )}
                 </div>
                 <button
-                  onClick={() => addItem("service", service)}
+                  onClick={() => handleServiceClick(service)}
                   className="p-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition"
                 >
                   <Plus size={18} />
@@ -139,33 +160,122 @@ export function QuotationBuilder({ products, services }: QuotationBuilderProps) 
       <div className="space-y-6">
         {/* Items */}
         <div className="bg-white rounded-xl border border-neutral-200 p-6">
-          <h2 className="text-lg font-bold mb-4 text-neutral-900">Selected Items ({items.length})</h2>
+          <h2 className="text-lg font-bold mb-4 text-neutral-900">
+            Selected Items ({items.length})
+          </h2>
 
           {items.length === 0 ? (
             <p className="text-neutral-600 text-sm">No items selected</p>
           ) : (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
+            <div className="space-y-3 max-h-96 overflow-y-auto">
               {items.map((item) => (
-                <div key={item.id} className="p-3 bg-neutral-50 rounded-lg space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-semibold text-sm text-neutral-900">{item.name}</p>
-                      <p className="text-xs text-neutral-600">₱{item.unitPrice.toLocaleString()}</p>
+                <div key={item.id} className="border border-neutral-200 rounded-lg overflow-hidden">
+                  <button
+                    onClick={() => toggleItemExpand(item.id)}
+                    className="w-full p-3 bg-neutral-50 hover:bg-neutral-100 transition flex justify-between items-center"
+                  >
+                    <div className="flex-1 text-left">
+                      <p className="font-semibold text-sm text-neutral-900">
+                        {item.serviceName}
+                      </p>
+                      <p className="text-xs text-neutral-600">
+                        ₱{item.unitPrice.toLocaleString()} × {item.quantity}
+                      </p>
                     </div>
-                    <button onClick={() => removeItem(item.id)} className="text-red-600 hover:text-red-700">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-neutral-900">
+                        ₱{item.lineTotal.toLocaleString()}
+                      </p>
+                      {expandedItems.has(item.id) ? (
+                        <ChevronUp size={16} />
+                      ) : (
+                        <ChevronDown size={16} />
+                      )}
+                    </div>
+                  </button>
 
-                  <input
-                    type="number"
-                    min="1"
-                    value={item.quantity}
-                    onChange={(e) => updateQuantity(item.id, Number.parseInt(e.target.value))}
-                    className="w-full px-2 py-1 border border-neutral-300 rounded text-sm"
-                  />
+                  {expandedItems.has(item.id) && (
+                    <div className="p-3 space-y-3 border-t border-neutral-200">
+                      <div>
+                        <label className="text-xs font-medium text-neutral-600">
+                          Unit Price
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) =>
+                            updateUnitPrice(item.id, Number.parseFloat(e.target.value))
+                          }
+                          className="w-full px-2 py-1 border border-neutral-300 rounded text-sm mt-1"
+                        />
+                      </div>
 
-                  <p className="text-right font-semibold text-neutral-900">₱{item.lineTotal.toLocaleString()}</p>
+                      <div>
+                        <label className="text-xs font-medium text-neutral-600">
+                          Quantity
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateQuantity(item.id, Number.parseInt(e.target.value) || 1)
+                          }
+                          className="w-full px-2 py-1 border border-neutral-300 rounded text-sm mt-1"
+                        />
+                      </div>
+
+                      {item.teamRoster && item.teamRoster.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-neutral-600 mb-2">
+                            👥 Team Roster
+                          </p>
+                          <div className="space-y-1 bg-blue-50 p-2 rounded text-xs">
+                            {item.teamRoster.map((member, idx) => (
+                              <div key={idx} className="text-neutral-700">
+                                {member.name} - {member.position}
+                                {member.size && ` (Size: ${member.size})`}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {item.sizeSpecifications && (
+                        <div>
+                          <p className="text-xs font-medium text-neutral-600 mb-2">
+                            📏 Size Specifications
+                          </p>
+                          <div className="bg-purple-50 p-2 rounded text-xs text-neutral-700 space-y-1">
+                            {item.sizeSpecifications.top && (
+                              <div>Top: {item.sizeSpecifications.top}</div>
+                            )}
+                            {item.sizeSpecifications.bottom && (
+                              <div>Bottom: {item.sizeSpecifications.bottom}</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {item.designFileUrl && (
+                        <div>
+                          <p className="text-xs font-medium text-neutral-600">
+                            📎 Design File
+                          </p>
+                          <p className="text-xs text-neutral-700">{item.designFileUrl}</p>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="w-full py-1 text-red-600 hover:bg-red-50 rounded transition text-xs font-medium"
+                      >
+                        Remove Item
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -209,6 +319,20 @@ export function QuotationBuilder({ products, services }: QuotationBuilderProps) 
           </div>
         </div>
       </div>
+
+      {/* Service Requirements Modal */}
+      {selectedService && (
+        <ServiceRequirementsModal
+          service={selectedService}
+          quantity={1}
+          isOpen={showRequirementsModal}
+          onClose={() => {
+            setShowRequirementsModal(false)
+            setSelectedService(null)
+          }}
+          onConfirm={handleRequirementsConfirm}
+        />
+      )}
     </div>
   )
 }

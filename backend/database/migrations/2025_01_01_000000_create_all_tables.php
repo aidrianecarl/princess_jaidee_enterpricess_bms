@@ -82,84 +82,18 @@ return new class extends Migration
             $table->softDeletes(); // Added softDeletes() to support SoftDeletes trait in Branch model
         });
 
-        // Categories
-        Schema::create('categories', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('restrict');
-            $table->timestamps();
-        });
-
-        // Colors
-        Schema::create('colors', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->id();
-            $table->string('name');
-            $table->string('hex_code')->nullable();
-            $table->timestamps();
-        });
-
-        // Sizes
-        Schema::create('sizes', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->id();
-            $table->string('name');
-            $table->string('description')->nullable();
-            $table->timestamps();
-        });
-
-        // Products
-        Schema::create('products', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->foreignId('category_id')->constrained()->onDelete('restrict');
-            $table->foreignId('color_id')->nullable()->constrained('colors')->onDelete('set null');
-            $table->foreignId('size_id')->nullable()->constrained('sizes')->onDelete('set null');
-            $table->decimal('base_price', 10, 2);
-            $table->decimal('unit_cost', 10, 2)->nullable();
-            $table->integer('quantity_in_stock')->default(0);
-            $table->integer('reorder_level')->default(10);
-            $table->string('image_url')->nullable();
-            $table->enum('status', ['active', 'inactive', 'discontinued'])->default('active');
-            $table->foreignId('created_by')->constrained('users')->onDelete('restrict');
-            $table->timestamps();
-            $table->index('category_id');
-            $table->index('status');
-        });
-
-        // Product Colors - now stores only color masters, no product_id
-        Schema::create('product_colors', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->id();
-            $table->foreignId('color_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-            $table->unique(['color_id']);
-        });
-
-        // Product Sizes - now stores only size masters, no product_id
-        Schema::create('product_sizes', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->id();
-            $table->foreignId('size_id')->constrained()->onDelete('cascade');
-            $table->timestamps();
-            $table->unique(['size_id']);
-        });
-
         // Services
         Schema::create('services', function (Blueprint $table) {
             $table->engine = 'InnoDB';
             $table->id();
             $table->string('name');
-            $table->string('slug')->unique();
             $table->text('description')->nullable();
-            $table->decimal('base_price', 10, 2);
             $table->string('category')->nullable();
+            $table->decimal('base_price', 10, 2)->default(0);
             $table->json('specifications')->nullable();
+            $table->boolean('requires_design')->default(false);
+            $table->boolean('requires_team')->default(false);
+            $table->boolean('requires_size')->default(false);
             $table->string('image_url')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->foreignId('created_by')->constrained('users')->onDelete('restrict');
@@ -206,7 +140,7 @@ return new class extends Migration
             $table->decimal('tax', 10, 2)->default(0);
             $table->decimal('total', 12, 2);
             $table->string('currency')->default('PHP');
-            $table->enum('status', ['draft', 'pending_approval', 'approved', 'rejected', 'expired'])->default('draft');
+            $table->enum('status', ['draft', 'pending', 'approved', 'rejected', 'expired'])->default('draft');
             $table->text('notes')->nullable();
             $table->text('terms_conditions')->nullable();
             $table->date('valid_until')->nullable();
@@ -223,13 +157,14 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('quotation_id')->constrained()->onDelete('cascade');
-            $table->foreignId('product_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('service_id')->nullable()->constrained()->onDelete('set null');
             $table->string('description')->nullable();
             $table->integer('quantity');
             $table->decimal('unit_price', 10, 2);
-            $table->decimal('design_cost', 10, 2)->default(0)->nullable();
             $table->decimal('line_total', 12, 2);
+            $table->string('design_file_url')->nullable();
+            $table->json('team_roster')->nullable();
+            $table->json('size_specifications')->nullable();
             $table->timestamps();
         });
 
@@ -260,7 +195,6 @@ return new class extends Migration
             $table->engine = 'InnoDB';
             $table->id();
             $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->foreignId('product_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('service_id')->nullable()->constrained()->onDelete('set null');
             $table->string('description')->nullable();
             $table->integer('quantity');
@@ -312,17 +246,17 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Inventory
-        Schema::create('inventory', function (Blueprint $table) {
-            $table->engine = 'InnoDB';
-            $table->id();
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->foreignId('branch_id')->nullable()->constrained()->onDelete('cascade');
-            $table->integer('quantity')->default(0);
-            $table->dateTime('last_restocked_at')->nullable();
-            $table->timestamps();
-            $table->unique(['product_id', 'branch_id']);
-        });
+        // // Inventory
+        // Schema::create('inventory', function (Blueprint $table) {
+        //     $table->engine = 'InnoDB';
+        //     $table->id();
+        //     $table->foreignId('product_id')->constrained()->onDelete('cascade');
+        //     $table->foreignId('branch_id')->nullable()->constrained()->onDelete('cascade');
+        //     $table->integer('quantity')->default(0);
+        //     $table->dateTime('last_restocked_at')->nullable();
+        //     $table->timestamps();
+        //     $table->unique(['product_id', 'branch_id']);
+        // });
 
         // Activity Logs
         Schema::create('activity_logs', function (Blueprint $table) {

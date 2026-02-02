@@ -51,11 +51,13 @@ class ServiceController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:services,name',
-            'slug' => 'nullable|string|max:255|unique:services,slug',
             'description' => 'nullable|string',
-            'base_price' => 'required|numeric|min:0',
             'category' => 'nullable|string|max:255',
+            'base_price' => 'nullable|numeric|min:0',
             'specifications' => 'nullable',
+            'requires_design' => 'nullable|boolean',
+            'requires_team' => 'nullable|boolean',
+            'requires_size' => 'nullable|boolean',
             'image_url' => 'nullable|string',
             'status' => 'nullable|in:active,inactive',
         ]);
@@ -71,18 +73,6 @@ class ServiceController extends Controller
             if (!$user) {
                 return response()->json(['error' => 'Unauthorized. Please login again.'], 401);
             }
-
-            $slug = $request->slug;
-            if (empty($slug)) {
-                $slug = Str::slug($request->name);
-                // Ensure unique slug
-                $originalSlug = $slug;
-                $counter = 1;
-                while (Service::where('slug', $slug)->exists()) {
-                    $slug = $originalSlug . '-' . $counter;
-                    $counter++;
-                }
-            }
             
             $specifications = $request->specifications;
             if (is_string($specifications) && !empty($specifications)) {
@@ -94,11 +84,13 @@ class ServiceController extends Controller
 
             $service = Service::create([
                 'name' => $request->name,
-                'slug' => $slug,
                 'description' => $request->description,
-                'base_price' => (float) $request->base_price,
                 'category' => $request->category,
+                'base_price' => $request->base_price ?? 0,
                 'specifications' => $specifications,
+                'requires_design' => $request->boolean('requires_design') ?? false,
+                'requires_team' => $request->boolean('requires_team') ?? false,
+                'requires_size' => $request->boolean('requires_size') ?? false,
                 'image_url' => $request->image_url,
                 'status' => $request->status ?? 'active',
                 'created_by' => $user->id,
@@ -127,11 +119,13 @@ class ServiceController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255|unique:services,name,' . $id,
-            'slug' => 'nullable|string|max:255|unique:services,slug,' . $id,
             'description' => 'nullable|string',
-            'base_price' => 'sometimes|numeric|min:0',
             'category' => 'nullable|string|max:255',
+            'base_price' => 'nullable|numeric|min:0',
             'specifications' => 'nullable',
+            'requires_design' => 'nullable|boolean',
+            'requires_team' => 'nullable|boolean',
+            'requires_size' => 'nullable|boolean',
             'image_url' => 'nullable|string',
             'status' => 'nullable|in:active,inactive',
         ]);
@@ -151,12 +145,12 @@ class ServiceController extends Controller
                 $updateData['description'] = $request->description;
             }
 
-            if ($request->has('base_price')) {
-                $updateData['base_price'] = (float) $request->base_price;
-            }
-
             if ($request->has('category')) {
                 $updateData['category'] = $request->category;
+            }
+
+            if ($request->has('base_price')) {
+                $updateData['base_price'] = $request->base_price;
             }
 
             if ($request->has('image_url')) {
@@ -167,20 +161,16 @@ class ServiceController extends Controller
                 $updateData['status'] = $request->status;
             }
 
-            // Handle slug
-            if ($request->has('slug') && !empty($request->slug)) {
-                $updateData['slug'] = $request->slug;
-            } elseif ($request->has('name')) {
-                $newSlug = Str::slug($request->name);
-                if ($newSlug !== $service->slug) {
-                    $originalSlug = $newSlug;
-                    $counter = 1;
-                    while (Service::where('slug', $newSlug)->where('id', '!=', $id)->exists()) {
-                        $newSlug = $originalSlug . '-' . $counter;
-                        $counter++;
-                    }
-                    $updateData['slug'] = $newSlug;
-                }
+            if ($request->has('requires_design')) {
+                $updateData['requires_design'] = $request->boolean('requires_design');
+            }
+
+            if ($request->has('requires_team')) {
+                $updateData['requires_team'] = $request->boolean('requires_team');
+            }
+
+            if ($request->has('requires_size')) {
+                $updateData['requires_size'] = $request->boolean('requires_size');
             }
 
             if ($request->has('specifications')) {

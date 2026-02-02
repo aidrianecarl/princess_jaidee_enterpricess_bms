@@ -49,7 +49,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
       }
 
       const data = await response.json()
-      console.log("[v0] Services API response:", data)
+      console.log("Services API response:", data)
 
       let servicesList = []
       if (data.data && Array.isArray(data.data)) {
@@ -65,7 +65,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
         setError("No services found. Please create services first.")
       }
     } catch (error) {
-      console.error("[v0] Failed to fetch services:", error)
+      console.error("Failed to fetch services:", error)
       setError("Failed to load services. Please try again.")
       setServices([])
       setFilteredServices([])

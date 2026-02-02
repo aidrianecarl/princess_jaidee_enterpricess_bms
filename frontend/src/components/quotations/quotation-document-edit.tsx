@@ -326,7 +326,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
         description: "PDF downloaded successfully",
       })
     } catch (error) {
-      console.error("[v0] PDF generation error:", error)
+      console.error("PDF generation error:", error)
       toast({
         title: "Error",
         description: "Failed to generate PDF",
@@ -351,7 +351,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
 
   // Consolidated save logic, handles both draft and submission based on isDraft flag
   const handleSave = async (isDraft = false) => {
-    console.log("[v0] handleSave triggered", { isDraft })
+    console.log("handleSave triggered", { isDraft })
     setIsSaving(true)
     const token = localStorage.getItem("auth_token")
 
@@ -366,7 +366,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
     }
 
     if (!validateForm()) {
-      console.log("[v0] Validation failed in edit mode")
+      console.log("Validation failed in edit mode")
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields correctly.",
@@ -377,7 +377,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
     }
 
     try {
-      console.log("[v0] Validation passed, preparing payload")
+      console.log("Validation passed, preparing payload")
       const formDataToSend = new FormData()
 
       // Add customer fields
@@ -415,7 +415,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
         unit_price: item.unitPrice,
         customization: item.description,
       }))
-      console.log("[v0] Items payload for update:", itemsPayload)
+      console.log("Items payload for update:", itemsPayload)
       formDataToSend.append("items", JSON.stringify(itemsPayload))
 
       // Determine URL and method based on whether it's an edit or new quotation
@@ -453,7 +453,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
         })
       }
     } catch (error) {
-      console.error("[v0] Error saving quotation:", error)
+      console.error("Error saving quotation:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "An error occurred while saving",
@@ -549,7 +549,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
         })
       }
     } catch (error) {
-      console.error("[v0] Save error:", error)
+      console.error("Save error:", error)
       toast({
         title: "Error",
         description: "An error occurred while saving",
@@ -675,7 +675,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
                       onError={(e) => {
                         const img = e.target as HTMLImageElement
                         if (!img.src.includes("/placeholder.svg")) {
-                          console.log("[v0] Logo failed to load:", logoPreview)
+                          console.log("Logo failed to load:", logoPreview)
                           img.src = "/placeholder.svg"
                         }
                       }}
