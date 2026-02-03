@@ -923,14 +923,27 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     )
   }
 
+  const updateLineItem = (id: string, updates: Partial<LineItem>) => {
+    setLineItems(
+      lineItems.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...updates,
+            }
+          : item,
+      ),
+    )
+  }
+
   if (isPageLoading) {
     return <QuotationDocumentSkeleton />
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="sticky top-16 z-40 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg print:hidden pointer-events-auto">
-        <div className="w-full px-2 sm:px-4 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
+      <div className="w-full fixed z-40 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg print:hidden pointer-events-auto">
+        <div className="w-full px-1 sm:px-3 lg:px-6">
           <div className="flex items-center justify-between gap-1 sm:gap-2 py-2 md:py-3 overflow-x-auto">
             {/* Left side buttons */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -978,15 +991,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Document Viewer */}
+      <div className="w-screen md:w-full px-1 sm:px-2 md:px-6 lg:px-8 pt-22 pb-2 md:pb-6">
+        {/* Document Viewer - Responsive Container */}
         <div
           ref={printRef}
-          className="bg-white rounded-2xl shadow-2xl overflow-hidden print:shadow-none print:rounded-none print-content"
+          className="bg-white rounded-lg md:rounded-2xl shadow-lg md:shadow-2xl overflow-hidden print:shadow-none print:rounded-none print-content max-w-full"
         >
           {/* Document Header */}
-          <div className="p-8 border-b-4 border-red-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="p-3 md:p-8 border-b-4 border-red-200">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-8">
               {/* Logo Section */}
               <div className="flex flex-col items-center justify-center md:col-span-1">
                 {logoPreview ? (
@@ -994,7 +1007,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     <img
                       src={logoPreview || "/placeholder.svg"}
                       alt="Company Logo"
-                      className="w-32 h-32 object-contain rounded-lg border-2 border-red-200"
+                      className="w-20 h-20 md:w-32 md:h-32 object-contain rounded-lg border-2 border-red-200"
                       onError={(e) => {
                         const img = e.target as HTMLImageElement
                         if (img.src !== "/placeholder.svg") {
@@ -1014,10 +1027,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     </button>
                   </div>
                 ) : (
-                  <label className="w-32 h-32 border-2 border-dashed border-red-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-red-500 transition group bg-gradient-to-br from-red-50 to-orange-50">
+                  <label className="w-20 h-20 md:w-32 md:h-32 border-2 border-dashed border-red-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-red-500 transition group bg-gradient-to-br from-red-50 to-orange-50">
                     <div className="text-center">
-                      <Upload size={24} className="text-red-400 mx-auto mb-2 group-hover:text-red-600 transition" />
-                      <p className="text-xs text-gray-600 font-medium">Your Logo</p>
+                      <Upload size={16} className="md:w-6 md:h-6 text-red-400 mx-auto mb-1 md:mb-2 group-hover:text-red-600 transition" />
+                      <p className="text-xs text-gray-600 font-medium">Logo</p>
                     </div>
                     <input type="file" onChange={handleLogoUpload} className="hidden" accept="image/*" />
                   </label>
@@ -1026,16 +1039,16 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
               {/* Business Info & Quote Header */}
               <div className="md:col-span-2">
-                <div className="mb-6">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-1">
+                <div className="mb-4 md:mb-6">
+                  <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-1">
                     <span className="bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
                       Quote
                     </span>
                   </h1>
-                  <div className="h-1 w-24 bg-gradient-to-r from-red-600 to-orange-500 rounded-full" />
+                  <div className="h-1 w-16 md:w-24 bg-gradient-to-r from-red-600 to-orange-500 rounded-full" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-2 md:gap-4 mb-4">
                   <div>
                     <p className="text-xs text-gray-500 font-semibold uppercase">Quote No.</p>
                     <input
@@ -1133,8 +1146,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           </div>
 
           {/* Bill To Section */}
-          <div className="p-8 border-b-2 border-gray-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-3 md:p-8 border-b-2 border-gray-300">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase mb-3">Bill To</p>
                 <input
@@ -1226,8 +1239,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           </div>
 
           {/* Line Items Table */}
-          <div className="p-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <div className="p-3 md:p-8">
+            <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
               Items
               <span className="text-sm font-normal text-gray-500">
                 ({lineItems.length} {lineItems.length === 1 ? "item" : "items"})
@@ -1236,12 +1249,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
             <div className="mb-6">
               {/* Table Header */}
-              <div className="grid grid-cols-12 gap-3 mb-3 pb-3 border-b-2 border-gray-300 font-semibold text-gray-700 print:hidden">
-                <div className="col-span-5">Description</div>
-                <div className="col-span-2 text-center">Quantity</div>
-                <div className="col-span-2 text-right">Unit Price</div>
-                <div className="col-span-2 text-right">Amount</div>
-                <div className="col-span-1"></div>
+              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700 print:hidden">
+                <div className="flex-1 text-sm md:text-base">Name</div>
+                <div className="w-16 md:w-20 text-center text-sm md:text-base">Qty</div>
+                <div className="w-24 text-right text-sm md:text-base">Base Price</div>
+                <div className="hidden lg:flex w-24 text-right text-sm md:text-base">Amount</div>
+                <div className="w-12 text-center text-sm md:text-base">Actions</div>
               </div>
 
               {/* Table Body */}
@@ -1255,9 +1268,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                 lineItems.map((item) => (
                   <div key={item.id} className="mb-4 pb-4 border-b border-gray-200 print:break-inside-avoid">
                     {/* Main Row - Collapsible */}
-                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3">
+                    <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
                       {/* Expand Button */}
-                      {item.type === "service" && item.serviceRequirements?.teamRoster?.length > 0 && (
+                      {item.type === "service" && (item.serviceRequirements?.teamRoster?.length > 0 || 
+                       (item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height)) && (
                         <button
                           onClick={() => {
                             const newExpanded = new Set(expandedItems)
@@ -1268,7 +1282,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             }
                             setExpandedItems(newExpanded)
                           }}
-                          className="p-1 hover:bg-gray-100 rounded transition print:hidden"
+                          className="p-1 hover:bg-gray-200 rounded transition print:hidden self-start md:self-center"
                         >
                           <ChevronDown
                             size={18}
@@ -1277,16 +1291,36 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         </button>
                       )}
 
-                      {/* Name & Category Column */}
-                      <div className="flex-1 flex gap-2 md:gap-3 min-w-0">
+                      {/* Image & Name & Category Column */}
+                      <div className="flex-1 flex gap-2 min-w-0">
+                        {/* Service Image */}
+                        {item.image && (
+                          <img
+                            src={item.image || "/placeholder.svg"}
+                            alt={item.name}
+                            className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
+                            onError={(e) => {
+                              const img = e.target as HTMLImageElement
+                              img.style.display = "none"
+                            }}
+                          />
+                        )}
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 text-sm md:text-base truncate">{item.name}</p>
-                          <p className="text-xs md:text-sm text-gray-600">{item.type === "service" ? "Service" : "Product"}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                              item.type === "service" 
+                                ? "bg-blue-100 text-blue-700" 
+                                : "bg-purple-100 text-purple-700"
+                            }`}>
+                              {item.type === "service" ? "Service" : "Product"}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       {/* Quantity Column - Editable */}
-                      <div className="flex items-center justify-center">
+                      <div className="w-16 md:w-20 flex items-center justify-center">
                         <input
                           type="number"
                           min="1"
@@ -1294,86 +1328,126 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           onChange={(e) =>
                             updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
                           }
-                          className="w-16 md:w-20 px-2 py-1 md:py-2 border-2 border-gray-300 rounded-lg text-center text-sm focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900"
+                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900"
                         />
                       </div>
 
-                      {/* Unit Price Column - Hidden but blank disabled input */}
-                      <div className="hidden md:flex items-center justify-end flex-shrink-0">
+                      {/* Base Price Column - Show service base price */}
+                      <div className="w-24 flex items-center justify-end">
                         <input
                           type="text"
-                          placeholder="Admin will fill"
+                          value={`₱${(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                           disabled
-                          className="w-24 px-2 py-1 border-2 border-gray-300 rounded-lg text-right bg-gray-50 text-xs focus:border-red-600 outline-none print:border-0 print:bg-transparent print:text-gray-900"
+                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed print:border-0 print:bg-transparent print:text-gray-900"
                         />
                       </div>
 
-                      {/* Amount Column - Hidden but blank disabled input */}
-                      <div className="hidden lg:flex items-center justify-end flex-shrink-0">
+                      {/* Amount Column - Blank disabled */}
+                      <div className="hidden lg:flex w-24 items-center justify-end">
                         <input
                           type="text"
-                          placeholder="Admin will fill"
+                          placeholder="-"
                           disabled
-                          className="w-24 px-2 py-1 border-2 border-gray-300 rounded-lg text-right bg-gray-50 text-xs focus:border-red-600 outline-none print:border-0 print:bg-transparent print:text-gray-900"
+                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed print:border-0 print:bg-transparent print:text-gray-900"
                         />
                       </div>
 
                       {/* Actions Column */}
-                      <div className="flex items-center gap-1 print:hidden flex-shrink-0">
-                        {item.type === "service" && item.serviceRequirements?.teamRoster?.length > 0 && (
-                          <button
-                            onClick={() => {
-                              setEditingItemId(item.id)
-                              setEditingRoster(item.serviceRequirements?.teamRoster || null)
-                            }}
-                            className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 p-1.5 md:p-2 rounded-lg transition"
-                            title="Edit roster"
-                          >
-                            <Edit2 size={16} className="md:w-5 md:h-5" />
-                          </button>
-                        )}
+                      <div className="flex items-center justify-center print:hidden w-12">
                         <button
                           onClick={() => removeLineItem(item.id)}
-                          className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 md:p-2 rounded-lg transition"
+                          className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded transition"
                           title="Remove item"
                         >
-                          <Trash2 size={16} className="md:w-5 md:h-5" />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
 
                     {/* Collapsible Roster Details */}
-                    {expandedItems.has(item.id) && item.serviceRequirements?.teamRoster && (
+                    {expandedItems.has(item.id) && item.serviceRequirements?.teamRoster?.length > 0 && (
                       <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
                           <p className="text-xs font-bold text-gray-700 uppercase mb-3">Team Roster Details</p>
-                          <div className="space-y-2">
+                          <div className="space-y-2 mb-4">
                             {/* Header Row - Hidden on mobile */}
-                            <div className="hidden md:grid grid-cols-4 gap-3 px-2 py-2 bg-gray-200 rounded-md">
+                            <div className="hidden md:grid grid-cols-5 gap-3 px-2 py-2 bg-gray-200 rounded-md">
                               <p className="text-xs font-semibold text-gray-700">Name</p>
                               <p className="text-xs font-semibold text-gray-700">Jersey #</p>
                               <p className="text-xs font-semibold text-gray-700">Top Size</p>
                               <p className="text-xs font-semibold text-gray-700">Bottom Size</p>
+                              <p className="text-xs font-semibold text-gray-700 text-center">Price</p>
                             </div>
                             
                             {/* Roster Items */}
                             {item.serviceRequirements.teamRoster.map((member) => (
-                              <div key={member.id} className="flex flex-col md:grid md:grid-cols-4 gap-2 md:gap-3 px-2 py-2 bg-white rounded-md border border-gray-200">
-                                <div className="flex flex-col">
+                              <div key={member.id} className="flex flex-col md:grid md:grid-cols-5 gap-2 md:gap-3 px-2 py-2 bg-white rounded-md border border-gray-200">
+                                <div className="flex flex-col flex-1">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Name</span>
-                                  <span className="font-medium text-gray-900 text-sm">{member.name}</span>
+                                  <input
+                                    type="text"
+                                    value={member.name}
+                                    onChange={(e) => {
+                                      const updated = item.serviceRequirements?.teamRoster?.map((m) =>
+                                        m.id === member.id ? { ...m, name: e.target.value } : m
+                                      ) || []
+                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                    }}
+                                    className="font-medium text-gray-900 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                  />
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Jersey #</span>
-                                  <span className="font-medium text-gray-900 text-sm">#{member.number}</span>
+                                  <input
+                                    type="text"
+                                    value={member.number}
+                                    onChange={(e) => {
+                                      const updated = item.serviceRequirements?.teamRoster?.map((m) =>
+                                        m.id === member.id ? { ...m, number: e.target.value } : m
+                                      ) || []
+                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                    }}
+                                    className="font-medium text-gray-900 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                  />
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Top Size</span>
-                                  <span className="text-gray-700 text-sm">{member.sizeTop || "-"}</span>
+                                  <input
+                                    type="text"
+                                    value={member.sizeTop || ""}
+                                    onChange={(e) => {
+                                      const updated = item.serviceRequirements?.teamRoster?.map((m) =>
+                                        m.id === member.id ? { ...m, sizeTop: e.target.value } : m
+                                      ) || []
+                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                    }}
+                                    placeholder="Size"
+                                    className="text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                  />
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Bottom Size</span>
-                                  <span className="text-gray-700 text-sm">{member.sizeBottom || "-"}</span>
+                                  <input
+                                    type="text"
+                                    value={member.sizeBottom || ""}
+                                    onChange={(e) => {
+                                      const updated = item.serviceRequirements?.teamRoster?.map((m) =>
+                                        m.id === member.id ? { ...m, sizeBottom: e.target.value } : m
+                                      ) || []
+                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                    }}
+                                    placeholder="Size"
+                                    className="text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                  />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-gray-500 md:hidden">Price</span>
+                                  <input
+                                    type="text"
+                                    placeholder="-"
+                                    disabled
+                                    className="text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-center"
+                                  />
                                 </div>
                               </div>
                             ))}
@@ -1381,13 +1455,17 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                           {/* Design Image Preview */}
                           {item.serviceRequirements?.designPreview && (
-                            <div className="mt-4 pt-4 border-t border-gray-300">
+                            <div className="pt-4 border-t border-gray-300">
                               <p className="text-xs font-bold text-gray-700 uppercase mb-2">Design</p>
                               <img
                                 src={item.serviceRequirements.designPreview || "/placeholder.svg"}
                                 alt="Design preview"
                                 onClick={() => setSelectedImage(item.serviceRequirements?.designPreview || null)}
-                                className="h-20 w-auto rounded-md border border-gray-300 cursor-pointer hover:shadow-lg transition"
+                                className="h-24 w-auto rounded-md border border-gray-300 cursor-pointer hover:shadow-lg transition"
+                                onError={(e) => {
+                                  const img = e.target as HTMLImageElement
+                                  img.src = "/placeholder.svg"
+                                }}
                               />
                             </div>
                           )}
@@ -1400,32 +1478,81 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                      item.serviceRequirements?.sizeSpecifications?.width &&
                      item.serviceRequirements?.sizeSpecifications?.height && (
                       <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-3 border border-blue-200">
-                          <p className="text-xs font-bold text-blue-700 uppercase mb-3">Tarpaulin Specifications</p>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-3">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-xs font-bold text-blue-700 uppercase">Tarpaulin Printing Details</p>
+                            <button
+                              onClick={() => {
+                                setEditingItemId(item.id)
+                              }}
+                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-200 p-1.5 rounded transition"
+                              title="Edit tarpaulin"
+                            >
+                              <Edit2 size={16} />
+                            </button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-blue-600">Width</span>
-                              <span className="text-sm font-medium text-gray-900">{item.serviceRequirements.sizeSpecifications.width} ft</span>
+                              <input
+                                type="number"
+                                value={item.serviceRequirements.sizeSpecifications.width || ""}
+                                onChange={(e) => {
+                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, width: Number(e.target.value) } } }
+                                  updateLineItem(item.id, updated)
+                                }}
+                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-blue-300 rounded focus:border-blue-500 outline-none"
+                              />
+                              <span className="text-xs text-gray-500 mt-1">ft</span>
                             </div>
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-blue-600">Height</span>
-                              <span className="text-sm font-medium text-gray-900">{item.serviceRequirements.sizeSpecifications.height} ft</span>
+                              <input
+                                type="number"
+                                value={item.serviceRequirements.sizeSpecifications.height || ""}
+                                onChange={(e) => {
+                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, height: Number(e.target.value) } } }
+                                  updateLineItem(item.id, updated)
+                                }}
+                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-blue-300 rounded focus:border-blue-500 outline-none"
+                              />
+                              <span className="text-xs text-gray-500 mt-1">ft</span>
                             </div>
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-blue-600">Total Sq Ft</span>
-                              <span className="text-sm font-medium text-gray-900">{item.serviceRequirements.sizeSpecifications.totalSqft} sq ft</span>
+                              <input
+                                type="text"
+                                value={item.serviceRequirements.sizeSpecifications.totalSqft || "0"}
+                                disabled
+                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
+                              />
+                              <span className="text-xs text-gray-500 mt-1">sq ft</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-blue-600">Detail Price</span>
+                              <input
+                                type="text"
+                                placeholder="-"
+                                disabled
+                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
+                              />
                             </div>
                           </div>
 
                           {/* Tarpaulin Design Image */}
                           {item.serviceRequirements?.designPreview && (
-                            <div className="pt-3 border-t border-blue-300">
-                              <p className="text-xs font-semibold text-blue-700 mb-2">Design</p>
+                            <div className="pt-4 border-t border-blue-300">
+                              <p className="text-xs font-semibold text-blue-700 mb-2">Design Image</p>
                               <img
                                 src={item.serviceRequirements.designPreview || "/placeholder.svg"}
                                 alt="Tarpaulin design"
                                 onClick={() => setSelectedImage(item.serviceRequirements?.designPreview || null)}
-                                className="h-24 w-auto rounded-md border border-blue-300 cursor-pointer hover:shadow-lg transition"
+                                className="h-28 w-auto rounded-md border border-blue-300 cursor-pointer hover:shadow-lg transition"
+                                onError={(e) => {
+                                  const img = e.target as HTMLImageElement
+                                  img.src = "/placeholder.svg"
+                                }}
                               />
                             </div>
                           )}
@@ -1467,9 +1594,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           </div>
 
           {/* Totals Section - Simplified for Client */}
-          <div className="px-8 pb-8 flex justify-end">
+          <div className="px-3 md:px-8 pb-4 md:pb-8 flex justify-end">
             <div className="w-full md:w-96">
-              <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-red-200 p-6">
+              <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl border-2 border-red-200 p-4 md:p-6">
                 <div className="flex justify-between items-center mb-3 pb-3 border-b-2 border-red-200">
                   <span className="text-gray-700 font-semibold">Subtotal</span>
                   <span className="text-lg font-bold text-gray-900">
