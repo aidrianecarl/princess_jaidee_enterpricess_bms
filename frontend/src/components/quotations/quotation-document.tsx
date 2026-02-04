@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown } from "lucide-react"
+import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown, Check } from "lucide-react"
 import { ProductSelectorModal } from "./product-selector-modal"
 import { ServiceSelectorModal } from "./service-selector-modal"
 import { quotationFormSchema } from "@/lib/validations/quotation"
@@ -35,6 +35,7 @@ interface LineItem {
   serviceRequirements?: {
     designFile: File | null
     designPreview: string
+    designImageUrl?: string // Store the actual image data URL for preview
     teamRoster: Array<{ id: string; name: string; number: string | number; sizeTop?: string; sizeBottom?: string }>
     sizeSpecifications: { 
       top?: string
@@ -265,7 +266,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [isNavigating, setIsNavigating] = useState(false) // Added state for navigation
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
-  const [editingRoster, setEditingRoster] = useState<LineItem["serviceRequirements"]["teamRoster"] | null>(null)
+  const [editingRosterId, setEditingRosterId] = useState<string | null>(null)
+  const [editingTarpaulinId, setEditingTarpaulinId] = useState<string | null>(null)
   const [expandedImageItem, setExpandedImageItem] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
@@ -1368,7 +1370,40 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     {expandedItems.has(item.id) && item.serviceRequirements?.teamRoster?.length > 0 && (
                       <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
                         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
-                          <p className="text-xs font-bold text-gray-700 uppercase mb-3">Team Roster Details</p>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-xs font-bold text-gray-700 uppercase">Team Roster Details</p>
+                            <div className="flex items-center gap-2">
+                              {editingRosterId === item.id ? (
+                                <button
+                                  onClick={() => setEditingRosterId(null)}
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-200 p-1.5 rounded transition flex items-center gap-1"
+                                  title="Save roster changes"
+                                >
+                                  <Check size={16} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingRosterId(item.id)}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-200 p-1.5 rounded transition"
+                                  title="Edit roster"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  const newPlayer = { id: Date.now().toString(), name: "", number: "", sizeTop: "", sizeBottom: "" }
+                                  const updated = [...(item.serviceRequirements?.teamRoster || []), newPlayer]
+                                  updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                  setEditingRosterId(item.id)
+                                }}
+                                className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-200 p-1.5 rounded transition flex items-center gap-1"
+                                title="Add new player"
+                              >
+                                <Plus size={16} />
+                              </button>
+                            </div>
+                          </div>
                           <div className="space-y-2 mb-4">
                             {/* Header Row - Hidden on mobile */}
                             <div className="hidden md:grid grid-cols-5 gap-3 px-2 py-2 bg-gray-200 rounded-md">
@@ -1381,19 +1416,24 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             
                             {/* Roster Items */}
                             {item.serviceRequirements.teamRoster.map((member) => (
-                              <div key={member.id} className="flex flex-col md:grid md:grid-cols-5 gap-2 md:gap-3 px-2 py-2 bg-white rounded-md border border-gray-200">
+                              <div key={member.id} className={`flex flex-col md:grid ${editingRosterId === item.id ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-2 md:gap-3 px-2 py-2 bg-white rounded-md border border-gray-200`}>
                                 <div className="flex flex-col flex-1">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Name</span>
                                   <input
                                     type="text"
                                     value={member.name}
+                                    disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
                                       const updated = item.serviceRequirements?.teamRoster?.map((m) =>
                                         m.id === member.id ? { ...m, name: e.target.value } : m
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    className="font-medium text-gray-900 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                    className={`font-medium text-sm px-2 py-1 border rounded outline-none transition ${
+                                      editingRosterId === item.id
+                                        ? 'text-gray-900 border-gray-300 focus:border-blue-500'
+                                        : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                    }`}
                                   />
                                 </div>
                                 <div className="flex flex-col">
@@ -1401,13 +1441,18 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   <input
                                     type="text"
                                     value={member.number}
+                                    disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
                                       const updated = item.serviceRequirements?.teamRoster?.map((m) =>
                                         m.id === member.id ? { ...m, number: e.target.value } : m
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    className="font-medium text-gray-900 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                    className={`font-medium text-sm px-2 py-1 border rounded outline-none transition ${
+                                      editingRosterId === item.id
+                                        ? 'text-gray-900 border-gray-300 focus:border-blue-500'
+                                        : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                    }`}
                                   />
                                 </div>
                                 <div className="flex flex-col">
@@ -1415,6 +1460,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   <input
                                     type="text"
                                     value={member.sizeTop || ""}
+                                    disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
                                       const updated = item.serviceRequirements?.teamRoster?.map((m) =>
                                         m.id === member.id ? { ...m, sizeTop: e.target.value } : m
@@ -1422,7 +1468,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
                                     placeholder="Size"
-                                    className="text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${
+                                      editingRosterId === item.id
+                                        ? 'text-gray-700 border-gray-300 focus:border-blue-500'
+                                        : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                    }`}
                                   />
                                 </div>
                                 <div className="flex flex-col">
@@ -1430,6 +1480,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   <input
                                     type="text"
                                     value={member.sizeBottom || ""}
+                                    disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
                                       const updated = item.serviceRequirements?.teamRoster?.map((m) =>
                                         m.id === member.id ? { ...m, sizeBottom: e.target.value } : m
@@ -1437,7 +1488,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
                                     placeholder="Size"
-                                    className="text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded focus:border-blue-500 outline-none"
+                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${
+                                      editingRosterId === item.id
+                                        ? 'text-gray-700 border-gray-300 focus:border-blue-500'
+                                        : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                    }`}
                                   />
                                 </div>
                                 <div className="flex flex-col">
@@ -1449,26 +1504,43 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     className="text-gray-700 text-sm px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-center"
                                   />
                                 </div>
+                                {editingRosterId === item.id && item.serviceRequirements.teamRoster.length > 1 && (
+                                  <div className="flex items-center justify-center">
+                                    <button
+                                      onClick={() => {
+                                        const updated = (item.serviceRequirements?.teamRoster || []).filter(m => m.id !== member.id)
+                                        updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                      }}
+                                      className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded transition"
+                                      title="Delete player"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             ))}
                           </div>
 
                           {/* Design Image Preview */}
-                          {item.serviceRequirements?.designPreview && (
+                          {item.serviceRequirements?.designImageUrl ? (
                             <div className="pt-4 border-t border-gray-300">
-                              <p className="text-xs font-bold text-gray-700 uppercase mb-2">Design</p>
+                              <p className="text-xs font-bold text-gray-700 uppercase mb-2">Design Preview</p>
                               <img
-                                src={item.serviceRequirements.designPreview || "/placeholder.svg"}
+                                src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
                                 alt="Design preview"
-                                onClick={() => setSelectedImage(item.serviceRequirements?.designPreview || null)}
-                                className="h-24 w-auto rounded-md border border-gray-300 cursor-pointer hover:shadow-lg transition"
-                                onError={(e) => {
-                                  const img = e.target as HTMLImageElement
-                                  img.src = "/placeholder.svg"
-                                }}
+                                onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
+                                className="max-h-40 max-w-full rounded-md border border-gray-300 cursor-pointer hover:shadow-lg transition"
                               />
                             </div>
-                          )}
+                          ) : item.serviceRequirements?.designPreview ? (
+                            <div className="pt-4 border-t border-gray-300">
+                              <p className="text-xs font-bold text-gray-700 uppercase mb-2">Design File</p>
+                              <div className="p-3 bg-gray-100 border border-gray-300 rounded-md">
+                                <p className="text-sm text-gray-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     )}
@@ -1481,15 +1553,23 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
                           <div className="flex items-center justify-between mb-4">
                             <p className="text-xs font-bold text-blue-700 uppercase">Tarpaulin Printing Details</p>
-                            <button
-                              onClick={() => {
-                                setEditingItemId(item.id)
-                              }}
-                              className="text-blue-600 hover:text-blue-800 hover:bg-blue-200 p-1.5 rounded transition"
-                              title="Edit tarpaulin"
-                            >
-                              <Edit2 size={16} />
-                            </button>
+                            {editingTarpaulinId === item.id ? (
+                              <button
+                                onClick={() => setEditingTarpaulinId(null)}
+                                className="text-green-600 hover:text-green-800 hover:bg-green-200 p-1.5 rounded transition flex items-center gap-1"
+                                title="Save tarpaulin changes"
+                              >
+                                <Check size={16} />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setEditingTarpaulinId(item.id)}
+                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-200 p-1.5 rounded transition"
+                                title="Edit tarpaulin"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                            )}
                           </div>
                           
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
@@ -1498,11 +1578,16 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               <input
                                 type="number"
                                 value={item.serviceRequirements.sizeSpecifications.width || ""}
+                                disabled={editingTarpaulinId !== item.id}
                                 onChange={(e) => {
                                   const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, width: Number(e.target.value) } } }
                                   updateLineItem(item.id, updated)
                                 }}
-                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-blue-300 rounded focus:border-blue-500 outline-none"
+                                className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${
+                                  editingTarpaulinId === item.id
+                                    ? 'text-gray-900 border-blue-300 focus:border-blue-500'
+                                    : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                }`}
                               />
                               <span className="text-xs text-gray-500 mt-1">ft</span>
                             </div>
@@ -1511,11 +1596,16 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               <input
                                 type="number"
                                 value={item.serviceRequirements.sizeSpecifications.height || ""}
+                                disabled={editingTarpaulinId !== item.id}
                                 onChange={(e) => {
                                   const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, height: Number(e.target.value) } } }
                                   updateLineItem(item.id, updated)
                                 }}
-                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-blue-300 rounded focus:border-blue-500 outline-none"
+                                className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${
+                                  editingTarpaulinId === item.id
+                                    ? 'text-gray-900 border-blue-300 focus:border-blue-500'
+                                    : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                }`}
                               />
                               <span className="text-xs text-gray-500 mt-1">ft</span>
                             </div>
@@ -1540,22 +1630,26 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             </div>
                           </div>
 
-                          {/* Tarpaulin Design Image */}
-                          {item.serviceRequirements?.designPreview && (
+                          {/* Design Image/File Preview */}
+                          {item.serviceRequirements?.designImageUrl ? (
                             <div className="pt-4 border-t border-blue-300">
-                              <p className="text-xs font-semibold text-blue-700 mb-2">Design Image</p>
+                              <p className="text-xs font-semibold text-blue-700 mb-2">Design Preview</p>
                               <img
-                                src={item.serviceRequirements.designPreview || "/placeholder.svg"}
-                                alt="Tarpaulin design"
-                                onClick={() => setSelectedImage(item.serviceRequirements?.designPreview || null)}
-                                className="h-28 w-auto rounded-md border border-blue-300 cursor-pointer hover:shadow-lg transition"
-                                onError={(e) => {
-                                  const img = e.target as HTMLImageElement
-                                  img.src = "/placeholder.svg"
-                                }}
+                                src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
+                                alt="Design preview"
+                                onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
+                                className="max-h-40 max-w-full rounded-md border border-blue-300 cursor-pointer hover:shadow-lg transition"
                               />
                             </div>
-                          )}
+                          ) : item.serviceRequirements?.designPreview ? (
+                            <div className="pt-4 border-t border-blue-300">
+                              <p className="text-xs font-semibold text-blue-700 mb-2">Design File</p>
+                              <div className="p-3 bg-blue-100 border border-blue-300 rounded-md">
+                                <p className="text-sm text-blue-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
+                                <p className="text-xs text-blue-700 mt-1">✓ File selected and ready</p>
+                              </div>
+                            </div>
+                          ) : null}
                         </div>
                       </div>
                     )}

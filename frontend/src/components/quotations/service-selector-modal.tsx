@@ -39,6 +39,7 @@ interface SizeSpecs {
 interface ServiceData {
   designFile: File | null
   designPreview: string
+  designImageUrl?: string // Store the actual image data URL for preview
   teamRoster: TeamMember[]
   sizeSpecifications: SizeSpecs
   designConsultation?: {
@@ -348,10 +349,12 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                           alt={service.name}
                           className="w-full h-40 object-cover rounded-lg mb-3 group-hover:scale-105 transition"
                           onError={(e) => {
-                            ;(e.target as HTMLImageElement).src = "/customer-service-interaction.png"
+                            ;(e.target as HTMLImageElement).style.display = "none"
+                            ;(e.target as HTMLImageElement).parentElement?.classList.add("hidden")
                           }}
                         />
-                      ) : (
+                      ) : null}
+                      {!service.image_url && (
                         <div className="w-full h-40 bg-gradient-to-br from-red-100 to-orange-100 rounded-lg mb-3 flex items-center justify-center">
                           <Briefcase size={32} className="text-gray-400" />
                         </div>
@@ -408,8 +411,8 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
               {selectedService.requires_design && currentStep === 2 && (
                 <DesignRequirement
                   isRequired={selectedService.requires_design}
-                  onDesignFileSelect={(file, preview) => {
-                    setServiceData({ ...serviceData, designFile: file, designPreview: preview })
+                  onDesignFileSelect={(file, preview, dataUrl) => {
+                    setServiceData({ ...serviceData, designFile: file, designPreview: preview, designImageUrl: dataUrl })
                   }}
                 />
               )}

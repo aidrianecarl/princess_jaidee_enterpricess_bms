@@ -5,7 +5,7 @@ import { Upload, X, File, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 interface DesignRequirementProps {
-  onDesignFileSelect: (file: File | null, preview: string) => void
+  onDesignFileSelect: (file: File | null, preview: string, dataUrl?: string) => void
   initialFile?: string
   isRequired?: boolean
 }
@@ -20,6 +20,7 @@ export function DesignRequirement({
   const [fileName, setFileName] = useState(initialFile || "")
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<string>("")
 
   const acceptedFormats = [
     ".pdf",
@@ -54,7 +55,23 @@ export function DesignRequirement({
     if (validateFile(file)) {
       setSelectedFile(file)
       setFileName(file.name)
-      onDesignFileSelect(file, file.name)
+      
+      // Create preview for image files
+      const fileExtension = `.${file.name.split(".").pop()?.toLowerCase()}`
+      const isImageFile = [".png", ".jpg", ".jpeg", ".svg"].includes(fileExtension)
+      
+      if (isImageFile) {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string
+          setImagePreview(dataUrl)
+          onDesignFileSelect(file, file.name, dataUrl)
+        }
+        reader.readAsDataURL(file)
+      } else {
+        setImagePreview("")
+        onDesignFileSelect(file, file.name, "")
+      }
     }
   }
 
@@ -152,23 +169,38 @@ export function DesignRequirement({
           </div>
         </div>
       ) : (
-        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <File size={20} className="text-green-600" />
-            <div>
-              <p className="font-medium text-green-900">{fileName}</p>
-              <p className="text-xs text-green-700">File selected</p>
+        <div className="space-y-4">
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <File size={20} className="text-green-600" />
+              <div>
+                <p className="font-medium text-green-900">{fileName}</p>
+                <p className="text-xs text-green-700">File selected</p>
+              </div>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleRemove}
+              className="text-red-600 hover:bg-red-50"
+            >
+              <X size={18} />
+            </Button>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleRemove}
-            className="text-red-600 hover:bg-red-50"
-          >
-            <X size={18} />
-          </Button>
+
+          {/* Image Preview for Image Files */}
+          {imagePreview && (
+            <div className="border-2 border-green-300 rounded-lg overflow-hidden bg-white p-3">
+              <p className="text-xs font-semibold text-green-700 mb-3">Design Preview</p>
+              <img
+                src={imagePreview || "/placeholder.svg"}
+                alt="Design preview"
+                className="max-h-64 max-w-full mx-auto object-contain rounded-md border border-green-200"
+              />
+              <p className="text-xs text-green-600 mt-2 text-center">Ready to proceed to next step</p>
+            </div>
+          )}
         </div>
       )}
 
