@@ -358,21 +358,35 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                       )}
 
                       {/* Service Details */}
-                      <p className="font-semibold text-gray-900 line-clamp-2">{service.name}</p>
-                      <p className="text-sm text-gray-600 line-clamp-2 mb-2">{service.description}</p>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex-1">
+                          <p className="font-semibold text-gray-900 line-clamp-2">{service.name}</p>
+                          <p className="text-sm text-gray-600 line-clamp-1 mb-2">{service.description}</p>
+                        </div>
+                      </div>
+
+                      {/* Category Badge */}
                       {service.category && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                        <span className={`text-xs font-semibold px-2 py-1 rounded-full mb-2 inline-block ${
+                          service.category?.toLowerCase().includes('sublimation') 
+                            ? 'bg-blue-100 text-blue-700' 
+                            : service.category?.toLowerCase().includes('tarpaulin')
+                              ? 'bg-purple-100 text-purple-700'
+                              : service.category?.toLowerCase().includes('embroidery')
+                                ? 'bg-pink-100 text-pink-700'
+                                : 'bg-green-100 text-green-700'
+                        }`}>
                           {service.category}
                         </span>
                       )}
 
-                      {/* Price */}
-                      <div className="flex items-center justify-between mt-3">
+                      {/* Price & Button */}
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-200">
                         <p className="text-lg font-bold bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
                           ₱ {(service.base_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                         <button className="bg-gradient-to-r from-red-600 to-orange-500 text-white p-2 rounded-lg hover:scale-110 transition">
-                          <Briefcase size={16} />
+                          <ChevronRight size={16} />
                         </button>
                       </div>
                     </div>
