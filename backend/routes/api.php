@@ -10,10 +10,12 @@ use App\Http\Controllers\JobOrderController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ContactController;
 
 Route::post('/register', [AuthController::class, 'clientRegister']);
 Route::post('/login', [AuthController::class, 'clientLogin']);
 Route::post('/admin/login', [AuthController::class, 'adminLogin']);
+Route::post('/contact', [ContactController::class, 'sendMessage']);
 
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{id}', [ServiceController::class, 'show']);

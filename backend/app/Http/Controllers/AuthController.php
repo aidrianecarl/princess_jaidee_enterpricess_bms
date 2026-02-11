@@ -15,27 +15,30 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
-            'username' => 'required|string|unique:users,username|max:255',
             'email' => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'phone_number' => 'required|string|max:20',
-            'address' => 'required|string',
-            'zip_code' => 'required|string|max:10',
+            'password' => 'required|string|min:8',
+            'password_confirmation' => 'required|string|same:password',
+            'phone_number' => 'nullable|string|max:20',
+            'address' => 'nullable|string',
+            'city' => 'nullable|string|max:100',
+            'province' => 'nullable|string|max:100',
+            'zip_code' => 'nullable|string|max:10',
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['message' => $validator->errors()->first()], 422);
         }
 
         try {
             $user = User::create([
                 'first_name' => $request->first_name,
                 'last_name' => $request->last_name,
-                'username' => $request->username,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'phone_number' => $request->phone_number,
                 'address' => $request->address,
+                'city' => $request->city,
+                'province' => $request->province,
                 'zip_code' => $request->zip_code,
                 'user_type' => 'client',
                 'status' => 'active',
@@ -46,12 +49,12 @@ class AuthController extends Controller
             $token = $user->createToken('auth_token')->plainTextToken;
 
             return response()->json([
-                'message' => 'Client registered successfully',
+                'message' => 'Registered successfully',
                 'token' => $token,
-                'user' => $user,
+                'user' => $user->load('roles'),
             ], 201);
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['message' => 'Registration failed. ' . $e->getMessage()], 500);
         }
     }
 

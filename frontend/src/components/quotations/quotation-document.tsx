@@ -1057,17 +1057,21 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       type="text"
                       value={formData.quoteNumber}
                       onChange={(e) => setFormData({ ...formData, quoteNumber: e.target.value })}
-                      className="text-2xl font-bold text-gray-900 bg-transparent border-b-2 border-red-200 focus:border-red-600 outline-none transition w-full"
+                      disabled
+                      className="text-lg font-bold text-gray-900 bg-transparent border-b-2 border-red-200 focus:border-red-600 outline-none transition w-full disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-gray-500 font-semibold uppercase">Date</p>
-                    <input
-                      type="date"
-                      value={formData.quoteDate}
-                      onChange={(e) => setFormData({ ...formData, quoteDate: e.target.value })}
-                      className="text-lg font-semibold text-gray-900 bg-transparent border-b-2 border-red-200 focus:border-red-600 outline-none transition w-full text-right"
-                    />
+                    <p className="text-lg font-semibold text-gray-900">
+                      {formData.quoteDate 
+                        ? new Date(formData.quoteDate).toLocaleDateString('en-US', { 
+                            year: 'numeric', 
+                            month: 'long', 
+                            day: 'numeric' 
+                          })
+                        : 'N/A'}
+                    </p>
                   </div>
                 </div>
 
@@ -1225,16 +1229,17 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div>
+              <div>
                   <p className="text-xs font-bold text-gray-500 uppercase mb-2">Due Date</p>
-                  <input
-                    type="date"
-                    value={formData.validUntil} // Changed from formData.dueDate to formData.validUntil
-                    onChange={(e) => setFormData({ ...formData, validUntil: e.target.value })} // Changed from dueDate to validUntil
-                    className={`text-lg font-semibold text-gray-900 bg-transparent border-b-2 ${errors.validUntil ? "border-red-500" : "border-gray-300"} focus:border-red-600 outline-none transition w-full`} // Changed from dueDate to validUntil
-                  />
-                  {errors.validUntil && <p className="text-xs text-red-500 mt-1">{errors.validUntil}</p>}{" "}
-                  {/* Changed from dueDate to validUntil */}
+                  <p className="text-lg font-semibold text-gray-900">
+                    {formData.validUntil 
+                      ? new Date(formData.validUntil).toLocaleDateString('en-US', { 
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric' 
+                        })
+                      : 'N/A'}
+                  </p>
                 </div>
               </div>
             </div>
@@ -1522,25 +1527,45 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             ))}
                           </div>
 
-                          {/* Design Image Preview */}
-                          {item.serviceRequirements?.designImageUrl ? (
+                          {/* Design File (Collapsible) */}
+                          {item.serviceRequirements?.designPreview && (
                             <div className="pt-4 border-t border-gray-300">
-                              <p className="text-xs font-bold text-gray-700 uppercase mb-2">Design Preview</p>
-                              <img
-                                src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
-                                alt="Design preview"
-                                onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
-                                className="max-h-40 max-w-full rounded-md border border-gray-300 cursor-pointer hover:shadow-lg transition"
-                              />
+                              <button
+                                onClick={() => {
+                                  setExpandedImageItem(expandedImageItem === `${item.id}-roster` ? null : `${item.id}-roster`)
+                                }}
+                                className="flex items-center gap-2 mb-2 hover:text-blue-600 transition"
+                              >
+                                <ChevronDown
+                                  size={16}
+                                  className={`text-gray-600 transition-transform ${
+                                    expandedImageItem === `${item.id}-roster` ? 'rotate-180' : ''
+                                  }`}
+                                />
+                                <p className="text-xs font-bold text-gray-700 uppercase">Design File</p>
+                              </button>
+                              
+                              {expandedImageItem === `${item.id}-roster` && (
+                                <div className="space-y-3 mt-3">
+                                  {item.serviceRequirements.designImageUrl ? (
+                                    <div className="border-2 border-gray-300 rounded-md overflow-hidden bg-white p-2">
+                                      <img
+                                        src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
+                                        alt="Design preview"
+                                        onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
+                                        className="max-h-48 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
+                                      />
+                                      <p className="text-xs text-center text-gray-600 mt-2">{item.serviceRequirements.designPreview}</p>
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 bg-gray-100 border border-gray-300 rounded-md">
+                                      <p className="text-sm text-gray-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          ) : item.serviceRequirements?.designPreview ? (
-                            <div className="pt-4 border-t border-gray-300">
-                              <p className="text-xs font-bold text-gray-700 uppercase mb-2">Design File</p>
-                              <div className="p-3 bg-gray-100 border border-gray-300 rounded-md">
-                                <p className="text-sm text-gray-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
-                              </div>
-                            </div>
-                          ) : null}
+                          )}
                         </div>
                       </div>
                     )}
@@ -1575,12 +1600,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-blue-600">Width</span>
-                              <input
-                                type="number"
+                              <select
                                 value={item.serviceRequirements.sizeSpecifications.width || ""}
                                 disabled={editingTarpaulinId !== item.id}
                                 onChange={(e) => {
-                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, width: Number(e.target.value) } } }
+                                  const w = Number(e.target.value)
+                                  const h = Number(item.serviceRequirements.sizeSpecifications.height) || 0
+                                  const sqft = w * h
+                                  const detailPrice = sqft * 20
+                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, width: w, totalSqft: sqft, totalPrice: detailPrice } } }
                                   updateLineItem(item.id, updated)
                                 }}
                                 className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${
@@ -1588,17 +1616,25 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     ? 'text-gray-900 border-blue-300 focus:border-blue-500'
                                     : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
                                 }`}
-                              />
+                              >
+                                <option value="">Select Width</option>
+                                {Array.from({ length: 8 }, (_, i) => 3 + i).map((w) => (
+                                  <option key={w} value={w}>{w} ft</option>
+                                ))}
+                              </select>
                               <span className="text-xs text-gray-500 mt-1">ft</span>
                             </div>
                             <div className="flex flex-col">
                               <span className="text-xs font-semibold text-blue-600">Height</span>
-                              <input
-                                type="number"
+                              <select
                                 value={item.serviceRequirements.sizeSpecifications.height || ""}
                                 disabled={editingTarpaulinId !== item.id}
                                 onChange={(e) => {
-                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, height: Number(e.target.value) } } }
+                                  const h = Number(e.target.value)
+                                  const w = Number(item.serviceRequirements.sizeSpecifications.width) || 0
+                                  const sqft = w * h
+                                  const detailPrice = sqft * 20
+                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, height: h, totalSqft: sqft, totalPrice: detailPrice } } }
                                   updateLineItem(item.id, updated)
                                 }}
                                 className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${
@@ -1606,7 +1642,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     ? 'text-gray-900 border-blue-300 focus:border-blue-500'
                                     : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
                                 }`}
-                              />
+                              >
+                                <option value="">Select Height</option>
+                                {Array.from({ length: 9 }, (_, i) => 2 + i).map((h) => (
+                                  <option key={h} value={h}>{h} ft</option>
+                                ))}
+                              </select>
                               <span className="text-xs text-gray-500 mt-1">ft</span>
                             </div>
                             <div className="flex flex-col">
@@ -1623,33 +1664,53 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               <span className="text-xs font-semibold text-blue-600">Detail Price</span>
                               <input
                                 type="text"
-                                placeholder="-"
+                                value={item.serviceRequirements.sizeSpecifications.totalPrice ? `₱${item.serviceRequirements.sizeSpecifications.totalPrice.toLocaleString()}` : '₱0'}
                                 disabled
-                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
+                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-right"
                               />
                             </div>
                           </div>
 
-                          {/* Design Image/File Preview */}
-                          {item.serviceRequirements?.designImageUrl ? (
+                          {/* Design File (Collapsible) */}
+                          {item.serviceRequirements?.designPreview && (
                             <div className="pt-4 border-t border-blue-300">
-                              <p className="text-xs font-semibold text-blue-700 mb-2">Design Preview</p>
-                              <img
-                                src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
-                                alt="Design preview"
-                                onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
-                                className="max-h-40 max-w-full rounded-md border border-blue-300 cursor-pointer hover:shadow-lg transition"
-                              />
+                              <button
+                                onClick={() => {
+                                  setExpandedImageItem(expandedImageItem === `${item.id}-tarpaulin` ? null : `${item.id}-tarpaulin`)
+                                }}
+                                className="flex items-center gap-2 mb-2 hover:text-blue-600 transition"
+                              >
+                                <ChevronDown
+                                  size={16}
+                                  className={`text-blue-600 transition-transform ${
+                                    expandedImageItem === `${item.id}-tarpaulin` ? 'rotate-180' : ''
+                                  }`}
+                                />
+                                <p className="text-xs font-semibold text-blue-700 uppercase">Design File</p>
+                              </button>
+                              
+                              {expandedImageItem === `${item.id}-tarpaulin` && (
+                                <div className="space-y-3 mt-3">
+                                  {item.serviceRequirements.designImageUrl ? (
+                                    <div className="border-2 border-blue-300 rounded-md overflow-hidden bg-white p-2">
+                                      <img
+                                        src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
+                                        alt="Design preview"
+                                        onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
+                                        className="max-h-48 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
+                                      />
+                                      <p className="text-xs text-center text-blue-700 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
+                                    </div>
+                                  ) : (
+                                    <div className="p-3 bg-blue-100 border border-blue-300 rounded-md">
+                                      <p className="text-sm text-blue-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
+                                      <p className="text-xs text-blue-700 mt-1">✓ File selected and ready</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          ) : item.serviceRequirements?.designPreview ? (
-                            <div className="pt-4 border-t border-blue-300">
-                              <p className="text-xs font-semibold text-blue-700 mb-2">Design File</p>
-                              <div className="p-3 bg-blue-100 border border-blue-300 rounded-md">
-                                <p className="text-sm text-blue-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
-                                <p className="text-xs text-blue-700 mt-1">✓ File selected and ready</p>
-                              </div>
-                            </div>
-                          ) : null}
+                          )}
                         </div>
                       </div>
                     )}

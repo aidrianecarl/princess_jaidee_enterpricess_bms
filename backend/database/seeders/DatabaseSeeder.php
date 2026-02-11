@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ServicesSeeder::class);
 
         // Step 5: Create customers and terms/conditions
-        $this->call(CustomerSeeder::class);
+        //$this->call(CustomerSeeder::class); //later i will put a costumer details if possible
         $this->call(TermsConditionsSeeder::class);
 
 
