@@ -2,8 +2,10 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Mail, Lock, Phone, Code, Loader, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { Mail, Lock, Loader, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { PasswordStrength } from "./password-strength"
+import { useToastNotification } from "@/hooks/use-toast-notification"
+import { AlertCircle } from 'lucide-react' // Import AlertCircle
 
 interface SignupFormProps {
   onSuccess: () => void
@@ -13,49 +15,42 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [error, setError] = useState("")
+  const { success, error: showError, info: showInfo } = useToastNotification()
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
-    username: "",
     email: "",
     password: "",
     password_confirmation: "",
     phone_number: "",
     address: "",
+    city: "",
+    province: "",
     zip_code: "",
   })
+  const [error, setError] = useState("") // Declare error state
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-    setError("")
-  }
-
-  const validatePassword = (password: string) => {
-    const minLength = password.length >= 8
-    const hasUppercase = /[A-Z]/.test(password)
-    const hasLowercase = /[a-z]/.test(password)
-    const hasNumber = /\d/.test(password)
-    return minLength && hasUppercase && hasLowercase && hasNumber
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError("")
+    e.stopPropagation()
 
-    if (!formData.first_name || !formData.last_name || !formData.username) {
-      setError("First name, last name, and username are required")
+    if (!formData.first_name || !formData.last_name || !formData.email) {
+      showError("First name, last name, and email are required")
+      return
+    }
+
+    if (!formData.password || formData.password.length < 8) {
+      showError("Password must be at least 8 characters")
       return
     }
 
     if (formData.password !== formData.password_confirmation) {
-      setError("Passwords do not match")
-      return
-    }
-
-    if (!validatePassword(formData.password)) {
-      setError("Password must be at least 8 characters with uppercase, lowercase, and numbers")
+      showError("Passwords do not match")
       return
     }
 
@@ -68,33 +63,62 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
         body: JSON.stringify(formData),
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.message || "Signup failed")
-      }
-
       const data = await response.json()
+
+      if (!response.ok) {
+        // Handle different error response formats
+        let errorMessage = "Signup failed. Please try again."
+        
+        if (data.message) {
+          errorMessage = data.message
+        } else if (data.errors) {
+          // If there are validation errors, show the first one
+          const firstError = Object.values(data.errors)[0]
+          errorMessage = Array.isArray(firstError) ? firstError[0] : firstError
+        } else if (data.error) {
+          errorMessage = data.error
+        }
+        
+        throw new Error(errorMessage)
+      }
+      
+      if (!data.token || !data.user) {
+        showError("Signup successful but missing required data. Please try logging in.")
+        setIsLoading(false)
+        return
+      }
+      
       localStorage.setItem("auth_token", data.token)
       localStorage.setItem("user", JSON.stringify(data.user))
-
       localStorage.setItem("show_terms", "true")
+      
+      // Persist success toast for after page redirect
+      const toastId = Date.now().toString()
+      const toastData = [{ id: toastId, message: "Account created successfully! Welcome!", type: 'success' }]
+      localStorage.setItem("pendingToasts", JSON.stringify(toastData))
+      
+      // Call onSuccess to close modal ONLY on successful signup
       onSuccess()
-      window.location.href = "/dashboard"
+      // Redirect after a small delay to let modal close
+      setTimeout(() => {
+        window.location.href = "/dashboard"
+      }, 300)
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred")
-    } finally {
+      const message = err instanceof Error ? err.message : "An error occurred during registration"
+      showError(message)
       setIsLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 max-h-100% pr-2">
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm font-medium animate-slideDown sticky top-0 z-50">
-          {error}
-        </div>
-      )}
-
+    <form 
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        handleSubmit(e)
+      }} 
+      className="space-y-4 max-h-100% pr-2"
+    >
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-bold text-neutral-900 mb-1">First Name</label>
@@ -123,22 +147,6 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       </div>
 
       <div>
-        <label className="block text-xs font-bold text-neutral-900 mb-1">Username</label>
-        <div className="relative">
-          <Code className="absolute left-3 top-2.5 text-red-500" size={18} />
-          <input
-            type="text"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            className="w-full pl-10 pr-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
-            placeholder="johndoe"
-            required
-          />
-        </div>
-      </div>
-
-      <div>
         <label className="block text-xs font-bold text-neutral-900 mb-1">Email Address</label>
         <div className="relative">
           <Mail className="absolute left-3 top-2.5 text-red-500" size={18} />
@@ -152,6 +160,67 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
             required
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-neutral-900 mb-1">Contact Number</label>
+        <input
+          type="tel"
+          name="phone_number"
+          value={formData.phone_number}
+          onChange={handleChange}
+          className="w-full px-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
+          placeholder="+63 9XX XXX XXXX"
+        />
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-neutral-900 mb-1">Address</label>
+        <input
+          type="text"
+          name="address"
+          value={formData.address}
+          onChange={handleChange}
+          className="w-full px-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
+          placeholder="Street address"
+        />
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs font-bold text-neutral-900 mb-1">City</label>
+          <input
+            type="text"
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            className="w-full px-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
+            placeholder="City"
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-bold text-neutral-900 mb-1">Province</label>
+          <input
+            type="text"
+            name="province"
+            value={formData.province}
+            onChange={handleChange}
+            className="w-full px-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
+            placeholder="Province"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-xs font-bold text-neutral-900 mb-1">Zip Code</label>
+        <input
+          type="text"
+          name="zip_code"
+          value={formData.zip_code}
+          onChange={handleChange}
+          className="w-full px-3 py-2.5 border-2 border-red-100 rounded-lg focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition text-sm hover:border-red-200"
+          placeholder="00000"
+        />
       </div>
 
       <div>
@@ -204,7 +273,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white py-3 rounded-lg font-bold hover:shadow-lg hover:shadow-red-500/30 transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2 text-sm group hover:scale-105"
+        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white py-3 rounded-lg font-bold hover:shadow-lg hover:shadow-red-500/30 transition duration-300 disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm group hover:scale-105 active:scale-95"
       >
         {isLoading ? (
           <>

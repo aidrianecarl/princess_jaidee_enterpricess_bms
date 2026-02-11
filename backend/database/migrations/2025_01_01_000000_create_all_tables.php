@@ -16,12 +16,13 @@ return new class extends Migration
             $table->id();
             $table->string('first_name');
             $table->string('last_name');
-            $table->string('username')->unique();
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->string('phone_number')->nullable();
             $table->text('address')->nullable();
+            $table->string('city')->nullable();
+            $table->string('province')->nullable();
             $table->string('zip_code')->nullable();
             $table->enum('user_type', ['client', 'employee', 'admin'])->default('client');
             $table->enum('status', ['active', 'inactive', 'suspended'])->default('active');

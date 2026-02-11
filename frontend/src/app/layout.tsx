@@ -2,6 +2,7 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter, Poppins } from "next/font/google"
 import "./globals.css"
+import { LayoutClient } from "@/components/layout-client"
 
 const inter = Inter({ subsets: ["latin"] })
 const poppins = Poppins({
@@ -31,7 +32,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} ${poppins.variable}`}>{children}</body>
+      <body className={`${inter.className} ${poppins.variable}`}>
+        <LayoutClient>{children}</LayoutClient>
+      </body>
     </html>
   )
 }

@@ -4,6 +4,8 @@ import type React from "react"
 import { useState } from "react"
 import { Mail, Lock, Loader, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
+import { useToastNotification } from "@/hooks/use-toast-notification"
+import { AlertCircle } from 'lucide-react'
 
 interface LoginFormProps {
   onSuccess: () => void
@@ -12,47 +14,91 @@ interface LoginFormProps {
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
+  const { success, error: showError, info: showInfo } = useToastNotification()
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   })
+  const [error, setError] = useState("")
+  const [adminWarning, setAdminWarning] = useState("")
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
-    setError("")
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (e.defaultPrevented) return
+    
     setIsLoading(true)
-    setError("")
 
     try {
       const response = await apiClient.client().post('/login', formData)
+      
+      if (!response || !response.data) {
+        showError("Invalid response from server. Please try again.")
+        setIsLoading(false)
+        return
+      }
+      
       const data = response.data
 
-      localStorage.setItem("auth_token", data.token)
-      localStorage.setItem("user", JSON.stringify(data.user))
+      // Check if user is admin or staff
+      if (data.user && (data.user.role === 'admin' || data.user.role === 'staff')) {
+        showInfo("Please visit www.princessjaideeenterprises.com to login to the admin panel")
+        setIsLoading(false)
+        return
+      }
 
-      onSuccess()
-      window.location.href = "/dashboard"
-    } catch (err) {
-      const message = apiClient.getErrorMessage(err)
-      setError(message)
-    } finally {
+      // Only store and redirect on successful customer login
+      if (data.token && data.user) {
+        localStorage.setItem("auth_token", data.token)
+        localStorage.setItem("user", JSON.stringify(data.user))
+
+        // Persist success toast for after page redirect
+        const toastId = Date.now().toString()
+        const toastData = [{ id: toastId, message: "Logged in successfully!", type: 'success' }]
+        localStorage.setItem("pendingToasts", JSON.stringify(toastData))
+        
+        // Call onSuccess to close modal ONLY on successful login
+        onSuccess()
+        
+        // Redirect after a small delay to let modal close
+        setTimeout(() => {
+          window.location.href = "/dashboard"
+        }, 300)
+      } else {
+        showError("Login successful but missing required data. Please try again.")
+        setIsLoading(false)
+      }
+    } catch (err: any) {
+      let message = "Login failed. Please check your credentials and try again."
+      
+      if (err.response?.data?.error) {
+        message = err.response.data.error
+      } else if (err.response?.data?.message) {
+        message = err.response.data.message
+      } else if (err.response?.data?.errors) {
+        const firstError = Object.values(err.response.data.errors)[0]
+        message = Array.isArray(firstError) ? firstError[0] : firstError
+      }
+      
+      showError(message)
       setIsLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 animate-fadeInUp">
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium animate-slideDown">
-          {error}
-        </div>
-      )}
+    <form 
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        handleSubmit(e)
+      }} 
+      className="space-y-4 animate-fadeInUp"
+    >
 
       <div className="space-y-2">
         <label className="block text-sm font-bold text-neutral-900">Email Address</label>
@@ -98,7 +144,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white py-3 rounded-xl font-bold hover:shadow-lg hover:shadow-red-500/30 transition duration-300 disabled:opacity-50 flex items-center justify-center gap-2 group hover:scale-105"
+        className="w-full bg-gradient-to-r from-red-600 to-orange-500 text-white py-3 rounded-xl font-bold hover:shadow-lg hover:shadow-red-500/30 transition duration-300 disabled:opacity-75 disabled:cursor-not-allowed flex items-center justify-center gap-2 group hover:scale-105 active:scale-95"
       >
         {isLoading ? (
           <>
