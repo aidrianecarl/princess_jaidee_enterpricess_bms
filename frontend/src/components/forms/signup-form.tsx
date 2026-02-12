@@ -92,7 +92,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       localStorage.setItem("user", JSON.stringify(data.user))
       localStorage.setItem("show_terms", "true")
       
-      // Persist success toast for after page redirect
+      // Persist success toast for after page redirect (will display for 10 seconds)
       const toastId = Date.now().toString()
       const toastData = [{ id: toastId, message: "Account created successfully! Welcome!", type: 'success' }]
       localStorage.setItem("pendingToasts", JSON.stringify(toastData))
@@ -102,7 +102,7 @@ export function SignupForm({ onSuccess }: SignupFormProps) {
       // Redirect after a small delay to let modal close
       setTimeout(() => {
         window.location.href = "/dashboard"
-      }, 300)
+      }, 500)
     } catch (err) {
       const message = err instanceof Error ? err.message : "An error occurred during registration"
       showError(message)

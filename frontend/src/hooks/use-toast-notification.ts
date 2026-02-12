@@ -10,11 +10,9 @@ export interface Toast {
 
 export function useToastNotification() {
   const [toasts, setToasts] = useState<Toast[]>([])
-  const [isMounted, setIsMounted] = useState(false)
 
-  // Initialize from localStorage on mount
+  // Initialize from localStorage on mount (for redirects)
   useEffect(() => {
-    setIsMounted(true)
     try {
       const stored = localStorage.getItem('pendingToasts')
       if (stored) {
@@ -22,16 +20,15 @@ export function useToastNotification() {
         if (Array.isArray(pendingToasts) && pendingToasts.length > 0) {
           setToasts(pendingToasts)
           localStorage.removeItem('pendingToasts')
-          
-          // Auto-remove after 5 seconds
-          setTimeout(() => {
-            setToasts([])
-          }, 5000)
         }
       }
     } catch (error) {
       console.error('Error loading toasts from localStorage:', error)
     }
+  }, [])
+
+  const removeToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id))
   }, [])
 
   const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -41,27 +38,12 @@ export function useToastNotification() {
     setToasts(prev => [newToast, ...prev])
 
     // Auto-remove after 5 seconds
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       removeToast(id)
     }, 5000)
 
     return id
-  }, [])
-
-  const removeToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id))
-  }, [])
-
-  // Persist to localStorage when toasts change
-  useEffect(() => {
-    if (isMounted && toasts.length > 0) {
-      try {
-        localStorage.setItem('pendingToasts', JSON.stringify(toasts))
-      } catch (error) {
-        console.error('Error saving toasts to localStorage:', error)
-      }
-    }
-  }, [toasts, isMounted])
+  }, [removeToast])
 
   return {
     toasts,
