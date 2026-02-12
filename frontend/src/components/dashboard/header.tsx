@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { LogOut, User, ChevronDown, Bell, Menu, X, Home } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 interface HeaderProps {
   user: any
@@ -25,8 +26,14 @@ export function DashboardHeader({ user }: HeaderProps) {
       <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16">
           <Link href="/dashboard" className="flex items-center gap-2 md:gap-3 group cursor-pointer min-w-0 flex-shrink-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-red-600 to-orange-500 rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-red-200/50 transition flex-shrink-0">
-              <span className="text-white font-bold text-xs sm:text-sm">PJ</span>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl overflow-hidden shadow-lg group-hover:shadow-red-200/50 transition flex-shrink-0">
+              <Image 
+                src="/princessjd.png" 
+                alt="Princess Jaidee Logo" 
+                width={40} 
+                height={40}
+                className="object-cover w-full h-full"
+              />
             </div>
             <div className="hidden sm:block min-w-0">
               <span className="font-bold text-sm md:text-base bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent block truncate">

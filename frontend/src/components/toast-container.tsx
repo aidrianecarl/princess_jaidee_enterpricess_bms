@@ -16,7 +16,7 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
   return (
-    <div className="fixed top-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+    <div className="fixed top-6 right-6 z-50 flex flex-col gap-3">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
       ))}
@@ -62,12 +62,14 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
       {icon}
       <p className="text-sm font-medium flex-1">{toast.message}</p>
       <button
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation()
           setIsExiting(true)
           setTimeout(() => onRemove(toast.id), 300)
         }}
-        className="hover:bg-white/20 p-1 rounded-lg transition-colors flex-shrink-0"
+        className="hover:bg-white/20 p-1 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
         aria-label="Close notification"
+        type="button"
       >
         <X size={18} className="text-white" />
       </button>

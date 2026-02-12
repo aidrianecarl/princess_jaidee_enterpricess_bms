@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState, useEffect } from "react"
 import { Menu, X, Sun, Moon, Bell, LogOut } from 'lucide-react'
 import { usePathname } from 'next/navigation'
@@ -51,8 +52,14 @@ export function Navbar() {
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
           <Link href={isAdminPage ? "/admin/dashboard" : "/"} className="flex items-center gap-2 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-lg flex items-center justify-center group-hover:shadow-lg group-hover:scale-110 transition-all duration-300">
-              <span className="text-white font-bold text-lg">PJ</span>
+            <div className="w-10 h-10 rounded-lg overflow-hidden group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 flex items-center justify-center">
+              <Image 
+                src="/princessjd.png" 
+                alt="Princess Jaidee Logo" 
+                width={40} 
+                height={40}
+                className="object-cover w-full h-full"
+              />
             </div>
             <span className={`font-bold text-lg hidden sm:inline bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent`}>
               Princess Jaidee
