@@ -120,7 +120,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <div className="space-y-2">
         <label className="block text-sm font-bold text-neutral-900">
-          Email Addressssss
+          Email Address
         </label>
         <div className="relative group">
           <Mail className="absolute left-4 top-3.5 text-red-500" size={20} />
