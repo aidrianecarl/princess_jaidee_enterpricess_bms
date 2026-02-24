@@ -28,7 +28,7 @@ export function Hero() {
                   isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                 }`}
               >
-                Premium Custom <span className="bg-gradient-to-r from-red-600 via-red-500 to-red-700 bg-clip-text text-transparent animate-pulse">Apparel</span> Solutions
+                Premium Custommmm <span className="bg-gradient-to-r from-red-600 via-red-500 to-red-700 bg-clip-text text-transparent animate-pulse">Apparel</span> Solutions
               </h1>
               <p 
                 className={`text-lg text-neutral-600 leading-relaxed transition-all duration-1000 delay-200 transform ${
