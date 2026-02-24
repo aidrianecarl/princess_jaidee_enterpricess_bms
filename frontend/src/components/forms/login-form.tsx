@@ -198,7 +198,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
               </div>
             </div>
             <h3 className="text-2xl font-bold text-neutral-900 mb-2">Logged In Successfully!</h3>
-            <p className="text-neutral-600 mb-6">Welcome back! Redirecting you to your dashboard...</p>
+            <p className="text-neutral-600 mb-6">Weeeelcome back! Redirecting you to your dashboard...</p>
             <div className="flex justify-center">
               <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce" style={{ animationDelay: "0s" }}></div>
               <div className="w-2 h-2 bg-red-600 rounded-full animate-bounce mx-2" style={{ animationDelay: "0.2s" }}></div>
