@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios'
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api/api'
 
 interface ApiError {
   message: string
