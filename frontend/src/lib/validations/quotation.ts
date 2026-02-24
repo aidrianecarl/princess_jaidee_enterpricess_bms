@@ -2,8 +2,7 @@ import { z } from "zod"
 
 export const quotationLineItemSchema = z.object({
   type: z.enum(["product", "service"], {
-    required_error: "Item type is required",
-    invalid_type_error: "Item type must be either 'product' or 'service'",
+    message: "Item type must be either 'product' or 'service'",
   }),
   name: z.string().min(1, "Item name is required").max(255, "Item name is too long"),
   description: z.string().optional(),
