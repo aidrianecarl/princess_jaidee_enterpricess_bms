@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'https://princessjaideeenterprises.com','https://www.princessjaideeenterprises.com',)],
+    'allowed_origins' => explode(',', env('FRONTEND_URL', 'https://www.princessjaideeenterprises.com')),
 
     'allowed_origins_patterns' => [],
 
