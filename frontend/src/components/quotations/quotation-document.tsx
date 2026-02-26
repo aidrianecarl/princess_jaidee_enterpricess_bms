@@ -196,7 +196,7 @@ function QuotationDocumentSkeleton() {
   )
 }
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
 interface QuotationFormData {
   quoteNumber: string
