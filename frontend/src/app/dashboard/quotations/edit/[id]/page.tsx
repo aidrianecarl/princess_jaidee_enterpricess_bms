@@ -54,7 +54,7 @@ export default function EditQuotationPage() {
         router.push("/dashboard")
       }
     } catch (error) {
-      console.error("[v0] Failed to fetch quotation:", error)
+      console.error("Failed to fetch quotation:", error)
       router.push("/dashboard")
     } finally {
       setIsLoading(false)

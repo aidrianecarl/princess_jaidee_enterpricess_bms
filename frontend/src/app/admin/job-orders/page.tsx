@@ -49,11 +49,11 @@ export default function JobOrdersPage() {
       if (Array.isArray(data)) {
         setJobOrders(data)
       } else {
-        console.error("[v0] Invalid data structure:", data)
+        console.error("Invalid data structure:", data)
         toast({ title: "Error", description: "Invalid data structure", variant: "destructive" })
       }
     } catch (error) {
-      console.error("[v0] Error fetching job orders:", error)
+      console.error("Error fetching job orders:", error)
       toast({ title: "Error", description: "Failed to fetch job orders", variant: "destructive" })
     } finally {
       setIsLoading(false)

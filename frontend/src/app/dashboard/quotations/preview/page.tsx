@@ -61,7 +61,7 @@ export default function PreviewPage() {
       try {
         setPreviewData(JSON.parse(data))
       } catch (error) {
-        console.error("[v0] Failed to load preview data:", error)
+        console.error("Failed to load preview data:", error)
         toast({
           title: "Error",
           description: "Failed to load preview data",
@@ -136,7 +136,7 @@ export default function PreviewPage() {
         description: "PDF downloaded successfully",
       })
     } catch (error) {
-      console.error("[v0] PDF generation error:", error)
+      console.error("PDF generation error:", error)
       toast({
         title: "Error",
         description: "Failed to generate PDF",

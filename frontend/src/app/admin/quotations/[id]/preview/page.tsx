@@ -68,7 +68,7 @@ export default function AdminQuotationPreviewPage() {
       const response = await apiClient.admin().get(`/admin/quotations/${quotationId}`)
       setQuotation(response.data)
     } catch (error) {
-      console.error("[v0] Error fetching quotation:", error)
+      console.error("Error fetching quotation:", error)
       toast({
         title: "Error",
         description: "Failed to load quotation",
@@ -86,7 +86,7 @@ export default function AdminQuotationPreviewPage() {
       const data = Array.isArray(response.data) ? response.data : response.data.data || []
       setEmployees(data.filter((user: any) => user.user_type === "employee"))
     } catch (error) {
-      console.error("[v0] Error fetching employees:", error)
+      console.error("Error fetching employees:", error)
       toast({
         title: "Error",
         description: "Failed to load employees",
@@ -141,7 +141,7 @@ export default function AdminQuotationPreviewPage() {
         description: "PDF downloaded successfully",
       })
     } catch (error) {
-      console.error("[v0] PDF generation error:", error)
+      console.error("PDF generation error:", error)
       toast({
         title: "Error",
         description: "Failed to generate PDF",
@@ -185,7 +185,7 @@ export default function AdminQuotationPreviewPage() {
       setShowScheduleModal(false)
       fetchQuotation()
     } catch (error) {
-      console.error("[v0] Error scheduling job order:", error)
+      console.error("Error scheduling job order:", error)
       toast({
         title: "Error",
         description: "Failed to schedule job order",

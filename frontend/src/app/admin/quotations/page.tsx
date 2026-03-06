@@ -46,10 +46,10 @@ export default function AdminQuotationsPage() {
           status: statusFilter,
         },
       })
-      console.log("[v0] Quotations response:", response.data)
+      console.log("Quotations response:", response.data)
       setQuotations(response.data.data || response.data)
     } catch (error) {
-      console.error("[v0] Error fetching quotations:", error)
+      console.error("Error fetching quotations:", error)
       toast({ title: "Error", description: "Failed to fetch quotations", variant: "destructive" })
     } finally {
       setIsLoading(false)
@@ -61,7 +61,7 @@ export default function AdminQuotationsPage() {
       toast({ title: "Error", description: "Invalid quotation ID", variant: "destructive" })
       return
     }
-    console.log("[v0] Navigating to quotation:", quotationId)
+    console.log("Navigating to quotation:", quotationId)
     router.push(`/admin/quotations/${quotationId}/preview`)
   }
 

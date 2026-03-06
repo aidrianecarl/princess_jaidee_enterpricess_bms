@@ -66,7 +66,7 @@ export default function MembersPage() {
       const response = await apiClient.get("/admin/users")
       setMembers(response.data.data || [])
     } catch (error) {
-      console.error("[v0] Error fetching members:", error)
+      console.error("Error fetching members:", error)
     } finally {
       setIsLoading(false)
     }
@@ -86,7 +86,7 @@ export default function MembersPage() {
       resetForm()
       fetchMembers()
     } catch (error) {
-      console.error("[v0] Error saving member:", error)
+      console.error("Error saving member:", error)
     }
   }
 
@@ -96,7 +96,7 @@ export default function MembersPage() {
         await apiClient.delete(`/admin/users/${id}`)
         fetchMembers()
       } catch (error) {
-        console.error("[v0] Error deleting member:", error)
+        console.error("Error deleting member:", error)
       }
     }
   }
@@ -107,7 +107,7 @@ export default function MembersPage() {
       await apiClient.put(`/admin/users/${member.id}`, { status: newStatus })
       fetchMembers()
     } catch (error) {
-      console.error("[v0] Error toggling status:", error)
+      console.error("Error toggling status:", error)
     }
   }
 

@@ -87,7 +87,7 @@ export default function ServicesPage() {
       setError("")
       const res = await apiClient.get("/admin/services")
       const data = Array.isArray(res.data) ? res.data : res.data.data || []
-      console.log("[v0] Fetched services:", data)
+      console.log("Fetched services:", data)
       setServices(data)
     } catch (error) {
       console.error("Failed to fetch services:", error)
