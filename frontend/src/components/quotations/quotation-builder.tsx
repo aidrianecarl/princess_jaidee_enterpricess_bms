@@ -43,10 +43,11 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
     quantity: number
     designFileUrl?: string
     designNotes?: string
-    teamRoster?: Array<{ name: string; position: string; size?: string }>
+    teamRoster?: Array<{ name: string; number: string | number; size?: string }>
     teamRosterNotes?: string
     sizeSpecifications?: { top?: string; bottom?: string }
     sizeNotes?: string
+    additionalNotes?: string
   }) => {
     if (!selectedService) return
 
@@ -55,6 +56,7 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
       data.designNotes ? `Design: ${data.designNotes}` : '',
       data.teamRosterNotes ? `Team Roster: ${data.teamRosterNotes}` : '',
       data.sizeNotes ? `Sizes: ${data.sizeNotes}` : '',
+      data.additionalNotes ? `Additional: ${data.additionalNotes}` : '',
     ]
       .filter(Boolean)
       .join('\n')

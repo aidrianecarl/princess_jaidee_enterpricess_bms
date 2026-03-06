@@ -47,22 +47,54 @@ export function QuotationList() {
 
   const fetchQuotations = async () => {
     try {
+      setIsLoading(true)
       const token = localStorage.getItem("auth_token")
+      
+      if (!token) {
+        console.error("No auth token found")
+        setIsLoading(false)
+        return
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quotations`, {
-        headers: { Authorization: `Bearer ${token}` },
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: "application/json",
+        },
       })
 
       if (response.ok) {
         const data = await response.json()
-        const quotationsList = Array.isArray(data) ? data : data.data || []
-        const quotationsWithCount = quotationsList.map((q: Quotation) => ({
+        console.log("Quotations data:", data)
+        
+        // Handle paginated response
+        const quotationsList = Array.isArray(data) ? data : data.data || data || []
+        
+        const quotationsWithCount = (Array.isArray(quotationsList) ? quotationsList : []).map((q: Quotation) => ({
           ...q,
           items_count: q.items?.length || 0,
         }))
+        
         setQuotations(quotationsWithCount)
+        console.log("Quotations loaded:", quotationsWithCount)
+      } else {
+        console.error("Failed to fetch quotations:", response.status, response.statusText)
+        const errorData = await response.json()
+        console.error("Error details:", errorData)
+        toast({
+          title: "Error",
+          description: "Failed to load quotations",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Failed to fetch quotations:", error)
+      toast({
+        title: "Error",
+        description: "An error occurred while fetching quotations",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -103,14 +135,17 @@ export function QuotationList() {
     setIsSending(true)
     try {
       const token = localStorage.getItem("auth_token")
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/quotations/${quotationToSend.id}/status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: "pending" }),
-      })
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/quotations/${quotationToSend.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ status: "pending" }),
+        }
+      )
 
       if (response.ok) {
         toast({
@@ -118,7 +153,11 @@ export function QuotationList() {
           description: `Quotation ${quotationToSend.quotation_number} has been sent for admin approval`,
         })
         // Update local state
-        setQuotations(quotations.map((q) => (q.id === quotationToSend.id ? { ...q, status: "pending" } : q)))
+        setQuotations(
+          quotations.map((q) =>
+            q.id === quotationToSend.id ? { ...q, status: "pending" } : q
+          )
+        )
       } else {
         toast({
           title: "Error",
@@ -154,6 +193,14 @@ export function QuotationList() {
     )
   }
 
+  const counts = {
+    all: quotations.length,
+    draft: quotations.filter((q) => q.status === "draft").length,
+    pending: quotations.filter((q) => q.status === "pending").length,
+    approved: quotations.filter((q) => q.status === "approved").length,
+    rejected: quotations.filter((q) => q.status === "rejected").length,
+  }
+
   return (
     <>
       <div className="space-y-4">
@@ -172,7 +219,7 @@ export function QuotationList() {
               {status.charAt(0).toUpperCase() + status.slice(1)}
               {/* Show count badge */}
               <span className="ml-2 text-xs opacity-75">
-                ({quotations.filter((q) => (status === "all" ? true : q.status === status)).length})
+                ({counts[status as keyof typeof counts]})
               </span>
             </button>
           ))}
@@ -212,7 +259,7 @@ export function QuotationList() {
                 </div>
 
                 <div className="text-right mr-6 hidden sm:block">
-                  <p className="font-bold text-gray-900">₱{Number(quotation.total).toLocaleString()}</p>
+                  <p className="font-bold text-gray-900">₱{Number(quotation.total || 0).toLocaleString()}</p>
                   <span
                     className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${getStatusColor(quotation.status)}`}
                   >

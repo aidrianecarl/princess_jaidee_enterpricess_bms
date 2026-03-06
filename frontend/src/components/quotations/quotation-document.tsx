@@ -812,7 +812,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: item.serviceRequirements?.designPreview || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
-            notes: item.description || null,
+            notes: item.notes || null,
           })),
         ),
       )

@@ -19,10 +19,8 @@ class QuotationController extends Controller
     {
         $userId = auth()->id();
         
-        $query = Quotation::with(['customer', 'items.product', 'items.service'])
-            ->whereHas('creator', function ($q) use ($userId) {
-                $q->where('id', $userId);
-            });
+        $query = Quotation::with(['customer', 'items.service'])
+            ->where('created_by', $userId);
 
         if ($request->has('search')) {
             $query->where('quotation_number', 'like', '%' . $request->search . '%');
@@ -45,7 +43,7 @@ class QuotationController extends Controller
     // Get single quotation
     public function show($id)
     {
-        $quotation = Quotation::with(['customer', 'items.product', 'items.service'])->find($id);
+        $quotation = Quotation::with(['customer', 'items.service'])->find($id);
 
         if (!$quotation) {
             return response()->json(['error' => 'Quotation not found'], 404);
@@ -281,7 +279,7 @@ class QuotationController extends Controller
                 ]);
             }
             
-            $quotation->load(['customer', 'items.product', 'items.service']);
+            $quotation->load(['customer', 'items.service']);
             $quotation->items_count = $quotation->items->count();
 
             return response()->json([
@@ -473,7 +471,7 @@ class QuotationController extends Controller
             }
 
             $quotation->save();
-            $quotation->load(['customer', 'items.product', 'items.service']);
+            $quotation->load(['customer', 'items.service']);
             $quotation->items_count = $quotation->items->count();
 
             return response()->json([
