@@ -42,10 +42,22 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
   const handleRequirementsConfirm = (data: {
     quantity: number
     designFileUrl?: string
+    designNotes?: string
     teamRoster?: Array<{ name: string; position: string; size?: string }>
+    teamRosterNotes?: string
     sizeSpecifications?: { top?: string; bottom?: string }
+    sizeNotes?: string
   }) => {
     if (!selectedService) return
+
+    // Combine all notes
+    const allNotes = [
+      data.designNotes ? `Design: ${data.designNotes}` : '',
+      data.teamRosterNotes ? `Team Roster: ${data.teamRosterNotes}` : '',
+      data.sizeNotes ? `Sizes: ${data.sizeNotes}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n')
 
     const newItem: QuotationItem = {
       id: Math.random().toString(),
@@ -57,6 +69,7 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
       designFileUrl: data.designFileUrl,
       teamRoster: data.teamRoster,
       sizeSpecifications: data.sizeSpecifications,
+      notes: allNotes || undefined,
     }
     setItems([...items, newItem])
     setSelectedService(null)

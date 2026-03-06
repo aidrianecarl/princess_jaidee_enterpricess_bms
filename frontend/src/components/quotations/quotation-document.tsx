@@ -667,6 +667,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       formDataToSend.append("notes", formData.notes || "")
       formDataToSend.append("valid_until", formData.validUntil || "")
+      formDataToSend.append("status", "draft")
 
       formDataToSend.append(
         "items",
@@ -682,6 +683,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: item.serviceRequirements?.designPreview || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
+            notes: item.description || null,
           })),
         ),
       )
@@ -793,7 +795,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       formDataToSend.append("notes", formData.notes || "")
       formDataToSend.append("valid_until", formData.validUntil || "")
-      formDataToSend.append("status", "pending_approval")
+      formDataToSend.append("status", "pending")
 
       // Add items as JSON string
       formDataToSend.append(
@@ -810,6 +812,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: item.serviceRequirements?.designPreview || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
+            notes: item.description || null,
           })),
         ),
       )

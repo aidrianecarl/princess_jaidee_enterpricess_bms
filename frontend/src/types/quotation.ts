@@ -16,6 +16,7 @@ export interface QuotationItem {
     top?: string
     bottom?: string
   }
+  notes?: string
 }
 
 export interface TeamMember {

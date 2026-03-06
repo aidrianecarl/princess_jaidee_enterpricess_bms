@@ -113,12 +113,13 @@ class QuotationController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.customization' => 'nullable|string',
             'items.*.design_cost' => 'nullable|numeric|min:0',
+            'items.*.notes' => 'nullable|string',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'discount' => 'nullable|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'valid_until' => 'nullable|date',
-            'status' => 'nullable|in:draft,pending_approval',
+            'status' => 'nullable|in:draft,pending',
         ]);
 
         if ($validator->fails()) {
@@ -276,6 +277,7 @@ class QuotationController extends Controller
                     'design_file_url' => $item['design_file_url'] ?? null,
                     'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
                     'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
+                    'notes' => $item['notes'] ?? null,
                 ]);
             }
             
@@ -339,9 +341,11 @@ class QuotationController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.customization' => 'nullable|string',
             'items.*.design_cost' => 'nullable|numeric|min:0',
+            'items.*.notes' => 'nullable|string',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'notes' => 'nullable|string',
             'valid_until' => 'nullable|date',
+            'status' => 'nullable|in:draft,pending',
         ]);
 
         if ($validator->fails()) {
@@ -424,6 +428,7 @@ class QuotationController extends Controller
                         'design_file_url' => $item['design_file_url'] ?? null,
                         'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
                         'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
+                        'notes' => $item['notes'] ?? null,
                     ]);
                 }
                 
@@ -461,6 +466,10 @@ class QuotationController extends Controller
             
             if ($request->has('valid_until')) {
                 $quotation->valid_until = $request->valid_until;
+            }
+            
+            if ($request->has('status')) {
+                $quotation->status = $request->status;
             }
 
             $quotation->save();

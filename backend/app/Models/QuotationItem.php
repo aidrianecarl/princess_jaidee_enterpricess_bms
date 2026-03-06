@@ -17,6 +17,7 @@ class QuotationItem extends Model
         'design_file_url',
         'team_roster',
         'size_specifications',
+        'notes',
     ];
 
     protected $casts = [
