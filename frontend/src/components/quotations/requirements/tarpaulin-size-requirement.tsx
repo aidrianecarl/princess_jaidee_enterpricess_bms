@@ -16,7 +16,6 @@ interface TarpaulinSizeRequirementProps {
   initialSpecs?: TarpaulinSize
   initialNotes?: string
   isRequired?: boolean
-  isLastStep?: boolean
 }
 
 export function TarpaulinSizeRequirement({
@@ -25,7 +24,6 @@ export function TarpaulinSizeRequirement({
   initialSpecs = {},
   initialNotes = "",
   isRequired = true,
-  isLastStep = false,
 }: TarpaulinSizeRequirementProps) {
   const [width, setWidth] = useState<number | string>(initialSpecs.width || "")
   const [height, setHeight] = useState<number | string>(initialSpecs.height || "")
@@ -174,7 +172,7 @@ export function TarpaulinSizeRequirement({
         </div>
       )}
 
-      {isLastStep && width && height && (
+      {width && height && (
         <div className="space-y-2 pt-4 border-t border-neutral-200">
           <label className="block text-sm font-medium text-neutral-900">
             Size Notes <span className="text-neutral-500 text-xs">(Optional)</span>

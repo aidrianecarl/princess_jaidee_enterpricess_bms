@@ -22,7 +22,6 @@ interface SizeSpecificationRequirementProps {
   topLabel?: string
   bottomLabel?: string
   sizeType?: "generic" | "tarpaulin"
-  isLastStep?: boolean
 }
 
 export function SizeSpecificationRequirement({
@@ -33,7 +32,6 @@ export function SizeSpecificationRequirement({
   isRequired = true,
   topLabel = "Top/Shirt Size",
   bottomLabel = "Bottom/Short Size",
-  isLastStep = false,
 }: SizeSpecificationRequirementProps) {
   const [specs, setSpecs] = useState<SizeSpecs>({
     top: initialSpecs.top || "",
@@ -147,7 +145,7 @@ export function SizeSpecificationRequirement({
         </p>
       </div>
 
-      {isLastStep && specs.top && specs.bottom && (
+      {specs.top && specs.bottom && (
         <div className="space-y-2 pt-4 border-t border-neutral-200">
           <label className="block text-sm font-medium text-neutral-900">
             Size Notes <span className="text-neutral-500 text-xs">(Optional)</span>

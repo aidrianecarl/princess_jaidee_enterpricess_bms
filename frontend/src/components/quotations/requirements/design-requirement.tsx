@@ -10,7 +10,6 @@ interface DesignRequirementProps {
   initialFile?: string
   initialNotes?: string
   isRequired?: boolean
-  isLastStep?: boolean
 }
 
 export function DesignRequirement({
@@ -19,7 +18,6 @@ export function DesignRequirement({
   initialFile,
   initialNotes = "",
   isRequired = true,
-  isLastStep = false,
 }: DesignRequirementProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -223,20 +221,18 @@ export function DesignRequirement({
         </div>
       )}
 
-      {isLastStep && (
-        <div className="space-y-2 pt-4 border-t border-neutral-200">
-          <label className="block text-sm font-medium text-neutral-900">
-            Design Notes <span className="text-neutral-500 text-xs">(Optional)</span>
-          </label>
-          <textarea
-            placeholder="Add any additional design requirements or customization notes..."
-            value={designNotes}
-            onChange={(e) => handleNotesChange(e.target.value)}
-            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            rows={3}
-          />
-        </div>
-      )}
+      <div className="space-y-2 pt-4 border-t border-neutral-200">
+        <label className="block text-sm font-medium text-neutral-900">
+          Design Notes <span className="text-neutral-500 text-xs">(Optional)</span>
+        </label>
+        <textarea
+          placeholder="Add any additional design requirements or customization notes..."
+          value={designNotes}
+          onChange={(e) => handleNotesChange(e.target.value)}
+          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          rows={3}
+        />
+      </div>
     </div>
   )
 }

@@ -270,7 +270,6 @@ export function ServiceRequirementsModal({
                 initialFile={designFileName}
                 initialNotes={designNotes}
                 isRequired={true}
-                isLastStep={isLastStep}
               />
 
               {errors.design && (
@@ -296,7 +295,6 @@ export function ServiceRequirementsModal({
                 initialRoster={teamRoster}
                 initialNotes={teamRosterNotes}
                 isRequired={true}
-                isLastStep={isLastStep}
               />
 
               {errors.roster && (
@@ -322,7 +320,6 @@ export function ServiceRequirementsModal({
                 initialSpecs={sizeSpecs}
                 initialNotes={sizeNotes}
                 isRequired={true}
-                isLastStep={isLastStep}
               />
 
               {errors.sizes && (

@@ -20,7 +20,6 @@ interface TeamRosterRequirementProps {
   initialNotes?: string
   isRequired?: boolean
   requiresSize?: boolean
-  isLastStep?: boolean
 }
 
 export function TeamRosterRequirement({
@@ -30,7 +29,6 @@ export function TeamRosterRequirement({
   initialNotes = "",
   isRequired = true,
   requiresSize = false,
-  isLastStep = false,
 }: TeamRosterRequirementProps) {
   const [members, setMembers] = useState<TeamMember[]>(
     initialRoster.length > 0
@@ -210,20 +208,18 @@ export function TeamRosterRequirement({
         </p>
       </div>
 
-      {!isLastStep && (
-        <div className="space-y-2 pt-4 border-t border-neutral-200">
-          <label className="block text-sm font-medium text-neutral-900">
-            Jersey Customization Notes <span className="text-neutral-500 text-xs">(Optional)</span>
-          </label>
-          <textarea
-            placeholder="Add any jersey customization requirements, special printing, embroidery, or other specific details..."
-            value={teamNotes}
-            onChange={(e) => handleNotesChange(e.target.value)}
-            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-            rows={3}
-          />
-        </div>
-      )}
+      <div className="space-y-2 pt-4 border-t border-neutral-200">
+        <label className="block text-sm font-medium text-neutral-900">
+          Jersey Customization Notes <span className="text-neutral-500 text-xs">(Optional)</span>
+        </label>
+        <textarea
+          placeholder="Add any jersey customization requirements, special printing, embroidery, or other specific details..."
+          value={teamNotes}
+          onChange={(e) => handleNotesChange(e.target.value)}
+          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          rows={3}
+        />
+      </div>
     </div>
   )
 }
