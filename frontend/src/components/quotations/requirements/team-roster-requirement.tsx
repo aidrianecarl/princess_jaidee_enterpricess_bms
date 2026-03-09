@@ -210,7 +210,7 @@ export function TeamRosterRequirement({
         </p>
       </div>
 
-      {isLastStep && (
+      {!isLastStep && (
         <div className="space-y-2 pt-4 border-t border-neutral-200">
           <label className="block text-sm font-medium text-neutral-900">
             Jersey Customization Notes <span className="text-neutral-500 text-xs">(Optional)</span>
