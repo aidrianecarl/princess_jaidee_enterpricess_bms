@@ -266,21 +266,12 @@ export function ServiceRequirementsModal({
                   setDesignFile(file)
                   setDesignFileName(preview)
                 }}
+                onDesignNotesChange={setDesignNotes}
                 initialFile={designFileName}
+                initialNotes={designNotes}
                 isRequired={true}
+                isLastStep={isLastStep}
               />
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-neutral-900">
-                  Design Notes (Optional)
-                </label>
-                <Textarea
-                  placeholder="Add any special design requirements or notes..."
-                  value={designNotes}
-                  onChange={(e) => setDesignNotes(e.target.value)}
-                  className="h-20"
-                />
-              </div>
 
               {errors.design && (
                 <p className="text-sm text-red-600 p-3 bg-red-50 rounded">
@@ -301,21 +292,12 @@ export function ServiceRequirementsModal({
 
               <TeamRosterRequirement
                 onTeamRosterChange={setTeamRoster}
+                onTeamNotesChange={setTeamRosterNotes}
                 initialRoster={teamRoster}
+                initialNotes={teamRosterNotes}
                 isRequired={true}
+                isLastStep={isLastStep}
               />
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-neutral-900">
-                  Team Roster Notes (Optional)
-                </label>
-                <Textarea
-                  placeholder="Add any special notes about team members, substitutes, or specific requirements..."
-                  value={teamRosterNotes}
-                  onChange={(e) => setTeamRosterNotes(e.target.value)}
-                  className="h-20"
-                />
-              </div>
 
               {errors.roster && (
                 <p className="text-sm text-red-600 p-3 bg-red-50 rounded">
@@ -336,21 +318,12 @@ export function ServiceRequirementsModal({
 
               <SizeSpecificationRequirement
                 onSizeSpecChange={setSizeSpecs}
+                onSizeNotesChange={setSizeNotes}
                 initialSpecs={sizeSpecs}
+                initialNotes={sizeNotes}
                 isRequired={true}
+                isLastStep={isLastStep}
               />
-
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-neutral-900">
-                  Size Notes (Optional)
-                </label>
-                <Textarea
-                  placeholder="Add any special size requirements or modifications..."
-                  value={sizeNotes}
-                  onChange={(e) => setSizeNotes(e.target.value)}
-                  className="h-20"
-                />
-              </div>
 
               {errors.sizes && (
                 <p className="text-sm text-red-600 p-3 bg-red-50 rounded">

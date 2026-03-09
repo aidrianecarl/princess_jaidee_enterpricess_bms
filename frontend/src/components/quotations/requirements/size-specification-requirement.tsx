@@ -15,29 +15,41 @@ interface SizeSpecs {
 
 interface SizeSpecificationRequirementProps {
   onSizeSpecChange: (specs: SizeSpecs) => void
+  onSizeNotesChange?: (notes: string) => void
   initialSpecs?: SizeSpecs
+  initialNotes?: string
   isRequired?: boolean
   topLabel?: string
   bottomLabel?: string
   sizeType?: "generic" | "tarpaulin"
+  isLastStep?: boolean
 }
 
 export function SizeSpecificationRequirement({
   onSizeSpecChange,
+  onSizeNotesChange,
   initialSpecs = {},
+  initialNotes = "",
   isRequired = true,
   topLabel = "Top/Shirt Size",
   bottomLabel = "Bottom/Short Size",
+  isLastStep = false,
 }: SizeSpecificationRequirementProps) {
   const [specs, setSpecs] = useState<SizeSpecs>({
     top: initialSpecs.top || "",
     bottom: initialSpecs.bottom || "",
   })
+  const [sizeNotes, setSizeNotes] = useState(initialNotes)
 
   const handleChange = (field: keyof SizeSpecs, value: string) => {
     const updated = { ...specs, [field]: value }
     setSpecs(updated)
     onSizeSpecChange(updated)
+  }
+
+  const handleNotesChange = (notes: string) => {
+    setSizeNotes(notes)
+    onSizeNotesChange?.(notes)
   }
 
   const commonSizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
@@ -134,6 +146,21 @@ export function SizeSpecificationRequirement({
             : "Please specify both top and bottom sizes"}
         </p>
       </div>
+
+      {isLastStep && specs.top && specs.bottom && (
+        <div className="space-y-2 pt-4 border-t border-neutral-200">
+          <label className="block text-sm font-medium text-neutral-900">
+            Size Notes <span className="text-neutral-500 text-xs">(Optional)</span>
+          </label>
+          <textarea
+            placeholder="Add any special size modifications, material preferences, or other specific requirements..."
+            value={sizeNotes}
+            onChange={(e) => handleNotesChange(e.target.value)}
+            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            rows={3}
+          />
+        </div>
+      )}
     </div>
   )
 }

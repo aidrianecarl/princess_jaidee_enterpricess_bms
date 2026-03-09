@@ -12,19 +12,26 @@ interface TarpaulinSize {
 
 interface TarpaulinSizeRequirementProps {
   onSizeSpecChange: (specs: TarpaulinSize) => void
+  onSizeNotesChange?: (notes: string) => void
   initialSpecs?: TarpaulinSize
+  initialNotes?: string
   isRequired?: boolean
+  isLastStep?: boolean
 }
 
 export function TarpaulinSizeRequirement({
   onSizeSpecChange,
+  onSizeNotesChange,
   initialSpecs = {},
+  initialNotes = "",
   isRequired = true,
+  isLastStep = false,
 }: TarpaulinSizeRequirementProps) {
   const [width, setWidth] = useState<number | string>(initialSpecs.width || "")
   const [height, setHeight] = useState<number | string>(initialSpecs.height || "")
   const [totalSqft, setTotalSqft] = useState<number>(0)
   const [totalPrice, setTotalPrice] = useState<number>(0)
+  const [sizeNotes, setSizeNotes] = useState(initialNotes)
 
   const WIDTH_MIN = 3
   const WIDTH_MAX = 10
@@ -37,6 +44,11 @@ export function TarpaulinSizeRequirement({
 
   // Height options: 2 to 10 feet
   const heightOptions = Array.from({ length: HEIGHT_MAX - HEIGHT_MIN + 1 }, (_, i) => HEIGHT_MIN + i)
+
+  const handleNotesChange = (notes: string) => {
+    setSizeNotes(notes)
+    onSizeNotesChange?.(notes)
+  }
 
   useEffect(() => {
     if (width && height) {
@@ -159,6 +171,21 @@ export function TarpaulinSizeRequirement({
           <p className="text-sm text-green-700">
             ✓ Size specifications complete - {width}ft × {height}ft = ₱{totalPrice.toLocaleString()}
           </p>
+        </div>
+      )}
+
+      {isLastStep && width && height && (
+        <div className="space-y-2 pt-4 border-t border-neutral-200">
+          <label className="block text-sm font-medium text-neutral-900">
+            Size Notes <span className="text-neutral-500 text-xs">(Optional)</span>
+          </label>
+          <textarea
+            placeholder="Add any special size modifications, material preferences, or other specific requirements..."
+            value={sizeNotes}
+            onChange={(e) => handleNotesChange(e.target.value)}
+            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            rows={3}
+          />
         </div>
       )}
     </div>

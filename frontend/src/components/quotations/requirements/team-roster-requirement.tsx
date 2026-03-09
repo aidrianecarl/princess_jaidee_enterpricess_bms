@@ -15,22 +15,29 @@ interface TeamMember {
 
 interface TeamRosterRequirementProps {
   onTeamRosterChange: (roster: TeamMember[]) => void
+  onTeamNotesChange?: (notes: string) => void
   initialRoster?: TeamMember[]
+  initialNotes?: string
   isRequired?: boolean
   requiresSize?: boolean
+  isLastStep?: boolean
 }
 
 export function TeamRosterRequirement({
   onTeamRosterChange,
+  onTeamNotesChange,
   initialRoster = [],
+  initialNotes = "",
   isRequired = true,
   requiresSize = false,
+  isLastStep = false,
 }: TeamRosterRequirementProps) {
   const [members, setMembers] = useState<TeamMember[]>(
     initialRoster.length > 0
       ? initialRoster
       : [{ id: Date.now().toString(), name: "", number: "", sizeTop: "", sizeBottom: "" }]
   )
+  const [teamNotes, setTeamNotes] = useState(initialNotes)
 
   const addMember = () => {
     const newMember: TeamMember = {
@@ -66,6 +73,11 @@ export function TeamRosterRequirement({
   }
 
   const filledMembers = members.filter((m) => m.name.trim())
+
+  const handleNotesChange = (notes: string) => {
+    setTeamNotes(notes)
+    onTeamNotesChange?.(notes)
+  }
 
   return (
     <div className="space-y-4">
@@ -197,6 +209,21 @@ export function TeamRosterRequirement({
           added to roster
         </p>
       </div>
+
+      {isLastStep && (
+        <div className="space-y-2 pt-4 border-t border-neutral-200">
+          <label className="block text-sm font-medium text-neutral-900">
+            Jersey Customization Notes <span className="text-neutral-500 text-xs">(Optional)</span>
+          </label>
+          <textarea
+            placeholder="Add any jersey customization requirements, special printing, embroidery, or other specific details..."
+            value={teamNotes}
+            onChange={(e) => handleNotesChange(e.target.value)}
+            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+            rows={3}
+          />
+        </div>
+      )}
     </div>
   )
 }
