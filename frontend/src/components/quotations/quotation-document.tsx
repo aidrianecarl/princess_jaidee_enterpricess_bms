@@ -32,6 +32,7 @@ interface LineItem {
   amount: number
   image?: string
   designCost?: number // Added for design cost
+  notes?: string // Optional notes for the item
   serviceRequirements?: {
     designFile: File | null
     designPreview: string
@@ -683,7 +684,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: item.serviceRequirements?.designPreview || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
-            notes: item.description || null,
+            notes: item.notes || null,
           })),
         ),
       )
@@ -1573,6 +1574,27 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       </div>
                     )}
 
+                    {/* Design File & Notes Display (Always Show if exists) */}
+                    {item.serviceRequirements?.designPreview && !expandedItems.has(item.id) && (
+                      <div className="mt-3 ml-0 md:ml-4 pt-3 pl-3">
+                        <button
+                          onClick={() => {
+                            const newExpanded = new Set(expandedItems)
+                            if (newExpanded.has(item.id)) {
+                              newExpanded.delete(item.id)
+                            } else {
+                              newExpanded.add(item.id)
+                            }
+                            setExpandedItems(newExpanded)
+                          }}
+                          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition"
+                        >
+                          <ChevronDown size={16} className={`transition-transform ${expandedItems.has(item.id) ? 'rotate-180' : ''}`} />
+                          <p className="text-xs font-semibold text-blue-700 uppercase">Design File & Notes</p>
+                        </button>
+                      </div>
+                    )}
+
                     {/* Tarpaulin Details Collapsible */}
                     {expandedItems.has(item.id) && 
                      item.serviceRequirements?.sizeSpecifications?.width &&
@@ -1714,6 +1736,18 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               )}
                             </div>
                           )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Optional Notes Display */}
+                    {expandedItems.has(item.id) && item.notes && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 border border-amber-200">
+                          <p className="text-xs font-bold text-amber-700 uppercase mb-3">Optional Notes</p>
+                          <div className="bg-white rounded border border-amber-300 p-3">
+                            <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{item.notes}</p>
+                          </div>
                         </div>
                       </div>
                     )}
