@@ -51,15 +51,13 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
   }) => {
     if (!selectedService) return
 
-    // Combine all notes
-    const allNotes = [
-      data.designNotes ? `Design: ${data.designNotes}` : '',
-      data.teamRosterNotes ? `Team Roster: ${data.teamRosterNotes}` : '',
-      data.sizeNotes ? `Sizes: ${data.sizeNotes}` : '',
-      data.additionalNotes ? `Additional: ${data.additionalNotes}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n')
+    // Structure notes as JSON object
+    const structuredNotes: Record<string, string> = {}
+    
+    if (data.designNotes) structuredNotes.designNotes = data.designNotes
+    if (data.teamRosterNotes) structuredNotes.teamRosterNotes = data.teamRosterNotes
+    if (data.sizeNotes) structuredNotes.sizeNotes = data.sizeNotes
+    if (data.additionalNotes) structuredNotes.additionalNotes = data.additionalNotes
 
     const newItem: QuotationItem = {
       id: Math.random().toString(),
@@ -71,7 +69,7 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
       designFileUrl: data.designFileUrl,
       teamRoster: data.teamRoster,
       sizeSpecifications: data.sizeSpecifications,
-      notes: allNotes || undefined,
+      notes: Object.keys(structuredNotes).length > 0 ? structuredNotes : undefined,
     }
     setItems([...items, newItem])
     setSelectedService(null)

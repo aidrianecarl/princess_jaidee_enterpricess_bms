@@ -20,6 +20,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { useRouter } from "next/navigation" // Import useRouter
 
+interface ItemNotes {
+  designNotes?: string
+  teamRosterNotes?: string
+  sizeNotes?: string
+  additionalNotes?: string
+  [key: string]: string | undefined
+}
+
 interface LineItem {
   id: string
   type: "product" | "service"
@@ -31,12 +39,12 @@ interface LineItem {
   unitPrice: number
   amount: number
   image?: string
-  designCost?: number // Added for design cost
-  notes?: string // Optional notes for the item
+  designCost?: number
+  notes?: ItemNotes | string
   serviceRequirements?: {
     designFile: File | null
     designPreview: string
-    designImageUrl?: string // Store the actual image data URL for preview
+    designImageUrl?: string
     teamRoster: Array<{ id: string; name: string; number: string | number; sizeTop?: string; sizeBottom?: string }>
     sizeSpecifications: { 
       top?: string
@@ -813,7 +821,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: item.serviceRequirements?.designPreview || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
-            notes: item.notes || null,
+            notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
           })),
         ),
       )
@@ -1574,8 +1582,14 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       </div>
                     )}
 
-                    {/* Design File & Notes Display (Always Show if exists) */}
-                    {item.serviceRequirements?.designPreview && !expandedItems.has(item.id) && (
+                    {/* Service Details Dropdown Toggle */}
+                    {(item.serviceRequirements?.designPreview || 
+                      item.serviceRequirements?.teamRoster?.length || 
+                      item.serviceRequirements?.sizeSpecifications?.top ||
+                      item.serviceRequirements?.sizeSpecifications?.bottom ||
+                      item.serviceRequirements?.sizeSpecifications?.width ||
+                      item.serviceRequirements?.sizeSpecifications?.height ||
+                      item.notes) && !expandedItems.has(item.id) && (
                       <div className="mt-3 ml-0 md:ml-4 pt-3 pl-3">
                         <button
                           onClick={() => {
@@ -1590,7 +1604,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition"
                         >
                           <ChevronDown size={16} className={`transition-transform ${expandedItems.has(item.id) ? 'rotate-180' : ''}`} />
-                          <p className="text-xs font-semibold text-blue-700 uppercase">Design File & Notes</p>
+                          <p className="text-xs font-semibold text-blue-700 uppercase">Service Details</p>
                         </button>
                       </div>
                     )}
@@ -1740,13 +1754,72 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       </div>
                     )}
 
+                    {/* Team Roster Details */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.teamRoster && item.serviceRequirements.teamRoster.length > 0 && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                          <p className="text-xs font-bold text-green-700 uppercase mb-3">Team Roster Details</p>
+                          <div className="space-y-2">
+                            {item.serviceRequirements.teamRoster.map((member, idx) => (
+                              <div key={idx} className="bg-white rounded border border-green-300 p-3">
+                                <p className="text-sm font-semibold text-gray-800">{member.name}</p>
+                                <div className="grid grid-cols-3 gap-2 mt-2 text-xs text-gray-700">
+                                  <div><span className="font-medium">Jersey:</span> {member.number}</div>
+                                  {member.sizeTop && <div><span className="font-medium">Top Size:</span> {member.sizeTop}</div>}
+                                  {member.sizeBottom && <div><span className="font-medium">Bottom Size:</span> {member.sizeBottom}</div>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Design File Display */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.designPreview && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg p-4 border border-blue-200">
+                          <p className="text-xs font-bold text-blue-700 uppercase mb-3">Design File</p>
+                          <p className="text-sm text-gray-700">{item.serviceRequirements.designPreview}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Size Specifications Display (Generic) */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.sizeSpecifications && 
+                     (item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom) && 
+                     !item.serviceRequirements.sizeSpecifications.width && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                          <p className="text-xs font-bold text-purple-700 uppercase mb-3">Size Specifications</p>
+                          <div className="bg-white rounded border border-purple-300 p-3 space-y-2">
+                            {item.serviceRequirements.sizeSpecifications.top && (
+                              <p className="text-sm text-gray-800"><span className="font-semibold">Top/Shirt Size:</span> {item.serviceRequirements.sizeSpecifications.top}</p>
+                            )}
+                            {item.serviceRequirements.sizeSpecifications.bottom && (
+                              <p className="text-sm text-gray-800"><span className="font-semibold">Bottom/Short Size:</span> {item.serviceRequirements.sizeSpecifications.bottom}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Optional Notes Display */}
                     {expandedItems.has(item.id) && item.notes && (
                       <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
                         <div className="bg-gradient-to-br from-amber-50 to-yellow-50 rounded-lg p-4 border border-amber-200">
                           <p className="text-xs font-bold text-amber-700 uppercase mb-3">Optional Notes</p>
-                          <div className="bg-white rounded border border-amber-300 p-3">
-                            <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{item.notes}</p>
+                          <div className="bg-white rounded border border-amber-300 p-3 space-y-2">
+                            {typeof item.notes === 'object' ? (
+                              Object.entries(item.notes).map(([key, value]) => (
+                                <div key={key}>
+                                  <p className="text-xs font-semibold text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</p>
+                                  <p className="text-sm text-gray-800 ml-2">{value}</p>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{item.notes}</p>
+                            )}
                           </div>
                         </div>
                       </div>

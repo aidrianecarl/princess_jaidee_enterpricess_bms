@@ -1,3 +1,11 @@
+export interface QuotationItemNotes {
+  designNotes?: string
+  teamRosterNotes?: string
+  sizeNotes?: string
+  additionalNotes?: string
+  customNotes?: Record<string, string>
+}
+
 export interface QuotationItem {
   id: string
   serviceId: number
@@ -16,7 +24,7 @@ export interface QuotationItem {
     top?: string
     bottom?: string
   }
-  notes?: string
+  notes?: string | QuotationItemNotes
 }
 
 export interface TeamMember {
