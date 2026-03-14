@@ -40,6 +40,7 @@ interface ServiceData {
   designFile: File | null
   designPreview: string
   designImageUrl?: string // Store the actual image data URL for preview
+  designNotes?: string // Design notes/comments from the design requirement
   teamRoster: TeamMember[]
   sizeSpecifications: SizeSpecs
   designConsultation?: {
@@ -413,6 +414,9 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                   isRequired={selectedService.requires_design}
                   onDesignFileSelect={(file, preview, dataUrl) => {
                     setServiceData({ ...serviceData, designFile: file, designPreview: preview, designImageUrl: dataUrl })
+                  }}
+                  onDesignNotesChange={(notes) => {
+                    setServiceData({ ...serviceData, designNotes: notes })
                   }}
                 />
               )}

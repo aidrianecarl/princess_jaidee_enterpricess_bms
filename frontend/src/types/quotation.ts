@@ -2,6 +2,7 @@ export interface QuotationItemNotes {
   designNotes?: string
   teamRosterNotes?: string
   sizeNotes?: string
+  jerseyCustomizationNotes?: string
   additionalNotes?: string
   customNotes?: Record<string, string>
 }

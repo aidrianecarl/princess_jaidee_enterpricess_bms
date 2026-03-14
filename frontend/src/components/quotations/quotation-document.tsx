@@ -22,6 +22,7 @@ import { useRouter } from "next/navigation" // Import useRouter
 
 interface ItemNotes {
   designNotes?: string
+  jerseyCustomizationNotes?: string
   teamRosterNotes?: string
   sizeNotes?: string
   additionalNotes?: string
@@ -1392,10 +1393,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           <div className="flex items-center justify-between mb-3">
                             <p className="text-xs font-bold text-gray-700 uppercase">Team Roster Details</p>
                             <div className="flex items-center gap-2">
-                              {editingRosterId === item.id ? (
+                            {editingRosterId === item.id ? (
                                 <button
                                   onClick={() => setEditingRosterId(null)}
-                                  className="text-green-600 hover:text-green-800 hover:bg-green-200 p-1.5 rounded transition flex items-center gap-1"
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
                                   title="Save roster changes"
                                 >
                                   <Check size={16} />
@@ -1403,7 +1404,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               ) : (
                                 <button
                                   onClick={() => setEditingRosterId(item.id)}
-                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-200 p-1.5 rounded transition"
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
                                   title="Edit roster"
                                 >
                                   <Edit2 size={16} />
@@ -1416,7 +1417,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                   setEditingRosterId(item.id)
                                 }}
-                                className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-200 p-1.5 rounded transition flex items-center gap-1"
+                                className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
                                 title="Add new player"
                               >
                                 <Plus size={16} />
@@ -1476,8 +1477,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Top Size</span>
-                                  <input
-                                    type="text"
+                                  <select
                                     value={member.sizeTop || ""}
                                     disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
@@ -1486,18 +1486,26 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    placeholder="Size"
                                     className={`text-sm px-2 py-1 border rounded outline-none transition ${
                                       editingRosterId === item.id
-                                        ? 'text-gray-700 border-gray-300 focus:border-blue-500'
+                                        ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                         : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
                                     }`}
-                                  />
+                                  >
+                                    <option value="">Select</option>
+                                    <option value="XS">XS</option>
+                                    <option value="S">S</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="2XL">2XL</option>
+                                    <option value="3XL">3XL</option>
+                                    <option value="4XL">4XL</option>
+                                  </select>
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Bottom Size</span>
-                                  <input
-                                    type="text"
+                                  <select
                                     value={member.sizeBottom || ""}
                                     disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
@@ -1506,13 +1514,22 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    placeholder="Size"
                                     className={`text-sm px-2 py-1 border rounded outline-none transition ${
                                       editingRosterId === item.id
-                                        ? 'text-gray-700 border-gray-300 focus:border-blue-500'
+                                        ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                         : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
                                     }`}
-                                  />
+                                  >
+                                    <option value="">Select</option>
+                                    <option value="XS">XS</option>
+                                    <option value="S">S</option>
+                                    <option value="M">M</option>
+                                    <option value="L">L</option>
+                                    <option value="XL">XL</option>
+                                    <option value="2XL">2XL</option>
+                                    <option value="3XL">3XL</option>
+                                    <option value="4XL">4XL</option>
+                                  </select>
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Price</span>
@@ -1589,14 +1606,14 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             </div>
                           )}
 
-                          {/* Design Notes/Comments Section */}
+                          {/* Design Comments Section */}
                           <div className="pt-3 border-t border-blue-300">
                             <div className="flex items-center justify-between mb-2">
                               <label className="text-xs font-semibold text-blue-700 uppercase">Design Comments</label>
                               {editingDesignNotesId === item.id ? (
                                 <button
                                   onClick={() => setEditingDesignNotesId(null)}
-                                  className="text-green-600 hover:text-green-800 hover:bg-green-200 p-1.5 rounded transition flex items-center gap-1"
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
                                   title="Save comments"
                                 >
                                   <Check size={14} />
@@ -1604,7 +1621,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               ) : (
                                 <button
                                   onClick={() => setEditingDesignNotesId(item.id)}
-                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-300 p-1.5 rounded transition"
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
                                   title="Edit comments"
                                 >
                                   <Edit2 size={14} />
@@ -1624,8 +1641,50 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               placeholder="Add optional comments about the design..."
                               className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${
                                 editingDesignNotesId === item.id
-                                  ? 'border-blue-400 bg-white focus:border-blue-600 text-gray-900'
-                                  : 'border-blue-300 bg-blue-50 text-gray-700 cursor-not-allowed'
+                                  ? 'border-gray-400 bg-white focus:border-gray-600 text-gray-900'
+                                  : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
+                              }`}
+                              rows={3}
+                            />
+                          </div>
+
+                          {/* Jersey Customization Notes Section */}
+                          <div className="pt-3 border-t border-blue-300">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-xs font-semibold text-blue-700 uppercase">Jersey Customization Notes</label>
+                              {editingDesignNotesId === item.id ? (
+                                <button
+                                  onClick={() => setEditingDesignNotesId(null)}
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
+                                  title="Save notes"
+                                >
+                                  <Check size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingDesignNotesId(item.id)}
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
+                                  title="Edit notes"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                            <textarea
+                              value={typeof item.notes === 'string' ? '' : (item.notes?.jerseyCustomizationNotes || '')}
+                              disabled={editingDesignNotesId !== item.id}
+                              onChange={(e) => {
+                                const notes = typeof item.notes === 'string' ? {} : (item.notes || {})
+                                updateLineItem(item.id, {
+                                  ...item,
+                                  notes: { ...notes as ItemNotes, jerseyCustomizationNotes: e.target.value }
+                                })
+                              }}
+                              placeholder="Add optional customization notes for the jersey..."
+                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${
+                                editingDesignNotesId === item.id
+                                  ? 'border-gray-400 bg-white focus:border-gray-600 text-gray-900'
+                                  : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
                               }`}
                               rows={3}
                             />
