@@ -42,6 +42,7 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
   const handleRequirementsConfirm = (data: {
     quantity: number
     designFileUrl?: string
+    designImageUrl?: string
     designNotes?: string
     teamRoster?: Array<{ name: string; number: string | number; size?: string }>
     teamRosterNotes?: string
@@ -55,7 +56,7 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
     const structuredNotes: Record<string, string> = {}
     
     if (data.designNotes) structuredNotes.designNotes = data.designNotes
-    if (data.teamRosterNotes) structuredNotes.teamRosterNotes = data.teamRosterNotes
+    if (data.teamRosterNotes) structuredNotes.jerseyCustomizationNotes = data.teamRosterNotes
     if (data.sizeNotes) structuredNotes.sizeNotes = data.sizeNotes
     if (data.additionalNotes) structuredNotes.additionalNotes = data.additionalNotes
 
@@ -70,7 +71,14 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
       teamRoster: data.teamRoster,
       sizeSpecifications: data.sizeSpecifications,
       notes: Object.keys(structuredNotes).length > 0 ? structuredNotes : undefined,
+      serviceRequirements: data.designImageUrl ? {
+        designImageUrl: data.designImageUrl,
+        designPreview: data.designFileUrl || '',
+        teamRoster: data.teamRoster || [],
+        sizeSpecifications: data.sizeSpecifications || {},
+      } : undefined,
     }
+    console.log("[v0] New item added with data:", newItem)
     setItems([...items, newItem])
     setSelectedService(null)
     setShowRequirementsModal(false)

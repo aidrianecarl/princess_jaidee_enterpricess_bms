@@ -18,6 +18,7 @@ interface ServiceRequirementsModalProps {
   onConfirm: (data: {
     quantity: number
     designFileUrl?: string
+    designImageUrl?: string
     designNotes?: string
     teamRoster?: Array<{ name: string; number: string | number; size?: string }>
     teamRosterNotes?: string
@@ -38,6 +39,7 @@ export function ServiceRequirementsModal({
   const [quantity, setQuantity] = useState(initialQuantity)
   const [designFile, setDesignFile] = useState<File | null>(null)
   const [designFileName, setDesignFileName] = useState("")
+  const [designImageUrl, setDesignImageUrl] = useState("")
   const [designNotes, setDesignNotes] = useState("")
   const [teamRoster, setTeamRoster] = useState<
     Array<{ id: string; name: string; number: string | number; size?: string }>
@@ -153,6 +155,7 @@ export function ServiceRequirementsModal({
       const confirmData = {
         quantity,
         designFileUrl: designFileName || undefined,
+        designImageUrl: designImageUrl || undefined,
         designNotes: designNotes || undefined,
         teamRoster:
           teamRoster.length > 0
@@ -170,7 +173,7 @@ export function ServiceRequirementsModal({
         sizeNotes: sizeNotes || undefined,
         additionalNotes: additionalNotes || undefined,
       }
-
+      console.log("[v0] Confirming requirements with data:", confirmData)
       onConfirm(confirmData)
     }
   }
@@ -262,9 +265,10 @@ export function ServiceRequirementsModal({
               </div>
 
               <DesignRequirement
-                onDesignFileSelect={(file, preview) => {
+                onDesignFileSelect={(file, preview, dataUrl) => {
                   setDesignFile(file)
                   setDesignFileName(preview)
+                  if (dataUrl) setDesignImageUrl(dataUrl)
                 }}
                 onDesignNotesChange={setDesignNotes}
                 initialFile={designFileName}

@@ -26,6 +26,24 @@ export interface QuotationItem {
     bottom?: string
   }
   notes?: string | QuotationItemNotes
+  serviceRequirements?: {
+    designImageUrl?: string
+    designPreview?: string
+    teamRoster?: Array<{
+      name: string
+      number: string | number
+      sizeTop?: string
+      sizeBottom?: string
+    }>
+    sizeSpecifications?: {
+      top?: string
+      bottom?: string
+      width?: number
+      height?: number
+      totalSqft?: number
+      totalPrice?: number
+    }
+  }
 }
 
 export interface TeamMember {

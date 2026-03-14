@@ -42,7 +42,9 @@ interface ServiceData {
   designImageUrl?: string // Store the actual image data URL for preview
   designNotes?: string // Design notes/comments from the design requirement
   teamRoster: TeamMember[]
+  teamNotes?: string // Jersey customization notes
   sizeSpecifications: SizeSpecs
+  sizeNotes?: string // Size specification notes
   designConsultation?: {
     needed: boolean
     notes: string
@@ -91,7 +93,12 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
     const totalSteps = getTotalSteps(service)
     if (totalSteps === 1) {
       // No requirements, submit directly
-      onSelect(service, { ...serviceData, designNotes: serviceData.designNotes })
+      onSelect(service, {
+        ...serviceData,
+        designNotes: serviceData.designNotes,
+        teamNotes: serviceData.teamNotes,
+        sizeNotes: serviceData.sizeNotes,
+      })
       handleClose()
     } else {
       setCurrentStep(2)
@@ -114,7 +121,12 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
       if (selectedService.requires_design && !serviceData.designPreview) {
         setShowDesignConsultationModal(true)
       } else {
-        onSelect(selectedService, { ...serviceData, designNotes: serviceData.designNotes })
+        onSelect(selectedService, {
+          ...serviceData,
+          designNotes: serviceData.designNotes,
+          teamNotes: serviceData.teamNotes,
+          sizeNotes: serviceData.sizeNotes,
+        })
         handleClose()
       }
     }
@@ -126,6 +138,8 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
     const updatedServiceData = {
       ...serviceData,
       designNotes: serviceData.designNotes,
+      teamNotes: serviceData.teamNotes,
+      sizeNotes: serviceData.sizeNotes,
       designConsultation: {
         needed: true,
         notes: designConsultationNotes,
@@ -140,7 +154,12 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
 
   const handleDesignConsultationNo = () => {
     setShowDesignConsultationModal(false)
-    onSelect(selectedService!, { ...serviceData, designNotes: serviceData.designNotes })
+    onSelect(selectedService!, {
+      ...serviceData,
+      designNotes: serviceData.designNotes,
+      teamNotes: serviceData.teamNotes,
+      sizeNotes: serviceData.sizeNotes,
+    })
     handleClose()
   }
   
@@ -443,6 +462,9 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                           onTeamRosterChange={(roster) => {
                             setServiceData({ ...serviceData, teamRoster: roster })
                           }}
+                          onTeamNotesChange={(notes) => {
+                            setServiceData({ ...serviceData, teamNotes: notes })
+                          }}
                           requiresSize={true}
                         />
                       </div>
@@ -455,6 +477,9 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                         onSizeSpecChange={(specs) => {
                           setServiceData({ ...serviceData, sizeSpecifications: specs })
                         }}
+                        onSizeNotesChange={(notes) => {
+                          setServiceData({ ...serviceData, sizeNotes: notes })
+                        }}
                       />
                     )}
 
@@ -464,6 +489,9 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                         isRequired={true}
                         onSizeSpecChange={(specs) => {
                           setServiceData({ ...serviceData, sizeSpecifications: specs })
+                        }}
+                        onSizeNotesChange={(notes) => {
+                          setServiceData({ ...serviceData, sizeNotes: notes })
                         }}
                       />
                     )}
