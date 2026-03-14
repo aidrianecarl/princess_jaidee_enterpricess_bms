@@ -1556,125 +1556,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       </div>
                     )}
 
-                    {/* Design File Details (Collapsible) */}
-                    {expandedItems.has(item.id) && item.serviceRequirements?.designPreview && (
-                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
-                          <p className="text-xs font-bold text-blue-700 uppercase mb-4">Design Details</p>
-
-                          {/* Design Image Preview */}
-                          <div className="mb-4">
-                            <p className="text-xs font-semibold text-blue-700 mb-2 uppercase">Design Preview</p>
-                            {item.serviceRequirements.designImageUrl ? (
-                              <div className="border-2 border-blue-300 rounded-md overflow-hidden bg-white p-3">
-                                <img
-                                  src={item.serviceRequirements.designImageUrl}
-                                  alt="Design preview"
-                                  onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
-                                  className="max-h-64 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
-                                  onError={(e) => {
-                                    console.log("[v0] Image failed to load:", item.serviceRequirements?.designImageUrl)
-                                  }}
-                                  onLoad={(e) => {
-                                    console.log("[v0] Image loaded successfully")
-                                  }}
-                                />
-                              </div>
-                            ) : (
-                              <div className="border-2 border-blue-300 rounded-md bg-blue-50 p-4 text-center">
-                                <p className="text-sm text-gray-600">No image preview available</p>
-                              </div>
-                            )}
-                            <p className="text-xs text-center text-gray-600 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
-                          </div>
-
-                          {/* Design Comments Section */}
-                          <div className="pt-3 border-t border-blue-300">
-                            <div className="flex items-center justify-between mb-2">
-                              <label className="text-xs font-semibold text-blue-700 uppercase">Design Comments</label>
-                              {editingDesignNotesId === item.id ? (
-                                <button
-                                  onClick={() => setEditingDesignNotesId(null)}
-                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
-                                  title="Save comments"
-                                >
-                                  <Check size={14} />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setEditingDesignNotesId(item.id)}
-                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
-                                  title="Edit comments"
-                                >
-                                  <Edit2 size={14} />
-                                </button>
-                              )}
-                            </div>
-                            <textarea
-                              value={typeof item.notes === 'string' ? item.notes : (item.notes?.designNotes || '')}
-                              disabled={editingDesignNotesId !== item.id}
-                              onChange={(e) => {
-                                const notes = typeof item.notes === 'string' ? {} : (item.notes || {})
-                                updateLineItem(item.id, {
-                                  ...item,
-                                  notes: { ...notes as ItemNotes, designNotes: e.target.value }
-                                })
-                              }}
-                              placeholder="Add optional comments about the design..."
-                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${editingDesignNotesId === item.id
-                                  ? 'border-gray-400 bg-white focus:border-gray-600 text-gray-900'
-                                  : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
-                                }`}
-                              rows={3}
-                            />
-                          </div>
-
-                          {/* Jersey Customization Notes Section */}
-                          <div className="pt-3 border-t border-blue-300">
-                            <div className="flex items-center justify-between mb-2">
-                              <label className="text-xs font-semibold text-blue-700 uppercase">Jersey Customization Notes</label>
-                              {editingDesignNotesId === item.id ? (
-                                <button
-                                  onClick={() => setEditingDesignNotesId(null)}
-                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
-                                  title="Save notes"
-                                >
-                                  <Check size={14} />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => setEditingDesignNotesId(item.id)}
-                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
-                                  title="Edit notes"
-                                >
-                                  <Edit2 size={14} />
-                                </button>
-                              )}
-                            </div>
-                            <textarea
-                              value={typeof item.notes === 'string' ? '' : (item.notes?.jerseyCustomizationNotes || '')}
-                              disabled={editingDesignNotesId !== item.id}
-                              onChange={(e) => {
-                                const notes = typeof item.notes === 'string' ? {} : (item.notes || {})
-                                updateLineItem(item.id, {
-                                  ...item,
-                                  notes: { ...notes as ItemNotes, jerseyCustomizationNotes: e.target.value }
-                                })
-                              }}
-                              placeholder="Add optional customization notes for the jersey..."
-                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${editingDesignNotesId === item.id
-                                  ? 'border-gray-400 bg-white focus:border-gray-600 text-gray-900'
-                                  : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
-                                }`}
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-
-
                     {/* Tarpaulin Details Collapsible */}
                     {expandedItems.has(item.id) &&
                       item.serviceRequirements?.sizeSpecifications?.width &&
@@ -1837,6 +1718,84 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           </div>
                         </div>
                       )}
+
+
+                    {/* Design File Details (Collapsible) */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.designPreview && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
+                          <p className="text-xs font-bold text-blue-700 uppercase mb-4">Design Details</p>
+
+                          {/* Design Image Preview */}
+                          <div className="mb-4">
+                            <p className="text-xs font-semibold text-blue-700 mb-2 uppercase">Design Preview</p>
+                            {item.serviceRequirements.designImageUrl ? (
+                              <div className="border-2 border-blue-300 rounded-md overflow-hidden bg-white p-3">
+                                <img
+                                  src={item.serviceRequirements.designImageUrl}
+                                  alt="Design preview"
+                                  onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
+                                  className="max-h-64 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
+                                  onError={(e) => {
+                                    console.log("[v0] Image failed to load:", item.serviceRequirements?.designImageUrl)
+                                  }}
+                                  onLoad={(e) => {
+                                    console.log("[v0] Image loaded successfully")
+                                  }}
+                                />
+                              </div>
+                            ) : (
+                              <div className="border-2 border-blue-300 rounded-md bg-blue-50 p-4 text-center">
+                                <p className="text-sm text-gray-600">No image preview available</p>
+                              </div>
+                            )}
+                            <p className="text-xs text-center text-gray-600 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
+                          </div>
+
+                          {/* Design Comments Section */}
+                          <div className="pt-3 border-t border-blue-300">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-xs font-semibold text-blue-700 uppercase">Design Comments</label>
+                              {editingDesignNotesId === item.id ? (
+                                <button
+                                  onClick={() => setEditingDesignNotesId(null)}
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
+                                  title="Save comments"
+                                >
+                                  <Check size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingDesignNotesId(item.id)}
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
+                                  title="Edit comments"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                            <textarea
+                              value={typeof item.notes === 'string' ? item.notes : (item.notes?.designNotes || '')}
+                              disabled={editingDesignNotesId !== item.id}
+                              onChange={(e) => {
+                                const notes = typeof item.notes === 'string' ? {} : (item.notes || {})
+                                updateLineItem(item.id, {
+                                  ...item,
+                                  notes: { ...notes as ItemNotes, designNotes: e.target.value }
+                                })
+                              }}
+                              placeholder="Add optional comments about the design..."
+                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${editingDesignNotesId === item.id
+                                  ? 'border-gray-400 bg-white focus:border-gray-600 text-gray-900'
+                                  : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
+                                }`}
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
 
                     {/* Size Specifications Display (Generic) */}
                     {expandedItems.has(item.id) && item.serviceRequirements?.sizeSpecifications &&
