@@ -277,6 +277,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingRosterId, setEditingRosterId] = useState<string | null>(null)
   const [editingTarpaulinId, setEditingTarpaulinId] = useState<string | null>(null)
+  const [editingDesignNotesId, setEditingDesignNotesId] = useState<string | null>(null)
   const [expandedImageItem, setExpandedImageItem] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
 
@@ -1290,7 +1291,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
                       {/* Expand Button */}
                       {item.type === "service" && (item.serviceRequirements?.teamRoster?.length > 0 || 
-                       (item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height)) && (
+                       (item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) ||
+                       item.serviceRequirements?.designPreview) && (
                         <button
                           onClick={() => {
                             const newExpanded = new Set(expandedItems)
@@ -1538,72 +1540,101 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               </div>
                             ))}
                           </div>
-
-                          {/* Design File (Collapsible) */}
-                          {item.serviceRequirements?.designPreview && (
-                            <div className="pt-4 border-t border-gray-300">
-                              <button
-                                onClick={() => {
-                                  setExpandedImageItem(expandedImageItem === `${item.id}-roster` ? null : `${item.id}-roster`)
-                                }}
-                                className="flex items-center gap-2 mb-2 hover:text-blue-600 transition"
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  className={`text-gray-600 transition-transform ${
-                                    expandedImageItem === `${item.id}-roster` ? 'rotate-180' : ''
-                                  }`}
-                                />
-                                <p className="text-xs font-bold text-gray-700 uppercase">Design File</p>
-                              </button>
-                              
-                              {expandedImageItem === `${item.id}-roster` && (
-                                <div className="space-y-3 mt-3">
-                                  {item.serviceRequirements.designImageUrl ? (
-                                    <div className="border-2 border-gray-300 rounded-md overflow-hidden bg-white p-2">
-                                      <img
-                                        src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
-                                        alt="Design preview"
-                                        onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
-                                        className="max-h-48 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
-                                      />
-                                      <p className="text-xs text-center text-gray-600 mt-2">{item.serviceRequirements.designPreview}</p>
-                                    </div>
-                                  ) : (
-                                    <div className="p-3 bg-gray-100 border border-gray-300 rounded-md">
-                                      <p className="text-sm text-gray-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       </div>
                     )}
 
-                    {/* Service Details Dropdown Toggle Button - ONLY BUTTON, NO HEADER */}
-                    {(item.serviceRequirements?.designPreview || 
-                      item.serviceRequirements?.teamRoster?.length || 
-                      item.serviceRequirements?.sizeSpecifications?.top ||
-                      item.serviceRequirements?.sizeSpecifications?.bottom ||
-                      item.serviceRequirements?.sizeSpecifications?.width ||
-                      item.serviceRequirements?.sizeSpecifications?.height ||
-                      item.notes) && !expandedItems.has(item.id) && (
-                      <div className="mt-2 pl-3">
-                        <button
-                          onClick={() => {
-                            const newExpanded = new Set(expandedItems)
-                            newExpanded.add(item.id)
-                            setExpandedItems(newExpanded)
-                          }}
-                          className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition"
-                          title="Click to expand details"
-                        >
-                          <ChevronDown size={16} className="transition-transform" />
-                        </button>
+                    {/* Design File Details (Collapsible) */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.designPreview && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
+                          <p className="text-xs font-bold text-blue-700 uppercase mb-4">Design Details</p>
+                          
+                          {/* Design Image Preview */}
+                          {item.serviceRequirements.designImageUrl ? (
+                            <div className="mb-4">
+                              <p className="text-xs font-semibold text-blue-700 mb-2 uppercase">Design Preview</p>
+                              <div className="border-2 border-blue-300 rounded-md overflow-hidden bg-white p-3">
+                                <img
+                                  src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
+                                  alt="Design preview"
+                                  onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
+                                  className="max-h-64 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
+                                />
+                              </div>
+                              <p className="text-xs text-center text-gray-600 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
+                            </div>
+                          ) : (
+                            <div className="mb-4 p-3 bg-white border border-blue-300 rounded-md">
+                              <p className="text-sm text-gray-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
+                            </div>
+                          )}
+
+                          {/* Team Player Details Section */}
+                          {item.serviceRequirements.teamRoster && item.serviceRequirements.teamRoster.length > 0 && (
+                            <div className="pt-3 border-t border-blue-300 mb-4">
+                              <p className="text-xs font-semibold text-blue-700 mb-2 uppercase">Team Players</p>
+                              <div className="space-y-2">
+                                {item.serviceRequirements.teamRoster.map((member) => (
+                                  <div key={member.id} className="bg-white rounded-md p-2 border border-blue-200 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-gray-900">{member.name}</span>
+                                      <span className="text-gray-600">#{member.number}</span>
+                                      {member.sizeTop && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Top: {member.sizeTop}</span>}
+                                      {member.sizeBottom && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Bottom: {member.sizeBottom}</span>}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Design Notes/Comments Section */}
+                          <div className="pt-3 border-t border-blue-300">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="text-xs font-semibold text-blue-700 uppercase">Design Comments</label>
+                              {editingDesignNotesId === item.id ? (
+                                <button
+                                  onClick={() => setEditingDesignNotesId(null)}
+                                  className="text-green-600 hover:text-green-800 hover:bg-green-200 p-1.5 rounded transition flex items-center gap-1"
+                                  title="Save comments"
+                                >
+                                  <Check size={14} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingDesignNotesId(item.id)}
+                                  className="text-blue-600 hover:text-blue-800 hover:bg-blue-300 p-1.5 rounded transition"
+                                  title="Edit comments"
+                                >
+                                  <Edit2 size={14} />
+                                </button>
+                              )}
+                            </div>
+                            <textarea
+                              value={typeof item.notes === 'string' ? item.notes : (item.notes?.designNotes || '')}
+                              disabled={editingDesignNotesId !== item.id}
+                              onChange={(e) => {
+                                const notes = typeof item.notes === 'string' ? {} : (item.notes || {})
+                                updateLineItem(item.id, {
+                                  ...item,
+                                  notes: { ...notes as ItemNotes, designNotes: e.target.value }
+                                })
+                              }}
+                              placeholder="Add optional comments about the design..."
+                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${
+                                editingDesignNotesId === item.id
+                                  ? 'border-blue-400 bg-white focus:border-blue-600 text-gray-900'
+                                  : 'border-blue-300 bg-blue-50 text-gray-700 cursor-not-allowed'
+                              }`}
+                              rows={3}
+                            />
+                          </div>
+                        </div>
                       </div>
                     )}
+
+
 
                     {/* Tarpaulin Details Collapsible */}
                     {expandedItems.has(item.id) && 

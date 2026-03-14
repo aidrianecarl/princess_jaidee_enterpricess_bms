@@ -1,0 +1,529 @@
+[33mcommit 0fdeff8ca75fdc803a6a32dd18f852d437923443[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-09 16:25:19 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-09 16:25:19 +0800
+
+    Update quotation-document.tsx
+
+[33mcommit abfd968c59e494a2441c2d4829e2aa3df8cac627[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-09 16:00:08 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-09 16:00:08 +0800
+
+    new update quotation
+
+[33mcommit f435b509b5b9301dd5e93e8dfe8ea7513b1a9370[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-09 15:34:59 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-09 15:34:59 +0800
+
+    Update quotation-document.tsx
+
+[33mcommit 35c4d41028fce46f238586e6d3437023a4e4f804[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-09 12:22:02 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-09 12:22:02 +0800
+
+    new update in optional note
+
+[33mcommit fe6a8ed05bc4525ec70e83a8003034af42d80ba2[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-09 11:47:43 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-09 11:47:43 +0800
+
+    Update team-roster-requirement.tsx
+
+[33mcommit 65138fc5eaf9cb7bbc4a6f7b5e74ed171890439e[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-09 10:07:48 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-09 10:07:48 +0800
+
+    new Update added optional note
+    
+    added optional note in the last step of selecting services in the client side
+
+[33mcommit 6b8140b2815bb33718d18b01ff4793b51e223607[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-06 16:26:37 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-06 16:26:37 +0800
+
+    new update
+    
+    fixing the quotation to database
+
+[33mcommit d5ca91360478a09e0a54411731d06584c327e499[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-06 15:36:38 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-06 15:36:38 +0800
+
+    new update fix quotation
+
+[33mcommit cff5497b41066f4dd59568013be59bde49845492[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-06 14:03:29 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-06 14:03:29 +0800
+
+    newupdate
+
+[33mcommit 833c23dd247bacc2a0667b2eb2eb93aa13c4851f[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-03-06 13:57:50 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-03-06 13:57:50 +0800
+
+    Update package-lock.json
+
+[33mcommit 5a7b384eb9e211efce7959620b4eeba1477c43cb[m[33m ([m[1;31morigin/v0/aidrianecarlesmena-2299-ebc2218e[m[33m)[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-28 10:01:13 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-28 10:01:13 +0800
+
+    Update footer.tsx
+
+[33mcommit 209fd82e9b86b3eb37c5bba0605b9746c60d639a[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 15:46:32 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 15:46:32 +0800
+
+    Update service-selector-modal.tsx
+
+[33mcommit 5f1ede0a09f9ae7ba34018d7c99b23b772f8afb1[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 15:11:43 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 15:11:43 +0800
+
+    new update
+
+[33mcommit 758fcdede22cbc6c38404ba13bd4a046f8b87726[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 15:10:37 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 15:10:37 +0800
+
+    Create placegolder.svg
+
+[33mcommit 9e2a59acbfa826d5f219cc3b518d48e1f04c59f5[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 10:43:33 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 10:43:33 +0800
+
+    Update service-selector-modal.tsx
+
+[33mcommit 5dde27c55a2fb1da79ced6882def08b617f19847[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 10:17:55 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 10:17:55 +0800
+
+    Update quotation-document.tsx
+
+[33mcommit fa4d05342d38184cd4938bc84426548e4f68361c[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 09:32:15 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 09:32:15 +0800
+
+    Update .env
+
+[33mcommit 8e0e43345487812b399dfedb8b5ad516cc2a8c45[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 09:26:56 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 09:26:56 +0800
+
+    Update .env
+
+[33mcommit 9b00bf0191241813433bea1b9308c7102c4b12c9[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 09:25:09 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 09:25:09 +0800
+
+    Update .env
+
+[33mcommit 425548f6bdcb36c47506e4f7f889652e3b7c0efb[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 09:23:03 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 09:23:03 +0800
+
+    Update .env
+
+[33mcommit a37d89c893a8a5e58f20167348cb2effa44037e1[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 09:21:39 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 09:21:39 +0800
+
+    Update .env
+
+[33mcommit dc5e636bbc7687a1b0bf1d3730e9ee3ae30de8fd[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-26 09:17:33 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-26 09:17:33 +0800
+
+    new update
+
+[33mcommit b5e0bde1aaca00f158c7bf8f00c2d597853f1f49[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 16:24:01 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 16:24:01 +0800
+
+    Update .env
+
+[33mcommit f1a54f9528d20e0832c615aefc56dee8aafbbf43[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 16:23:45 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 16:23:45 +0800
+
+    Update api-client.ts
+
+[33mcommit 131d22b44d7ecd6fb555d8721fade3e285baeb6d[m
+Merge: 0e2fb9a 9be9a54
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 16:16:42 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 16:16:42 +0800
+
+    Merge branch 'main' of https://github.com/aidrianecarl/princess_jaidee_enterpricess_bms
+
+[33mcommit 0e2fb9a4940cce5576ec6ea8fc28aa5e26dc97dc[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 16:15:24 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 16:15:24 +0800
+
+    Update .env
+
+[33mcommit 9be9a54a7d9a2a9963b4c9206c5af579c38604bd[m
+Author:     Aidriane Carl G. Esmeña <169006730+aidrianecarl@users.noreply.github.com>
+AuthorDate: 2026-02-24 16:09:17 +0800
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-02-24 16:09:17 +0800
+
+    Create .env
+
+[33mcommit d343ef125ab9101a9e13960c7e53312d505bbf00[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 15:32:32 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 15:32:32 +0800
+
+    newest update
+
+[33mcommit e2b9fdc9a293120597433c9ecfadeb3e5b740896[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 14:57:45 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 14:57:45 +0800
+
+    new update
+
+[33mcommit 7a79fe9dba7d708d0de7ff1bbf5908051ba36a2f[m
+Merge: 85c5716 94e6f85
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 10:31:50 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 10:31:50 +0800
+
+    Merge branch 'main' of https://github.com/aidrianecarl/princess_jaidee_enterpricess_bms
+
+[33mcommit 85c571683bde4fd84f5d7b7cdee2fa886bcc636d[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 10:31:06 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 10:31:06 +0800
+
+    Update hero.tsx
+
+[33mcommit 94e6f85ab88eb76d51ffc5a74f45c99d531b7fed[m
+Author:     Aidriane Carl G. Esmeña <169006730+aidrianecarl@users.noreply.github.com>
+AuthorDate: 2026-02-24 10:30:22 +0800
+Commit:     GitHub <noreply@github.com>
+CommitDate: 2026-02-24 10:30:22 +0800
+
+    Create .env
+
+[33mcommit 5e649023c252e4be5932d92b56b50e9b31785503[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 10:21:30 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 10:21:30 +0800
+
+    new test live
+
+[33mcommit e0e80ca9d49a2a0f556a190214c248e63eed62ab[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 10:18:50 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 10:18:50 +0800
+
+    Update login-form.tsx
+
+[33mcommit 0f58a824a401fdec6f1936f28a65f5748ff375f1[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 10:16:46 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 10:16:46 +0800
+
+    Update login-form.tsx
+
+[33mcommit d101938e4292b42151cf013a3dc6037ea2925fe8[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 10:11:56 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 10:11:56 +0800
+
+    Update api-client.ts
+
+[33mcommit 62b8685c6ebf45dff16debb34be9fcf1cb18ce49[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 09:59:49 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 09:59:49 +0800
+
+    update fix api-client for live server
+
+[33mcommit a0f4ae2d1966c690f40736a16b777c554dc172fc[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-24 09:50:28 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-24 09:50:28 +0800
+
+    Fix index.php for shared hosting
+
+[33mcommit 10e5dee90f4c837124ca2461c7c5e6bb80972ec1[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-13 02:02:23 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-13 02:02:23 +0800
+
+    new update
+    
+    Client side
+    fixed loggin and signup page
+    fixed header
+    Admin side
+    fixed the loggin page
+    and the backends and frontends
+
+[33mcommit 704f0cfb10333d3b9e7aadb866d8e6838ce238fb[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-11 22:31:35 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-11 22:31:35 +0800
+
+    new update with contact page
+
+[33mcommit 0875655eed79be140f2d8357598d2fd65a4b63ce[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-03 20:56:17 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-03 20:56:17 +0800
+
+    fix the quotation item table and services
+
+[33mcommit af86f306b1e4554f8fdbceb1b13a25aeb1bd763a[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-03 13:42:50 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-03 13:42:50 +0800
+
+    quotation update
+    
+    Client side
+
+[33mcommit 84b721fe4cdc15ddeedc94a7990d67519a53705e[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-02 22:20:41 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-02 22:20:41 +0800
+
+    new update
+    
+    fix the services and quotation new update
+
+[33mcommit 429bdbca131ceacc6c56ffd54485f16a622cd572[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-02-02 10:50:56 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-02-02 10:50:56 +0800
+
+    new update
+
+[33mcommit ae81cdc782673c478a8bf85655bbcc51bfa31605[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-01-13 11:19:25 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-01-13 11:19:25 +0800
+
+    new update
+
+[33mcommit 26ef3b8af782e74cf3b9885d9c4a98109ae10a68[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-01-10 07:08:21 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-01-10 07:08:21 +0800
+
+    new update
+
+[33mcommit ae0be3e042db92411fa3fa45e3b9c4c71e1f8fdb[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2026-01-09 20:43:21 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2026-01-09 20:43:21 +0800
+
+    update capstone
+
+[33mcommit 1c98793256372a5f8fec26beefa6fc8701784a08[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-12-18 00:51:23 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-12-18 00:51:23 +0800
+
+    fixing the create quotatin and edit quotation
+
+[33mcommit 45f6901c60f192d9982f76089bcaffc39a156721[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-12-02 19:46:14 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-12-02 19:46:14 +0800
+
+    fixing the client quotation
+
+[33mcommit 339668268c872d2f00d102ccfb7144b491621b9a[m
+Author:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-12-02 16:01:56 +0800
+Commit:     Aidriane Carl Esmena <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-12-02 16:01:56 +0800
+
+    fixing the products
+
+[33mcommit b687ad556f2f23466e233bd2bfb4cecb4d9a4933[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-25 22:48:47 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-25 22:48:47 +0800
+
+    fixing the product and services
+
+[33mcommit ae3bd068916735f504d0e8878b859b95aba05365[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-24 17:55:23 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-24 17:55:23 +0800
+
+    fixing header and sidebar
+
+[33mcommit 0c8f6d623b965766c96664a820e81f8e2b190dc3[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-24 02:19:02 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-24 02:19:02 +0800
+
+    fixing the header and sidebar user
+
+[33mcommit df06fc9770275f8d719d8f99e890d75cc8feaacd[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-19 20:00:50 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-19 20:00:50 +0800
+
+    creating product, category, color, sizes page
+    
+    fixing heading and sidebar of admin site, and creating product, category, color, sizes page
+
+[33mcommit c2ce5abe496dfc2aa42a5dadd03708bab7569e25[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-19 11:29:05 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-19 11:29:05 +0800
+
+    branch, role&permissions, and members
+    
+    Finishing the frontend and backend of branch, role&permissions, and members
+
+[33mcommit c71960215f79c527390252c0060ab4fd442e1f4b[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-17 16:52:17 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-17 16:52:17 +0800
+
+    client side
+    
+    improving the design of customers/client page
+
+[33mcommit 9fbe4e19cbbb77f62b09196d96b0b1e3c1fd9c13[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-17 13:13:37 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-17 13:13:37 +0800
+
+    Admin Client with role base access controll
+    
+    fixing the login for users and admin
+
+[33mcommit 8e85f5b10ab8fea9578bd921d488a69cf7d3f46f[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-13 16:03:36 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-13 16:03:36 +0800
+
+    4rth commit
+    
+    removing wrong CLI in backend
+
+[33mcommit 817393eef5ab3eb3848152b33ca1f1fbf2501298[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-13 16:01:04 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-13 16:01:04 +0800
+
+    3rd commit
+    
+    adding composer require laravel/sanctum and php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+
+[33mcommit adc476ce3928ab415ebd83482a5e6dbcd3b41042[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-13 15:59:21 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-13 15:59:21 +0800
+
+    2nd commit
+    
+    adding breeze:install api
+
+[33mcommit 6c8566931a710545db4a28368eda6f6887f08a7a[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-13 15:54:38 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-13 15:54:38 +0800
+
+    1st commit
+    
+    installed react nextjs tailwindcss for frontend, and build the UI.
+    and installed the backend laravel for api with breeze
+
+[33mcommit 63ec73f263efdcba992a03a43088f275dd38a68c[m
+Author:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+AuthorDate: 2025-11-13 14:25:00 +0800
+Commit:     Aidriane Carl Esmeña <aidrianecarlesmena@gmail.com>
+CommitDate: 2025-11-13 14:25:00 +0800
+
+    Initial commit
