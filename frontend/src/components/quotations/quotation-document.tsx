@@ -1587,25 +1587,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             </div>
                           )}
 
-                          {/* Team Player Details Section */}
-                          {item.serviceRequirements.teamRoster && item.serviceRequirements.teamRoster.length > 0 && (
-                            <div className="pt-3 border-t border-blue-300 mb-4">
-                              <p className="text-xs font-semibold text-blue-700 mb-2 uppercase">Team Players</p>
-                              <div className="space-y-2">
-                                {item.serviceRequirements.teamRoster.map((member) => (
-                                  <div key={member.id} className="bg-white rounded-md p-2 border border-blue-200 text-sm">
-                                    <div className="flex items-center gap-2">
-                                      <span className="font-medium text-gray-900">{member.name}</span>
-                                      <span className="text-gray-600">#{member.number}</span>
-                                      {member.sizeTop && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Top: {member.sizeTop}</span>}
-                                      {member.sizeBottom && <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">Bottom: {member.sizeBottom}</span>}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-
                           {/* Design Comments Section */}
                           <div className="pt-3 border-t border-blue-300">
                             <div className="flex items-center justify-between mb-2">
