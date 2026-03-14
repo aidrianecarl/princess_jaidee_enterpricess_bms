@@ -47,7 +47,7 @@ interface LineItem {
     designPreview: string
     designImageUrl?: string
     teamRoster: Array<{ id: string; name: string; number: string | number; sizeTop?: string; sizeBottom?: string }>
-    sizeSpecifications: { 
+    sizeSpecifications: {
       top?: string
       bottom?: string
       width?: number
@@ -724,8 +724,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         console.log("Backend validation errors:", data.errors || data.message || data)
         const errorMessages = data.errors
           ? Object.entries(data.errors)
-              .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
-              .join("\n")
+            .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
           : data.message || "Failed to save quotation"
 
         toast({
@@ -854,8 +854,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         console.log("Backend validation errors:", data.errors || data.message || data)
         const errorMessages = data.errors
           ? Object.entries(data.errors)
-              .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
-              .join("\n")
+            .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
           : data.message || "Failed to send quotation"
 
         toast({
@@ -916,10 +916,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       lineItems.map((item) =>
         item.id === id
           ? {
-              ...item,
-              quantity,
-              amount: quantity * (item.unitPrice || 0),
-            }
+            ...item,
+            quantity,
+            amount: quantity * (item.unitPrice || 0),
+          }
           : item,
       ),
     )
@@ -930,10 +930,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       lineItems.map((item) =>
         item.id === id
           ? {
-              ...item,
-              designCost,
-              amount: (item.quantity || 1) * (item.unitPrice || 0) + designCost,
-            }
+            ...item,
+            designCost,
+            amount: (item.quantity || 1) * (item.unitPrice || 0) + designCost,
+          }
           : item,
       ),
     )
@@ -944,9 +944,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       lineItems.map((item) =>
         item.id === id
           ? {
-              ...item,
-              ...updates,
-            }
+            ...item,
+            ...updates,
+          }
           : item,
       ),
     )
@@ -1078,12 +1078,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                   <div className="text-right">
                     <p className="text-xs text-gray-500 font-semibold uppercase">Date</p>
                     <p className="text-lg font-semibold text-gray-900">
-                      {formData.quoteDate 
-                        ? new Date(formData.quoteDate).toLocaleDateString('en-US', { 
-                            year: 'numeric', 
-                            month: 'long', 
-                            day: 'numeric' 
-                          })
+                      {formData.quoteDate
+                        ? new Date(formData.quoteDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })
                         : 'N/A'}
                     </p>
                   </div>
@@ -1243,15 +1243,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-              <div>
+                <div>
                   <p className="text-xs font-bold text-gray-500 uppercase mb-2">Due Date</p>
                   <p className="text-lg font-semibold text-gray-900">
-                    {formData.validUntil 
-                      ? new Date(formData.validUntil).toLocaleDateString('en-US', { 
-                          year: 'numeric', 
-                          month: 'long', 
-                          day: 'numeric' 
-                        })
+                    {formData.validUntil
+                      ? new Date(formData.validUntil).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
                       : 'N/A'}
                   </p>
                 </div>
@@ -1291,27 +1291,27 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     {/* Main Row - Collapsible */}
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
                       {/* Expand Button */}
-                      {item.type === "service" && (item.serviceRequirements?.teamRoster?.length > 0 || 
-                       (item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) ||
-                       item.serviceRequirements?.designPreview) && (
-                        <button
-                          onClick={() => {
-                            const newExpanded = new Set(expandedItems)
-                            if (newExpanded.has(item.id)) {
-                              newExpanded.delete(item.id)
-                            } else {
-                              newExpanded.add(item.id)
-                            }
-                            setExpandedItems(newExpanded)
-                          }}
-                          className="p-1 hover:bg-gray-200 rounded transition print:hidden self-start md:self-center"
-                        >
-                          <ChevronDown
-                            size={18}
-                            className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
-                          />
-                        </button>
-                      )}
+                      {item.type === "service" && (item.serviceRequirements?.teamRoster?.length > 0 ||
+                        (item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) ||
+                        item.serviceRequirements?.designPreview) && (
+                          <button
+                            onClick={() => {
+                              const newExpanded = new Set(expandedItems)
+                              if (newExpanded.has(item.id)) {
+                                newExpanded.delete(item.id)
+                              } else {
+                                newExpanded.add(item.id)
+                              }
+                              setExpandedItems(newExpanded)
+                            }}
+                            className="p-1 hover:bg-gray-200 rounded transition print:hidden self-start md:self-center"
+                          >
+                            <ChevronDown
+                              size={18}
+                              className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        )}
 
                       {/* Image & Name & Category Column */}
                       <div className="flex-1 flex gap-2 min-w-0">
@@ -1330,11 +1330,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-gray-900 text-sm md:text-base truncate">{item.name}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                              item.type === "service" 
-                                ? "bg-blue-100 text-blue-700" 
+                            <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${item.type === "service"
+                                ? "bg-blue-100 text-blue-700"
                                 : "bg-purple-100 text-purple-700"
-                            }`}>
+                              }`}>
                               {item.type === "service" ? "Service" : "Product"}
                             </span>
                           </div>
@@ -1393,7 +1392,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           <div className="flex items-center justify-between mb-3">
                             <p className="text-xs font-bold text-gray-700 uppercase">Team Roster Details</p>
                             <div className="flex items-center gap-2">
-                            {editingRosterId === item.id ? (
+                              {editingRosterId === item.id ? (
                                 <button
                                   onClick={() => setEditingRosterId(null)}
                                   className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
@@ -1433,7 +1432,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               <p className="text-xs font-semibold text-gray-700">Bottom Size</p>
                               <p className="text-xs font-semibold text-gray-700 text-center">Price</p>
                             </div>
-                            
+
                             {/* Roster Items */}
                             {item.serviceRequirements.teamRoster.map((member) => (
                               <div key={member.id} className={`flex flex-col md:grid ${editingRosterId === item.id ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-2 md:gap-3 px-2 py-2 bg-white rounded-md border border-gray-200`}>
@@ -1449,11 +1448,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    className={`font-medium text-sm px-2 py-1 border rounded outline-none transition ${
-                                      editingRosterId === item.id
+                                    className={`font-medium text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
                                         ? 'text-gray-900 border-gray-300 focus:border-blue-500'
                                         : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
-                                    }`}
+                                      }`}
                                   />
                                 </div>
                                 <div className="flex flex-col">
@@ -1468,11 +1466,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    className={`font-medium text-sm px-2 py-1 border rounded outline-none transition ${
-                                      editingRosterId === item.id
+                                    className={`font-medium text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
                                         ? 'text-gray-900 border-gray-300 focus:border-blue-500'
                                         : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
-                                    }`}
+                                      }`}
                                   />
                                 </div>
                                 <div className="flex flex-col">
@@ -1486,11 +1483,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${
-                                      editingRosterId === item.id
+                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
                                         ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                         : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
-                                    }`}
+                                      }`}
                                   >
                                     <option value="">Select</option>
                                     <option value="XS">XS</option>
@@ -1514,11 +1510,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ) || []
                                       updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                     }}
-                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${
-                                      editingRosterId === item.id
+                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
                                         ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                         : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
-                                    }`}
+                                      }`}
                                   >
                                     <option value="">Select</option>
                                     <option value="XS">XS</option>
@@ -1566,26 +1561,32 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
                           <p className="text-xs font-bold text-blue-700 uppercase mb-4">Design Details</p>
-                          
+
                           {/* Design Image Preview */}
-                          {item.serviceRequirements.designImageUrl ? (
-                            <div className="mb-4">
-                              <p className="text-xs font-semibold text-blue-700 mb-2 uppercase">Design Preview</p>
+                          <div className="mb-4">
+                            <p className="text-xs font-semibold text-blue-700 mb-2 uppercase">Design Preview</p>
+                            {item.serviceRequirements.designImageUrl ? (
                               <div className="border-2 border-blue-300 rounded-md overflow-hidden bg-white p-3">
                                 <img
-                                  src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
+                                  src={item.serviceRequirements.designImageUrl}
                                   alt="Design preview"
                                   onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
                                   className="max-h-64 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
+                                  onError={(e) => {
+                                    console.log("[v0] Image failed to load:", item.serviceRequirements?.designImageUrl)
+                                  }}
+                                  onLoad={(e) => {
+                                    console.log("[v0] Image loaded successfully")
+                                  }}
                                 />
                               </div>
-                              <p className="text-xs text-center text-gray-600 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
-                            </div>
-                          ) : (
-                            <div className="mb-4 p-3 bg-white border border-blue-300 rounded-md">
-                              <p className="text-sm text-gray-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
-                            </div>
-                          )}
+                            ) : (
+                              <div className="border-2 border-blue-300 rounded-md bg-blue-50 p-4 text-center">
+                                <p className="text-sm text-gray-600">No image preview available</p>
+                              </div>
+                            )}
+                            <p className="text-xs text-center text-gray-600 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
+                          </div>
 
                           {/* Design Comments Section */}
                           <div className="pt-3 border-t border-blue-300">
@@ -1620,11 +1621,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 })
                               }}
                               placeholder="Add optional comments about the design..."
-                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${
-                                editingDesignNotesId === item.id
+                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${editingDesignNotesId === item.id
                                   ? 'border-gray-400 bg-white focus:border-gray-600 text-gray-900'
                                   : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
-                              }`}
+                                }`}
                               rows={3}
                             />
                           </div>
@@ -1662,11 +1662,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 })
                               }}
                               placeholder="Add optional customization notes for the jersey..."
-                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${
-                                editingDesignNotesId === item.id
+                              className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition resize-none ${editingDesignNotesId === item.id
                                   ? 'border-gray-400 bg-white focus:border-gray-600 text-gray-900'
                                   : 'border-gray-300 bg-gray-100 text-gray-700 cursor-not-allowed'
-                              }`}
+                                }`}
                               rows={3}
                             />
                           </div>
@@ -1677,133 +1676,122 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
 
                     {/* Tarpaulin Details Collapsible */}
-                    {expandedItems.has(item.id) && 
-                     item.serviceRequirements?.sizeSpecifications?.width &&
-                     item.serviceRequirements?.sizeSpecifications?.height && (
-                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
-                        <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
-                          <div className="flex items-center justify-between mb-4">
-                            <p className="text-xs font-bold text-blue-700 uppercase">Tarpaulin Printing Details</p>
-                            {editingTarpaulinId === item.id ? (
-                              <button
-                                onClick={() => setEditingTarpaulinId(null)}
-                                className="text-green-600 hover:text-green-800 hover:bg-green-200 p-1.5 rounded transition flex items-center gap-1"
-                                title="Save tarpaulin changes"
-                              >
-                                <Check size={16} />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setEditingTarpaulinId(item.id)}
-                                className="text-blue-600 hover:text-blue-800 hover:bg-blue-200 p-1.5 rounded transition"
-                                title="Edit tarpaulin"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                            )}
-                          </div>
-                          
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                            <div className="flex flex-col">
-                              <span className="text-xs font-semibold text-blue-600">Width</span>
-                              <select
-                                value={item.serviceRequirements.sizeSpecifications.width || ""}
-                                disabled={editingTarpaulinId !== item.id}
-                                onChange={(e) => {
-                                  const w = Number(e.target.value)
-                                  const h = Number(item.serviceRequirements.sizeSpecifications.height) || 0
-                                  const sqft = w * h
-                                  const detailPrice = sqft * 20
-                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, width: w, totalSqft: sqft, totalPrice: detailPrice } } }
-                                  updateLineItem(item.id, updated)
-                                }}
-                                className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${
-                                  editingTarpaulinId === item.id
-                                    ? 'text-gray-900 border-blue-300 focus:border-blue-500'
-                                    : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
-                                }`}
-                              >
-                                <option value="">Select Width</option>
-                                {Array.from({ length: 8 }, (_, i) => 3 + i).map((w) => (
-                                  <option key={w} value={w}>{w} ft</option>
-                                ))}
-                              </select>
-                              <span className="text-xs text-gray-500 mt-1">ft</span>
+                    {expandedItems.has(item.id) &&
+                      item.serviceRequirements?.sizeSpecifications?.width &&
+                      item.serviceRequirements?.sizeSpecifications?.height && (
+                        <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                          <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
+                            <div className="flex items-center justify-between mb-4">
+                              <p className="text-xs font-bold text-blue-700 uppercase">Tarpaulin Printing Details</p>
+                              {editingTarpaulinId === item.id ? (
+                                <button
+                                  onClick={() => setEditingTarpaulinId(null)}
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
+                                  title="Save tarpaulin changes"
+                                >
+                                  <Check size={16} />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => setEditingTarpaulinId(item.id)}
+                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
+                                  title="Edit tarpaulin"
+                                >
+                                  <Edit2 size={16} />
+                                </button>
+                              )}
                             </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-semibold text-blue-600">Height</span>
-                              <select
-                                value={item.serviceRequirements.sizeSpecifications.height || ""}
-                                disabled={editingTarpaulinId !== item.id}
-                                onChange={(e) => {
-                                  const h = Number(e.target.value)
-                                  const w = Number(item.serviceRequirements.sizeSpecifications.width) || 0
-                                  const sqft = w * h
-                                  const detailPrice = sqft * 20
-                                  const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, height: h, totalSqft: sqft, totalPrice: detailPrice } } }
-                                  updateLineItem(item.id, updated)
-                                }}
-                                className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${
-                                  editingTarpaulinId === item.id
-                                    ? 'text-gray-900 border-blue-300 focus:border-blue-500'
-                                    : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
-                                }`}
-                              >
-                                <option value="">Select Height</option>
-                                {Array.from({ length: 9 }, (_, i) => 2 + i).map((h) => (
-                                  <option key={h} value={h}>{h} ft</option>
-                                ))}
-                              </select>
-                              <span className="text-xs text-gray-500 mt-1">ft</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-semibold text-blue-600">Total Sq Ft</span>
-                              <input
-                                type="text"
-                                value={item.serviceRequirements.sizeSpecifications.totalSqft || "0"}
-                                disabled
-                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
-                              />
-                              <span className="text-xs text-gray-500 mt-1">sq ft</span>
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-semibold text-blue-600">Detail Price</span>
-                              <input
-                                type="text"
-                                value={item.serviceRequirements.sizeSpecifications.totalPrice ? `₱${item.serviceRequirements.sizeSpecifications.totalPrice.toLocaleString()}` : '₱0'}
-                                disabled
-                                className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-right"
-                              />
-                            </div>
-                          </div>
 
-                          {/* Design File (Collapsible) */}
-                          {item.serviceRequirements?.designPreview && (
-                            <div className="pt-4 border-t border-blue-300">
-                              <button
-                                onClick={() => {
-                                  setExpandedImageItem(expandedImageItem === `${item.id}-tarpaulin` ? null : `${item.id}-tarpaulin`)
-                                }}
-                                className="flex items-center gap-2 mb-2 hover:text-blue-600 transition"
-                              >
-                                <ChevronDown
-                                  size={16}
-                                  className={`text-blue-600 transition-transform ${
-                                    expandedImageItem === `${item.id}-tarpaulin` ? 'rotate-180' : ''
-                                  }`}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-blue-600">Width</span>
+                                <select
+                                  value={item.serviceRequirements.sizeSpecifications.width || ""}
+                                  disabled={editingTarpaulinId !== item.id}
+                                  onChange={(e) => {
+                                    const w = Number(e.target.value)
+                                    const h = Number(item.serviceRequirements.sizeSpecifications.height) || 0
+                                    const sqft = w * h
+                                    const detailPrice = sqft * 20
+                                    const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, width: w, totalSqft: sqft, totalPrice: detailPrice } } }
+                                    updateLineItem(item.id, updated)
+                                  }}
+                                  className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${editingTarpaulinId === item.id
+                                      ? 'text-gray-900 border-blue-300 focus:border-blue-500'
+                                      : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                    }`}
+                                >
+                                  <option value="">Select Width</option>
+                                  {Array.from({ length: 8 }, (_, i) => 3 + i).map((w) => (
+                                    <option key={w} value={w}>{w} ft</option>
+                                  ))}
+                                </select>
+                                <span className="text-xs text-gray-500 mt-1">ft</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-blue-600">Height</span>
+                                <select
+                                  value={item.serviceRequirements.sizeSpecifications.height || ""}
+                                  disabled={editingTarpaulinId !== item.id}
+                                  onChange={(e) => {
+                                    const h = Number(e.target.value)
+                                    const w = Number(item.serviceRequirements.sizeSpecifications.width) || 0
+                                    const sqft = w * h
+                                    const detailPrice = sqft * 20
+                                    const updated = { ...item, serviceRequirements: { ...item.serviceRequirements, sizeSpecifications: { ...item.serviceRequirements.sizeSpecifications, height: h, totalSqft: sqft, totalPrice: detailPrice } } }
+                                    updateLineItem(item.id, updated)
+                                  }}
+                                  className={`text-sm font-medium px-2 py-1 border rounded outline-none transition ${editingTarpaulinId === item.id
+                                      ? 'text-gray-900 border-blue-300 focus:border-blue-500'
+                                      : 'text-gray-900 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                    }`}
+                                >
+                                  <option value="">Select Height</option>
+                                  {Array.from({ length: 9 }, (_, i) => 2 + i).map((h) => (
+                                    <option key={h} value={h}>{h} ft</option>
+                                  ))}
+                                </select>
+                                <span className="text-xs text-gray-500 mt-1">ft</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-blue-600">Total Sq Ft</span>
+                                <input
+                                  type="text"
+                                  value={item.serviceRequirements.sizeSpecifications.totalSqft || "0"}
+                                  disabled
+                                  className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed"
                                 />
-                                <p className="text-xs font-semibold text-blue-700 uppercase">Design File</p>
-                              </button>
-                              
-                              {expandedImageItem === `${item.id}-tarpaulin` && (
-                                <div className="space-y-3 mt-3">
+                                <span className="text-xs text-gray-500 mt-1">sq ft</span>
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-blue-600">Detail Price</span>
+                                <input
+                                  type="text"
+                                  value={item.serviceRequirements.sizeSpecifications.totalPrice ? `₱${item.serviceRequirements.sizeSpecifications.totalPrice.toLocaleString()}` : '₱0'}
+                                  disabled
+                                  className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-right"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Design Image for Tarpaulin (Simple Display, No Collapsible) */}
+                            {item.serviceRequirements?.designPreview && (
+                              <div className="pt-4 border-t border-blue-300">
+                                <div className="space-y-3">
+                                  <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Design Preview</p>
                                   {item.serviceRequirements.designImageUrl ? (
                                     <div className="border-2 border-blue-300 rounded-md overflow-hidden bg-white p-2">
                                       <img
-                                        src={item.serviceRequirements.designImageUrl || "/placeholder.svg"}
+                                        src={item.serviceRequirements.designImageUrl}
                                         alt="Design preview"
                                         onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
                                         className="max-h-48 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
+                                        onError={(e) => {
+                                          console.log("[v0] Tarpaulin image failed to load:", item.serviceRequirements?.designImageUrl)
+                                        }}
+                                        onLoad={(e) => {
+                                          console.log("[v0] Tarpaulin image loaded successfully")
+                                        }}
                                       />
                                       <p className="text-xs text-center text-blue-700 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
                                     </div>
@@ -1814,51 +1802,70 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     </div>
                                   )}
 
-                                  {/* Design Notes under Design File */}
-                                  {item.notes && typeof item.notes === 'object' && item.notes.designNotes && (
-                                    <div className="mt-4 pt-4 border-t border-blue-300">
-                                      <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Design Notes (Optional)</p>
-                                      <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-800">
-                                        {item.notes.designNotes}
-                                      </div>
+                                  {/* Comments section for Tarpaulin (from notes) */}
+                                  {item.notes && typeof item.notes === 'object' && (item.notes.designNotes || item.notes.sizeNotes || item.notes.additionalNotes) && (
+                                    <div className="mt-4 pt-4 border-t border-blue-300 space-y-3">
+                                      {item.notes.designNotes && (
+                                        <div>
+                                          <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Design Comments</p>
+                                          <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-800">
+                                            {item.notes.designNotes}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {item.notes.sizeNotes && (
+                                        <div>
+                                          <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Size Comments</p>
+                                          <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-800">
+                                            {item.notes.sizeNotes}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {item.notes.additionalNotes && (
+                                        <div>
+                                          <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Additional Comments</p>
+                                          <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-800">
+                                            {item.notes.additionalNotes}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
                                 </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Size Specifications Display (Generic) */}
-                    {expandedItems.has(item.id) && item.serviceRequirements?.sizeSpecifications && 
-                     (item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom) && 
-                     !item.serviceRequirements.sizeSpecifications.width && (
-                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
-                        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
-                          <p className="text-xs font-bold text-purple-700 uppercase mb-3">Size Specifications</p>
-                          <div className="bg-white rounded border border-purple-300 p-3 space-y-2">
-                            {item.serviceRequirements.sizeSpecifications.top && (
-                              <p className="text-sm text-gray-800"><span className="font-semibold">Top/Shirt Size:</span> {item.serviceRequirements.sizeSpecifications.top}</p>
-                            )}
-                            {item.serviceRequirements.sizeSpecifications.bottom && (
-                              <p className="text-sm text-gray-800"><span className="font-semibold">Bottom/Short Size:</span> {item.serviceRequirements.sizeSpecifications.bottom}</p>
+                              </div>
                             )}
                           </div>
-
-                          {/* Size Notes under Size Specifications */}
-                          {item.notes && typeof item.notes === 'object' && item.notes.sizeNotes && (
-                            <div className="mt-4 pt-4 border-t border-purple-300">
-                              <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes (Optional)</p>
-                              <div className="p-3 bg-purple-50 border border-purple-200 rounded text-sm text-gray-800">
-                                {item.notes.sizeNotes}
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      </div>
-                    )}
+                      )}
+
+                    {/* Size Specifications Display (Generic) */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.sizeSpecifications &&
+                      (item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom) &&
+                      !item.serviceRequirements.sizeSpecifications.width && (
+                        <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                          <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
+                            <p className="text-xs font-bold text-purple-700 uppercase mb-3">Size Specifications</p>
+                            <div className="bg-white rounded border border-purple-300 p-3 space-y-2">
+                              {item.serviceRequirements.sizeSpecifications.top && (
+                                <p className="text-sm text-gray-800"><span className="font-semibold">Top/Shirt Size:</span> {item.serviceRequirements.sizeSpecifications.top}</p>
+                              )}
+                              {item.serviceRequirements.sizeSpecifications.bottom && (
+                                <p className="text-sm text-gray-800"><span className="font-semibold">Bottom/Short Size:</span> {item.serviceRequirements.sizeSpecifications.bottom}</p>
+                              )}
+                            </div>
+
+                            {/* Size Notes under Size Specifications */}
+                            {item.notes && typeof item.notes === 'object' && item.notes.sizeNotes && (
+                              <div className="mt-4 pt-4 border-t border-purple-300">
+                                <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes (Optional)</p>
+                                <div className="p-3 bg-purple-50 border border-purple-200 rounded text-sm text-gray-800">
+                                  {item.notes.sizeNotes}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                     {/* Additional Notes Display (if additionalNotes exists) */}
                     {expandedItems.has(item.id) && item.notes && typeof item.notes === 'object' && item.notes.additionalNotes && (
@@ -1982,7 +1989,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         onSelect={(service, serviceData) => {
           // Build description with service data
           let description = service.description || ""
-          
+
           // Add requirement details to description
           if (service.requires_design && serviceData.designPreview) {
             description += "\n✓ Design provided"
@@ -2007,13 +2014,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               .join("\n")
             description += "\n" + rosterText
           }
-          
+
           // Check if this is a tarpaulin service
-          const specs = typeof service.specifications === "string" 
-            ? JSON.parse(service.specifications) 
+          const specs = typeof service.specifications === "string"
+            ? JSON.parse(service.specifications)
             : service.specifications
           const isTarpaulin = specs?.size_type === "tarpaulin"
-          
+
           if (service.requires_size) {
             if (isTarpaulin && serviceData.sizeSpecifications.width && serviceData.sizeSpecifications.height) {
               description += `\n✓ Tarpaulin Size: ${serviceData.sizeSpecifications.width}ft × ${serviceData.sizeSpecifications.height}ft`
@@ -2022,18 +2029,18 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               description += `\n✓ Sizes: Top ${serviceData.sizeSpecifications.top || "N/A"} / Bottom ${serviceData.sizeSpecifications.bottom || "N/A"}`
             }
           }
-          
+
           // Calculate unit price (may be adjusted for tarpaulin)
           let unitPrice = service.base_price
           if (isTarpaulin && serviceData.sizeSpecifications.totalPrice) {
             unitPrice = serviceData.sizeSpecifications.totalPrice
           }
-          
+
           // Add design consultation price
           if (serviceData.designConsultation?.needed) {
             unitPrice += serviceData.designConsultation.price
           }
-          
+
           addLineItem({
             type: "service",
             serviceId: service.id,

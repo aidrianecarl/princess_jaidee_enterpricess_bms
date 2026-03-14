@@ -91,7 +91,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
     const totalSteps = getTotalSteps(service)
     if (totalSteps === 1) {
       // No requirements, submit directly
-      onSelect(service, serviceData)
+      onSelect(service, { ...serviceData, designNotes: serviceData.designNotes })
       handleClose()
     } else {
       setCurrentStep(2)
@@ -114,7 +114,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
       if (selectedService.requires_design && !serviceData.designPreview) {
         setShowDesignConsultationModal(true)
       } else {
-        onSelect(selectedService, serviceData)
+        onSelect(selectedService, { ...serviceData, designNotes: serviceData.designNotes })
         handleClose()
       }
     }
@@ -123,29 +123,24 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
   const handleDesignConsultationYes = () => {
     // Add design consultation to service data
     const consultationPrice = 500 // Design consultation fee
-    setServiceData({
+    const updatedServiceData = {
       ...serviceData,
+      designNotes: serviceData.designNotes,
       designConsultation: {
         needed: true,
         notes: designConsultationNotes,
         price: consultationPrice,
       },
-    })
+    }
+    setServiceData(updatedServiceData)
     setShowDesignConsultationModal(false)
-    onSelect(selectedService!, {
-      ...serviceData,
-      designConsultation: {
-        needed: true,
-        notes: designConsultationNotes,
-        price: consultationPrice,
-      },
-    })
+    onSelect(selectedService!, updatedServiceData)
     handleClose()
   }
 
   const handleDesignConsultationNo = () => {
     setShowDesignConsultationModal(false)
-    onSelect(selectedService!, serviceData)
+    onSelect(selectedService!, { ...serviceData, designNotes: serviceData.designNotes })
     handleClose()
   }
   
