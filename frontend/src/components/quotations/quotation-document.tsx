@@ -2011,7 +2011,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             designCost: service.design_cost,
             // Store service requirement data for later
             serviceRequirements: {
-              designFile: serviceData.designFile,
+              designFileUrl: serviceData.designFile,
               designPreview: serviceData.designPreview,
               teamRoster: serviceData.teamRoster,
               sizeSpecifications: serviceData.sizeSpecifications,
