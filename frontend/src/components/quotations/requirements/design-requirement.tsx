@@ -68,12 +68,10 @@ export function DesignRequirement({
       if (isImageFile) {
         const reader = new FileReader()
         reader.onloadend = () => {
-        const dataUrl = reader.result as string
-        setImagePreview(dataUrl)
-
-        // send the base64 preview
-        onDesignFileSelect(file, dataUrl, dataUrl)
-      }
+          const dataUrl = reader.result as string
+          setImagePreview(dataUrl)
+          onDesignFileSelect(file, file.name, dataUrl)
+        }
         reader.readAsDataURL(file)
       } else {
         setImagePreview("")
@@ -113,7 +111,7 @@ export function DesignRequirement({
   const handleRemove = () => {
     setSelectedFile(null)
     setFileName("")
-    onDesignFileSelect(null, "", "")
+    onDesignFileSelect(null, "")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
