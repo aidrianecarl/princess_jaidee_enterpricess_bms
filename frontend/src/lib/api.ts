@@ -70,6 +70,12 @@ export const quotationsApi = {
   create: (data: any) =>
     apiClient.client().post('/quotations', data),
 
+  update: (id: number, data: any) =>
+    apiClient.client().put(`/quotations/${id}`, data),
+
+  getNextQuotationNumber: () =>
+    apiClient.client().get('/quotations/next-number'),
+
   getProducts: () =>
     apiClient.client().get('/products/list'),
 
@@ -77,13 +83,19 @@ export const quotationsApi = {
     apiClient.client().get('/services/list'),
 
   adminGetAll: (page = 1, status = '', search = '') =>
-    apiClient.admin().get('/quotations', { params: { page, status, search } }),
+    apiClient.admin().get('/admin/quotations', { params: { page, status, search } }),
+
+  adminShow: (id: number) =>
+    apiClient.admin().get(`/admin/quotations/${id}`),
 
   adminScheduleSend: (id: number, scheduledDate: string) =>
     apiClient.admin().post(`/quotations/${id}/schedule-send`, { scheduled_date: scheduledDate }),
 
   adminUpdateStatus: (id: number, status: string) =>
-    apiClient.admin().put(`/quotations/${id}/status`, { status }),
+    apiClient.admin().put(`/admin/quotations/${id}/status`, { status }),
+
+  adminDestroy: (id: number) =>
+    apiClient.admin().delete(`/admin/quotations/${id}`),
 }
 
 export const ordersApi = {

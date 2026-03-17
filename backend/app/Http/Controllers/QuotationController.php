@@ -263,19 +263,39 @@ class QuotationController extends Controller
                     $lineTotal += $item['design_cost'];
                 }
 
+                // Handle design files - can be array of URLs stored as JSON
+                $designFileUrl = null;
+                if (!empty($item['design_file_url'])) {
+                    if (is_array($item['design_file_url'])) {
+                        $designFileUrl = json_encode($item['design_file_url']);
+                    } else {
+                        $designFileUrl = $item['design_file_url'];
+                    }
+                }
+
+                // Handle notes - always store as JSON
+                $notesData = null;
+                if (!empty($item['notes'])) {
+                    if (is_array($item['notes'])) {
+                        $notesData = json_encode($item['notes']);
+                    } else if (is_string($item['notes'])) {
+                        // Try to decode if it's already a JSON string
+                        $decoded = json_decode($item['notes'], true);
+                        $notesData = $decoded !== null ? json_encode($decoded) : json_encode(['additionalNotes' => $item['notes']]);
+                    }
+                }
+
                 QuotationItem::create([
                     'quotation_id' => $quotation->id,
-                    'product_id' => !empty($item['product_id']) ? $item['product_id'] : null,
                     'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
                     'description' => $item['customization'] ?? $item['description'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
-                    'design_cost' => $item['design_cost'] ?? 0,
                     'line_total' => $lineTotal,
-                    'design_file_url' => $item['design_file_url'] ?? null,
+                    'design_file_url' => $designFileUrl,
                     'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
                     'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
-                    'notes' => $item['notes'] ?? null,
+                    'notes' => $notesData,
                 ]);
             }
             
@@ -414,19 +434,39 @@ class QuotationController extends Controller
                     }
                     $subtotal += $lineTotal;
 
+                    // Handle design files - can be array of URLs stored as JSON
+                    $designFileUrl = null;
+                    if (!empty($item['design_file_url'])) {
+                        if (is_array($item['design_file_url'])) {
+                            $designFileUrl = json_encode($item['design_file_url']);
+                        } else {
+                            $designFileUrl = $item['design_file_url'];
+                        }
+                    }
+
+                    // Handle notes - always store as JSON
+                    $notesData = null;
+                    if (!empty($item['notes'])) {
+                        if (is_array($item['notes'])) {
+                            $notesData = json_encode($item['notes']);
+                        } else if (is_string($item['notes'])) {
+                            // Try to decode if it's already a JSON string
+                            $decoded = json_decode($item['notes'], true);
+                            $notesData = $decoded !== null ? json_encode($decoded) : json_encode(['additionalNotes' => $item['notes']]);
+                        }
+                    }
+
                     QuotationItem::create([
                         'quotation_id' => $quotation->id,
-                        'product_id' => !empty($item['product_id']) ? $item['product_id'] : null,
                         'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
                         'description' => $item['customization'] ?? $item['description'] ?? null,
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
-                        'design_cost' => $item['design_cost'] ?? 0,
                         'line_total' => $lineTotal,
-                        'design_file_url' => $item['design_file_url'] ?? null,
+                        'design_file_url' => $designFileUrl,
                         'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
                         'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
-                        'notes' => $item['notes'] ?? null,
+                        'notes' => $notesData,
                     ]);
                 }
                 

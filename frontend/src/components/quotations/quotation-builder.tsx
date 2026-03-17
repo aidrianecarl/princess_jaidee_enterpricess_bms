@@ -1,10 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, ChevronDown, ChevronUp, Send, Download } from "lucide-react"
+import { Plus, ChevronDown, ChevronUp, Send, Download, Loader } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import type { Service } from "@/types/service"
 import type { QuotationItem } from "@/types/quotation"
-import ServiceRequirementsModal from "@/components/quotations/service-requirements-modal" // Import ServiceRequirementsModal
+import ServiceRequirementsModal from "@/components/quotations/service-requirements-modal"
+import { quotationsApi } from "@/lib/api"
 
 interface QuotationBuilderProps {
   services: Service[]
@@ -17,6 +20,10 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [showRequirementsModal, setShowRequirementsModal] = useState(false)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'draft' | 'pending'>('idle')
+  const router = useRouter()
+  const { toast } = useToast()
 
   const handleServiceClick = (service: Service) => {
     if (service.requires_design || service.requires_team || service.requires_size) {
@@ -124,6 +131,77 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
       newExpanded.add(id)
     }
     setExpandedItems(newExpanded)
+  }
+
+  const handleSave = async (status: 'draft' | 'pending') => {
+    if (items.length === 0) {
+      toast({ title: "Error", description: "Please add at least one item to the quotation", variant: "destructive" })
+      return
+    }
+
+    setIsSaving(true)
+    setSaveStatus(status)
+
+    try {
+      // Transform items for API
+      const quotationItems = items.map((item) => ({
+        service_id: item.serviceId,
+        quantity: item.quantity,
+        unit_price: item.unitPrice,
+        design_file_url: item.designFileUrl,
+        team_roster: item.teamRoster,
+        size_specifications: item.sizeSpecifications,
+        notes: item.notes, // This will be the structured notes object
+      }))
+
+      const payloadData = {
+        customer_name: 'Guest Customer',
+        customer_email: '',
+        customer_phone: '',
+        customer_address: '',
+        customer_city: '',
+        customer_province: '',
+        customer_zip_code: '',
+        business_name: 'My Business',
+        business_address: '',
+        business_city: '',
+        business_state: '',
+        business_postal: '',
+        business_phone: '',
+        business_email: '',
+        items: quotationItems,
+        discount: discount || 0,
+        notes: notes,
+        status: status,
+      }
+
+      console.log("[v0] Saving quotation with payload:", payloadData)
+
+      const response = await quotationsApi.create(payloadData)
+      
+      toast({
+        title: "Success",
+        description: `Quotation saved as ${status === 'draft' ? 'draft' : 'pending'}`,
+      })
+
+      console.log("[v0] Quotation saved successfully:", response.data)
+
+      // Redirect to dashboard after successful save
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1500)
+    } catch (error: any) {
+      console.error("[v0] Error saving quotation:", error)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save quotation'
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+      setSaveStatus('idle')
+    }
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0)
@@ -328,13 +406,39 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
             </div>
 
             <div className="space-y-2">
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition">
-                <Send size={18} />
-                Generate Quotation
+              <button
+                onClick={() => handleSave('draft')}
+                disabled={isSaving || items.length === 0}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-neutral-200 text-neutral-700 rounded-lg hover:bg-neutral-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving && saveStatus === 'draft' ? (
+                  <>
+                    <Loader size={18} className="animate-spin" />
+                    Saving Draft...
+                  </>
+                ) : (
+                  <>
+                    <Download size={18} />
+                    Save Draft
+                  </>
+                )}
               </button>
-              <button className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-neutral-300 text-neutral-600 rounded-lg hover:bg-neutral-50 transition">
-                <Download size={18} />
-                Preview PDF
+              <button
+                onClick={() => handleSave('pending')}
+                disabled={isSaving || items.length === 0}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSaving && saveStatus === 'pending' ? (
+                  <>
+                    <Loader size={18} className="animate-spin" />
+                    Sending to Admin...
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} />
+                    Send to Admin
+                  </>
+                )}
               </button>
             </div>
           </div>

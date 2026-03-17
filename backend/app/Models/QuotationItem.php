@@ -25,6 +25,7 @@ class QuotationItem extends Model
         'line_total' => 'decimal:2',
         'team_roster' => 'array',
         'size_specifications' => 'array',
+        'notes' => 'array', // Cast notes JSON to array automatically
     ];
 
     public function quotation(): BelongsTo
