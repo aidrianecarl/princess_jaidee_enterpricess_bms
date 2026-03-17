@@ -173,7 +173,6 @@ export function ServiceRequirementsModal({
         sizeNotes: sizeNotes || undefined,
         additionalNotes: additionalNotes || undefined,
       }
-      console.log("[v0] Confirming requirements with data:", confirmData)
       onConfirm(confirmData)
     }
   }
@@ -296,9 +295,12 @@ export function ServiceRequirementsModal({
               <TeamRosterRequirement
                 onTeamRosterChange={setTeamRoster}
                 onTeamNotesChange={setTeamRosterNotes}
+                onSizeChange={(size) => setSizeSpecs(size)}
                 initialRoster={teamRoster}
                 initialNotes={teamRosterNotes}
+                initialSize={sizeSpecs}
                 isRequired={true}
+                includeGenericSizes={service.requires_size}
               />
 
               {errors.roster && (
