@@ -1315,11 +1315,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                   <div key={item.id} className="mb-4 pb-4 border-b border-gray-200 print:break-inside-avoid">
                     {/* Main Row - Collapsible */}
                     <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
-                      {/* Expand Button */}
+                      {/* Expand Button - Show if there's any expandable content */}
                       {item.type === "service" && (item.serviceRequirements?.teamRoster?.length > 0 ||
                         (item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) ||
                         item.serviceRequirements?.designPreview ||
-                        item.serviceRequirements?.designImageUrl) && (
+                        item.serviceRequirements?.designImageUrl ||
+                        (item.notes && typeof item.notes === 'object' && (item.notes.sizeNotes || item.notes.teamNotes || item.notes.designNotes || item.notes.additionalNotes))) && (
                           <button
                             onClick={() => {
                               const newExpanded = new Set(expandedItems)
@@ -1802,23 +1803,26 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                     {/* Size Specifications Display (Generic) */}
                     {expandedItems.has(item.id) && item.serviceRequirements?.sizeSpecifications &&
-                      (item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom) &&
+                      ((item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom) ||
+                      (item.notes && typeof item.notes === 'object' && item.notes.sizeNotes)) &&
                       !item.serviceRequirements.sizeSpecifications.width && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
                           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
                             <p className="text-xs font-bold text-purple-700 uppercase mb-3">Size Specifications</p>
-                            <div className="bg-white rounded border border-purple-300 p-3 space-y-2">
-                              {item.serviceRequirements.sizeSpecifications.top && (
-                                <p className="text-sm text-gray-800"><span className="font-semibold">Top/Shirt Size:</span> {item.serviceRequirements.sizeSpecifications.top}</p>
-                              )}
-                              {item.serviceRequirements.sizeSpecifications.bottom && (
-                                <p className="text-sm text-gray-800"><span className="font-semibold">Bottom/Short Size:</span> {item.serviceRequirements.sizeSpecifications.bottom}</p>
-                              )}
-                            </div>
+                            {(item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom) && (
+                              <div className="bg-white rounded border border-purple-300 p-3 space-y-2 mb-4">
+                                {item.serviceRequirements.sizeSpecifications.top && (
+                                  <p className="text-sm text-gray-800"><span className="font-semibold">Top/Shirt Size:</span> {item.serviceRequirements.sizeSpecifications.top}</p>
+                                )}
+                                {item.serviceRequirements.sizeSpecifications.bottom && (
+                                  <p className="text-sm text-gray-800"><span className="font-semibold">Bottom/Short Size:</span> {item.serviceRequirements.sizeSpecifications.bottom}</p>
+                                )}
+                              </div>
+                            )}
 
                             {/* Size Notes under Size Specifications */}
                             {item.notes && typeof item.notes === 'object' && item.notes.sizeNotes && (
-                              <div className="mt-4 pt-4 border-t border-purple-300">
+                              <div className={item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom ? "mt-4 pt-4 border-t border-purple-300" : ""}>
                                 <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes (Optional)</p>
                                 <div className="p-3 bg-purple-50 border border-purple-200 rounded text-sm text-gray-800">
                                   {item.notes.sizeNotes}
