@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState } from "react"
-import { Plus, X, Users, Ruler } from "lucide-react"
+import { Plus, X, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -16,25 +16,19 @@ interface TeamMember {
 interface TeamRosterRequirementProps {
   onTeamRosterChange: (roster: TeamMember[]) => void
   onTeamNotesChange?: (notes: string) => void
-  onSizeChange?: (size: { top?: string; bottom?: string }) => void
   initialRoster?: TeamMember[]
   initialNotes?: string
-  initialSize?: { top?: string; bottom?: string }
   isRequired?: boolean
   requiresSize?: boolean
-  includeGenericSizes?: boolean
 }
 
 export function TeamRosterRequirement({
   onTeamRosterChange,
   onTeamNotesChange,
-  onSizeChange,
   initialRoster = [],
   initialNotes = "",
-  initialSize = { top: "", bottom: "" },
   isRequired = true,
   requiresSize = false,
-  includeGenericSizes = false,
 }: TeamRosterRequirementProps) {
   const [members, setMembers] = useState<TeamMember[]>(
     initialRoster.length > 0
@@ -42,9 +36,6 @@ export function TeamRosterRequirement({
       : [{ id: Date.now().toString(), name: "", number: "", sizeTop: "", sizeBottom: "" }]
   )
   const [teamNotes, setTeamNotes] = useState(initialNotes)
-  const [genericSize, setGenericSize] = useState(initialSize)
-
-  const commonSizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
 
   const addMember = () => {
     const newMember: TeamMember = {
@@ -216,116 +207,6 @@ export function TeamRosterRequirement({
           added to roster
         </p>
       </div>
-
-      {includeGenericSizes && (
-        <div className="space-y-4 pt-4 border-t border-neutral-200">
-          <div className="flex items-center gap-2">
-            <Ruler size={20} className="text-neutral-600" />
-            <h3 className="text-lg font-semibold text-neutral-900">
-              Uniform Sizes
-            </h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Top/Shirt Size */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-neutral-900">
-                Top/Shirt Size
-              </label>
-              <div className="space-y-2">
-                <Input
-                  type="text"
-                  placeholder="e.g., Large, XL, 42"
-                  value={genericSize.top || ""}
-                  onChange={(e) => {
-                    const updated = { ...genericSize, top: e.target.value }
-                    setGenericSize(updated)
-                    onSizeChange?.(updated)
-                  }}
-                  className="w-full"
-                />
-                <div className="flex flex-wrap gap-1">
-                  {commonSizes.map((size) => (
-                    <button
-                      key={`top-${size}`}
-                      type="button"
-                      onClick={() => {
-                        const updated = { ...genericSize, top: size }
-                        setGenericSize(updated)
-                        onSizeChange?.(updated)
-                      }}
-                      className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                        genericSize.top === size
-                          ? "bg-red-600 text-white border-red-600"
-                          : "bg-white border-neutral-300 text-neutral-700 hover:border-red-500"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {genericSize.top && (
-                <p className="text-xs text-green-600 font-medium">
-                  ✓ Selected: {genericSize.top}
-                </p>
-              )}
-            </div>
-
-            {/* Bottom/Short Size */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-neutral-900">
-                Bottom/Short Size
-              </label>
-              <div className="space-y-2">
-                <Input
-                  type="text"
-                  placeholder="e.g., Medium, M, 30"
-                  value={genericSize.bottom || ""}
-                  onChange={(e) => {
-                    const updated = { ...genericSize, bottom: e.target.value }
-                    setGenericSize(updated)
-                    onSizeChange?.(updated)
-                  }}
-                  className="w-full"
-                />
-                <div className="flex flex-wrap gap-1">
-                  {commonSizes.map((size) => (
-                    <button
-                      key={`bottom-${size}`}
-                      type="button"
-                      onClick={() => {
-                        const updated = { ...genericSize, bottom: size }
-                        setGenericSize(updated)
-                        onSizeChange?.(updated)
-                      }}
-                      className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                        genericSize.bottom === size
-                          ? "bg-red-600 text-white border-red-600"
-                          : "bg-white border-neutral-300 text-neutral-700 hover:border-red-500"
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {genericSize.bottom && (
-                <p className="text-xs text-green-600 font-medium">
-                  ✓ Selected: {genericSize.bottom}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {genericSize.top && genericSize.bottom && (
-            <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-              <p className="text-sm text-purple-900">
-                ✓ Both sizes specified
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="space-y-2 pt-4 border-t border-neutral-200">
         <label className="block text-sm font-medium text-neutral-900">
