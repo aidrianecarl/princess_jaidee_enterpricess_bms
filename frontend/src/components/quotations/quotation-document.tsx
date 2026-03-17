@@ -345,17 +345,18 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       // Load existing line items if they exist
       if (existingQuotation.items && Array.isArray(existingQuotation.items)) {
-        console.log("[v0] Loading items from existingQuotation:", existingQuotation.items.length, "items")
         const loadedItems = existingQuotation.items.map((item: any) => {
-          console.log("[v0] Processing item:", {
-            id: item.id,
-            name: item.product?.name || item.service?.name,
-            design_file_url: item.design_file_url,
-            customization: item.customization,
-            notes: item.notes,
-            team_roster: item.team_roster,
-            size_specifications: item.size_specifications,
-          })
+          // Parse notes if it's a string (JSON) or keep as object
+          let parsedNotes: any = {}
+          if (typeof item.notes === 'string') {
+            try {
+              parsedNotes = JSON.parse(item.notes)
+            } catch (e) {
+              parsedNotes = { designNotes: item.notes }
+            }
+          } else if (typeof item.notes === 'object') {
+            parsedNotes = item.notes
+          }
           return {
             id: item.id?.toString() || Date.now().toString(),
             type: item.product_id ? "product" : "service",
@@ -368,7 +369,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             amount: item.quantity * item.unitPrice,
             image: item.product?.image_url,
             designCost: item.design_cost || 0, // Load design cost
-            notes: item.notes, // Load notes from backend
+            notes: {
+              ...parsedNotes,
+              // Map jerseyCustomizationNotes to teamNotes for display
+              teamNotes: parsedNotes?.teamNotes || parsedNotes?.jerseyCustomizationNotes,
+            },
             serviceRequirements: item.service_id ? {
               designFile: null,
               designPreview: item.design_file_url || item.customization || "",
@@ -378,7 +383,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             } : undefined,
           }
         })
-        console.log("[v0] Loaded items after mapping:", loadedItems)
         setLineItems(loadedItems)
       }
       if (existingQuotation?.logo_url) {
@@ -1573,6 +1577,18 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 )}
                               </div>
                             ))}
+
+                            {/* Jersey Customization Notes */}
+                            {item.notes && typeof item.notes === 'object' && item.notes.teamNotes && (
+                              <div className="mt-4 pt-4 border-t border-gray-300 space-y-3">
+                                <div>
+                                  <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
+                                  <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-800 whitespace-pre-wrap">
+                                    {item.notes.teamNotes}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1737,19 +1753,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
 
                     {/* Design File Details (Collapsible) */}
-                    {expandedItems.has(item.id) && item.serviceRequirements && (item.serviceRequirements?.designPreview || item.serviceRequirements?.designImageUrl) && (() => {
-                      console.log("[v0] Rendering Design Details for item:", {
-                        itemId: item.id,
-                        itemName: item.name,
-                        isExpanded: expandedItems.has(item.id),
-                        hasServiceRequirements: !!item.serviceRequirements,
-                        designImageUrl: item.serviceRequirements?.designImageUrl,
-                        designPreview: item.serviceRequirements?.designPreview,
-                        notes: item.notes,
-                        designNotes: typeof item.notes === 'object' ? item.notes?.designNotes : 'N/A',
-                      })
-                      return true
-                    })() && (
+                    {expandedItems.has(item.id) && item.serviceRequirements && (item.serviceRequirements?.designPreview || item.serviceRequirements?.designImageUrl) && (
                       <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
                         <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
                           <p className="text-xs font-bold text-blue-700 uppercase mb-4">Design Details</p>
@@ -1771,10 +1775,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             ) : (
                               <div className="border-2 border-blue-300 rounded-md bg-blue-50 p-4 text-center">
                                 <p className="text-sm text-gray-600">No image preview available</p>
-                                {(() => {
-                                  console.log("[v0] No image URL for item:", item.id, "- designImageUrl:", item.serviceRequirements?.designImageUrl)
-                                  return null
-                                })()}
                               </div>
                             )}
                             <p className="text-xs text-center text-gray-600 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
@@ -1782,15 +1782,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                           {/* Design Comments Section */}
                           <div className="pt-3 border-t border-blue-300">
-                            {(() => {
-                              const designNotes = typeof item.notes === 'object' ? item.notes?.designNotes : ''
-                              console.log("[v0] Design Comments section for item:", {
-                                itemId: item.id,
-                                hasNotes: !!item.notes,
-                                designNotes: designNotes,
-                              })
-                              return null
-                            })()}
                             <div className="flex items-center justify-between mb-2">
                               <label className="text-xs font-semibold text-blue-700 uppercase">Design Comments</label>
                               {editingDesignNotesId === item.id ? (
@@ -1983,15 +1974,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         isOpen={showServiceModal}
         onClose={() => setShowServiceModal(false)}
         onSelect={(service, serviceData) => {
-          console.log("[v0] ServiceSelectorModal onSelect called with:", {
-            serviceName: service.name,
-            designImageUrl: serviceData.designImageUrl,
-            designNotes: serviceData.designNotes,
-            teamNotes: serviceData.teamNotes,
-            sizeNotes: serviceData.sizeNotes,
-            teamRosterLength: serviceData.teamRoster?.length,
-          })
-          
           // Build description with service data
           let description = service.description || ""
 
@@ -2071,7 +2053,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               sizeNotes: serviceData.sizeNotes,
             },
           }
-          console.log("[v0] Adding line item with data:", lineItemData)
           addLineItem(lineItemData)
         }}
       />
