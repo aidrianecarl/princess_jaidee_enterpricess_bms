@@ -1697,35 +1697,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             {item.serviceRequirements?.designPreview && (
                               <div className="pt-4 border-t border-blue-300">
                                 <div className="space-y-3">
-                                  <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Design Preview</p>
-                                  {item.serviceRequirements.designImageUrl ? (
-                                    <div className="border-2 border-blue-300 rounded-md overflow-hidden bg-white p-2">
-                                <img
-                                  src={item.serviceRequirements.designImageUrl}
-                                  alt="Design preview"
-                                  onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
-                                  className="max-h-48 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
-                                />
-                                      <p className="text-xs text-center text-blue-700 mt-2 font-medium">{item.serviceRequirements.designPreview}</p>
-                                    </div>
-                                  ) : (
-                                    <div className="p-3 bg-blue-100 border border-blue-300 rounded-md">
-                                      <p className="text-sm text-blue-900 font-medium break-all">{item.serviceRequirements.designPreview}</p>
-                                      <p className="text-xs text-blue-700 mt-1">✓ File selected and ready</p>
-                                    </div>
-                                  )}
 
                                   {/* Comments section for Tarpaulin (from notes) */}
                                   {item.notes && typeof item.notes === 'object' && (item.notes.designNotes || item.notes.sizeNotes || item.notes.additionalNotes) && (
                                     <div className="mt-4 pt-4 border-t border-blue-300 space-y-3">
-                                      {item.notes.designNotes && (
-                                        <div>
-                                          <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Design Comments</p>
-                                          <div className="p-3 bg-blue-50 border border-blue-200 rounded text-sm text-gray-800">
-                                            {item.notes.designNotes}
-                                          </div>
-                                        </div>
-                                      )}
                                       {item.notes.sizeNotes && (
                                         <div>
                                           <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Size Comments</p>
