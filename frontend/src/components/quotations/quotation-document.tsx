@@ -1700,7 +1700,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                                   {/* Comments section for Tarpaulin (from notes) */}
                                   {item.notes && typeof item.notes === 'object' && (item.notes.designNotes || item.notes.sizeNotes || item.notes.additionalNotes) && (
-                                    <div className="mt-4 pt-4 border-t border-blue-300 space-y-3">
+                                    <div className="mt-4 pt-4">
                                       {item.notes.sizeNotes && (
                                         <div>
                                           <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Size Comments</p>
