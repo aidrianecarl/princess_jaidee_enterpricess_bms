@@ -315,7 +315,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           const initialData = getInitialFormData()
           
           // Auto-populate client/bill-to fields from user data
-          if (userData.name) {
+          // Construct full name from first_name and last_name
+          if (userData.first_name || userData.last_name) {
+            initialData.clientName = `${userData.first_name || ""} ${userData.last_name || ""}`.trim()
+          } else if (userData.name) {
+            // Fallback to name field if available
             initialData.clientName = userData.name
           }
           if (userData.email) {

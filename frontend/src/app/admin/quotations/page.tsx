@@ -30,7 +30,7 @@ const QuotationSkeleton = () => (
 export default function AdminQuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState("pending_approval")
+  const [statusFilter, setStatusFilter] = useState("pending")
   const { toast } = useToast()
   const router = useRouter()
 
@@ -61,8 +61,8 @@ export default function AdminQuotationsPage() {
       toast({ title: "Error", description: "Invalid quotation ID", variant: "destructive" })
       return
     }
-    console.log("Navigating to quotation:", quotationId)
-    router.push(`/admin/quotations/${quotationId}/preview`)
+    console.log("Navigating to quotation pricing:", quotationId)
+    router.push(`/admin/quotations/${quotationId}/pricing`)
   }
 
   return (
@@ -77,9 +77,9 @@ export default function AdminQuotationsPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
-            { key: "pending_approval", label: "Pending" },
-            { key: "approved", label: "Approved" },
-            { key: "rejected", label: "Rejected" },
+            { key: "pending", label: "Pending Quotations (Draft)" },
+            { key: "completed", label: "Pricing Added (Completed)" },
+            { key: "approved", label: "Client Approved" },
           ].map((filter) => (
             <button
               key={filter.key}
@@ -116,7 +116,10 @@ export default function AdminQuotationsPage() {
                       Quotation #
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Customer
+                      Bill To
+                    </th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                      Email
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                       Amount
@@ -133,9 +136,8 @@ export default function AdminQuotationsPage() {
                   {isLoading
                     ? Array.from({ length: 5 }).map((_, i) => <QuotationSkeleton key={i} />)
                     : quotations.map((quotation, idx) => {
-                        const customerName = quotation.customer
-                          ? `${quotation.customer.first_name || ""} ${quotation.customer.last_name || ""}`.trim()
-                          : "Unknown Customer"
+                        // Use bill_to_name from quotation (stored in customers table)
+                        const customerName = quotation.bill_to_name || "Unknown Customer"
 
                         return (
                           <tr
@@ -147,6 +149,7 @@ export default function AdminQuotationsPage() {
                               {quotation.quotation_number}
                             </td>
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{customerName}</td>
+                            <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{quotation.bill_to_email || "-"}</td>
                             <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">
                               ₱
                               {Number.parseFloat(quotation.total).toLocaleString(undefined, {

@@ -682,4 +682,74 @@ class QuotationController extends Controller
 
         return response()->json($quotation, 200);
     }
+
+    // Admin update quotation pricing and send back to client
+    public function updatePricing(Request $request, $id)
+    {
+        $quotation = Quotation::with('items')->find($id);
+
+        if (!$quotation) {
+            return response()->json(['error' => 'Quotation not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array',
+            'items.*.id' => 'required|numeric',
+            'items.*.unit_price' => 'required|numeric',
+            'items.*.line_total' => 'required|numeric',
+            'discount_type' => 'required|in:percent,peso',
+            'discount_value' => 'required|numeric|min:0',
+            'status' => 'required|in:draft,pending,completed,approved',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            // Update quotation items with new pricing
+            $subtotal = 0;
+            foreach ($request->items as $itemData) {
+                $item = QuotationItem::find($itemData['id']);
+                if ($item) {
+                    $item->update([
+                        'unit_price' => $itemData['unit_price'],
+                        'line_total' => $itemData['line_total'],
+                    ]);
+                    $subtotal += $itemData['line_total'];
+                }
+            }
+
+            // Calculate discount
+            $discount = 0;
+            if ($request->discount_type === 'percent') {
+                $discount = ($subtotal * $request->discount_value) / 100;
+            } else {
+                $discount = $request->discount_value;
+            }
+
+            // Calculate tax (12% VAT)
+            $taxableAmount = $subtotal - $discount;
+            $tax = $taxableAmount * 0.12;
+            $total = $taxableAmount + $tax;
+
+            // Update quotation
+            $quotation->update([
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'tax' => $tax,
+                'total' => $total,
+                'status' => $request->status,
+            ]);
+
+            $quotation->load(['customer', 'items.product', 'items.service', 'creator']);
+
+            return response()->json([
+                'message' => 'Quotation pricing updated successfully',
+                'quotation' => $quotation,
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to update quotation pricing: ' . $e->getMessage()], 500);
+        }
+    }
 }
