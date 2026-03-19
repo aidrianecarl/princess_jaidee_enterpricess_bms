@@ -49,12 +49,17 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
   useEffect(() => {
   const loadUserData = async () => {
     try {
+      console.log("[v0] Fetching current user...")
+
       const response = await usersApi.getCurrentUser()
 
-      console.log("[v0] API response:", response.data)
+      console.log("[v0] Full API response:", response)
+      console.log("[v0] Response data:", response.data)
 
       if (response.data?.success && response.data?.data) {
         const user = response.data.data
+
+        console.log("[v0] Parsed user:", user)
 
         setBillTo({
           name: user.full_name || `${user.first_name} ${user.last_name}`,
@@ -65,9 +70,23 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
           phone: user.phone_number || '',
           email: user.email || '',
         })
+      } else {
+        console.error("[v0] API returned unsuccessful response:", response.data)
       }
-    } catch (error) {
-      console.warn("[v0] Failed to load current user:", error)
+
+    } catch (error: any) {
+      console.error("[v0] ❌ Error fetching current user:", error)
+
+      // Axios-specific debug
+      if (error.response) {
+        console.error("[v0] Status:", error.response.status)
+        console.error("[v0] Response data:", error.response.data)
+        console.error("[v0] Headers:", error.response.headers)
+      } else if (error.request) {
+        console.error("[v0] No response received:", error.request)
+      } else {
+        console.error("[v0] Request setup error:", error.message)
+      }
     }
   }
 
