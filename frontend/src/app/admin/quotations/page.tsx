@@ -30,7 +30,7 @@ const QuotationSkeleton = () => (
 export default function AdminQuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState("draft")
+  const [statusFilter, setStatusFilter] = useState("pending")
   const { toast } = useToast()
   const router = useRouter()
 
@@ -82,7 +82,7 @@ export default function AdminQuotationsPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
-            { key: "draft", label: "Draft Quotations (Pending)" },
+            { key: "pending", label: "Pending (Client Sent)" },
             { key: "approved", label: "Approved by Client" },
             { key: "rejected", label: "Rejected" },
           ].map((filter) => (

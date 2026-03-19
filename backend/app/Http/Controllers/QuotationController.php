@@ -674,38 +674,21 @@ class QuotationController extends Controller
     // Admin get all quotations with optional status filter
     public function adminIndex(Request $request)
     {
-        try {
-            Log::info('[DEBUG] AdminIndex - Request params:', $request->all());
-            
-            $query = Quotation::with(['customer', 'items.service', 'creator']);
+        $query = Quotation::with(['customer', 'items.service', 'creator']);
 
-            // Filter by status if provided
-            if ($request->has('status') && $request->status) {
-                Log::info('[DEBUG] Filtering by status: ' . $request->status);
-                $query->where('status', $request->status);
-            }
-
-            // Search by quotation number if provided
-            if ($request->has('search') && $request->search) {
-                Log::info('[DEBUG] Searching by quotation number: ' . $request->search);
-                $query->where('quotation_number', 'like', '%' . $request->search . '%');
-            }
-
-            $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
-
-            // Add items count to each quotation
-            $quotations->getCollection()->transform(function ($quotation) {
-                $quotation->items_count = $quotation->items->count();
-                return $quotation;
-            });
-
-            Log::info('[DEBUG] AdminIndex - Returning quotations count: ' . count($quotations->items));
-            return response()->json($quotations, 200);
-        } catch (\Exception $e) {
-            Log::error('[DEBUG] AdminIndex error: ' . $e->getMessage());
-            Log::error('[DEBUG] Stack trace: ' . $e->getTraceAsString());
-            return response()->json(['error' => $e->getMessage()], 500);
+        // Filter by status if provided
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
         }
+
+        // Search by quotation number if provided
+        if ($request->has('search') && $request->search) {
+            $query->where('quotation_number', 'like', '%' . $request->search . '%');
+        }
+
+        $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
+
+        return response()->json($quotations, 200);
     }
 
     // Admin view single quotation
