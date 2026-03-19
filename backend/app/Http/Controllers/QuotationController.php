@@ -137,32 +137,6 @@ class QuotationController extends Controller
 
         try {
             $userId = auth()->id();
-            
-            // Get or create customer record for Bill To tracking
-            $customer = Customer::first();
-            if (!$customer) {
-                // Create new customer record with Bill To information
-                $customer = Customer::create([
-                    'bill_to_name' => $request->bill_to_name,
-                    'bill_to_street' => $request->bill_to_street,
-                    'bill_to_city' => $request->bill_to_city,
-                    'bill_to_state' => $request->bill_to_state,
-                    'bill_to_postal' => $request->bill_to_postal,
-                    'bill_to_phone' => $request->bill_to_phone,
-                    'bill_to_email' => $request->bill_to_email,
-                ]);
-            } else {
-                // Update customer Bill To information
-                $customer->update([
-                    'bill_to_name' => $request->bill_to_name,
-                    'bill_to_street' => $request->bill_to_street,
-                    'bill_to_city' => $request->bill_to_city,
-                    'bill_to_state' => $request->bill_to_state,
-                    'bill_to_postal' => $request->bill_to_postal,
-                    'bill_to_phone' => $request->bill_to_phone,
-                    'bill_to_email' => $request->bill_to_email,
-                ]);
-            }
 
             $logoUrl = null;
             if ($request->hasFile('logo')) {
@@ -237,9 +211,9 @@ class QuotationController extends Controller
 
             $status = $request->status ?? 'draft';
 
+            // Create quotation without customer_id first, then link customer after
             $quotation = Quotation::create([
                 'quotation_number' => $quotationNumber,
-                'customer_id' => $customer->id,
                 'created_by' => $userId,
                 'logo_url' => $logoUrl,
                 'business_name' => $request->business_name,
@@ -266,6 +240,22 @@ class QuotationController extends Controller
                 'notes' => $request->notes,
                 'valid_until' => $request->valid_until,
             ]);
+
+            // Now create customer record linked to this quotation with bill-to information
+            $customer = Customer::create([
+                'quotation_id' => $quotation->id,
+                'bill_to_name' => $request->bill_to_name,
+                'bill_to_street' => $request->bill_to_street,
+                'bill_to_city' => $request->bill_to_city,
+                'bill_to_state' => $request->bill_to_state,
+                'bill_to_postal' => $request->bill_to_postal,
+                'bill_to_phone' => $request->bill_to_phone,
+                'bill_to_email' => $request->bill_to_email,
+            ]);
+
+            // Update quotation to link to the customer
+            $quotation->customer_id = $customer->id;
+            $quotation->save();
 
             foreach ($request->items as $item) {
                 $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
@@ -381,18 +371,59 @@ class QuotationController extends Controller
         }
 
         try {
-            // Update customer if provided
-            if ($request->has('customer_name')) {
-                $quotation->customer->update([
-                    'company_name' => $request->customer_name,
-                    'contact_person' => $request->customer_name,
-                    'email' => $request->customer_email,
-                    'phone_number' => $request->customer_phone,
-                    'address' => $request->customer_address,
-                    'city' => $request->customer_city,
-                    'province' => $request->customer_province,
-                    'zip_code' => $request->customer_zip_code,
-                ]);
+            // Update customer with bill_to_* fields if provided
+            if ($request->has('bill_to_name') || $request->has('bill_to_email')) {
+                $customerData = [];
+                
+                if ($request->has('bill_to_name')) {
+                    $customerData['bill_to_name'] = $request->bill_to_name;
+                }
+                if ($request->has('bill_to_street')) {
+                    $customerData['bill_to_street'] = $request->bill_to_street;
+                }
+                if ($request->has('bill_to_city')) {
+                    $customerData['bill_to_city'] = $request->bill_to_city;
+                }
+                if ($request->has('bill_to_state')) {
+                    $customerData['bill_to_state'] = $request->bill_to_state;
+                }
+                if ($request->has('bill_to_postal')) {
+                    $customerData['bill_to_postal'] = $request->bill_to_postal;
+                }
+                if ($request->has('bill_to_phone')) {
+                    $customerData['bill_to_phone'] = $request->bill_to_phone;
+                }
+                if ($request->has('bill_to_email')) {
+                    $customerData['bill_to_email'] = $request->bill_to_email;
+                }
+
+                if (!empty($customerData) && $quotation->customer) {
+                    $quotation->customer->update($customerData);
+                }
+            }
+
+            // Also update quotation's bill_to_* fields
+            $quotationData = [];
+            if ($request->has('bill_to_name')) {
+                $quotationData['bill_to_name'] = $request->bill_to_name;
+            }
+            if ($request->has('bill_to_street')) {
+                $quotationData['bill_to_street'] = $request->bill_to_street;
+            }
+            if ($request->has('bill_to_city')) {
+                $quotationData['bill_to_city'] = $request->bill_to_city;
+            }
+            if ($request->has('bill_to_state')) {
+                $quotationData['bill_to_state'] = $request->bill_to_state;
+            }
+            if ($request->has('bill_to_postal')) {
+                $quotationData['bill_to_postal'] = $request->bill_to_postal;
+            }
+            if ($request->has('bill_to_phone')) {
+                $quotationData['bill_to_phone'] = $request->bill_to_phone;
+            }
+            if ($request->has('bill_to_email')) {
+                $quotationData['bill_to_email'] = $request->bill_to_email;
             }
 
             if ($request->hasFile('logo')) {
@@ -505,6 +536,11 @@ class QuotationController extends Controller
             }
             if ($request->has('business_email')) {
                 $quotation->business_email = $request->business_email;
+            }
+
+            // Update bill_to_* fields in quotation
+            foreach ($quotationData as $key => $value) {
+                $quotation->{$key} = $value;
             }
 
             // Update other fields

@@ -77,13 +77,14 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
   }
 
   const [formData, setFormData] = useState<FormData>({
-    clientName: existingQuotation?.customer?.company_name || "",
-    clientAddress: existingQuotation?.customer?.address || "",
-    clientCity: existingQuotation?.customer?.city || "",
-    clientState: existingQuotation?.customer?.province || "",
-    clientPostal: existingQuotation?.customer?.zip_code || "",
-    clientPhone: existingQuotation?.customer?.phone_number || "",
-    clientEmail: existingQuotation?.customer?.email || "",
+    // Use bill_to_* fields from quotation table (stored in customers table)
+    clientName: existingQuotation?.bill_to_name || "",
+    clientAddress: existingQuotation?.bill_to_street || "",
+    clientCity: existingQuotation?.bill_to_city || "",
+    clientState: existingQuotation?.bill_to_state || "",
+    clientPostal: existingQuotation?.bill_to_postal || "",
+    clientPhone: existingQuotation?.bill_to_phone || "",
+    clientEmail: existingQuotation?.bill_to_email || "",
     businessName: existingQuotation?.business_name || "Princess Jaidee",
     businessAddress: existingQuotation?.business_address || "",
     businessCity: existingQuotation?.business_city || "",
@@ -392,6 +393,15 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
       formDataToSend.append("customer_province", formData.clientState)
       formDataToSend.append("customer_zip_code", formData.clientPostal)
 
+      // Add bill_to fields (map from client fields for database customers table)
+      formDataToSend.append("bill_to_name", formData.clientName)
+      formDataToSend.append("bill_to_email", formData.clientEmail)
+      formDataToSend.append("bill_to_phone", formData.clientPhone)
+      formDataToSend.append("bill_to_street", formData.clientAddress)
+      formDataToSend.append("bill_to_city", formData.clientCity)
+      formDataToSend.append("bill_to_state", formData.clientState)
+      formDataToSend.append("bill_to_postal", formData.clientPostal)
+
       // Add business fields
       formDataToSend.append("business_name", formData.businessName)
       formDataToSend.append("business_address", formData.businessAddress)
@@ -497,6 +507,15 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
       formDataToSend.append("customer_city", formData.clientCity || "")
       formDataToSend.append("customer_province", formData.clientState || "")
       formDataToSend.append("customer_zip_code", formData.clientPostal || "")
+
+      // Add bill_to fields (map from client fields for database customers table)
+      formDataToSend.append("bill_to_name", formData.clientName || "")
+      formDataToSend.append("bill_to_email", formData.clientEmail || "")
+      formDataToSend.append("bill_to_phone", formData.clientPhone || "")
+      formDataToSend.append("bill_to_street", formData.clientAddress || "")
+      formDataToSend.append("bill_to_city", formData.clientCity || "")
+      formDataToSend.append("bill_to_state", formData.clientState || "")
+      formDataToSend.append("bill_to_postal", formData.clientPostal || "")
 
       // Add business fields
       formDataToSend.append("business_name", formData.businessName)

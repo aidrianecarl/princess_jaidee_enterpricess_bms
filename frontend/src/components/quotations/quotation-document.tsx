@@ -307,7 +307,44 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     // Clear sessionStorage and form on page load to ensure fresh start
     sessionStorage.removeItem("quotationDraft")
     if (!existingQuotation) {
-      setFormData(getInitialFormData())
+      // Load user data from localStorage and auto-populate Bill-To fields
+      try {
+        const userDataStr = localStorage.getItem("user")
+        if (userDataStr) {
+          const userData = JSON.parse(userDataStr)
+          const initialData = getInitialFormData()
+          
+          // Auto-populate client/bill-to fields from user data
+          if (userData.name) {
+            initialData.clientName = userData.name
+          }
+          if (userData.email) {
+            initialData.clientEmail = userData.email
+          }
+          if (userData.phone_number) {
+            initialData.clientPhone = userData.phone_number
+          }
+          if (userData.address) {
+            initialData.clientAddress = userData.address
+          }
+          if (userData.city) {
+            initialData.clientCity = userData.city
+          }
+          if (userData.province) {
+            initialData.clientState = userData.province
+          }
+          if (userData.zip_code) {
+            initialData.clientPostal = userData.zip_code
+          }
+          
+          setFormData(initialData)
+        } else {
+          setFormData(getInitialFormData())
+        }
+      } catch (error) {
+        console.error("[v0] Error loading user data for auto-population:", error)
+        setFormData(getInitialFormData())
+      }
       setLineItems([])
       setLogoPreview("")
     }
@@ -685,6 +722,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("customer_province", formData.clientState || "")
       formDataToSend.append("customer_zip_code", formData.clientPostal || "")
 
+      // Add bill_to fields (map from client fields for database customers table)
+      formDataToSend.append("bill_to_name", formData.clientName || "")
+      formDataToSend.append("bill_to_email", formData.clientEmail || "")
+      formDataToSend.append("bill_to_phone", formData.clientPhone || "")
+      formDataToSend.append("bill_to_street", formData.clientAddress || "")
+      formDataToSend.append("bill_to_city", formData.clientCity || "")
+      formDataToSend.append("bill_to_state", formData.clientState || "")
+      formDataToSend.append("bill_to_postal", formData.clientPostal || "")
+
       // Add business fields
       formDataToSend.append("business_name", formData.businessName || "")
       formDataToSend.append("business_address", formData.businessAddress || "")
@@ -812,6 +858,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("customer_city", formData.clientCity || "")
       formDataToSend.append("customer_province", formData.clientState || "")
       formDataToSend.append("customer_zip_code", formData.clientPostal || "")
+
+      // Add bill_to fields (map from client fields for database customers table)
+      formDataToSend.append("bill_to_name", formData.clientName || "")
+      formDataToSend.append("bill_to_email", formData.clientEmail || "")
+      formDataToSend.append("bill_to_phone", formData.clientPhone || "")
+      formDataToSend.append("bill_to_street", formData.clientAddress || "")
+      formDataToSend.append("bill_to_city", formData.clientCity || "")
+      formDataToSend.append("bill_to_state", formData.clientState || "")
+      formDataToSend.append("bill_to_postal", formData.clientPostal || "")
 
       // Add business fields
       formDataToSend.append("business_name", formData.businessName || "")
