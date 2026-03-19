@@ -1,13 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Plus, ChevronDown, ChevronUp, Send, Download, Loader } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import type { Service } from "@/types/service"
 import type { QuotationItem } from "@/types/quotation"
 import ServiceRequirementsModal from "@/components/quotations/service-requirements-modal"
-import { quotationsApi } from "@/lib/api"
+import { quotationsApi, usersApi } from "@/lib/api"
 
 interface QuotationBuilderProps {
   services: Service[]
@@ -44,6 +44,36 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
   })
   const router = useRouter()
   const { toast } = useToast()
+
+  // Load user data on component mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const response = await usersApi.getCurrentUser()
+        
+        if (response.data && response.data.success && response.data.data) {
+          const user = response.data.data
+          console.log("[v0] User data loaded:", user)
+          
+          // Auto-fill Bill To with user data
+          setBillTo({
+            name: user.full_name || `${user.first_name} ${user.last_name}`,
+            street: user.address || '',
+            city: user.city || '',
+            state: user.province || '',
+            postal: user.zip_code || '',
+            phone: user.phone_number || '',
+            email: user.email || '',
+          })
+        }
+      } catch (error) {
+        console.warn("[v0] Error loading user data:", error)
+        // Continue without user data, fields can be filled manually
+      }
+    }
+
+    loadUserData()
+  }, [])
 
   const handleServiceClick = (service: Service) => {
     if (service.requires_design || service.requires_team || service.requires_size) {

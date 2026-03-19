@@ -35,6 +35,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/quotations/{id}', [QuotationController::class, 'update']);
 
     // Users - Profile Management
+    Route::get('/users/me', [UserController::class, 'getCurrentUser']);
     Route::get('/users', [UserController::class, 'index']);
     Route::get('/users/employees', [UserController::class, 'getEmployees']);
     Route::get('/users/{id}', [UserController::class, 'show']);

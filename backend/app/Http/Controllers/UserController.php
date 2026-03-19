@@ -213,4 +213,41 @@ class UserController extends Controller
             ], 500);
         }
     }
+
+    // Get current authenticated user
+    public function getCurrentUser(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated'
+                ], 401);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $user->id,
+                    'first_name' => $user->first_name,
+                    'last_name' => $user->last_name,
+                    'email' => $user->email,
+                    'phone_number' => $user->phone_number,
+                    'address' => $user->address,
+                    'city' => $user->city,
+                    'province' => $user->province,
+                    'zip_code' => $user->zip_code,
+                    'user_type' => $user->user_type,
+                    'full_name' => "{$user->first_name} {$user->last_name}"
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

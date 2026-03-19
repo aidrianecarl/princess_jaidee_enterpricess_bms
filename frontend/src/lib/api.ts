@@ -60,6 +60,17 @@ export const servicesApi = {
     apiClient.admin().delete(`/services/${id}`),
 }
 
+export const usersApi = {
+  getCurrentUser: () =>
+    apiClient.client().get('/users/me'),
+
+  getById: (id: number) =>
+    apiClient.client().get(`/users/${id}`),
+
+  update: (id: number, data: any) =>
+    apiClient.client().put(`/users/${id}`, data),
+}
+
 export const quotationsApi = {
   getAll: (page = 1, status = '') =>
     apiClient.client().get('/quotations', { params: { page, status } }),
