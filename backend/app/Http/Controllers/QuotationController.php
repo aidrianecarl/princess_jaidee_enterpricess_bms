@@ -671,6 +671,43 @@ class QuotationController extends Controller
         return response()->json($quotations, 200);
     }
 
+    // Admin get all quotations with optional status filter
+    public function adminIndex(Request $request)
+    {
+        try {
+            Log::info('[DEBUG] AdminIndex - Request params:', $request->all());
+            
+            $query = Quotation::with(['customer', 'items.service', 'creator']);
+
+            // Filter by status if provided
+            if ($request->has('status') && $request->status) {
+                Log::info('[DEBUG] Filtering by status: ' . $request->status);
+                $query->where('status', $request->status);
+            }
+
+            // Search by quotation number if provided
+            if ($request->has('search') && $request->search) {
+                Log::info('[DEBUG] Searching by quotation number: ' . $request->search);
+                $query->where('quotation_number', 'like', '%' . $request->search . '%');
+            }
+
+            $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
+
+            // Add items count to each quotation
+            $quotations->getCollection()->transform(function ($quotation) {
+                $quotation->items_count = $quotation->items->count();
+                return $quotation;
+            });
+
+            Log::info('[DEBUG] AdminIndex - Returning quotations count: ' . count($quotations->items));
+            return response()->json($quotations, 200);
+        } catch (\Exception $e) {
+            Log::error('[DEBUG] AdminIndex error: ' . $e->getMessage());
+            Log::error('[DEBUG] Stack trace: ' . $e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
     // Admin view single quotation
     public function adminShow($id)
     {
@@ -699,7 +736,7 @@ class QuotationController extends Controller
             'items.*.line_total' => 'required|numeric',
             'discount_type' => 'required|in:percent,peso',
             'discount_value' => 'required|numeric|min:0',
-            'status' => 'required|in:draft,pending,completed,approved',
+            'status' => 'nullable|in:draft,pending,approved,rejected,expired',
         ]);
 
         if ($validator->fails()) {

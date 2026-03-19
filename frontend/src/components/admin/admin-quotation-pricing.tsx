@@ -174,7 +174,7 @@ export function AdminQuotationPricing({ quotationId }: { quotationId: number }) 
         items: updatedItems,
         discount_type: formData.discountType,
         discount_value: formData.discountValue,
-        status: "completed",
+        status: "approved",
       }
 
       const response = await fetch(`${apiUrl}/admin/quotations/${quotationId}/pricing`, {

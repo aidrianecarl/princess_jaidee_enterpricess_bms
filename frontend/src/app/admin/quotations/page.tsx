@@ -30,7 +30,7 @@ const QuotationSkeleton = () => (
 export default function AdminQuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [statusFilter, setStatusFilter] = useState("pending")
+  const [statusFilter, setStatusFilter] = useState("draft")
   const { toast } = useToast()
   const router = useRouter()
 
@@ -41,16 +41,21 @@ export default function AdminQuotationsPage() {
   const fetchQuotations = async () => {
     try {
       setIsLoading(true)
+      console.log("[v0] Fetching quotations with status filter:", statusFilter)
       const response = await apiClient.admin().get("/admin/quotations", {
         params: {
           status: statusFilter,
         },
       })
-      console.log("Quotations response:", response.data)
-      setQuotations(response.data.data || response.data)
+      console.log("[v0] Quotations response:", response.data)
+      setQuotations(response.data.data || response.data || [])
     } catch (error) {
-      console.error("Error fetching quotations:", error)
-      toast({ title: "Error", description: "Failed to fetch quotations", variant: "destructive" })
+      console.error("[v0] Error fetching quotations:", error)
+      if (error instanceof Error) {
+        toast({ title: "Error", description: error.message || "Failed to fetch quotations", variant: "destructive" })
+      } else {
+        toast({ title: "Error", description: "Failed to fetch quotations", variant: "destructive" })
+      }
     } finally {
       setIsLoading(false)
     }
@@ -77,9 +82,9 @@ export default function AdminQuotationsPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
-            { key: "pending", label: "Pending Quotations (Draft)" },
-            { key: "completed", label: "Pricing Added (Completed)" },
-            { key: "approved", label: "Client Approved" },
+            { key: "draft", label: "Draft Quotations (Pending)" },
+            { key: "approved", label: "Approved by Client" },
+            { key: "rejected", label: "Rejected" },
           ].map((filter) => (
             <button
               key={filter.key}
