@@ -1744,8 +1744,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   alt="Design preview"
                                   onClick={() => setSelectedImage(item.serviceRequirements?.designImageUrl || null)}
                                   className="max-h-64 max-w-full mx-auto object-contain rounded cursor-pointer hover:shadow-lg transition"
-                                  onLoad={() => console.log("[v0] Image loaded successfully:", item.serviceRequirements?.designImageUrl)}
-                                  onError={() => console.error("[v0] Image failed to load:", item.serviceRequirements?.designImageUrl)}
+                                  onLoad={() => console.log("Image loaded successfully:", item.serviceRequirements?.designImageUrl)}
+                                  onError={() => console.error("Image failed to load:", item.serviceRequirements?.designImageUrl)}
                                 />
                               </div>
                             ) : (
