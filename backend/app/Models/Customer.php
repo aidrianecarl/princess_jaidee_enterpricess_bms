@@ -9,17 +9,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Customer extends Model
 {
     protected $fillable = [
-        'user_id',
-        'company_name',
-        'contact_person',
-        'phone_number',
-        'email',
-        'address',
-        'city',
-        'province',
-        'zip_code',
-        'customer_type',
-        'status',
+        'quotation_id',
+        'bill_to_name',
+        'bill_to_street',
+        'bill_to_city',
+        'bill_to_state',
+        'bill_to_postal',
+        'bill_to_phone',
+        'bill_to_email',
     ];
 
     public function user(): BelongsTo

@@ -13,6 +13,16 @@ interface QuotationBuilderProps {
   services: Service[]
 }
 
+interface BillToData {
+  name: string
+  street: string
+  city: string
+  state: string
+  postal: string
+  phone: string
+  email: string
+}
+
 export function QuotationBuilder({ services }: QuotationBuilderProps) {
   const [items, setItems] = useState<QuotationItem[]>([])
   const [discount, setDiscount] = useState(0)
@@ -22,6 +32,16 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'draft' | 'pending'>('idle')
+  const [showBillToModal, setShowBillToModal] = useState(false)
+  const [billTo, setBillTo] = useState<BillToData>({
+    name: '',
+    street: '',
+    city: '',
+    state: '',
+    postal: '',
+    phone: '',
+    email: '',
+  })
   const router = useRouter()
   const { toast } = useToast()
 
@@ -155,14 +175,21 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
       }))
 
       const payloadData = {
-        customer_name: 'Guest Customer',
-        customer_email: '',
-        customer_phone: '',
-        customer_address: '',
-        customer_city: '',
-        customer_province: '',
-        customer_zip_code: '',
-        business_name: 'My Business',
+        customer_name: billTo.name || 'Guest Customer',
+        customer_email: billTo.email,
+        customer_phone: billTo.phone,
+        customer_address: billTo.street,
+        customer_city: billTo.city,
+        customer_province: billTo.state,
+        customer_zip_code: billTo.postal,
+        bill_to_name: billTo.name,
+        bill_to_street: billTo.street,
+        bill_to_city: billTo.city,
+        bill_to_state: billTo.state,
+        bill_to_postal: billTo.postal,
+        bill_to_phone: billTo.phone,
+        bill_to_email: billTo.email,
+        business_name: 'Princess Jaidee',
         business_address: '',
         business_city: '',
         business_state: '',
@@ -211,6 +238,122 @@ export function QuotationBuilder({ services }: QuotationBuilderProps) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       {/* Selection Panel */}
       <div className="lg:col-span-2 space-y-8">
+        {/* Bill To Section */}
+        <div className="bg-white rounded-xl border border-neutral-200 p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-neutral-900">Bill To</h2>
+            <button
+              onClick={() => setShowBillToModal(true)}
+              className="text-xs px-3 py-1 bg-primary/10 text-primary rounded hover:bg-primary/20 transition"
+            >
+              Edit
+            </button>
+          </div>
+          <div className="space-y-2 text-sm text-neutral-700">
+            <p className="font-semibold">{billTo.name || 'Not specified'}</p>
+            <p>{billTo.street || 'No address'}</p>
+            <p>{billTo.city ? `${billTo.city}, ${billTo.state} ${billTo.postal}` : 'No city/state'}</p>
+            <p>{billTo.phone || 'No phone'}</p>
+            <p>{billTo.email || 'No email'}</p>
+          </div>
+        </div>
+
+        {/* Bill To Modal */}
+        {showBillToModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 max-h-screen overflow-y-auto">
+              <h3 className="text-lg font-bold mb-4">Edit Bill To Information</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={billTo.name}
+                    onChange={(e) => setBillTo({ ...billTo, name: e.target.value })}
+                    placeholder="Client name"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Street Address</label>
+                  <textarea
+                    value={billTo.street}
+                    onChange={(e) => setBillTo({ ...billTo, street: e.target.value })}
+                    placeholder="Street address"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none h-20"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">City</label>
+                    <input
+                      type="text"
+                      value={billTo.city}
+                      onChange={(e) => setBillTo({ ...billTo, city: e.target.value })}
+                      placeholder="City"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">State</label>
+                    <input
+                      type="text"
+                      value={billTo.state}
+                      onChange={(e) => setBillTo({ ...billTo, state: e.target.value })}
+                      placeholder="State"
+                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Postal Code</label>
+                  <input
+                    type="text"
+                    value={billTo.postal}
+                    onChange={(e) => setBillTo({ ...billTo, postal: e.target.value })}
+                    placeholder="Postal code"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={billTo.phone}
+                    onChange={(e) => setBillTo({ ...billTo, phone: e.target.value })}
+                    placeholder="Phone number"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={billTo.email}
+                    onChange={(e) => setBillTo({ ...billTo, email: e.target.value })}
+                    placeholder="Email address"
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowBillToModal(false)}
+                    className="flex-1 px-4 py-2 bg-neutral-200 text-neutral-900 rounded-lg hover:bg-neutral-300 transition"
+                  >
+                    Close
+                  </button>
+                  <button
+                    onClick={() => setShowBillToModal(false)}
+                    className="flex-1 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Services */}
         <div className="bg-white rounded-xl border border-neutral-200 p-6">
           <h2 className="text-xl font-bold mb-4 text-neutral-900">Available Services</h2>

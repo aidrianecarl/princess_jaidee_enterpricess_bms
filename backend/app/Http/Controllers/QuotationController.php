@@ -97,6 +97,13 @@ class QuotationController extends Controller
             'customer_city' => 'nullable|string',
             'customer_province' => 'nullable|string',
             'customer_zip_code' => 'nullable|string',
+            'bill_to_name' => 'nullable|string',
+            'bill_to_street' => 'nullable|string',
+            'bill_to_city' => 'nullable|string',
+            'bill_to_state' => 'nullable|string',
+            'bill_to_postal' => 'nullable|string',
+            'bill_to_phone' => 'nullable|string',
+            'bill_to_email' => 'nullable|email',
             'business_name' => 'required|string',
             'business_address' => 'nullable|string',
             'business_city' => 'nullable|string',
@@ -131,33 +138,29 @@ class QuotationController extends Controller
         try {
             $userId = auth()->id();
             
-            // Get or create customer
-            $customer = Customer::where('user_id', $userId)->first();
+            // Get or create customer record for Bill To tracking
+            $customer = Customer::first();
             if (!$customer) {
+                // Create new customer record with Bill To information
                 $customer = Customer::create([
-                    'user_id' => $userId,
-                    'company_name' => $request->customer_name,
-                    'contact_person' => $request->customer_name,
-                    'email' => $request->customer_email,
-                    'phone_number' => $request->customer_phone,
-                    'address' => $request->customer_address,
-                    'city' => $request->customer_city,
-                    'province' => $request->customer_province,
-                    'zip_code' => $request->customer_zip_code,
-                    'customer_type' => 'registered',
-                    'status' => 'active',
+                    'bill_to_name' => $request->bill_to_name,
+                    'bill_to_street' => $request->bill_to_street,
+                    'bill_to_city' => $request->bill_to_city,
+                    'bill_to_state' => $request->bill_to_state,
+                    'bill_to_postal' => $request->bill_to_postal,
+                    'bill_to_phone' => $request->bill_to_phone,
+                    'bill_to_email' => $request->bill_to_email,
                 ]);
             } else {
-                // Update customer info
+                // Update customer Bill To information
                 $customer->update([
-                    'company_name' => $request->customer_name,
-                    'contact_person' => $request->customer_name,
-                    'email' => $request->customer_email,
-                    'phone_number' => $request->customer_phone,
-                    'address' => $request->customer_address,
-                    'city' => $request->customer_city,
-                    'province' => $request->customer_province,
-                    'zip_code' => $request->customer_zip_code,
+                    'bill_to_name' => $request->bill_to_name,
+                    'bill_to_street' => $request->bill_to_street,
+                    'bill_to_city' => $request->bill_to_city,
+                    'bill_to_state' => $request->bill_to_state,
+                    'bill_to_postal' => $request->bill_to_postal,
+                    'bill_to_phone' => $request->bill_to_phone,
+                    'bill_to_email' => $request->bill_to_email,
                 ]);
             }
 
@@ -246,6 +249,13 @@ class QuotationController extends Controller
                 'business_postal' => $request->business_postal,
                 'business_phone' => $request->business_phone,
                 'business_email' => $request->business_email,
+                'bill_to_name' => $request->bill_to_name,
+                'bill_to_street' => $request->bill_to_street,
+                'bill_to_city' => $request->bill_to_city,
+                'bill_to_state' => $request->bill_to_state,
+                'bill_to_postal' => $request->bill_to_postal,
+                'bill_to_phone' => $request->bill_to_phone,
+                'bill_to_email' => $request->bill_to_email,
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'paid_amount' => $paidAmount,
