@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { Save, ArrowLeft, Loader2, AlertTriangle, Check } from "lucide-react"
+import { Save, ArrowLeft, Loader2, AlertTriangle, Check, ChevronDown, ChevronUp } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   AlertDialog,
@@ -23,9 +23,16 @@ interface PricingLineItem {
   quantity: number
   unit_price: number | string
   line_total: number | string
-  notes?: string
+  design_file_url?: string
+  notes?: any
   team_roster?: any
   size_specifications?: any
+  service?: {
+    id: number
+    name: string
+    image_url?: string
+    description?: string
+  }
 }
 
 interface QuotationForPricing {
@@ -66,6 +73,7 @@ export function AdminQuotationPricing() {
   const [discountValue, setDiscountValue] = useState("0")
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [priceErrors, setPriceErrors] = useState<Record<number, string>>({})
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -125,6 +133,16 @@ export function AdminQuotationPricing() {
         return updated
       })
     }
+  }
+
+  const toggleItemExpanded = (itemId: number) => {
+    const newSet = new Set(expandedItems)
+    if (newSet.has(itemId)) {
+      newSet.delete(itemId)
+    } else {
+      newSet.add(itemId)
+    }
+    setExpandedItems(newSet)
   }
 
   const validatePrices = (): boolean => {
@@ -327,7 +345,7 @@ export function AdminQuotationPricing() {
                   </div>
                 )}
                 <div className="md:col-span-2 space-y-4">
-                  <h1 className="text-4xl font-bold text-gray-900">Quote</h1>
+                  <h1 className="text-4xl font-bold text-red-600">Quote</h1>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <p className="text-gray-600">QUOTE NO.</p>
@@ -373,57 +391,175 @@ export function AdminQuotationPricing() {
 
             {/* Items Section */}
             <div className="p-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Items <span className="text-sm font-normal text-gray-600">({quotation.items.length})</span></h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">
+                Items <span className="text-sm font-normal text-gray-600">({quotation.items.length})</span>
+              </h3>
               
-              {/* Items Table Header */}
               <div className="space-y-4">
                 {quotation.items.map((item) => (
-                  <div key={item.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <div className="mb-4">
-                      <p className="font-semibold text-gray-900">{item.description}</p>
-                      {item.notes && (
-                        <p className="text-xs text-gray-600 mt-1">{typeof item.notes === "string" ? item.notes : JSON.stringify(item.notes)}</p>
-                      )}
-                    </div>
-                    
-                    {/* Item Pricing Fields */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-2">Qty</label>
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-                        />
+                  <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    {/* Item Header - Always Visible */}
+                    <div className="bg-orange-50 p-4">
+                      <div
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => toggleItemExpanded(item.id)}
+                      >
+                        <div className="flex items-center gap-4 flex-1">
+                          {/* Service Image */}
+                          {item.service?.image_url ? (
+                            <img 
+                              src={item.service.image_url}
+                              alt={item.service.name}
+                              className="w-16 h-16 rounded object-cover flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.src = "/placeholder.svg"
+                              }}
+                            />
+                          ) : (
+                            <div className="w-16 h-16 rounded bg-gray-300 flex items-center justify-center flex-shrink-0">
+                              <span className="text-xs text-gray-600">No Image</span>
+                            </div>
+                          )}
+                          
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-900">{item.service?.name || "Custom Item"}</p>
+                            <p className="text-xs text-gray-600 mt-1">{item.description}</p>
+                          </div>
+                        </div>
+
+                        {/* Pricing Row */}
+                        <div className="flex items-center gap-4 ml-4">
+                          <div className="text-right">
+                            <p className="text-xs text-gray-600">Qty</p>
+                            <p className="font-semibold text-gray-900">{item.quantity}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-600">Base Price</p>
+                            <p className="font-semibold text-gray-900">₱{Number(editingPrices[item.id] || 0).toFixed(2)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs text-gray-600">Amount</p>
+                            <p className="font-semibold text-gray-900">₱{calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0).toFixed(2)}</p>
+                          </div>
+                          
+                          {expandedItems.has(item.id) ? (
+                            <ChevronUp className="w-5 h-5 text-gray-600" />
+                          ) : (
+                            <ChevronDown className="w-5 h-5 text-gray-600" />
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-2">Base Price (₱)</label>
-                        <input
-                          type="number"
-                          value={editingPrices[item.id] || ""}
-                          onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                          placeholder="0.00"
-                          className={`w-full px-3 py-2 border rounded text-sm focus:outline-none ${
-                            priceErrors[item.id]
-                              ? "border-red-500 bg-red-50 focus:border-red-500"
-                              : "border-orange-300 bg-orange-50 focus:border-orange-500"
-                          }`}
-                        />
-                        {priceErrors[item.id] && (
-                          <p className="text-xs text-red-600 mt-1">{priceErrors[item.id]}</p>
+                    </div>
+
+                    {/* Item Details - Expandable */}
+                    {expandedItems.has(item.id) && (
+                      <div className="p-6 space-y-6 border-t border-gray-200 bg-white">
+                        {/* Price Input */}
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Edit Base Price (₱)</label>
+                          <input
+                            type="number"
+                            value={editingPrices[item.id] || ""}
+                            onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                            placeholder="0.00"
+                            step="0.01"
+                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none ${
+                              priceErrors[item.id]
+                                ? "border-red-500 bg-red-50 focus:border-red-500"
+                                : "border-orange-300 bg-orange-50 focus:border-orange-500"
+                            }`}
+                          />
+                          {priceErrors[item.id] && (
+                            <p className="text-xs text-red-600 mt-1">{priceErrors[item.id]}</p>
+                          )}
+                        </div>
+
+                        {/* Team Roster Details */}
+                        {item.team_roster && item.team_roster.length > 0 && (
+                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
+                            <div className="space-y-2">
+                              {item.team_roster.map((player: any, idx: number) => (
+                                <div key={idx} className="grid grid-cols-4 gap-2 text-sm">
+                                  <div>
+                                    <p className="text-xs text-gray-600">Name</p>
+                                    <p className="text-gray-900 font-semibold">{player.name}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-600">Jersey #</p>
+                                    <p className="text-gray-900 font-semibold">{player.number}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-600">Top Size</p>
+                                    <p className="text-gray-900 font-semibold">{player.sizeTop || "-"}</p>
+                                  </div>
+                                  <div>
+                                    <p className="text-xs text-gray-600">Bottom Size</p>
+                                    <p className="text-gray-900 font-semibold">{player.sizeBottom || "-"}</p>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Size Specifications */}
+                        {item.size_specifications && Object.keys(item.size_specifications).length > 0 && (
+                          <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <h4 className="font-semibold text-purple-900 mb-3">TARPAULIN PRINTING DETAILS</h4>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                              {item.size_specifications.width && (
+                                <div>
+                                  <p className="text-xs text-gray-600">Width</p>
+                                  <p className="text-gray-900 font-semibold">{item.size_specifications.width}</p>
+                                </div>
+                              )}
+                              {item.size_specifications.height && (
+                                <div>
+                                  <p className="text-xs text-gray-600">Height</p>
+                                  <p className="text-gray-900 font-semibold">{item.size_specifications.height}</p>
+                                </div>
+                              )}
+                              {item.size_specifications.top && (
+                                <div>
+                                  <p className="text-xs text-gray-600">Top Size</p>
+                                  <p className="text-gray-900 font-semibold">{item.size_specifications.top}</p>
+                                </div>
+                              )}
+                              {item.size_specifications.bottom && (
+                                <div>
+                                  <p className="text-xs text-gray-600">Bottom Size</p>
+                                  <p className="text-gray-900 font-semibold">{item.size_specifications.bottom}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Design File Preview */}
+                        {item.design_file_url && (
+                          <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <h4 className="font-semibold text-indigo-900 mb-3">DESIGN PREVIEW</h4>
+                            <img 
+                              src={item.design_file_url}
+                              alt="Design"
+                              className="max-w-md max-h-64 rounded"
+                              onError={(e) => {
+                                e.currentTarget.src = "/placeholder.svg"
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        {/* Notes */}
+                        {item.notes && (
+                          <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
+                            <h4 className="font-semibold text-gray-900 mb-2">DESIGN COMMENTS</h4>
+                            <p className="text-sm text-gray-700">{typeof item.notes === "string" ? item.notes : JSON.stringify(item.notes)}</p>
+                          </div>
                         )}
                       </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 mb-2">Amount (₱)</label>
-                        <input
-                          type="text"
-                          value={calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0).toFixed(2)}
-                          disabled
-                          className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
