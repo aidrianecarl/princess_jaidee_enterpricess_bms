@@ -129,7 +129,7 @@ export default function AdminQuotationsPage() {
                       Quotation #
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Bill To
+                      Customer
                     </th>
                     <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                       Email
@@ -149,8 +149,9 @@ export default function AdminQuotationsPage() {
                   {isLoading
                     ? Array.from({ length: 5 }).map((_, i) => <QuotationSkeleton key={i} />)
                     : quotations.map((quotation, idx) => {
-                        // Use bill_to_name from quotation (stored in customers table)
-                        const customerName = quotation.bill_to_name || "Unknown Customer"
+                        // Get customer data from relationship
+                        const customerName = quotation.customer?.bill_to_name || quotation.bill_to_name || "Unknown Customer"
+                        const customerEmail = quotation.customer?.bill_to_email || quotation.bill_to_email || "-"
 
                         return (
                           <tr
@@ -162,7 +163,7 @@ export default function AdminQuotationsPage() {
                               {quotation.quotation_number}
                             </td>
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{customerName}</td>
-                            <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{quotation.bill_to_email || "-"}</td>
+                            <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{customerEmail}</td>
                             <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">
                               ₱
                               {Number.parseFloat(quotation.total).toLocaleString(undefined, {

@@ -726,7 +726,6 @@ class QuotationController extends Controller
             'items.*.line_total' => 'required|numeric',
             'discount_type' => 'required|in:percent,peso',
             'discount_value' => 'required|numeric|min:0',
-            'status' => 'nullable|in:draft,pending,approved,rejected,expired',
         ]);
 
         if ($validator->fails()) {
@@ -760,19 +759,19 @@ class QuotationController extends Controller
             $tax = $taxableAmount * 0.12;
             $total = $taxableAmount + $tax;
 
-            // Update quotation
+            // Update quotation with pricing and mark as has_price = 1 (keep status as pending)
             $quotation->update([
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'tax' => $tax,
                 'total' => $total,
-                'status' => $request->status,
+                'has_price' => 1,
             ]);
 
-            $quotation->load(['customer', 'items.product', 'items.service', 'creator']);
+            $quotation->load(['customer', 'items']);
 
             return response()->json([
-                'message' => 'Quotation pricing updated successfully',
+                'message' => 'Quotation pricing updated and sent back to client',
                 'quotation' => $quotation,
             ], 200);
         } catch (\Exception $e) {
