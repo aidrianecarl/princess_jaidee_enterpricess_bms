@@ -378,13 +378,15 @@ export function AdminQuotationPricing() {
                   </div>
                 </div>
 
-                {/* FROM Section */}
-                <div className="border-t border-gray-200 pt-6">
+                {/* RIGHT SIDE (FROM SECTION) */}
+                <div className="text-right">
                   <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">From</h3>
                   <div className="space-y-1 text-sm text-gray-900">
                     <p className="font-semibold">{quotation.business_name}</p>
                     <p>{quotation.business_address}</p>
-                    <p>{quotation.business_city}, {quotation.business_state} {quotation.business_postal}</p>
+                    <p>
+                      {quotation.business_city}, {quotation.business_state} {quotation.business_postal}
+                    </p>
                     <p>{quotation.business_phone}</p>
                     <p>{quotation.business_email}</p>
                   </div>
