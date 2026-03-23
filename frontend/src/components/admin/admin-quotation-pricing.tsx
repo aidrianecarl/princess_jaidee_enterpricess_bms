@@ -338,18 +338,51 @@ export function AdminQuotationPricing() {
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header with Logo */}
             <div className="p-8 border-b-4 border-orange-100">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {quotation.logo_url && (
-                  <div className="flex justify-center md:justify-start">
-                    <img 
-                      src={quotation.logo_url} 
-                      alt="Logo" 
-                      className="max-w-xs h-auto rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.src = "/placeholder.png"
-                      }}
-                    />
+              <div className="space-y-8">
+                {/* Top: Logo and Quote Title */}
+                <div className="flex gap-8">
+                  {quotation.logo_url && (
+                    <div className="flex justify-start">
+                      <img 
+                        src={quotation.logo_url} 
+                        alt="Logo" 
+                        className="max-w-32 h-auto rounded-lg bg-gray-100"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none"
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-4 flex-1">
+                    <h1 className="text-4xl font-bold text-red-600">Quote</h1>
+                    <div className="grid grid-cols-2 gap-8 text-sm">
+                      <div>
+                        <p className="text-gray-600">QUOTE NO.</p>
+                        <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">DATE</p>
+                        <p className="font-semibold text-gray-900">
+                          {new Date(quotation.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                        </p>
+                      </div>
+                    </div>
                   </div>
+                </div>
+
+                {/* FROM Section */}
+                <div className="border-t border-gray-200 pt-6">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">From</h3>
+                  <div className="space-y-1 text-sm text-gray-900">
+                    <p className="font-semibold">{quotation.business_name}</p>
+                    <p>{quotation.business_address}</p>
+                    <p>{quotation.business_city}, {quotation.business_state} {quotation.business_postal}</p>
+                    <p>{quotation.business_phone}</p>
+                    <p>{quotation.business_email}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
                 )}
                 <div className="md:col-span-2 space-y-4">
                   <h1 className="text-4xl font-bold text-red-600">Quote</h1>
@@ -417,12 +450,13 @@ export function AdminQuotationPricing() {
                             <img 
                               src={item.service.image_url}
                               alt={item.service.name}
-                              className="w-16 h-16 rounded object-cover flex-shrink-0"
+                              className="w-16 h-16 rounded object-cover flex-shrink-0 bg-gray-100"
                               onError={(e) => {
-                                e.currentTarget.src = "/placeholder.svg"
+                                e.currentTarget.style.display = "none"
                               }}
                             />
-                          ) : (
+                          ) : null}
+                          {!item.service?.image_url && (
                             <div className="w-16 h-16 rounded bg-gray-300 flex items-center justify-center flex-shrink-0">
                               <span className="text-xs text-gray-600">No Image</span>
                             </div>
@@ -430,7 +464,6 @@ export function AdminQuotationPricing() {
                           
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900">{item.service?.name || "Custom Item"}</p>
-                            <p className="text-xs text-gray-600 mt-1">{item.description}</p>
                           </div>
                         </div>
 
@@ -462,8 +495,8 @@ export function AdminQuotationPricing() {
                     {expandedItems.has(item.id) && (
                       <div className="p-6 space-y-6 border-t border-gray-200 bg-white">
                         {/* Price Input */}
-                        <div>
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Edit Base Price (₱)</label>
+                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-300">
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₱)</label>
                           <input
                             type="number"
                             value={editingPrices[item.id] || ""}
@@ -473,7 +506,7 @@ export function AdminQuotationPricing() {
                             className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none ${
                               priceErrors[item.id]
                                 ? "border-red-500 bg-red-50 focus:border-red-500"
-                                : "border-orange-300 bg-orange-50 focus:border-orange-500"
+                                : "border-orange-400 bg-white focus:border-orange-500"
                             }`}
                           />
                           {priceErrors[item.id] && (
@@ -485,24 +518,24 @@ export function AdminQuotationPricing() {
                         {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
                           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                             <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
-                            <div className="space-y-2">
+                            <div className="space-y-3">
                               {item.team_roster.map((player: any, idx: number) => (
-                                <div key={idx} className="grid grid-cols-4 gap-2 text-sm">
+                                <div key={idx} className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
                                   <div>
-                                    <p className="text-xs text-gray-600">Name</p>
-                                    <p className="text-gray-900 font-semibold">{player.name}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Name</p>
+                                    <p className="text-gray-900">{player.name}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-600">Jersey #</p>
-                                    <p className="text-gray-900 font-semibold">{player.number}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
+                                    <p className="text-gray-900">{player.number}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-600">Top Size</p>
-                                    <p className="text-gray-900 font-semibold">{player.sizeTop || "-"}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Top Size</p>
+                                    <p className="text-gray-900">{player.sizeTop || "-"}</p>
                                   </div>
                                   <div>
-                                    <p className="text-xs text-gray-600">Bottom Size</p>
-                                    <p className="text-gray-900 font-semibold">{player.sizeBottom || "-"}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
+                                    <p className="text-gray-900">{player.sizeBottom || "-"}</p>
                                   </div>
                                 </div>
                               ))}
@@ -514,29 +547,29 @@ export function AdminQuotationPricing() {
                         {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
                           <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                             <h4 className="font-semibold text-purple-900 mb-3">TARPAULIN PRINTING DETAILS</h4>
-                            <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
                               {item.size_specifications.width && (
                                 <div>
-                                  <p className="text-xs text-gray-600">Width</p>
-                                  <p className="text-gray-900 font-semibold">{item.size_specifications.width}</p>
+                                  <p className="text-xs text-gray-600 font-semibold">Width</p>
+                                  <p className="text-gray-900">{item.size_specifications.width}</p>
                                 </div>
                               )}
                               {item.size_specifications.height && (
                                 <div>
-                                  <p className="text-xs text-gray-600">Height</p>
-                                  <p className="text-gray-900 font-semibold">{item.size_specifications.height}</p>
+                                  <p className="text-xs text-gray-600 font-semibold">Height</p>
+                                  <p className="text-gray-900">{item.size_specifications.height}</p>
                                 </div>
                               )}
-                              {item.size_specifications.top && (
+                              {item.size_specifications.totalSqft && (
                                 <div>
-                                  <p className="text-xs text-gray-600">Top Size</p>
-                                  <p className="text-gray-900 font-semibold">{item.size_specifications.top}</p>
+                                  <p className="text-xs text-gray-600 font-semibold">Total Sqft</p>
+                                  <p className="text-gray-900">{item.size_specifications.totalSqft}</p>
                                 </div>
                               )}
-                              {item.size_specifications.bottom && (
+                              {item.size_specifications.totalPrice && (
                                 <div>
-                                  <p className="text-xs text-gray-600">Bottom Size</p>
-                                  <p className="text-gray-900 font-semibold">{item.size_specifications.bottom}</p>
+                                  <p className="text-xs text-gray-600 font-semibold">Total Price</p>
+                                  <p className="text-gray-900">₱{item.size_specifications.totalPrice}</p>
                                 </div>
                               )}
                             </div>
@@ -550,19 +583,33 @@ export function AdminQuotationPricing() {
                             <img 
                               src={item.design_file_url}
                               alt="Design"
-                              className="max-w-md max-h-64 rounded"
+                              className="max-w-md max-h-64 rounded bg-white"
                               onError={(e) => {
-                                e.currentTarget.src = "/placeholder.svg"
+                                e.currentTarget.style.display = "none"
                               }}
                             />
                           </div>
                         )}
 
                         {/* Notes */}
-                        {item.notes && (
+                        {item.notes && typeof item.notes === "object" && Object.keys(item.notes).length > 0 && (
+                          <div className="p-4 bg-gray-100 rounded-lg border border-gray-300 space-y-2">
+                            <h4 className="font-semibold text-gray-900">DESIGN COMMENTS</h4>
+                            {item.notes.designNotes && (
+                              <p className="text-sm text-gray-700"><span className="font-semibold">Design Notes:</span> {item.notes.designNotes}</p>
+                            )}
+                            {item.notes.sizeNotes && (
+                              <p className="text-sm text-gray-700"><span className="font-semibold">Size Notes:</span> {item.notes.sizeNotes}</p>
+                            )}
+                            {item.notes.teamNotes && (
+                              <p className="text-sm text-gray-700"><span className="font-semibold">Team Notes:</span> {item.notes.teamNotes}</p>
+                            )}
+                          </div>
+                        )}
+                        {item.notes && typeof item.notes === "string" && item.notes.length > 0 && (
                           <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
                             <h4 className="font-semibold text-gray-900 mb-2">DESIGN COMMENTS</h4>
-                            <p className="text-sm text-gray-700">{typeof item.notes === "string" ? item.notes : JSON.stringify(item.notes)}</p>
+                            <p className="text-sm text-gray-700">{item.notes}</p>
                           </div>
                         )}
                       </div>
