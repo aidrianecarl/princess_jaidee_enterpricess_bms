@@ -49,13 +49,21 @@ export default function AdminQuotationsPage() {
       })
       console.log("[v0] Quotations response:", response.data)
       setQuotations(response.data.data || response.data || [])
-    } catch (error) {
-      console.error("[v0] Error fetching quotations:", error)
-      if (error instanceof Error) {
-        toast({ title: "Error", description: error.message || "Failed to fetch quotations", variant: "destructive" })
-      } else {
-        toast({ title: "Error", description: "Failed to fetch quotations", variant: "destructive" })
-      }
+    } catch (error: any) {
+      console.error("[v0] ERROR - Full error object:", error)
+      console.error("[v0] ERROR - Error message:", error?.message)
+      console.error("[v0] ERROR - Status code:", error?.response?.status)
+      console.error("[v0] ERROR - Response data:", error?.response?.data)
+      console.error("[v0] ERROR - Config:", error?.config)
+      
+      const errorMessage = error?.response?.data?.error || error?.message || "Failed to fetch quotations"
+      console.error("[v0] ERROR - Final error message:", errorMessage)
+      
+      toast({ 
+        title: "Error", 
+        description: errorMessage, 
+        variant: "destructive" 
+      })
     } finally {
       setIsLoading(false)
     }

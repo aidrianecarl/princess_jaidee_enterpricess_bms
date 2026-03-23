@@ -674,21 +674,48 @@ class QuotationController extends Controller
     // Admin get all quotations with optional status filter
     public function adminIndex(Request $request)
     {
-        $query = Quotation::with(['customer', 'items.service', 'creator']);
+        try {
+            error_log('[v0] AdminIndex START - Request params: ' . json_encode($request->all()));
+            error_log('[v0] AdminIndex - Status filter: ' . ($request->status ?? 'none'));
+            
+            // Load quotations with customer and items relationships
+            error_log('[v0] AdminIndex - Building query with relationships: customer, items');
+            $query = Quotation::with(['customer', 'items']);
+            error_log('[v0] AdminIndex - Query builder initialized');
 
-        // Filter by status if provided
-        if ($request->has('status') && $request->status) {
-            $query->where('status', $request->status);
+            // Filter by status if provided
+            if ($request->has('status') && !empty($request->status)) {
+                error_log('[v0] AdminIndex - Applying status filter: ' . $request->status);
+                $query->where('status', $request->status);
+            }
+
+            // Search by quotation number if provided
+            if ($request->has('search') && !empty($request->search)) {
+                error_log('[v0] AdminIndex - Applying search filter: ' . $request->search);
+                $query->where('quotation_number', 'like', '%' . $request->search . '%');
+            }
+
+            error_log('[v0] AdminIndex - Ordering and paginating');
+            $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
+            
+            error_log('[v0] AdminIndex - SUCCESS! Fetched ' . count($quotations->items()) . ' quotations');
+            return response()->json($quotations, 200);
+            
+        } catch (\Throwable $e) {
+            error_log('[v0] AdminIndex EXCEPTION - Type: ' . get_class($e));
+            error_log('[v0] AdminIndex EXCEPTION - Message: ' . $e->getMessage());
+            error_log('[v0] AdminIndex EXCEPTION - File: ' . $e->getFile());
+            error_log('[v0] AdminIndex EXCEPTION - Line: ' . $e->getLine());
+            error_log('[v0] AdminIndex EXCEPTION - Trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'exception_type' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ], 500);
         }
-
-        // Search by quotation number if provided
-        if ($request->has('search') && $request->search) {
-            $query->where('quotation_number', 'like', '%' . $request->search . '%');
-        }
-
-        $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
-
-        return response()->json($quotations, 200);
     }
 
     // Admin view single quotation
