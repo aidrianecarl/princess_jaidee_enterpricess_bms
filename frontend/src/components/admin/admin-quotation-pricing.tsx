@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { Save, ArrowLeft, Loader2, AlertTriangle, Check, ChevronDown, ChevronUp } from "lucide-react"
+import { Save, ArrowLeft, Loader2, AlertTriangle, Check, ChevronDown, ChevronUp, X, ZoomIn } from "lucide-react"
 import { useRouter } from "next/navigation"
 import {
   AlertDialog,
@@ -14,6 +14,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface PricingLineItem {
   id: number
@@ -74,6 +81,7 @@ export function AdminQuotationPricing() {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [priceErrors, setPriceErrors] = useState<Record<number, string>>({})
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
+  const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -381,9 +389,6 @@ export function AdminQuotationPricing() {
                     <p>{quotation.business_email}</p>
                   </div>
                 </div>
-              </div>
-            </div>
-                )}
                 <div className="md:col-span-2 space-y-4">
                   <h1 className="text-4xl font-bold text-red-600">Quote</h1>
                   <div className="grid grid-cols-2 gap-4 text-sm">
@@ -579,15 +584,30 @@ export function AdminQuotationPricing() {
                         {/* Design File Preview */}
                         {item.design_file_url && (
                           <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                            <h4 className="font-semibold text-indigo-900 mb-3">DESIGN PREVIEW</h4>
-                            <img 
-                              src={item.design_file_url}
-                              alt="Design"
-                              className="max-w-md max-h-64 rounded bg-white"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none"
+                            <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                              DESIGN PREVIEW
+                              <span className="text-xs text-indigo-700 font-normal">(Click to expand)</span>
+                            </h4>
+                            <div 
+                              className="relative inline-block cursor-pointer group"
+                              onClick={() => {
+                                if (item.design_file_url) {
+                                  setExpandedImage(item.design_file_url)
+                                }
                               }}
-                            />
+                            >
+                              <img 
+                                src={item.design_file_url}
+                                alt="Design"
+                                className="max-w-md max-h-64 rounded bg-white hover:opacity-90 transition-opacity"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none"
+                                }}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20">
+                                <ZoomIn className="w-8 h-8 text-white" />
+                              </div>
+                            </div>
                           </div>
                         )}
 
@@ -719,6 +739,34 @@ export function AdminQuotationPricing() {
           </div>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Image Expansion Modal */}
+      <Dialog open={expandedImage !== null} onOpenChange={(open) => {
+        if (!open) {
+          setExpandedImage(null)
+        }
+      }}>
+        <DialogContent className="max-w-4xl w-full p-0 bg-black">
+          <button
+            onClick={() => setExpandedImage(null)}
+            className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-800 rounded-lg transition"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+          <div className="flex items-center justify-center p-4">
+            {expandedImage && (
+              <img 
+                src={expandedImage}
+                alt="Expanded Design"
+                className="max-w-full max-h-[80vh] rounded-lg"
+                onError={(e) => {
+                  e.currentTarget.alt = "Image failed to load"
+                }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
