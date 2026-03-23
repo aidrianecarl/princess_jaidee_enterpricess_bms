@@ -35,6 +35,7 @@ class Quotation extends Model
         'valid_until',
         'scheduled_send_date',
         'sent_at',
+        'has_price',
     ];
 
     protected $casts = [

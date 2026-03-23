@@ -2,43 +2,37 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { apiClient } from "@/lib/api-client"
 import { useToast } from "@/hooks/use-toast"
-import { Save, ArrowLeft, Loader2, DollarSign } from "lucide-react"
+import { Save, ArrowLeft, Loader2, AlertTriangle, Check } from "lucide-react"
 import { useRouter } from "next/navigation"
-
-interface CustomerData {
-  id: number
-  bill_to_name: string
-  bill_to_email: string
-  bill_to_phone: string
-  bill_to_street: string
-  bill_to_city: string
-  bill_to_state: string
-  bill_to_postal: string
-}
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface PricingLineItem {
   id: number
   quotation_id: number
-  product_id?: number
   service_id?: number
-  type: string
-  name: string
   description: string
   quantity: number
   unit_price: number | string
   line_total: number | string
-  image?: string
   notes?: string
-  details?: any
+  team_roster?: any
+  size_specifications?: any
 }
 
 interface QuotationForPricing {
   id: number
   quotation_number: string
   created_at: string
-  customer?: CustomerData
+  customer?: any
   business_name: string
   business_address: string
   business_city: string
@@ -55,6 +49,7 @@ interface QuotationForPricing {
   notes: string
   valid_until: string
   status: string
+  has_price: number
 }
 
 export function AdminQuotationPricing() {
@@ -69,6 +64,8 @@ export function AdminQuotationPricing() {
   const [editingPrices, setEditingPrices] = useState<Record<number, string>>({})
   const [discountType, setDiscountType] = useState<"percent" | "peso">("percent")
   const [discountValue, setDiscountValue] = useState("0")
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [priceErrors, setPriceErrors] = useState<Record<number, string>>({})
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -79,11 +76,8 @@ export function AdminQuotationPricing() {
   const fetchQuotation = async () => {
     try {
       setIsLoading(true)
-      console.log("[v0] Fetching quotation with ID:", quotationId)
-      
       const token = localStorage.getItem("admin_token")
       const url = `${apiUrl}/admin/quotations/${quotationId}`
-      console.log("[v0] Fetching from URL:", url)
       
       const response = await fetch(url, {
         headers: {
@@ -91,18 +85,12 @@ export function AdminQuotationPricing() {
         },
       })
 
-      console.log("[v0] Response status:", response.status)
-      
       if (!response.ok) {
-        const errorData = await response.text()
-        console.error("[v0] Error response:", errorData)
         throw new Error(`Failed to fetch quotation (Status: ${response.status})`)
       }
 
       const data = await response.json()
       const quot = data.data || data
-      
-      console.log("[v0] Quotation loaded:", quot)
       
       setQuotation(quot)
       
@@ -114,7 +102,6 @@ export function AdminQuotationPricing() {
       setEditingPrices(priceMap)
       
     } catch (error: any) {
-      console.error("[v0] Error fetching quotation:", error)
       toast({
         title: "Error",
         description: error?.message || "Failed to load quotation",
@@ -130,6 +117,34 @@ export function AdminQuotationPricing() {
       ...prev,
       [itemId]: price
     }))
+    // Clear error for this item if it exists
+    if (priceErrors[itemId]) {
+      setPriceErrors(prev => {
+        const updated = { ...prev }
+        delete updated[itemId]
+        return updated
+      })
+    }
+  }
+
+  const validatePrices = (): boolean => {
+    const errors: Record<number, string> = {}
+    
+    quotation?.items.forEach(item => {
+      const price = Number(editingPrices[item.id] || 0)
+      if (isNaN(price) || price < 0) {
+        errors[item.id] = "Invalid price"
+      }
+      if (price === 0) {
+        errors[item.id] = "Price must be greater than 0"
+      }
+    })
+    
+    if (Object.keys(errors).length > 0) {
+      setPriceErrors(errors)
+      return false
+    }
+    return true
   }
 
   const calculateLineTotal = (quantity: number, price: number): number => {
@@ -165,9 +180,23 @@ export function AdminQuotationPricing() {
     return subtotal - discount + tax
   }
 
-  const handleSendBack = async () => {
+  const handleSendPrices = async () => {
+    if (!validatePrices()) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix the pricing errors before sending",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    setShowConfirmModal(true)
+  }
+
+  const handleConfirmSend = async () => {
     try {
       setIsSaving(true)
+      setShowConfirmModal(false)
       
       if (!quotation) return
 
@@ -183,8 +212,6 @@ export function AdminQuotationPricing() {
         discount_type: discountType,
         discount_value: Number(discountValue),
       }
-
-      console.log("[v0] Sending pricing update:", payload)
 
       const token = localStorage.getItem("admin_token")
       const response = await fetch(`${apiUrl}/admin/quotations/${quotationId}/pricing`, {
@@ -202,11 +229,10 @@ export function AdminQuotationPricing() {
       }
 
       const result = await response.json()
-      console.log("[v0] Pricing updated successfully:", result)
 
       toast({
         title: "Success",
-        description: "Quotation sent back to client with pricing",
+        description: "Pricing has been sent to the client",
       })
 
       // Redirect back to quotations list
@@ -214,7 +240,6 @@ export function AdminQuotationPricing() {
         router.push("/admin/quotations")
       }, 1000)
     } catch (error: any) {
-      console.error("[v0] Error sending back quotation:", error)
       toast({
         title: "Error",
         description: error?.message || "Failed to send quotation back to client",
@@ -255,266 +280,255 @@ export function AdminQuotationPricing() {
   const total = calculateTotal()
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Toolbar */}
-      <div className="sticky top-0 z-30 bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-4 py-4">
-            <div className="flex items-center gap-2">
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        {/* Toolbar */}
+        <div className="sticky top-0 z-30 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between gap-4 py-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.back()}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition"
+                >
+                  <ArrowLeft size={18} />
+                  Back
+                </button>
+                <h2 className="text-xl font-bold text-white">Set Pricing</h2>
+              </div>
               <button
-                onClick={() => router.back()}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition"
+                onClick={handleSendPrices}
+                disabled={isSaving}
+                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-orange-400 hover:bg-orange-500 text-white font-medium transition disabled:opacity-50"
               >
-                <ArrowLeft size={18} />
-                Back
+                {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={18} />}
+                Send
               </button>
-              <h2 className="text-xl font-bold text-white">Admin Pricing Review</h2>
             </div>
-            <button
-              onClick={handleSendBack}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition disabled:opacity-50"
-            >
-              {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={18} />}
-              Send Back to Client
-            </button>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          {/* Header with Logo */}
-          <div className="p-8 border-b-4 border-blue-200">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {quotation.logo_url && (
-                <div className="flex justify-center md:justify-start">
-                  <img 
-                    src={quotation.logo_url} 
-                    alt="Logo" 
-                    className="max-w-xs h-auto rounded-lg"
-                    onError={(e) => {
-                      console.log("[v0] Logo failed to load:", quotation.logo_url)
-                      e.currentTarget.src = "/placeholder.png"
-                    }}
-                  />
-                </div>
-              )}
-              <div className="md:col-span-2 space-y-4">
-                <h1 className="text-3xl font-bold text-gray-900">Quotation</h1>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-600">Quotation #</p>
-                    <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
+        {/* Content */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Header with Logo */}
+            <div className="p-8 border-b-4 border-orange-100">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {quotation.logo_url && (
+                  <div className="flex justify-center md:justify-start">
+                    <img 
+                      src={quotation.logo_url} 
+                      alt="Logo" 
+                      className="max-w-xs h-auto rounded-lg"
+                      onError={(e) => {
+                        e.currentTarget.src = "/placeholder.png"
+                      }}
+                    />
                   </div>
-                  <div>
-                    <p className="text-gray-600">Date</p>
-                    <p className="font-semibold text-gray-900">
-                      {new Date(quotation.created_at).toLocaleDateString()}
+                )}
+                <div className="md:col-span-2 space-y-4">
+                  <h1 className="text-4xl font-bold text-gray-900">Quote</h1>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-600">QUOTE NO.</p>
+                      <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-gray-600">DATE</p>
+                      <p className="font-semibold text-gray-900">
+                        {new Date(quotation.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bill To Section */}
+            <div className="p-8 border-b-2 border-gray-200 bg-orange-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">Bill To</h3>
+                  <div className="space-y-1 text-gray-900 text-sm">
+                    <p className="font-semibold">{quotation.customer?.bill_to_name || "-"}</p>
+                    <p>{quotation.customer?.bill_to_street || "-"}</p>
+                    <p>
+                      {quotation.customer?.bill_to_city || ""} {quotation.customer?.bill_to_state || ""} {quotation.customer?.bill_to_postal || ""}
+                    </p>
+                    <p>{quotation.customer?.bill_to_phone || "-"}</p>
+                    <p>{quotation.customer?.bill_to_email || "-"}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">DUE DATE</h3>
+                  <div className="space-y-4">
+                    <p className="text-gray-900 font-semibold">
+                      {quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}
                     </p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Bill To Section */}
-          <div className="p-8 border-b-2 border-gray-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">Bill To</h3>
-                <div className="space-y-2 text-gray-900">
-                  <p className="font-semibold">{quotation.customer?.bill_to_name || "-"}</p>
-                  <p>{quotation.customer?.bill_to_street || "-"}</p>
-                  <p>
-                    {quotation.customer?.bill_to_city || ""}, {quotation.customer?.bill_to_state || ""} {quotation.customer?.bill_to_postal || ""}
-                  </p>
-                  <p>{quotation.customer?.bill_to_phone || "-"}</p>
-                  <p>{quotation.customer?.bill_to_email || "-"}</p>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">From</h3>
-                <div className="space-y-2 text-gray-900">
-                  <p className="font-semibold">{quotation.business_name}</p>
-                  <p>{quotation.business_address}</p>
-                  <p>
-                    {quotation.business_city}, {quotation.business_state} {quotation.business_postal}
-                  </p>
-                  <p>{quotation.business_phone}</p>
-                  <p>{quotation.business_email}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Items Section */}
-          <div className="p-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Items</h3>
-            <div className="space-y-6">
-              {quotation.items.map((item, idx) => (
-                <div key={item.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Item Image */}
-                    {item.image && (
-                      <div className="flex justify-center">
-                        <img 
-                          src={item.image} 
-                          alt={item.name} 
-                          className="max-w-xs h-auto rounded-lg"
-                          onError={(e) => {
-                            console.log("[v0] Item image failed:", item.image)
-                          }}
+            {/* Items Section */}
+            <div className="p-8">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Items <span className="text-sm font-normal text-gray-600">({quotation.items.length})</span></h3>
+              
+              {/* Items Table Header */}
+              <div className="space-y-4">
+                {quotation.items.map((item) => (
+                  <div key={item.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                    <div className="mb-4">
+                      <p className="font-semibold text-gray-900">{item.description}</p>
+                      {item.notes && (
+                        <p className="text-xs text-gray-600 mt-1">{typeof item.notes === "string" ? item.notes : JSON.stringify(item.notes)}</p>
+                      )}
+                    </div>
+                    
+                    {/* Item Pricing Fields */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">Qty</label>
+                        <input
+                          type="number"
+                          value={item.quantity}
+                          disabled
+                          className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
                         />
                       </div>
-                    )}
-
-                    {/* Item Details */}
-                    <div className="md:col-span-2">
-                      <h4 className="text-lg font-semibold text-gray-900">{item.name}</h4>
-                      <p className="text-gray-600 text-sm mt-2">{item.description}</p>
-
-                      {/* Display item specific details */}
-                      {item.details && (
-                        <div className="mt-4 space-y-2 text-sm">
-                          {item.details.teamRoster && item.details.teamRoster.length > 0 && (
-                            <div>
-                              <p className="font-semibold text-gray-700">Team Roster:</p>
-                              <ul className="list-disc list-inside text-gray-600">
-                                {item.details.teamRoster.map((player: any, i: number) => (
-                                  <li key={i}>{player.name} (#{player.number})</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {item.details.sizeSpecifications && (
-                            <div>
-                              <p className="font-semibold text-gray-700">Size Specifications:</p>
-                              <p className="text-gray-600">
-                                {item.details.sizeSpecifications.width}x{item.details.sizeSpecifications.height} 
-                                {item.details.sizeSpecifications.totalSqft && ` (${item.details.sizeSpecifications.totalSqft} sqft)`}
-                              </p>
-                            </div>
-                          )}
-
-                          {item.details.designConsultation && item.details.designConsultation.needed && (
-                            <div>
-                              <p className="font-semibold text-gray-700">Design Consultation:</p>
-                              <p className="text-gray-600">{item.details.designConsultation.notes}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Notes per item */}
-                      {item.notes && (
-                        <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
-                          <p className="text-sm font-semibold text-blue-900">Notes:</p>
-                          <p className="text-sm text-blue-800">{item.notes}</p>
-                        </div>
-                      )}
-
-                      {/* Pricing Section */}
-                      <div className="mt-6 grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                          <label className="text-gray-600 font-medium">Quantity</label>
-                          <input
-                            type="number"
-                            value={item.quantity}
-                            disabled
-                            className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 cursor-not-allowed"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-gray-600 font-medium">Unit Price (₱)</label>
-                          <input
-                            type="number"
-                            value={editingPrices[item.id] || ""}
-                            onChange={(e) => handlePriceChange(item.id, e.target.value)}
-                            placeholder="Enter price"
-                            className="w-full px-3 py-2 border border-blue-300 rounded focus:outline-none focus:border-blue-500 bg-blue-50"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-gray-600 font-medium">Amount (₱)</label>
-                          <input
-                            type="text"
-                            value={calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0).toFixed(2)}
-                            disabled
-                            className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 cursor-not-allowed"
-                          />
-                        </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">Base Price (₱)</label>
+                        <input
+                          type="number"
+                          value={editingPrices[item.id] || ""}
+                          onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                          placeholder="0.00"
+                          className={`w-full px-3 py-2 border rounded text-sm focus:outline-none ${
+                            priceErrors[item.id]
+                              ? "border-red-500 bg-red-50 focus:border-red-500"
+                              : "border-orange-300 bg-orange-50 focus:border-orange-500"
+                          }`}
+                        />
+                        {priceErrors[item.id] && (
+                          <p className="text-xs text-red-600 mt-1">{priceErrors[item.id]}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 mb-2">Amount (₱)</label>
+                        <input
+                          type="text"
+                          value={calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0).toFixed(2)}
+                          disabled
+                          className="w-full px-3 py-2 border border-gray-300 rounded bg-gray-100 text-gray-600 cursor-not-allowed text-sm"
+                        />
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Quotation Notes */}
-          {quotation.notes && (
-            <div className="px-8 py-6 border-t-2 border-gray-300 bg-gray-50">
-              <h3 className="text-sm font-semibold text-gray-600 uppercase mb-2">Notes</h3>
-              <p className="text-gray-900">{quotation.notes}</p>
-            </div>
-          )}
-
-          {/* Totals Section */}
-          <div className="p-8 border-t-2 border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
-            <div className="max-w-sm ml-auto space-y-4">
-              <div className="flex justify-between text-lg">
-                <span className="font-semibold text-gray-700">Subtotal:</span>
-                <span className="text-gray-900">₱{subtotal.toFixed(2)}</span>
+                ))}
               </div>
+            </div>
 
-              <div className="border-t pt-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-4">
-                    <label className="text-gray-700 font-medium flex-1">Discount:</label>
-                    <select
-                      value={discountType}
-                      onChange={(e) => setDiscountType(e.target.value as "percent" | "peso")}
-                      className="px-3 py-2 border border-gray-300 rounded"
-                    >
-                      <option value="percent">%</option>
-                      <option value="peso">₱</option>
-                    </select>
-                    <input
-                      type="number"
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      placeholder="0"
-                      className="w-32 px-3 py-2 border border-blue-300 rounded focus:outline-none focus:border-blue-500 bg-blue-50"
-                    />
-                  </div>
-                  <div className="flex justify-between text-gray-600">
-                    <span>Total Discount:</span>
-                    <span>- ₱{discount.toFixed(2)}</span>
+            {/* Totals Section */}
+            <div className="p-8 border-t-2 border-gray-200 bg-gradient-to-br from-gray-50 via-white to-gray-50">
+              <div className="max-w-md ml-auto space-y-3">
+                <div className="flex justify-between text-base">
+                  <span className="font-semibold text-gray-700">Subtotal:</span>
+                  <span className="text-gray-900 font-semibold">₱{subtotal.toFixed(2)}</span>
+                </div>
+
+                <div className="border-t border-gray-300 pt-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-700">Discount:</span>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={discountType}
+                          onChange={(e) => setDiscountType(e.target.value as "percent" | "peso")}
+                          className="px-2 py-1 border border-gray-300 rounded text-sm bg-white"
+                        >
+                          <option value="percent">%</option>
+                          <option value="peso">₱</option>
+                        </select>
+                        <input
+                          type="number"
+                          value={discountValue}
+                          onChange={(e) => setDiscountValue(e.target.value)}
+                          placeholder="0"
+                          className="w-20 px-2 py-1 border border-orange-300 rounded focus:outline-none focus:border-orange-500 bg-orange-50 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>Total Discount:</span>
+                      <span>- ₱{discount.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="border-t pt-4 space-y-3">
-                <div className="flex justify-between text-gray-700">
-                  <span>Tax (12% VAT):</span>
-                  <span>₱{tax.toFixed(2)}</span>
+                <div className="border-t border-gray-300 pt-3">
+                  <div className="flex justify-between text-sm text-gray-700">
+                    <span>Tax (12% VAT):</span>
+                    <span>₱{tax.toFixed(2)}</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="border-t-2 border-gray-300 pt-4 bg-white rounded-lg p-4">
-                <div className="flex justify-between text-xl font-bold text-gray-900">
-                  <span>Total:</span>
-                  <span className="text-blue-600">₱{total.toFixed(2)}</span>
+                <div className="border-t-2 border-gray-300 pt-3 bg-orange-50 rounded-lg p-4">
+                  <div className="flex justify-between text-xl font-bold">
+                    <span className="text-gray-900">Total:</span>
+                    <span className="text-orange-600">₱{total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Confirmation Modal */}
+      <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-orange-600" />
+              Confirm Pricing
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3 mt-4">
+              <p>Are you sure you want to send this pricing to the client?</p>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-700">Subtotal:</span>
+                  <span className="font-semibold">₱{subtotal.toFixed(2)}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-gray-700">
+                    <span>Discount:</span>
+                    <span>- ₱{discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-gray-700">
+                  <span>Tax (12%):</span>
+                  <span>₱{tax.toFixed(2)}</span>
+                </div>
+                <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-gray-900">
+                  <span>Total:</span>
+                  <span>₱{total.toFixed(2)}</span>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end mt-4">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmSend}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              Yes, Send
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   )
 }
