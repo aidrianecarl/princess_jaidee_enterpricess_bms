@@ -694,7 +694,7 @@ class QuotationController extends Controller
         try {
             error_log('[v0] AdminShow - Fetching quotation ID: ' . $id);
             
-            $quotation = Quotation::with(['customer', 'items'])->find($id);
+            $quotation = Quotation::with(['customer', 'items.service'])->find($id);
             
             if (!$quotation) {
                 error_log('[v0] AdminShow - Quotation not found for ID: ' . $id);

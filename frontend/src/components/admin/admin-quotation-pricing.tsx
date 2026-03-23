@@ -100,11 +100,18 @@ export function AdminQuotationPricing() {
       const data = await response.json()
       const quot = data.data || data
       
-      setQuotation(quot)
+      // Ensure team_roster and size_specifications are arrays/objects
+      const processedItems = quot.items?.map((item: any) => ({
+        ...item,
+        team_roster: Array.isArray(item.team_roster) ? item.team_roster : [],
+        size_specifications: typeof item.size_specifications === "object" && item.size_specifications ? item.size_specifications : {},
+      })) || []
+
+      setQuotation({ ...quot, items: processedItems })
       
       // Initialize editing prices with current prices
       const priceMap: Record<number, string> = {}
-      quot.items?.forEach((item: PricingLineItem) => {
+      processedItems.forEach((item: PricingLineItem) => {
         priceMap[item.id] = String(item.unit_price || 0)
       })
       setEditingPrices(priceMap)
@@ -475,7 +482,7 @@ export function AdminQuotationPricing() {
                         </div>
 
                         {/* Team Roster Details */}
-                        {item.team_roster && item.team_roster.length > 0 && (
+                        {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
                           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                             <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
                             <div className="space-y-2">
@@ -504,7 +511,7 @@ export function AdminQuotationPricing() {
                         )}
 
                         {/* Size Specifications */}
-                        {item.size_specifications && Object.keys(item.size_specifications).length > 0 && (
+                        {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
                           <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                             <h4 className="font-semibold text-purple-900 mb-3">TARPAULIN PRINTING DETAILS</h4>
                             <div className="grid grid-cols-2 gap-2 text-sm">
