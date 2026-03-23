@@ -28,10 +28,8 @@ interface PricingLineItem {
   notes?: any
 }
 
-interface QuotationForPricing {
+interface CustomerData {
   id: number
-  quotation_number: string
-  created_at: string
   bill_to_name: string
   bill_to_email: string
   bill_to_phone: string
@@ -39,6 +37,13 @@ interface QuotationForPricing {
   bill_to_city: string
   bill_to_state: string
   bill_to_postal: string
+}
+
+interface QuotationForPricing {
+  id: number
+  quotation_number: string
+  created_at: string
+  customer?: CustomerData
   business_name: string
   business_address: string
   business_city: string
@@ -87,34 +92,55 @@ export function AdminQuotationPricing({ quotationId }: { quotationId: number }) 
   const fetchQuotation = async () => {
     try {
       setIsLoading(true)
+      console.log("[v0] Fetching quotation with ID:", quotationId)
+      
       const token = localStorage.getItem("admin_token")
-      const response = await fetch(`${apiUrl}/admin/quotations/${quotationId}`, {
+      console.log("[v0] Token exists:", !!token)
+      
+      const url = `${apiUrl}/admin/quotations/${quotationId}`
+      console.log("[v0] Fetching from URL:", url)
+      
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
+      console.log("[v0] Response status:", response.status)
+      console.log("[v0] Response ok:", response.ok)
+      
       if (!response.ok) {
-        throw new Error("Failed to fetch quotation")
+        const errorData = await response.text()
+        console.error("[v0] Error response:", errorData)
+        throw new Error(`Failed to fetch quotation (Status: ${response.status})`)
       }
 
       const data = await response.json()
+      console.log("[v0] Fetched data:", data)
+      
       const quot = data.data || data
+      console.log("[v0] Quotation object:", quot)
+      console.log("[v0] Customer data:", quot.customer)
       
       setQuotation(quot)
       setLineItems(quot.items || [])
       
       // Initialize editing prices with current prices
       const priceMap: Record<number, string> = {}
-      quot.items.forEach((item: PricingLineItem) => {
+      quot.items?.forEach((item: PricingLineItem) => {
         priceMap[item.id] = String(item.unit_price || 0)
       })
       setEditingPrices(priceMap)
-    } catch (error) {
-      console.error("Error fetching quotation:", error)
+      
+      console.log("[v0] Quotation loaded successfully")
+    } catch (error: any) {
+      console.error("[v0] Error fetching quotation:", error)
+      console.error("[v0] Error message:", error?.message)
+      console.error("[v0] Error stack:", error?.stack)
+      
       toast({
         title: "Error",
-        description: "Failed to load quotation",
+        description: error?.message || "Failed to load quotation",
         variant: "destructive",
       })
     } finally {
@@ -299,13 +325,13 @@ export function AdminQuotationPricing({ quotationId }: { quotationId: number }) 
           <div className="p-8 border-b-2 border-gray-300">
             <h3 className="text-sm font-semibold text-gray-600 uppercase mb-4">Bill To</h3>
             <div className="space-y-2 text-gray-900">
-              <p className="font-semibold">{quotation.bill_to_name}</p>
-              <p>{quotation.bill_to_street}</p>
+              <p className="font-semibold">{quotation.customer?.bill_to_name || "-"}</p>
+              <p>{quotation.customer?.bill_to_street || "-"}</p>
               <p>
-                {quotation.bill_to_city}, {quotation.bill_to_state} {quotation.bill_to_postal}
+                {quotation.customer?.bill_to_city || ""}, {quotation.customer?.bill_to_state || ""} {quotation.customer?.bill_to_postal || ""}
               </p>
-              <p>{quotation.bill_to_phone}</p>
-              <p>{quotation.bill_to_email}</p>
+              <p>{quotation.customer?.bill_to_phone || "-"}</p>
+              <p>{quotation.customer?.bill_to_email || "-"}</p>
             </div>
           </div>
 

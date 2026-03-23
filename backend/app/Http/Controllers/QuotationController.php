@@ -211,9 +211,21 @@ class QuotationController extends Controller
 
             $status = $request->status ?? 'draft';
 
-            // Create quotation without customer_id first, then link customer after
+            // Create customer record FIRST with bill-to information
+            $customer = Customer::create([
+                'bill_to_name' => $request->bill_to_name,
+                'bill_to_street' => $request->bill_to_street,
+                'bill_to_city' => $request->bill_to_city,
+                'bill_to_state' => $request->bill_to_state,
+                'bill_to_postal' => $request->bill_to_postal,
+                'bill_to_phone' => $request->bill_to_phone,
+                'bill_to_email' => $request->bill_to_email,
+            ]);
+
+            // Now create quotation linked to the customer
             $quotation = Quotation::create([
                 'quotation_number' => $quotationNumber,
+                'customer_id' => $customer->id,
                 'created_by' => $userId,
                 'logo_url' => $logoUrl,
                 'business_name' => $request->business_name,
@@ -223,13 +235,6 @@ class QuotationController extends Controller
                 'business_postal' => $request->business_postal,
                 'business_phone' => $request->business_phone,
                 'business_email' => $request->business_email,
-                'bill_to_name' => $request->bill_to_name,
-                'bill_to_street' => $request->bill_to_street,
-                'bill_to_city' => $request->bill_to_city,
-                'bill_to_state' => $request->bill_to_state,
-                'bill_to_postal' => $request->bill_to_postal,
-                'bill_to_phone' => $request->bill_to_phone,
-                'bill_to_email' => $request->bill_to_email,
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'paid_amount' => $paidAmount,
@@ -241,21 +246,9 @@ class QuotationController extends Controller
                 'valid_until' => $request->valid_until,
             ]);
 
-            // Now create customer record linked to this quotation with bill-to information
-            $customer = Customer::create([
-                'quotation_id' => $quotation->id,
-                'bill_to_name' => $request->bill_to_name,
-                'bill_to_street' => $request->bill_to_street,
-                'bill_to_city' => $request->bill_to_city,
-                'bill_to_state' => $request->bill_to_state,
-                'bill_to_postal' => $request->bill_to_postal,
-                'bill_to_phone' => $request->bill_to_phone,
-                'bill_to_email' => $request->bill_to_email,
-            ]);
-
-            // Update quotation to link to the customer
-            $quotation->customer_id = $customer->id;
-            $quotation->save();
+            // Update customer to link back to quotation
+            $customer->quotation_id = $quotation->id;
+            $customer->save();
 
             foreach ($request->items as $item) {
                 $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
@@ -648,29 +641,6 @@ class QuotationController extends Controller
         ], 200);
     }
 
-    // Admin view all pending quotations
-    public function adminIndex(Request $request)
-    {
-        $query = Quotation::with(['customer', 'items.product', 'items.service', 'creator']);
-        
-        if ($request->has('search')) {
-            $query->where('quotation_number', 'like', '%' . $request->search . '%');
-        }
-        
-        if ($request->has('status') && $request->status !== '') {
-            $query->where('status', $request->status);
-        }
-        
-        $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
-        
-        $quotations->getCollection()->transform(function ($quotation) {
-            $quotation->items_count = $quotation->items->count();
-            return $quotation;
-        });
-
-        return response()->json($quotations, 200);
-    }
-
     // Admin get all quotations with optional status filter
     public function adminIndex(Request $request)
     {
@@ -721,13 +691,23 @@ class QuotationController extends Controller
     // Admin view single quotation
     public function adminShow($id)
     {
-        $quotation = Quotation::with(['customer', 'items.product', 'items.service', 'creator'])->find($id);
+        try {
+            error_log('[v0] AdminShow - Fetching quotation ID: ' . $id);
+            
+            $quotation = Quotation::with(['customer', 'items'])->find($id);
+            
+            if (!$quotation) {
+                error_log('[v0] AdminShow - Quotation not found for ID: ' . $id);
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
 
-        if (!$quotation) {
-            return response()->json(['error' => 'Quotation not found'], 404);
+            error_log('[v0] AdminShow - Quotation found, returning data');
+            return response()->json($quotation, 200);
+        } catch (\Exception $e) {
+            error_log('[v0] AdminShow ERROR: ' . $e->getMessage());
+            error_log('[v0] AdminShow Stack: ' . $e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-
-        return response()->json($quotation, 200);
     }
 
     // Admin update quotation pricing and send back to client
