@@ -389,21 +389,6 @@ export function AdminQuotationPricing() {
                     <p>{quotation.business_email}</p>
                   </div>
                 </div>
-                <div className="md:col-span-2 space-y-4">
-                  <h1 className="text-4xl font-bold text-red-600">Quote</h1>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <p className="text-gray-600">QUOTE NO.</p>
-                      <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-gray-600">DATE</p>
-                      <p className="font-semibold text-gray-900">
-                        {new Date(quotation.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 
