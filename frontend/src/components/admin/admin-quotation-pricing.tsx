@@ -83,7 +83,7 @@ export function AdminQuotationPricing() {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
   useEffect(() => {
     fetchQuotation()
@@ -346,12 +346,11 @@ export function AdminQuotationPricing() {
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header with Logo */}
             <div className="p-8 border-b-4 border-orange-100">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-  
-                {/* LEFT SIDE */}
-                <div className="space-y-6">
-                  <div className="flex gap-6 items-start">
-                    {quotation.logo_url && (
+              <div className="space-y-8">
+                {/* Top: Logo and Quote Title */}
+                <div className="flex gap-8">
+                  {quotation.logo_url && (
+                    <div className="flex justify-start">
                       <img 
                         src={quotation.logo_url} 
                         alt="Logo" 
@@ -360,26 +359,20 @@ export function AdminQuotationPricing() {
                           e.currentTarget.style.display = "none"
                         }}
                       />
-                    )}
-
-                    <div className="space-y-2">
-                      <h1 className="text-4xl font-bold text-red-600">Quote</h1>
-
-                      <div className="text-sm space-y-1">
-                        <div>
-                          <p className="text-gray-600">QUOTE NO.</p>
-                          <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
-                        </div>
-                        <div>
-                          <p className="text-gray-600">DATE</p>
-                          <p className="font-semibold text-gray-900">
-                            {new Date(quotation.created_at).toLocaleDateString("en-US", { 
-                              year: "numeric", 
-                              month: "long", 
-                              day: "numeric" 
-                            })}
-                          </p>
-                        </div>
+                    </div>
+                  )}
+                  <div className="space-y-4 flex-1">
+                    <h1 className="text-4xl font-bold text-red-600">Quote</h1>
+                    <div className="grid grid-cols-2 gap-8 text-sm">
+                      <div>
+                        <p className="text-gray-600">QUOTE NO.</p>
+                        <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">DATE</p>
+                        <p className="font-semibold text-gray-900">
+                          {new Date(quotation.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -398,7 +391,6 @@ export function AdminQuotationPricing() {
                     <p>{quotation.business_email}</p>
                   </div>
                 </div>
-
               </div>
             </div>
 
