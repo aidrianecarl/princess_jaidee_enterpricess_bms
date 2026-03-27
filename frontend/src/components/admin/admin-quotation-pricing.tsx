@@ -528,7 +528,16 @@ export function AdminQuotationPricing() {
 
                         {/* Image & Name Column */}
                         <div className="flex-1 flex gap-2 min-w-0">
-                          {item.service?.image_url && (
+                          {item.design_file_url ? (
+                            <img
+                              src={item.design_file_url}
+                              alt={item.service?.name || "Design"}
+                              className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none"
+                              }}
+                            />
+                          ) : item.service?.image_url ? (
                             <img
                               src={item.service.image_url}
                               alt={item.service.name}
@@ -537,7 +546,7 @@ export function AdminQuotationPricing() {
                                 e.currentTarget.style.display = "none"
                               }}
                             />
-                          )}
+                          ) : null}
                           <div className="flex-1 min-w-0">
                             <p className="font-semibold text-gray-900 text-sm md:text-base truncate">{item.service?.name || "Custom Item"}</p>
                           </div>
@@ -581,8 +590,10 @@ export function AdminQuotationPricing() {
                               <div className="space-y-3">
                                 {item.team_roster.map((player: any, idx: number) => {
                                   const playerKey = `item-${item.id}-player-${idx}`
+                                  const pricePerPlayer = parseFloat(playerPrices[playerKey] || "0") || 0
+                                  const playerTotal = pricePerPlayer * item.quantity
                                   return (
-                                    <div key={idx} className="grid grid-cols-5 gap-3 text-sm bg-white p-3 rounded">
+                                    <div key={idx} className="grid grid-cols-6 gap-3 text-sm bg-white p-3 rounded">
                                       <div>
                                         <p className="text-xs text-gray-600 font-semibold">Name</p>
                                         <p className="text-gray-900">{player.name}</p>
@@ -610,9 +621,25 @@ export function AdminQuotationPricing() {
                                           className="w-full px-2 py-1 border border-orange-400 rounded text-right text-xs focus:outline-none bg-white focus:border-orange-500"
                                         />
                                       </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Amount</p>
+                                        <p className="text-gray-900 font-semibold">₱{playerTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                      </div>
                                     </div>
                                   )
                                 })}
+                              </div>
+                              <div className="mt-4 pt-4 border-t border-blue-300">
+                                <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Total for Team Roster</p>
+                                <p className="text-lg text-blue-900 font-bold">
+                                  ₱{(
+                                    item.team_roster.reduce((sum: number, _player: any, idx: number) => {
+                                      const playerKey = `item-${item.id}-player-${idx}`
+                                      const pricePerPlayer = parseFloat(playerPrices[playerKey] || "0") || 0
+                                      return sum + (pricePerPlayer * item.quantity)
+                                    }, 0)
+                                  ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
                               </div>
                               {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
                                 <div className="mt-4 pt-4 border-t border-blue-300">
@@ -624,38 +651,32 @@ export function AdminQuotationPricing() {
                           )}
 
                           {/* Size Specifications */}
-                          {item.size_specifications && item.size_specifications !== null && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
+                          {item.size_specifications && item.size_specifications !== null && typeof item.size_specifications === "object" && (Object.keys(item.size_specifications).length > 0 || (item.notes && typeof item.notes === "object" && item.notes.sizeNotes)) && (
                             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                              <h4 className="font-semibold text-purple-900 mb-3">TARPAULIN PRINTING DETAILS</h4>
-                              <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
-                                {item.size_specifications.width && (
+                              <h4 className="font-semibold text-purple-900 mb-3">UNIFORM CUSTOMIZATION</h4>
+                              <div className="grid grid-cols-3 gap-3 text-sm bg-white p-3 rounded">
+                                {item.size_specifications.top && (
                                   <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Width</p>
-                                    <p className="text-gray-900">{item.size_specifications.width}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Top/Shirt Size</p>
+                                    <p className="text-gray-900">{item.size_specifications.top}</p>
                                   </div>
                                 )}
-                                {item.size_specifications.height && (
+                                {item.size_specifications.bottom && (
                                   <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Height</p>
-                                    <p className="text-gray-900">{item.size_specifications.height}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Bottom/Short Size</p>
+                                    <p className="text-gray-900">{item.size_specifications.bottom}</p>
                                   </div>
                                 )}
-                                {item.size_specifications.totalSqft && (
+                                {item.size_specifications.top || item.size_specifications.bottom ? null : (
                                   <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Total Sqft</p>
-                                    <p className="text-gray-900">{item.size_specifications.totalSqft}</p>
-                                  </div>
-                                )}
-                                {item.size_specifications.totalPrice && (
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Base Price</p>
-                                    <p className="text-gray-900">₱{Number(item.size_specifications.totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Size</p>
+                                    <p className="text-gray-900">Not specified</p>
                                   </div>
                                 )}
                               </div>
                               {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (
                                 <div className="mt-4 pt-4 border-t border-purple-300">
-                                  <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Comments</p>
+                                  <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes</p>
                                   <p className="text-sm text-purple-900">{item.notes.sizeNotes}</p>
                                 </div>
                               )}

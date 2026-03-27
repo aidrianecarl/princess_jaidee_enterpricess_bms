@@ -11,12 +11,18 @@ export const quotationItemSchema = z.object({
     name: z.string(),
     number: z.union([z.string(), z.number()]),
     size: z.string().optional(),
+    pricePerPlayer: z.number().min(0, 'Price per player must be 0 or greater').optional(),
   })).optional().nullable(),
   sizeSpecifications: z.object({
     top: z.string().optional(),
     bottom: z.string().optional(),
   }).optional().nullable(),
   notes: z.string().optional().nullable(),
+})
+
+export const pricingSchema = z.object({
+  itemPrice: z.number().min(0, 'Price must be 0 or greater'),
+  pricePerPlayer: z.number().min(0, 'Price per player must be 0 or greater').optional(),
 })
 
 export const quotationFormSchema = z.object({

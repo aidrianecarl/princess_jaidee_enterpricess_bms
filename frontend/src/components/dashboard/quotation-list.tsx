@@ -28,6 +28,7 @@ interface Quotation {
   discount: number
   tax: number
   notes: string
+  has_price?: number
 }
 
 export function QuotationList() {
@@ -277,6 +278,16 @@ export function QuotationList() {
                   >
                     <Eye size={18} />
                   </button>
+
+                  {quotation.has_price && (
+                    <button
+                      onClick={() => window.location.href = `/dashboard/quotations/view/${quotation.id}`}
+                      className="p-2 hover:bg-green-100 text-gray-600 hover:text-green-600 rounded-lg transition"
+                      title="View Priced Quotation"
+                    >
+                      <FileText size={18} />
+                    </button>
+                  )}
 
                   {quotation.status === "draft" && (
                     <button

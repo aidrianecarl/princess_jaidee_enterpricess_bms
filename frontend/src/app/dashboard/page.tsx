@@ -7,7 +7,7 @@ import { QuotationList } from "@/components/dashboard/quotation-list"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { TermsConditionsModal } from "@/components/dashboard/terms-modal"
 import { QuotationSkeleton } from "@/components/dashboard/quotation-skeleton"
-import { FileText, CheckCircle, Clock, DollarSign, Plus, Send } from "lucide-react"
+import { FileText, CheckCircle, Clock, DollarSign, Plus } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 
 export default function DashboardPage() {
@@ -104,15 +104,24 @@ export default function DashboardPage() {
       {showTerms && <TermsConditionsModal onAccept={() => setShowTerms(false)} />}
 
       <main className="max-w-7xl mx-auto px-4 py-12">
-        {/* Welcome Section */}
-        <div className="mb-12 animate-fadeInUp">
-          <h1 className="text-4xl font-bold text-neutral-900 mb-2">
-            Welcome back,{" "}
-            <span className="bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
-              {user?.first_name}
-            </span>
-          </h1>
-          <p className="text-neutral-600">Here's your quotation overview and recent activity</p>
+        {/* Welcome Section with Create Button */}
+        <div className="mb-12 animate-fadeInUp flex items-center justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-neutral-900 mb-2">
+              Welcome back,{" "}
+              <span className="bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
+                {user?.first_name}
+              </span>
+            </h1>
+            <p className="text-neutral-600">Here's your quotation overview and recent activity</p>
+          </div>
+          <button
+            onClick={() => (window.location.href = "/dashboard/quotations/create")}
+            className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-xl hover:shadow-lg hover:shadow-red-500/30 transition duration-300 font-semibold hover:scale-[1.02] group whitespace-nowrap"
+          >
+            <Plus size={20} className="group-hover:rotate-90 transition-transform duration-300" />
+            <span>Create Quotation</span>
+          </button>
         </div>
 
         {/* Stats Cards */}
@@ -151,22 +160,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-          <button
-            onClick={() => (window.location.href = "/dashboard/quotations/create")}
-            className="flex items-center justify-center gap-3 p-6 bg-gradient-to-r from-red-600 to-orange-500 text-white rounded-2xl hover:shadow-lg hover:shadow-red-500/30 transition duration-300 font-semibold hover:scale-[1.02] group"
-          >
-            <Plus size={24} className="group-hover:rotate-90 transition-transform duration-300" />
-            <span className="text-lg">Create New Quotation</span>
-          </button>
-          <div className="flex items-center justify-center gap-3 p-6 bg-white border-2 border-dashed border-red-200 text-red-600 rounded-2xl">
-            <Send size={20} />
-            <span className="text-sm">
-              <strong>{stats.draftQuotations}</strong> draft quotations ready to send for approval
-            </span>
-          </div>
-        </div>
+
 
         {/* Quotations Section */}
         <div className="bg-white rounded-2xl border border-red-100 shadow-lg overflow-hidden animate-fadeInUp">

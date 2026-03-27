@@ -1,10 +1,14 @@
-export default function DashboardLayout({ children }) {
+"use client"
+
+import { DashboardSidebar } from "@/components/dashboard/sidebar"
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      {/* Header, Sidebar, etc. */}
-      {children}
+    <div className="flex">
+      <DashboardSidebar />
+      <main className="flex-1">
+        {children}
+      </main>
     </div>
   )
 }
-
-// ... rest of code here ...
