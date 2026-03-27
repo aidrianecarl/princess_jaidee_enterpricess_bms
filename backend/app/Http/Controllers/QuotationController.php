@@ -701,7 +701,14 @@ class QuotationController extends Controller
                 return response()->json(['error' => 'Quotation not found'], 404);
             }
 
-            error_log('[v0] AdminShow - Quotation found, returning data');
+            // Log service image URLs for debugging
+            foreach ($quotation->items as $item) {
+                if ($item->service) {
+                    error_log('[v0] AdminShow - Item ' . $item->id . ' Service: ' . $item->service->name . ' Image URL: ' . ($item->service->image_url ?? 'NULL'));
+                }
+            }
+
+            error_log('[v0] AdminShow - Quotation found with ' . count($quotation->items) . ' items, returning data');
             return response()->json($quotation, 200);
         } catch (\Exception $e) {
             error_log('[v0] AdminShow ERROR: ' . $e->getMessage());

@@ -71,7 +71,7 @@ export function AdminQuotationPricing() {
   const quotationId = params.id as string
   const router = useRouter()
   const { toast } = useToast()
-  
+
   const [quotation, setQuotation] = useState<QuotationForPricing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -94,7 +94,7 @@ export function AdminQuotationPricing() {
       setIsLoading(true)
       const token = localStorage.getItem("admin_token")
       const url = `${apiUrl}/admin/quotations/${quotationId}`
-      
+
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -107,7 +107,7 @@ export function AdminQuotationPricing() {
 
       const data = await response.json()
       const quot = data.data || data
-      
+
       // Ensure team_roster and size_specifications are arrays/objects
       const processedItems = quot.items?.map((item: any) => ({
         ...item,
@@ -116,14 +116,14 @@ export function AdminQuotationPricing() {
       })) || []
 
       setQuotation({ ...quot, items: processedItems })
-      
+
       // Initialize editing prices with current prices
       const priceMap: Record<number, string> = {}
       processedItems.forEach((item: PricingLineItem) => {
         priceMap[item.id] = String(item.unit_price || 0)
       })
       setEditingPrices(priceMap)
-      
+
     } catch (error: any) {
       toast({
         title: "Error",
@@ -162,7 +162,7 @@ export function AdminQuotationPricing() {
 
   const validatePrices = (): boolean => {
     const errors: Record<number, string> = {}
-    
+
     quotation?.items.forEach(item => {
       const price = Number(editingPrices[item.id] || 0)
       if (isNaN(price) || price < 0) {
@@ -172,7 +172,7 @@ export function AdminQuotationPricing() {
         errors[item.id] = "Price must be greater than 0"
       }
     })
-    
+
     if (Object.keys(errors).length > 0) {
       setPriceErrors(errors)
       return false
@@ -222,7 +222,7 @@ export function AdminQuotationPricing() {
       })
       return
     }
-    
+
     setShowConfirmModal(true)
   }
 
@@ -230,7 +230,7 @@ export function AdminQuotationPricing() {
     try {
       setIsSaving(true)
       setShowConfirmModal(false)
-      
+
       if (!quotation) return
 
       // Prepare items with updated pricing
@@ -351,9 +351,9 @@ export function AdminQuotationPricing() {
                 <div className="flex gap-8">
                   {quotation.logo_url && (
                     <div className="flex justify-start">
-                      <img 
-                        src={quotation.logo_url} 
-                        alt="Logo" 
+                      <img
+                        src={quotation.logo_url}
+                        alt="Logo"
                         className="max-w-32 h-auto rounded-lg bg-gray-100"
                         onError={(e) => {
                           e.currentTarget.style.display = "none"
@@ -426,7 +426,7 @@ export function AdminQuotationPricing() {
               <h3 className="text-lg font-semibold text-gray-900 mb-6">
                 Items <span className="text-sm font-normal text-gray-600">({quotation.items.length})</span>
               </h3>
-              
+
               <div className="space-y-4">
                 {quotation.items.map((item) => (
                   <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
@@ -439,21 +439,26 @@ export function AdminQuotationPricing() {
                         <div className="flex items-center gap-4 flex-1">
                           {/* Service Image */}
                           {item.service?.image_url ? (
-                            <img 
-                              src={item.service.image_url}
-                              alt={item.service.name}
-                              className="w-16 h-16 rounded object-cover flex-shrink-0 bg-gray-100"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none"
-                              }}
-                            />
-                          ) : null}
-                          {!item.service?.image_url && (
+                            <div className="w-16 h-16 rounded bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              <img
+                                src={item.service.image_url}
+                                alt={item.service.name}
+                                className="w-16 h-16 rounded object-cover flex-shrink-0"
+                                onError={(e) => {
+                                  console.log("[v0] Image failed to load:", item.service?.image_url)
+                                  const parent = e.currentTarget.parentElement
+                                  if (parent) {
+                                    parent.innerHTML = '<span class="text-xs text-gray-600">No Image</span>'
+                                  }
+                                }}
+                              />
+                            </div>
+                          ) : (
                             <div className="w-16 h-16 rounded bg-gray-300 flex items-center justify-center flex-shrink-0">
                               <span className="text-xs text-gray-600">No Image</span>
                             </div>
                           )}
-                          
+
                           <div className="flex-1">
                             <p className="font-semibold text-gray-900">{item.service?.name || "Custom Item"}</p>
                           </div>
@@ -473,7 +478,7 @@ export function AdminQuotationPricing() {
                             <p className="text-xs text-gray-600">Amount</p>
                             <p className="font-semibold text-gray-900">₱{calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0).toFixed(2)}</p>
                           </div>
-                          
+
                           {expandedItems.has(item.id) ? (
                             <ChevronUp className="w-5 h-5 text-gray-600" />
                           ) : (
@@ -495,11 +500,10 @@ export function AdminQuotationPricing() {
                             onChange={(e) => handlePriceChange(item.id, e.target.value)}
                             placeholder="0.00"
                             step="0.01"
-                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none ${
-                              priceErrors[item.id]
-                                ? "border-red-500 bg-red-50 focus:border-red-500"
-                                : "border-orange-400 bg-white focus:border-orange-500"
-                            }`}
+                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none ${priceErrors[item.id]
+                              ? "border-red-500 bg-red-50 focus:border-red-500"
+                              : "border-orange-400 bg-white focus:border-orange-500"
+                              }`}
                           />
                           {priceErrors[item.id] && (
                             <p className="text-xs text-red-600 mt-1">{priceErrors[item.id]}</p>
@@ -575,7 +579,7 @@ export function AdminQuotationPricing() {
                               DESIGN PREVIEW
                               <span className="text-xs text-indigo-700 font-normal">(Click to expand)</span>
                             </h4>
-                            <div 
+                            <div
                               className="relative inline-block cursor-pointer group"
                               onClick={() => {
                                 if (item.design_file_url) {
@@ -583,7 +587,7 @@ export function AdminQuotationPricing() {
                                 }
                               }}
                             >
-                              <img 
+                              <img
                                 src={item.design_file_url}
                                 alt="Design"
                                 className="max-w-md max-h-64 rounded bg-white hover:opacity-90 transition-opacity"
@@ -742,7 +746,7 @@ export function AdminQuotationPricing() {
           </button>
           <div className="flex items-center justify-center p-4">
             {expandedImage && (
-              <img 
+              <img
                 src={expandedImage}
                 alt="Expanded Design"
                 className="max-w-full max-h-[80vh] rounded-lg"
