@@ -83,6 +83,7 @@ export function AdminQuotationPricing() {
   const [priceErrors, setPriceErrors] = useState<Record<number, string>>({})
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  const [playerPrices, setPlayerPrices] = useState<Record<string, string>>({})
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
@@ -278,12 +279,20 @@ export function AdminQuotationPricing() {
 
       if (!quotation) return
 
-      // Prepare items with updated pricing
-      const updatedItems = quotation.items.map(item => ({
-        id: item.id,
-        unit_price: Number(editingPrices[item.id]) || 0,
-        line_total: calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0),
-      }))
+      // Prepare items with updated pricing and player prices
+      const updatedItems = quotation.items.map(item => {
+        const playerPricesForItem = item.team_roster?.map((player: any, idx: number) => {
+          const playerKey = `item-${item.id}-player-${idx}`
+          return Number(playerPrices[playerKey]) || 0
+        }) || []
+        
+        return {
+          id: item.id,
+          unit_price: Number(editingPrices[item.id]) || 0,
+          line_total: calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0),
+          player_prices: playerPricesForItem.length > 0 ? playerPricesForItem : undefined,
+        }
+      })
 
       const payload = {
         items: updatedItems,
@@ -570,26 +579,40 @@ export function AdminQuotationPricing() {
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
                               <div className="space-y-3">
-                                {item.team_roster.map((player: any, idx: number) => (
-                                  <div key={idx} className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Name</p>
-                                      <p className="text-gray-900">{player.name}</p>
+                                {item.team_roster.map((player: any, idx: number) => {
+                                  const playerKey = `item-${item.id}-player-${idx}`
+                                  return (
+                                    <div key={idx} className="grid grid-cols-5 gap-3 text-sm bg-white p-3 rounded">
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Name</p>
+                                        <p className="text-gray-900">{player.name}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
+                                        <p className="text-gray-900">{player.number}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Top Size</p>
+                                        <p className="text-gray-900">{player.sizeTop || "-"}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
+                                        <p className="text-gray-900">{player.sizeBottom || "-"}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Price per Player</p>
+                                        <input
+                                          type="number"
+                                          value={playerPrices[playerKey] || ""}
+                                          onChange={(e) => setPlayerPrices(prev => ({ ...prev, [playerKey]: e.target.value }))}
+                                          placeholder="0.00"
+                                          step="0.01"
+                                          className="w-full px-2 py-1 border border-orange-400 rounded text-right text-xs focus:outline-none bg-white focus:border-orange-500"
+                                        />
+                                      </div>
                                     </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
-                                      <p className="text-gray-900">{player.number}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Top Size</p>
-                                      <p className="text-gray-900">{player.sizeTop || "-"}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
-                                      <p className="text-gray-900">{player.sizeBottom || "-"}</p>
-                                    </div>
-                                  </div>
-                                ))}
+                                  )
+                                })}
                               </div>
                               {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
                                 <div className="mt-4 pt-4 border-t border-blue-300">
@@ -625,8 +648,8 @@ export function AdminQuotationPricing() {
                                 )}
                                 {item.size_specifications.totalPrice && (
                                   <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Total Price</p>
-                                    <p className="text-gray-900">₱{item.size_specifications.totalPrice}</p>
+                                    <p className="text-xs text-gray-600 font-semibold">Base Price</p>
+                                    <p className="text-gray-900">₱{Number(item.size_specifications.totalPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                   </div>
                                 )}
                               </div>

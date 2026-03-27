@@ -156,7 +156,9 @@ class QuotationController extends Controller
                         $path = $logo->storeAs('quotations/logos', $filename, 'public');
                         
                         if ($path) {
-                            $logoUrl = Storage::disk('public')->url($path);
+                            // Build full URL with domain
+                            $baseUrl = env('APP_URL', 'https://api.princessjaideeenterprises.com');
+                            $logoUrl = $baseUrl . '/api/storage/app/public/quotations/logos/' . $filename;
                             
                             Log::info('Logo uploaded successfully', [
                                 'path' => $path,
@@ -446,7 +448,9 @@ class QuotationController extends Controller
                     $path = $logo->storeAs('quotations/logos', $filename, 'public');
                     
                     if ($path) {
-                        $quotation->logo_url = Storage::disk('public')->url($path);
+                        // Build full URL with domain
+                        $baseUrl = env('APP_URL', 'https://api.princessjaideeenterprises.com');
+                        $quotation->logo_url = $baseUrl . '/api/storage/app/public/quotations/logos/' . $filename;
                         Log::info('New logo uploaded successfully', [
                             'path' => $path,
                             'url' => $quotation->logo_url
