@@ -421,96 +421,122 @@ export function AdminQuotationPricing() {
               </div>
             </div>
 
-            {/* Items Section */}
-            <div className="p-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                Items <span className="text-sm font-normal text-gray-600">({quotation.items.length})</span>
-              </h3>
+            {/* Line Items Table */}
+            <div className="p-3 md:p-8">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
+                Items
+                <span className="text-sm font-normal text-gray-500">
+                  ({quotation.items.length} {quotation.items.length === 1 ? "item" : "items"})
+                </span>
+              </h2>
 
-              <div className="space-y-4">
-                {quotation.items.map((item) => (
-                  <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                    {/* Item Header - Always Visible */}
-                    <div className="bg-orange-50 p-4">
-                      <div
-                        className="flex items-center justify-between cursor-pointer"
-                        onClick={() => toggleItemExpanded(item.id)}
-                      >
-                        <div className="flex items-center gap-4 flex-1">
-                          {/* Service Image */}
-                          {item.service?.image_url ? (
-                            <div className="w-16 h-16 rounded bg-gray-200 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                              <img
-                                src={item.service.image_url}
-                                alt={item.service.name}
-                                className="w-16 h-16 rounded object-cover flex-shrink-0"
-                                onError={(e) => {
-                                  console.log("[v0] Image failed to load:", item.service?.image_url)
-                                  const parent = e.currentTarget.parentElement
-                                  if (parent) {
-                                    parent.innerHTML = '<span class="text-xs text-gray-600">No Image</span>'
-                                  }
-                                }}
-                              />
-                            </div>
-                          ) : (
-                            <div className="w-16 h-16 rounded bg-gray-300 flex items-center justify-center flex-shrink-0">
-                              <span className="text-xs text-gray-600">No Image</span>
-                            </div>
+              <div className="mb-6">
+                {/* Table Header */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
+                  <div className="flex-1 text-sm md:text-base">Name</div>
+                  <div className="w-16 md:w-20 text-center text-sm md:text-base">Qty</div>
+                  <div className="w-24 text-right text-sm md:text-base">Base Price</div>
+                  <div className="hidden lg:flex w-24 text-right text-sm md:text-base">Amount</div>
+                  <div className="w-12 text-center text-sm md:text-base">Actions</div>
+                </div>
+
+                {/* Table Body */}
+                {quotation.items.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <p className="text-lg mb-2">No items added </p>
+                  </div>
+                ) : (
+                  quotation.items.map((item: any) => (
+                    <div key={item.id} className="mb-4 pb-4 border-b border-gray-200">
+                      {/* Main Row - Collapsible */}
+                      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
+                        {/* Expand Button - Show if there's any expandable content */}
+                        {(Array.isArray(item.team_roster) && item.team_roster.length > 0) ||
+                          (item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0) ||
+                          item.design_file_url ||
+                          item.notes ? (
+                          <button
+                            onClick={() => {
+                              const newExpanded = new Set(expandedItems)
+                              if (newExpanded.has(item.id)) {
+                                newExpanded.delete(item.id)
+                              } else {
+                                newExpanded.add(item.id)
+                              }
+                              setExpandedItems(newExpanded)
+                            }}
+                            className="p-1 hover:bg-gray-200 rounded transition self-start md:self-center"
+                          >
+                            <ChevronDown
+                              size={18}
+                              className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        ) : null}
+
+                        {/* Image & Name Column */}
+                        <div className="flex-1 flex gap-2 min-w-0">
+                          {item.service?.image_url && (
+                            <img
+                              src={item.service.image_url}
+                              alt={item.service.name}
+                              className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none"
+                              }}
+                            />
                           )}
-
-                          <div className="flex-1">
-                            <p className="font-semibold text-gray-900">{item.service?.name || "Custom Item"}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 text-sm md:text-base truncate">{item.service?.name || "Custom Item"}</p>
                           </div>
                         </div>
 
-                        {/* Pricing Row */}
-                        <div className="flex items-center gap-4 ml-4">
-                          <div className="text-right">
-                            <p className="text-xs text-gray-600">Qty</p>
-                            <p className="font-semibold text-gray-900">{item.quantity}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-600">Base Price</p>
-                            <p className="font-semibold text-gray-900">₱{Number(editingPrices[item.id] || 0).toFixed(2)}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-gray-600">Amount</p>
-                            <p className="font-semibold text-gray-900">₱{calculateLineTotal(item.quantity, Number(editingPrices[item.id]) || 0).toFixed(2)}</p>
-                          </div>
-
-                          {expandedItems.has(item.id) ? (
-                            <ChevronUp className="w-5 h-5 text-gray-600" />
-                          ) : (
-                            <ChevronDown className="w-5 h-5 text-gray-600" />
-                          )}
+                        {/* Quantity Column */}
+                        <div className="w-16 md:w-20 flex items-center justify-center">
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            disabled
+                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm focus:border-red-600 outline-none bg-gray-100 cursor-not-allowed"
+                          />
                         </div>
-                      </div>
-                    </div>
 
-                    {/* Item Details - Expandable */}
-                    {expandedItems.has(item.id) && (
-                      <div className="p-6 space-y-6 border-t border-gray-200 bg-white">
-                        {/* Price Input */}
-                        <div className="p-4 bg-orange-50 rounded-lg border border-orange-300">
-                          <label className="block text-sm font-semibold text-gray-700 mb-2">Amount (₱)</label>
+                        {/* Base Price Column */}
+                        <div className="w-24 flex items-center justify-end">
+                          <input
+                            type="text"
+                            value={`₱${(Number(editingPrices[item.id]) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            disabled
+                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed"
+                          />
+                        </div>
+
+                        {/* Amount Column - Editable */}
+                        <div className="hidden lg:flex w-24 items-center justify-end">
                           <input
                             type="number"
                             value={editingPrices[item.id] || ""}
                             onChange={(e) => handlePriceChange(item.id, e.target.value)}
                             placeholder="0.00"
                             step="0.01"
-                            className={`w-full px-4 py-2 border rounded-lg text-sm focus:outline-none ${priceErrors[item.id]
-                              ? "border-red-500 bg-red-50 focus:border-red-500"
-                              : "border-orange-400 bg-white focus:border-orange-500"
-                              }`}
+                            className={`w-full px-2 py-1 md:py-2 border rounded text-right text-xs focus:outline-none ${
+                              priceErrors[item.id]
+                                ? "border-red-500 bg-red-50 focus:border-red-500"
+                                : "border-orange-400 bg-white focus:border-orange-500"
+                            }`}
                           />
-                          {priceErrors[item.id] && (
-                            <p className="text-xs text-red-600 mt-1">{priceErrors[item.id]}</p>
-                          )}
                         </div>
 
-                        {/* Team Roster Details */}
+                        {/* Actions Column - Hidden for now */}
+                        <div className="w-12"></div>
+                      </div>
+
+                      {/* Collapsible Details */}
+                      {expandedItems.has(item.id) && (
+                        <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
+                          
+                          {/* Team Roster Details */}
                         {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
                           <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                             <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
@@ -626,17 +652,22 @@ export function AdminQuotationPricing() {
                       </div>
                     )}
                   </div>
-                ))}
+                  ))
+                )}
               </div>
             </div>
 
-            {/* Totals Section */}
+                       {/* Totals Section */}
             <div className="p-8 border-t-2 border-gray-200 bg-gradient-to-br from-gray-50 via-white to-gray-50">
               <div className="max-w-md ml-auto space-y-3">
                 <div className="flex justify-between text-base">
                   <span className="font-semibold text-gray-700">Subtotal:</span>
                   <span className="text-gray-900 font-semibold">₱{subtotal.toFixed(2)}</span>
-                </div>
+                </div> 
+              </div>
+            </div>
+
+            
 
                 <div className="border-t border-gray-300 pt-3">
                   <div className="space-y-2">
@@ -683,8 +714,6 @@ export function AdminQuotationPricing() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
       {/* Confirmation Modal */}
       <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
