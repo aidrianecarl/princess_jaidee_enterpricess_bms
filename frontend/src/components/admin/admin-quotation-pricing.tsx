@@ -112,18 +112,51 @@ export function AdminQuotationPricing() {
       console.log("[v0] Fetched Quotation Data:", quot)
       console.log("[v0] Raw Items:", quot.items)
 
-      // Ensure team_roster and size_specifications are arrays/objects
+      // Decode JSON fields from backend
       const processedItems = quot.items?.map((item: any) => {
         console.log(`[v0] Processing Item ID: ${item.id}`)
-        console.log(`[v0] Item team_roster:`, item.team_roster)
-        console.log(`[v0] Item size_specifications:`, item.size_specifications)
-        console.log(`[v0] Item design_file_url:`, item.design_file_url)
-        console.log(`[v0] Item notes:`, item.notes)
+        
+        // Parse team_roster if it's a JSON string
+        let teamRoster = item.team_roster
+        if (typeof item.team_roster === 'string' && item.team_roster) {
+          try {
+            teamRoster = JSON.parse(item.team_roster)
+            console.log(`[v0] Parsed team_roster:`, teamRoster)
+          } catch (e) {
+            console.log(`[v0] Failed to parse team_roster:`, e)
+            teamRoster = null
+          }
+        }
+        
+        // Parse size_specifications if it's a JSON string
+        let sizeSpecs = item.size_specifications
+        if (typeof item.size_specifications === 'string' && item.size_specifications) {
+          try {
+            sizeSpecs = JSON.parse(item.size_specifications)
+            console.log(`[v0] Parsed size_specifications:`, sizeSpecs)
+          } catch (e) {
+            console.log(`[v0] Failed to parse size_specifications:`, e)
+            sizeSpecs = null
+          }
+        }
+        
+        // Parse notes if it's a JSON string
+        let notesData = item.notes
+        if (typeof item.notes === 'string' && item.notes) {
+          try {
+            notesData = JSON.parse(item.notes)
+            console.log(`[v0] Parsed notes:`, notesData)
+          } catch (e) {
+            console.log(`[v0] Failed to parse notes:`, e)
+            notesData = null
+          }
+        }
         
         return {
           ...item,
-          team_roster: Array.isArray(item.team_roster) ? item.team_roster : [],
-          size_specifications: typeof item.size_specifications === "object" && item.size_specifications ? item.size_specifications : {},
+          team_roster: teamRoster,
+          size_specifications: sizeSpecs,
+          notes: notesData,
         }
       }) || []
 
@@ -531,16 +564,9 @@ export function AdminQuotationPricing() {
                       {/* Collapsible Details */}
                       {expandedItems.has(item.id) && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
-                          {(() => {
-                            console.log(`[v0] Rendering expanded item ${item.id}`)
-                            console.log(`[v0] Team Roster Check - is array:`, Array.isArray(item.team_roster), "length:", item.team_roster?.length, "value:", item.team_roster)
-                            console.log(`[v0] Size Specs Check - is object:`, typeof item.size_specifications === "object", "keys:", Object.keys(item.size_specifications || {}), "value:", item.size_specifications)
-                            console.log(`[v0] Design File URL:`, item.design_file_url)
-                            return null
-                          })()}
                           
                           {/* Team Roster Details */}
-                          {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
+                          {item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
                               <div className="space-y-3">
@@ -575,7 +601,7 @@ export function AdminQuotationPricing() {
                           )}
 
                           {/* Size Specifications */}
-                          {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
+                          {item.size_specifications && item.size_specifications !== null && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
                             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                               <h4 className="font-semibold text-purple-900 mb-3">TARPAULIN PRINTING DETAILS</h4>
                               <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
