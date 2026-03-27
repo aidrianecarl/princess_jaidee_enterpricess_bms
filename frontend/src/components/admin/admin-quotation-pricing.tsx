@@ -5,6 +5,7 @@ import { useParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { Save, ArrowLeft, Loader2, AlertTriangle, Check, ChevronDown, ChevronUp, X, ZoomIn } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { z } from "zod"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -117,10 +118,10 @@ export function AdminQuotationPricing() {
 
       setQuotation({ ...quot, items: processedItems })
 
-      // Initialize editing prices with current prices
+      // Initialize editing prices with 0
       const priceMap: Record<number, string> = {}
       processedItems.forEach((item: PricingLineItem) => {
-        priceMap[item.id] = String(item.unit_price || 0)
+        priceMap[item.id] = "0"
       })
       setEditingPrices(priceMap)
 
@@ -161,15 +162,14 @@ export function AdminQuotationPricing() {
   }
 
   const validatePrices = (): boolean => {
+    const priceSchema = z.number().min(0.01, "Price must be greater than 0")
     const errors: Record<number, string> = {}
 
     quotation?.items.forEach(item => {
       const price = Number(editingPrices[item.id] || 0)
-      if (isNaN(price) || price < 0) {
-        errors[item.id] = "Invalid price"
-      }
-      if (price === 0) {
-        errors[item.id] = "Price must be greater than 0"
+      const result = priceSchema.safeParse(price)
+      if (!result.success) {
+        errors[item.id] = result.error.errors[0].message
       }
     })
 
@@ -435,9 +435,7 @@ export function AdminQuotationPricing() {
                 <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
                   <div className="flex-1 text-sm md:text-base">Name</div>
                   <div className="w-16 md:w-20 text-center text-sm md:text-base">Qty</div>
-                  <div className="w-24 text-right text-sm md:text-base">Base Price</div>
-                  <div className="hidden lg:flex w-24 text-right text-sm md:text-base">Amount</div>
-                  <div className="w-12 text-center text-sm md:text-base">Actions</div>
+                  <div className="w-24 text-right text-sm md:text-base">Amount</div>
                 </div>
 
                 {/* Table Body */}
@@ -502,202 +500,187 @@ export function AdminQuotationPricing() {
                           />
                         </div>
 
-                        {/* Base Price Column */}
-                        <div className="w-24 flex items-center justify-end">
-                          <input
-                            type="text"
-                            value={`₱${(Number(editingPrices[item.id]) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            disabled
-                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed"
-                          />
-                        </div>
-
                         {/* Amount Column - Editable */}
-                        <div className="hidden lg:flex w-24 items-center justify-end">
+                        <div className="w-24 flex items-center justify-end">
                           <input
                             type="number"
                             value={editingPrices[item.id] || ""}
                             onChange={(e) => handlePriceChange(item.id, e.target.value)}
                             placeholder="0.00"
                             step="0.01"
-                            className={`w-full px-2 py-1 md:py-2 border rounded text-right text-xs focus:outline-none ${
-                              priceErrors[item.id]
+                            className={`w-full px-2 py-1 md:py-2 border rounded text-right text-xs focus:outline-none ${priceErrors[item.id]
                                 ? "border-red-500 bg-red-50 focus:border-red-500"
                                 : "border-orange-400 bg-white focus:border-orange-500"
-                            }`}
+                              }`}
                           />
                         </div>
-
-                        {/* Actions Column - Hidden for now */}
-                        <div className="w-12"></div>
                       </div>
 
                       {/* Collapsible Details */}
                       {expandedItems.has(item.id) && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
-                          
+
                           {/* Team Roster Details */}
-                        {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
-                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
-                            <div className="space-y-3">
-                              {item.team_roster.map((player: any, idx: number) => (
-                                <div key={idx} className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Name</p>
-                                    <p className="text-gray-900">{player.name}</p>
+                          {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
+                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                              <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
+                              <div className="space-y-3">
+                                {item.team_roster.map((player: any, idx: number) => (
+                                  <div key={idx} className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Name</p>
+                                      <p className="text-gray-900">{player.name}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
+                                      <p className="text-gray-900">{player.number}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Top Size</p>
+                                      <p className="text-gray-900">{player.sizeTop || "-"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
+                                      <p className="text-gray-900">{player.sizeBottom || "-"}</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
-                                    <p className="text-gray-900">{player.number}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Top Size</p>
-                                    <p className="text-gray-900">{player.sizeTop || "-"}</p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
-                                    <p className="text-gray-900">{player.sizeBottom || "-"}</p>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Size Specifications */}
-                        {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
-                          <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                            <h4 className="font-semibold text-purple-900 mb-3">TARPAULIN PRINTING DETAILS</h4>
-                            <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
-                              {item.size_specifications.width && (
-                                <div>
-                                  <p className="text-xs text-gray-600 font-semibold">Width</p>
-                                  <p className="text-gray-900">{item.size_specifications.width}</p>
-                                </div>
-                              )}
-                              {item.size_specifications.height && (
-                                <div>
-                                  <p className="text-xs text-gray-600 font-semibold">Height</p>
-                                  <p className="text-gray-900">{item.size_specifications.height}</p>
-                                </div>
-                              )}
-                              {item.size_specifications.totalSqft && (
-                                <div>
-                                  <p className="text-xs text-gray-600 font-semibold">Total Sqft</p>
-                                  <p className="text-gray-900">{item.size_specifications.totalSqft}</p>
-                                </div>
-                              )}
-                              {item.size_specifications.totalPrice && (
-                                <div>
-                                  <p className="text-xs text-gray-600 font-semibold">Total Price</p>
-                                  <p className="text-gray-900">₱{item.size_specifications.totalPrice}</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Design File Preview */}
-                        {item.design_file_url && (
-                          <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-                            <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
-                              DESIGN PREVIEW
-                              <span className="text-xs text-indigo-700 font-normal">(Click to expand)</span>
-                            </h4>
-                            <div
-                              className="relative inline-block cursor-pointer group"
-                              onClick={() => {
-                                if (item.design_file_url) {
-                                  setExpandedImage(item.design_file_url)
-                                }
-                              }}
-                            >
-                              <img
-                                src={item.design_file_url}
-                                alt="Design"
-                                className="max-w-md max-h-64 rounded bg-white hover:opacity-90 transition-opacity"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = "none"
-                                }}
-                              />
-                              <div className="absolute inset-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20">
-                                <ZoomIn className="w-8 h-8 text-white" />
+                                ))}
                               </div>
+                              {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
+                                <div className="mt-4 pt-4 border-t border-blue-300">
+                                  <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
+                                  <p className="text-sm text-blue-900">{item.notes.teamNotes}</p>
+                                </div>
+                              )}
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {/* Notes */}
-                        {item.notes && typeof item.notes === "object" && Object.keys(item.notes).length > 0 && (
-                          <div className="p-4 bg-gray-100 rounded-lg border border-gray-300 space-y-2">
-                            <h4 className="font-semibold text-gray-900">DESIGN COMMENTS</h4>
-                            {item.notes.designNotes && (
-                              <p className="text-sm text-gray-700"><span className="font-semibold">Design Notes:</span> {item.notes.designNotes}</p>
-                            )}
-                            {item.notes.sizeNotes && (
-                              <p className="text-sm text-gray-700"><span className="font-semibold">Size Notes:</span> {item.notes.sizeNotes}</p>
-                            )}
-                            {item.notes.teamNotes && (
-                              <p className="text-sm text-gray-700"><span className="font-semibold">Team Notes:</span> {item.notes.teamNotes}</p>
-                            )}
-                          </div>
-                        )}
-                        {item.notes && typeof item.notes === "string" && item.notes.length > 0 && (
-                          <div className="p-4 bg-gray-100 rounded-lg border border-gray-300">
-                            <h4 className="font-semibold text-gray-900 mb-2">DESIGN COMMENTS</h4>
-                            <p className="text-sm text-gray-700">{item.notes}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                          {/* Size Specifications */}
+                          {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
+                            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                              <h4 className="font-semibold text-purple-900 mb-3">TARPAULIN PRINTING DETAILS</h4>
+                              <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
+                                {item.size_specifications.width && (
+                                  <div>
+                                    <p className="text-xs text-gray-600 font-semibold">Width</p>
+                                    <p className="text-gray-900">{item.size_specifications.width}</p>
+                                  </div>
+                                )}
+                                {item.size_specifications.height && (
+                                  <div>
+                                    <p className="text-xs text-gray-600 font-semibold">Height</p>
+                                    <p className="text-gray-900">{item.size_specifications.height}</p>
+                                  </div>
+                                )}
+                                {item.size_specifications.totalSqft && (
+                                  <div>
+                                    <p className="text-xs text-gray-600 font-semibold">Total Sqft</p>
+                                    <p className="text-gray-900">{item.size_specifications.totalSqft}</p>
+                                  </div>
+                                )}
+                                {item.size_specifications.totalPrice && (
+                                  <div>
+                                    <p className="text-xs text-gray-600 font-semibold">Total Price</p>
+                                    <p className="text-gray-900">₱{item.size_specifications.totalPrice}</p>
+                                  </div>
+                                )}
+                              </div>
+                              {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (
+                                <div className="mt-4 pt-4 border-t border-purple-300">
+                                  <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Comments</p>
+                                  <p className="text-sm text-purple-900">{item.notes.sizeNotes}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Design File Preview */}
+                          {item.design_file_url && (
+                            <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                              <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                                DESIGN PREVIEW
+                                <span className="text-xs text-indigo-700 font-normal">(Click to expand)</span>
+                              </h4>
+                              <div
+                                className="relative inline-block cursor-pointer group"
+                                onClick={() => {
+                                  if (item.design_file_url) {
+                                    setExpandedImage(item.design_file_url)
+                                  }
+                                }}
+                              >
+                                <img
+                                  src={item.design_file_url}
+                                  alt="Design"
+                                  className="max-w-md max-h-64 rounded bg-white hover:opacity-90 transition-opacity"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none"
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20">
+                                  <ZoomIn className="w-8 h-8 text-white" />
+                                </div>
+                              </div>
+                              {item.notes && typeof item.notes === "object" && item.notes.designNotes && (
+                                <div className="mt-4 pt-4 border-t border-indigo-300">
+                                  <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
+                                  <p className="text-sm text-indigo-900">{item.notes.designNotes}</p>
+                                </div>
+                              )}
+                              {item.notes && typeof item.notes === "string" && item.notes.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-indigo-300">
+                                  <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
+                                  <p className="text-sm text-indigo-900">{item.notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   ))
                 )}
               </div>
             </div>
 
-                       {/* Totals Section */}
+            {/* Totals Section - Bottom Right */}
             <div className="p-8 border-t-2 border-gray-200 bg-gradient-to-br from-gray-50 via-white to-gray-50">
               <div className="max-w-md ml-auto space-y-3">
+                {/* Subtotal */}
                 <div className="flex justify-between text-base">
                   <span className="font-semibold text-gray-700">Subtotal:</span>
                   <span className="text-gray-900 font-semibold">₱{subtotal.toFixed(2)}</span>
-                </div> 
-              </div>
-            </div>
+                </div>
 
-            
-
-                <div className="border-t border-gray-300 pt-3">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700">Discount:</span>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={discountType}
-                          onChange={(e) => setDiscountType(e.target.value as "percent" | "peso")}
-                          className="px-2 py-1 border border-gray-300 rounded text-sm bg-white"
-                        >
-                          <option value="percent">%</option>
-                          <option value="peso">₱</option>
-                        </select>
-                        <input
-                          type="number"
-                          value={discountValue}
-                          onChange={(e) => setDiscountValue(e.target.value)}
-                          placeholder="0"
-                          className="w-20 px-2 py-1 border border-orange-300 rounded focus:outline-none focus:border-orange-500 bg-orange-50 text-sm"
-                        />
-                      </div>
+                {/* Discount Section */}
+                <div className="border-t border-gray-300 pt-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Discount:</span>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={discountType}
+                        onChange={(e) => setDiscountType(e.target.value as "percent" | "peso")}
+                        className="px-2 py-1 border border-gray-300 rounded text-sm bg-white"
+                      >
+                        <option value="percent">%</option>
+                        <option value="peso">₱</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={discountValue}
+                        onChange={(e) => setDiscountValue(e.target.value)}
+                        placeholder="0"
+                        className="w-20 px-2 py-1 border border-orange-300 rounded focus:outline-none focus:border-orange-500 bg-orange-50 text-sm"
+                      />
                     </div>
-                    <div className="flex justify-between text-sm text-gray-600">
-                      <span>Total Discount:</span>
-                      <span>- ₱{discount.toFixed(2)}</span>
-                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Total Discount:</span>
+                    <span>- ₱{discount.toFixed(2)}</span>
                   </div>
                 </div>
 
+                {/* Tax */}
                 <div className="border-t border-gray-300 pt-3">
                   <div className="flex justify-between text-sm text-gray-700">
                     <span>Tax (12% VAT):</span>
@@ -705,6 +688,7 @@ export function AdminQuotationPricing() {
                   </div>
                 </div>
 
+                {/* Total */}
                 <div className="border-t-2 border-gray-300 pt-3 bg-orange-50 rounded-lg p-4">
                   <div className="flex justify-between text-xl font-bold">
                     <span className="text-gray-900">Total:</span>
@@ -714,6 +698,8 @@ export function AdminQuotationPricing() {
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
       {/* Confirmation Modal */}
       <AlertDialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
