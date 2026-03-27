@@ -17,6 +17,7 @@ interface ServiceRequirementsModalProps {
   onClose: () => void
   onConfirm: (data: {
     quantity: number
+    designFile?: File
     designFileUrl?: string
     designImageUrl?: string
     designNotes?: string
@@ -154,6 +155,7 @@ export function ServiceRequirementsModal({
     if (validateCurrentStep()) {
       const confirmData = {
         quantity,
+        designFile: designFile || undefined,
         designFileUrl: designFileName || undefined,
         designImageUrl: designImageUrl || undefined,
         designNotes: designNotes || undefined,

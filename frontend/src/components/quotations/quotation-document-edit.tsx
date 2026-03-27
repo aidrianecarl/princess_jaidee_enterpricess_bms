@@ -29,6 +29,7 @@ interface LineItem {
   amount: number
   image?: string
   lineTotal?: number // Added for consistency with backend mapping
+  designFile?: File
   designFileUrl?: string
   teamRoster?: Array<{ name: string; number: string | number }>
   sizeSpecifications?: { top?: string; bottom?: string }
@@ -420,16 +421,49 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
       formDataToSend.append("valid_until", formData.validUntil || "") // Use validUntil
       // If not a draft, consider status and other fields as needed for submission
 
-      // Add items as JSON string
-      const itemsPayload = lineItems.map((item) => ({
-        product_id: item.type === "product" ? item.productId : null,
-        service_id: item.type === "service" ? item.serviceId : null,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        customization: item.description,
-        design_file_url: item.designFileUrl || null,
-        team_roster: item.teamRoster ? JSON.stringify(item.teamRoster) : null,
-        size_specifications: item.sizeSpecifications ? JSON.stringify(item.sizeSpecifications) : null,
+      // Upload design files and get URLs
+      const itemsPayload = await Promise.all(lineItems.map(async (item) => {
+        let designFileUrl = item.designFileUrl || null
+        
+        // If there's a File object, upload it
+        if (item.designFile instanceof File) {
+          try {
+            const designFormData = new FormData()
+            designFormData.append("design_file", item.designFile)
+            
+            const uploadResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: designFormData,
+              }
+            )
+            
+            if (uploadResponse.ok) {
+              const uploadData = await uploadResponse.json()
+              designFileUrl = uploadData.design_file_url
+              console.log("[v0] Design file uploaded:", designFileUrl)
+            } else {
+              console.error("[v0] Design file upload failed")
+            }
+          } catch (error) {
+            console.error("[v0] Error uploading design file:", error)
+          }
+        }
+        
+        return {
+          product_id: item.type === "product" ? item.productId : null,
+          service_id: item.type === "service" ? item.serviceId : null,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          customization: item.description,
+          design_file_url: designFileUrl,
+          team_roster: item.teamRoster ? JSON.stringify(item.teamRoster) : null,
+          size_specifications: item.sizeSpecifications ? JSON.stringify(item.sizeSpecifications) : null,
+        }
       }))
       console.log("Items payload for update:", itemsPayload)
       formDataToSend.append("items", JSON.stringify(itemsPayload))
@@ -534,13 +568,49 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
       formDataToSend.append("notes", "")
       formDataToSend.append("valid_until", formData.validUntil || "")
 
-      // Add items as JSON string
-      const itemsPayload = lineItems.map((item) => ({
-        product_id: item.type === "product" ? item.productId : null,
-        service_id: item.type === "service" ? item.serviceId : null,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        customization: item.description,
+      // Upload design files and get URLs
+      const itemsPayload = await Promise.all(lineItems.map(async (item) => {
+        let designFileUrl = item.designFileUrl || null
+        
+        // If there's a File object, upload it
+        if (item.designFile instanceof File) {
+          try {
+            const designFormData = new FormData()
+            designFormData.append("design_file", item.designFile)
+            
+            const uploadResponse = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+                body: designFormData,
+              }
+            )
+            
+            if (uploadResponse.ok) {
+              const uploadData = await uploadResponse.json()
+              designFileUrl = uploadData.design_file_url
+              console.log("[v0] Design file uploaded:", designFileUrl)
+            } else {
+              console.error("[v0] Design file upload failed")
+            }
+          } catch (error) {
+            console.error("[v0] Error uploading design file:", error)
+          }
+        }
+        
+        return {
+          product_id: item.type === "product" ? item.productId : null,
+          service_id: item.type === "service" ? item.serviceId : null,
+          quantity: item.quantity,
+          unit_price: item.unitPrice,
+          customization: item.description,
+          design_file_url: designFileUrl,
+          team_roster: item.teamRoster ? JSON.stringify(item.teamRoster) : null,
+          size_specifications: item.sizeSpecifications ? JSON.stringify(item.sizeSpecifications) : null,
+        }
       }))
       formDataToSend.append("items", JSON.stringify(itemsPayload))
 
@@ -1191,6 +1261,7 @@ export function QuotationDocumentV2({ existingQuotation }: QuotationDocumentProp
             quantity: 1,
             unitPrice: service.base_price,
             image: service.image_url,
+            designFile: serviceData.designFile || undefined,
             designFileUrl: serviceData.designFile ? URL.createObjectURL(serviceData.designFile) : undefined,
             teamRoster: serviceData.teamRoster,
             sizeSpecifications: serviceData.sizeSpecifications,

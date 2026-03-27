@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Quotations - Client
     Route::get('/quotations/next-number', [QuotationController::class, 'getNextQuotationNumber']);
     Route::post('/quotations/upload-logo', [QuotationController::class, 'uploadLogo']);
+    Route::post('/quotations/upload-design', [QuotationController::class, 'uploadDesignFile']);
     
     Route::get('/quotations', [QuotationController::class, 'index']);
     Route::post('/quotations', [QuotationController::class, 'store']);

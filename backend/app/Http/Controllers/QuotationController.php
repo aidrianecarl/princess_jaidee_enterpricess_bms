@@ -789,4 +789,36 @@ class QuotationController extends Controller
             return response()->json(['error' => 'Failed to update quotation pricing: ' . $e->getMessage()], 500);
         }
     }
+
+    public function uploadDesignFile(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'design_file' => 'required|file|mimes:pdf,jpeg,png,jpg,gif,ai,psd,cdr,eps|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $file = $request->file('design_file');
+            $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            
+            // Ensure the quotations/items directory exists
+            $itemsDir = storage_path('app/public/quotations/items');
+            if (!is_dir($itemsDir)) {
+                @mkdir($itemsDir, 0755, true);
+            }
+            
+            $path = $file->storeAs('quotations/items', $filename, 'public');
+            
+            return response()->json([
+                'message' => 'Design file uploaded successfully',
+                'design_file_url' => 'api/storage/app/public/quotations/items/' . $filename,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Design file upload error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

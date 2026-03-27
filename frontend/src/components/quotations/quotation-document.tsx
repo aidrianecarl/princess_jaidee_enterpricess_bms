@@ -755,10 +755,41 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "draft")
 
-      formDataToSend.append(
-        "items",
-        JSON.stringify(
-          lineItems.map((item, index) => ({
+      // Upload design files and get URLs
+      const itemsPayload = await Promise.all(
+        lineItems.map(async (item, index) => {
+          let designFileUrl = null
+          
+          // If there's a design file, upload it
+          if (item.serviceRequirements?.designFile instanceof File) {
+            try {
+              const designFormData = new FormData()
+              designFormData.append("design_file", item.serviceRequirements.designFile)
+              
+              const uploadResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: designFormData,
+                }
+              )
+              
+              if (uploadResponse.ok) {
+                const uploadData = await uploadResponse.json()
+                designFileUrl = uploadData.design_file_url
+                console.log("[v0] Design file uploaded:", designFileUrl)
+              } else {
+                console.error("[v0] Design file upload failed")
+              }
+            } catch (error) {
+              console.error("[v0] Error uploading design file:", error)
+            }
+          }
+          
+          return {
             product_id: item.type === "product" ? item.productId || null : null,
             service_id: item.type === "service" ? item.serviceId || null : null,
             customization: item.description || "",
@@ -766,13 +797,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             unit_price: Number(item.unitPrice) || 0,
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
-            design_file_url: item.serviceRequirements?.designPreview || null,
+            design_file_url: designFileUrl || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
             notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
-          })),
-        ),
+          }
+        })
       )
+      
+      formDataToSend.append("items", JSON.stringify(itemsPayload))
 
       const url = isEditMode
         ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
@@ -892,11 +925,41 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "pending")
 
-      // Add items as JSON string
-      formDataToSend.append(
-        "items",
-        JSON.stringify(
-          lineItems.map((item, index) => ({
+      // Upload design files and get URLs
+      const itemsPayload = await Promise.all(
+        lineItems.map(async (item, index) => {
+          let designFileUrl = null
+          
+          // If there's a design file, upload it
+          if (item.serviceRequirements?.designFile instanceof File) {
+            try {
+              const designFormData = new FormData()
+              designFormData.append("design_file", item.serviceRequirements.designFile)
+              
+              const uploadResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: designFormData,
+                }
+              )
+              
+              if (uploadResponse.ok) {
+                const uploadData = await uploadResponse.json()
+                designFileUrl = uploadData.design_file_url
+                console.log("[v0] Design file uploaded:", designFileUrl)
+              } else {
+                console.error("[v0] Design file upload failed")
+              }
+            } catch (error) {
+              console.error("[v0] Error uploading design file:", error)
+            }
+          }
+          
+          return {
             product_id: item.productId || null,
             service_id: item.serviceId || null,
             customization: item.description || "",
@@ -904,13 +967,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             unit_price: Number(item.unitPrice) || 0,
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
-            design_file_url: item.serviceRequirements?.designPreview || null,
+            design_file_url: designFileUrl || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
             notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
-          })),
-        ),
+          }
+        })
       )
+      
+      formDataToSend.append("items", JSON.stringify(itemsPayload))
 
       const url = isEditMode
         ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
