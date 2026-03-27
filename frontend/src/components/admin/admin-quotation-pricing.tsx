@@ -109,13 +109,25 @@ export function AdminQuotationPricing() {
       const data = await response.json()
       const quot = data.data || data
 
-      // Ensure team_roster and size_specifications are arrays/objects
-      const processedItems = quot.items?.map((item: any) => ({
-        ...item,
-        team_roster: Array.isArray(item.team_roster) ? item.team_roster : [],
-        size_specifications: typeof item.size_specifications === "object" && item.size_specifications ? item.size_specifications : {},
-      })) || []
+      console.log("[v0] Fetched Quotation Data:", quot)
+      console.log("[v0] Raw Items:", quot.items)
 
+      // Ensure team_roster and size_specifications are arrays/objects
+      const processedItems = quot.items?.map((item: any) => {
+        console.log(`[v0] Processing Item ID: ${item.id}`)
+        console.log(`[v0] Item team_roster:`, item.team_roster)
+        console.log(`[v0] Item size_specifications:`, item.size_specifications)
+        console.log(`[v0] Item design_file_url:`, item.design_file_url)
+        console.log(`[v0] Item notes:`, item.notes)
+        
+        return {
+          ...item,
+          team_roster: Array.isArray(item.team_roster) ? item.team_roster : [],
+          size_specifications: typeof item.size_specifications === "object" && item.size_specifications ? item.size_specifications : {},
+        }
+      }) || []
+
+      console.log("[v0] Processed Items:", processedItems)
       setQuotation({ ...quot, items: processedItems })
 
       // Initialize editing prices with 0
@@ -519,7 +531,14 @@ export function AdminQuotationPricing() {
                       {/* Collapsible Details */}
                       {expandedItems.has(item.id) && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
-
+                          {(() => {
+                            console.log(`[v0] Rendering expanded item ${item.id}`)
+                            console.log(`[v0] Team Roster Check - is array:`, Array.isArray(item.team_roster), "length:", item.team_roster?.length, "value:", item.team_roster)
+                            console.log(`[v0] Size Specs Check - is object:`, typeof item.size_specifications === "object", "keys:", Object.keys(item.size_specifications || {}), "value:", item.size_specifications)
+                            console.log(`[v0] Design File URL:`, item.design_file_url)
+                            return null
+                          })()}
+                          
                           {/* Team Roster Details */}
                           {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
