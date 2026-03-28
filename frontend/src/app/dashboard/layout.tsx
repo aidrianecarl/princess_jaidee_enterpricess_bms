@@ -10,13 +10,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex flex-col min-h-screen">
-      <div className={`flex flex-1 ${hideSidebar ? "" : "flex-row"}`}>
+      {/* Main flex container - sidebar and content */}
+      <div className="flex flex-1 pt-14 sm:pt-16">
+        {/* Sidebar - hidden on create page and on mobile */}
         {!hideSidebar && (
-          <div className="hidden md:block">
+          <div className="hidden md:block w-64">
             <DashboardSidebar />
           </div>
         )}
-        <main className="flex-1 w-full">
+        {/* Main Content Area */}
+        <main className="flex-1 w-full overflow-auto">
           {children}
         </main>
       </div>
