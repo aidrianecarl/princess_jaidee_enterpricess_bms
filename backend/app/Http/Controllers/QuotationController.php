@@ -40,6 +40,29 @@ class QuotationController extends Controller
         return response()->json($quotations, 200);
     }
 
+    // Get all quotations for admin (no user filter - retrieves all quotations)
+    public function adminIndex(Request $request)
+    {
+        $query = Quotation::with(['customer', 'items.service']);
+
+        if ($request->has('search')) {
+            $query->where('quotation_number', 'like', '%' . $request->search . '%');
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $quotations = $query->orderBy('created_at', 'desc')->get();
+        
+        $quotations->transform(function ($quotation) {
+            $quotation->items_count = $quotation->items->count();
+            return $quotation;
+        });
+
+        return response()->json($quotations, 200);
+    }
+
     // Get single quotation
     public function show($id)
     {

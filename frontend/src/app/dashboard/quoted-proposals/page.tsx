@@ -34,7 +34,7 @@ export default function QuotedProposalsPage() {
     quotationId: null,
   })
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -274,7 +274,7 @@ export default function QuotedProposalsPage() {
 
         {/* Confirmation Modal */}
         {confirmModal.isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-slideIn">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirm Order</h2>
               <p className="text-gray-600 mb-6">

@@ -9,7 +9,7 @@ function ThankYouContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const quotationId = searchParams.get("quotation")
-  const [countdown, setCountdown] = useState(30)
+  const [countdown, setCountdown] = useState(60)
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
