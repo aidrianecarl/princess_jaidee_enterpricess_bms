@@ -1,7 +1,6 @@
 "use client"
 
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
-import { DashboardHeader } from "@/components/dashboard/header"
 import { usePathname } from "next/navigation"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -12,21 +11,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
-      {/* ✅ Header (FULL WIDTH) */}
-      <DashboardHeader user={null} />
-
-      {/* ✅ Body */}
       <div className="flex">
-        
-        {/* ✅ Sidebar */}
         {!hideSidebar && (
           <div className="hidden md:block">
             <DashboardSidebar />
           </div>
         )}
-
-        {/* ✅ Main Content */}
         <main
           className={`
             flex-1
