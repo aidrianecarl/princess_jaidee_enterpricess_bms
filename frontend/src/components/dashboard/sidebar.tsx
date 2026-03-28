@@ -101,8 +101,6 @@ export function DashboardSidebar() {
                 </div>
               </div>
             </div>
-              )}
-            </div>
           )}
         </div>
       </nav>
