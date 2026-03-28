@@ -25,8 +25,8 @@ export function DashboardSidebar() {
       </div>
 
       {/* Sidebar */}
-      <aside className={`fixed md:static w-64 bg-white border-r border-gray-200 min-h-screen transition-all duration-300 z-30 ${
-        mobileMenuOpen ? "left-0" : "-left-64 md:left-0"
+      <aside className={`fixed md:fixed top-14 sm:top-16 left-0 w-64 bg-white border-r border-gray-200 h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] transition-all duration-300 z-30 ${
+        mobileMenuOpen ? "left-0" : "-left-64"
       }`}>
       <nav className="p-6 space-y-2">
         {/* Main Menu */}
