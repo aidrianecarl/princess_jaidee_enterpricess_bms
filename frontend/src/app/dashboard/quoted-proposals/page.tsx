@@ -34,7 +34,7 @@ export default function QuotedProposalsPage() {
     quotationId: null,
   })
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -83,7 +83,7 @@ export default function QuotedProposalsPage() {
       )
 
       // Redirect to thank you page
-      router.push(`/dashboard/quotations/thank-you?quotation=${quotationId}`)
+      router.push(`/dashboard/quotations/thankyou?quotation=${quotationId}`)
       setConfirmModal({ isOpen: false, quotationId: null })
     } catch (error) {
       console.error("Error sending for production:", error)
