@@ -29,6 +29,10 @@ export default function QuotedProposalsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [sendingId, setSendingId] = useState<number | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; quotationId: number | null }>({
+    isOpen: false,
+    quotationId: null,
+  })
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -78,10 +82,13 @@ export default function QuotedProposalsPage() {
         )
       )
 
-      alert("Quotation sent for production successfully!")
+      // Redirect to thank you page
+      router.push(`/dashboard/quotations/thank-you?quotation=${quotationId}`)
+      setConfirmModal({ isOpen: false, quotationId: null })
     } catch (error) {
       console.error("Error sending for production:", error)
       alert("Failed to send for production. Please try again.")
+      setConfirmModal({ isOpen: false, quotationId: null })
     } finally {
       setSendingId(null)
     }
@@ -227,7 +234,7 @@ export default function QuotedProposalsPage() {
                     </Link>
                     {quotation.status !== "sent" && (
                       <Button
-                        onClick={() => handleSendForProduction(quotation.id)}
+                        onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
                         disabled={sendingId === quotation.id}
                         className="flex items-center gap-2 w-full sm:w-auto bg-gradient-to-r from-red-600 to-orange-500 text-white hover:shadow-lg"
                         size="sm"
@@ -263,6 +270,46 @@ export default function QuotedProposalsPage() {
               Check back when the admin has set prices for your quotations
             </p>
           </Card>
+        )}
+
+        {/* Confirmation Modal */}
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-slideIn">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirm Order</h2>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to make an order for this quotation? This will finalize your proposal and send it to our production team.
+              </p>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setConfirmModal({ isOpen: false, quotationId: null })}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (confirmModal.quotationId) {
+                      handleSendForProduction(confirmModal.quotationId)
+                    }
+                  }}
+                  disabled={sendingId !== null}
+                  className="flex-1 bg-gradient-to-r from-red-600 to-orange-500 text-white hover:shadow-lg"
+                >
+                  {sendingId ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                      Confirming...
+                    </>
+                  ) : (
+                    "Yes, Confirm Order"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
