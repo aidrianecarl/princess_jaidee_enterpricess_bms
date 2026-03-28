@@ -22,7 +22,7 @@ export function DashboardHeader({ user }: HeaderProps) {
   }
 
   return (
-    <header className="w-full bg-white border-b border-red-100 sticky top-0 z-50 shadow-sm">
+    <header className="fixed top-0 left-0 right-0 w-full bg-white border-b border-red-100 z-50 shadow-sm">
       <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8">
         <div className="flex justify-between items-center h-14 sm:h-16">
           <Link href="/dashboard" className="flex items-center gap-2 md:gap-3 group cursor-pointer min-w-0 flex-shrink-0">
