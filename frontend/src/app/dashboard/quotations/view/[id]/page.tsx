@@ -57,6 +57,7 @@ export default function ViewQuotationPage() {
 
   const [quotation, setQuotation] = useState<Quotation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [isSending, setIsSending] = useState(false)
@@ -64,8 +65,20 @@ export default function ViewQuotationPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
   useEffect(() => {
-    fetchQuotation()
-  }, [])
+    const checkAuthAndFetch = async () => {
+      const token = localStorage.getItem("auth_token")
+      const userData = localStorage.getItem("user")
+
+      if (!token || !userData) {
+        router.push("/")
+        return
+      }
+
+      await fetchQuotation()
+    }
+
+    checkAuthAndFetch()
+  }, [router])
 
   const handleSendForProduction = async () => {
     if (!quotation) return
@@ -107,15 +120,32 @@ export default function ViewQuotationPage() {
   const fetchQuotation = async () => {
     try {
       setIsLoading(true)
+      setError(null)
       const token = localStorage.getItem("auth_token")
+      
+      if (!token) {
+        setError("Not authenticated. Please log in.")
+        router.push("/")
+        return
+      }
+
       const response = await fetch(`${apiUrl}/quotations/${quotationId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
 
       if (!response.ok) {
-        throw new Error("Failed to fetch quotation")
+        if (response.status === 404) {
+          setError("Quotation not found")
+        } else if (response.status === 401) {
+          setError("Your session has expired. Please log in again.")
+          router.push("/")
+        } else {
+          setError(`Failed to fetch quotation: ${response.statusText}`)
+        }
+        return
       }
 
       const data = await response.json()
@@ -162,8 +192,9 @@ export default function ViewQuotationPage() {
         ...quot,
         items: processedItems,
       })
-    } catch (error) {
-      console.error("Error fetching quotation:", error)
+    } catch (err) {
+      console.error("[v0] Error fetching quotation:", err)
+      setError(err instanceof Error ? err.message : "An unexpected error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -175,6 +206,20 @@ export default function ViewQuotationPage() {
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
           <p>Loading quotation...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md">
+          <p className="text-red-600 font-semibold mb-2">Error</p>
+          <p className="text-gray-700 mb-4">{error}</p>
+          <Button onClick={() => router.back()} variant="outline">
+            Go Back
+          </Button>
         </div>
       </div>
     )

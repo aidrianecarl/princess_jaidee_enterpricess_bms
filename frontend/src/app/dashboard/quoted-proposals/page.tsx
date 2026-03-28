@@ -19,6 +19,7 @@ interface Quotation {
     email: string
   }
   has_price?: number
+  items?: any[]
 }
 
 export default function QuotedProposalsPage() {
@@ -27,6 +28,7 @@ export default function QuotedProposalsPage() {
   const [quotations, setQuotations] = useState<Quotation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [sendingId, setSendingId] = useState<number | null>(null)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -48,6 +50,42 @@ export default function QuotedProposalsPage() {
 
     checkAuth()
   }, [router])
+
+  const handleSendForProduction = async (quotationId: number) => {
+    try {
+      setSendingId(quotationId)
+      const token = localStorage.getItem("auth_token")
+
+      const response = await fetch(`${apiUrl}/quotations/${quotationId}/send-production`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "sent",
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to send for production")
+      }
+
+      // Update the quotation in the list
+      setQuotations(
+        quotations.map((q) =>
+          q.id === quotationId ? { ...q, status: "sent" } : q
+        )
+      )
+
+      alert("Quotation sent for production successfully!")
+    } catch (error) {
+      console.error("Error sending for production:", error)
+      alert("Failed to send for production. Please try again.")
+    } finally {
+      setSendingId(null)
+    }
+  }
 
   const fetchPricedQuotations = async (token: string) => {
     try {
@@ -166,7 +204,7 @@ export default function QuotedProposalsPage() {
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-1">
-                      Customer: <span className="font-medium">{quotation.customer?.name}</span>
+                      Items: <span className="font-medium">{quotation.items?.length || 0} item(s)</span>
                     </p>
                     <p className="text-sm text-gray-600 mb-2">
                       Date: {formatDate(quotation.created_at)}
@@ -176,17 +214,37 @@ export default function QuotedProposalsPage() {
                     </p>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Link href={`/dashboard/quotations/view/${quotation.id}`}>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 w-full sm:w-auto"
                       >
                         <Eye size={16} />
                         View Details
                       </Button>
                     </Link>
+                    {quotation.status !== "sent" && (
+                      <Button
+                        onClick={() => handleSendForProduction(quotation.id)}
+                        disabled={sendingId === quotation.id}
+                        className="flex items-center gap-2 w-full sm:w-auto bg-gradient-to-r from-red-600 to-orange-500 text-white hover:shadow-lg"
+                        size="sm"
+                      >
+                        {sendingId === quotation.id ? (
+                          <>
+                            <Loader2 size={16} className="animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <FileText size={16} />
+                            Send for Production
+                          </>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </Card>
