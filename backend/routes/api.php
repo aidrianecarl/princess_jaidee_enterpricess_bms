@@ -34,6 +34,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/quotations', [QuotationController::class, 'store']);
     Route::get('/quotations/{id}', [QuotationController::class, 'show']);
     Route::put('/quotations/{id}', [QuotationController::class, 'update']);
+    Route::put('/quotations/{id}/send-production', [QuotationController::class, 'sendForProduction']);
 
     // Users - Profile Management
     Route::get('/users/me', [UserController::class, 'getCurrentUser']);

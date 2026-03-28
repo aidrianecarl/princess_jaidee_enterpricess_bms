@@ -821,4 +821,27 @@ class QuotationController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
+
+    public function sendForProduction($id)
+    {
+        try {
+            $quotation = Quotation::find($id);
+
+            if (!$quotation) {
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
+            // Update status to sent
+            $quotation->status = 'sent';
+            $quotation->save();
+
+            return response()->json([
+                'message' => 'Quotation sent for production successfully',
+                'data' => $quotation,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Send for production error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 }

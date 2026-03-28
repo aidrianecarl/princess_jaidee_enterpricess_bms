@@ -3,16 +3,31 @@
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { FileText, Home, Eye, ChevronDown } from "lucide-react"
+import { FileText, Home, Eye, ChevronDown, Menu, X } from "lucide-react"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
   const [quotationsExpanded, setQuotationsExpanded] = useState(pathname.includes("/quotations"))
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const isActive = (href: string) => pathname === href
 
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 min-h-screen">
+    <>
+      {/* Mobile Menu Button */}
+      <div className="md:hidden fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="bg-red-600 text-white p-3 rounded-full shadow-lg hover:bg-red-700 transition"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
+      </div>
+
+      {/* Sidebar */}
+      <aside className={`fixed md:static w-64 bg-white border-r border-gray-200 min-h-screen transition-all duration-300 z-30 ${
+        mobileMenuOpen ? "left-0" : "-left-64 md:left-0"
+      }`}>
       <nav className="p-6 space-y-2">
         {/* Main Menu */}
         <Link
@@ -27,7 +42,7 @@ export function DashboardSidebar() {
           <span>Dashboard</span>
         </Link>
 
-        {/* Quotations Menu */}
+        {/* Quoted Proposals Menu */}
         <div>
           <button
             onClick={() => setQuotationsExpanded(!quotationsExpanded)}
@@ -37,7 +52,7 @@ export function DashboardSidebar() {
           >
             <div className="flex items-center gap-3">
               <FileText size={20} />
-              <span>Quotations</span>
+              <span>Quoted Proposals</span>
             </div>
             <ChevronDown
               size={18}
@@ -49,6 +64,7 @@ export function DashboardSidebar() {
             <div className="mt-1 ml-4 space-y-1 border-l-2 border-gray-200 pl-4">
               <Link
                 href="/dashboard"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
                   pathname === "/dashboard"
                     ? "bg-red-100 text-red-600 font-semibold"
@@ -56,11 +72,12 @@ export function DashboardSidebar() {
                 }`}
               >
                 <FileText size={16} />
-                <span>My Quotations</span>
+                <span>My Proposals</span>
               </Link>
 
               <Link
                 href="/dashboard/quotations/create"
+                onClick={() => setMobileMenuOpen(false)}
                 className={`flex items-center gap-3 px-4 py-2 rounded-lg transition text-sm ${
                   pathname === "/dashboard/quotations/create"
                     ? "bg-red-100 text-red-600 font-semibold"
@@ -68,7 +85,7 @@ export function DashboardSidebar() {
                 }`}
               >
                 <FileText size={16} />
-                <span>Create Quotation</span>
+                <span>Create Proposal</span>
               </Link>
 
               <div className="border-t border-gray-200 pt-2 mt-2">
@@ -84,9 +101,20 @@ export function DashboardSidebar() {
                 </div>
               </div>
             </div>
+              )}
+            </div>
           )}
         </div>
       </nav>
     </aside>
+
+    {/* Mobile Overlay */}
+    {mobileMenuOpen && (
+      <div
+        className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"
+        onClick={() => setMobileMenuOpen(false)}
+      />
+    )}
+    </>
   )
 }
