@@ -119,7 +119,7 @@ export default function QuotedProposalsPage() {
     <div className="min-h-screen bg-gray-50">
       <DashboardHeader user={user} />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="pt-14 sm:pt-16 md:ml-64 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
