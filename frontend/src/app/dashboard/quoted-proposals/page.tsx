@@ -83,7 +83,7 @@ export default function QuotedProposalsPage() {
       )
 
       // Redirect to thank you page
-      router.push(`/dashboard/quotations/thankyou?quotation=${quotationId}`)
+      router.push(`/dashboard/quotations/thank-you?quotation=${quotationId}`)
       setConfirmModal({ isOpen: false, quotationId: null })
     } catch (error) {
       console.error("Error sending for production:", error)

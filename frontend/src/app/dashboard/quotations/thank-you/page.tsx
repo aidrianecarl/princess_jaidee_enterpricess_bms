@@ -1,17 +1,24 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, MapPin, Clock, Phone } from "lucide-react"
 
-export default function ThankYouPage() {
+function ThankYouContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const quotationId = searchParams.get("quotation")
   const [countdown, setCountdown] = useState(30)
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+  }, [])
+
+  useEffect(() => {
+    if (!isClient) return
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -24,7 +31,7 @@ export default function ThankYouPage() {
     }, 1000)
 
     return () => clearInterval(timer)
-  }, [router])
+  }, [router, isClient])
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-red-50 to-orange-50 flex items-center justify-center p-4">
@@ -104,7 +111,7 @@ export default function ThankYouPage() {
             {/* Footer Info */}
             <div className="mt-8 pt-8 border-t border-gray-200">
               <p className="text-sm text-gray-500 mb-2">
-                Order Reference: <span className="font-mono font-semibold text-gray-700">#{quotationId}</span>
+                Order Reference: <span className="font-mono font-semibold text-gray-700">#{quotationId || "Pending"}</span>
               </p>
               <p className="text-xs text-gray-400">
                 An email confirmation has been sent to your registered email address.
@@ -114,5 +121,19 @@ export default function ThankYouPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ThankYouPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-red-50 to-orange-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ThankYouContent />
+    </Suspense>
   )
 }
