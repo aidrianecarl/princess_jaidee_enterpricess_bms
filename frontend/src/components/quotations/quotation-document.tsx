@@ -1156,7 +1156,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       </div>
 
       {/* Main Content */}
-      <div className="w-screen md:w-full px-1 sm:px-2 md:px-6 lg:px-8 pt-22 pb-2 md:pb-6">
+      <div className="w-screen md:w-full px-1 sm:px-2 md:px-6 lg:px-8 pt-16 md:pt-20 pb-2 md:pb-6">
         {/* Document Viewer - Responsive Container */}
         <div
           ref={printRef}
