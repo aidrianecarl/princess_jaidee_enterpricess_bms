@@ -1107,7 +1107,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
-      <div className="w-full fixed z-40 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg print:hidden pointer-events-auto">
+      <div className="w-full fixed top-14 sm:top-16 z-40 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg print:hidden">
         <div className="w-full px-1 sm:px-3 lg:px-6">
           <div className="flex items-center justify-between gap-1 sm:gap-2 py-2 md:py-3 overflow-x-auto">
             {/* Left side buttons */}
