@@ -78,8 +78,8 @@ export default function DashboardPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20">
-        <DashboardHeader user={user} />
-        <main className="max-w-7xl mx-auto px-4 py-12">
+        
+        <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-32 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl animate-pulse" />
@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
       {showTerms && <TermsConditionsModal onAccept={() => setShowTerms(false)} />}
 
-      <main className="max-w-7xl mx-auto px-4 py-12">
+      <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
         {/* Welcome Section with Create Button */}
         <div className="mb-12 animate-fadeInUp flex items-center justify-between">
           <div>
