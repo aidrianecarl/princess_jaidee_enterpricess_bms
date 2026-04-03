@@ -42,7 +42,6 @@ const statusColors: Record<string, { bg: string; text: string; badge: string }> 
 }
 
 export default function MyOrdersPage() {
-  const [user, setUser] = useState(null)
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null)
@@ -114,7 +113,7 @@ export default function MyOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
-      <DashboardHeader user={user} />
+      <DashboardHeader />
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         {/* Header Section */}
