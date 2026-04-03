@@ -176,7 +176,7 @@ class QuotationController extends Controller
     }
 
     // Update quotation (for paid_amount and other fields)
-    public function update(Request $request, $id)
+    public function updatePayment(Request $request, $id)
     {
         try {
             $quotation = Quotation::find($id);
@@ -962,6 +962,50 @@ class QuotationController extends Controller
         } catch (\Exception $e) {
             Log::error('Send for production error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    // Update payment amount and status for quotation
+    public function updatePayment(Request $request, $id)
+    {
+        try {
+            $quotation = Quotation::find($id);
+
+            if (!$quotation) {
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'paid_amount' => 'required|numeric|min:0',
+                'status' => 'required|in:approved,pending,draft,sent',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            // Update paid_amount and status
+            $quotation->paid_amount = $request->paid_amount;
+            $quotation->status = $request->status;
+            $quotation->save();
+
+            Log::info('Quotation payment updated', [
+                'quotation_id' => $id,
+                'paid_amount' => $request->paid_amount,
+                'status' => $request->status,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quotation payment updated successfully',
+                'data' => $quotation,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Update payment error', [
+                'quotation_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Failed to update payment', 'message' => $e->getMessage()], 500);
         }
     }
 }

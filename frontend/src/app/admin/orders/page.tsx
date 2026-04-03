@@ -25,8 +25,10 @@ interface SentQuotation {
 
 interface Employee {
   id: number
-  name: string
+  first_name: string
+  last_name: string
   email: string
+  user_type: string
 }
 
 export default function OrdersPage() {
@@ -191,8 +193,15 @@ export default function OrdersPage() {
 
       if (!quotationUpdateResponse.ok) {
         console.error("[v0] Failed to update quotation paid_amount")
-        const errorData = await quotationUpdateResponse.json()
-        console.error("[v0] Quotation update error:", errorData)
+        try {
+          const errorData = await quotationUpdateResponse.json()
+          console.error("[v0] Quotation update error:", errorData)
+          throw new Error(errorData.message || errorData.error || "Failed to update quotation payment")
+        } catch (parseErr) {
+          const errorText = await quotationUpdateResponse.text()
+          console.error("[v0] Error response text:", errorText)
+          throw new Error(`Failed to update quotation: ${quotationUpdateResponse.status} ${quotationUpdateResponse.statusText}`)
+        }
       }
 
       // Then create the job order
@@ -227,6 +236,8 @@ export default function OrdersPage() {
       setPaymentModalOpen(false)
     } catch (err) {
       console.error("[v0] Error saving order:", err)
+      const errorMsg = err instanceof Error ? err.message : "Failed to save order"
+      setError(errorMsg)
       throw err
     } finally {
       setSavingId(null)

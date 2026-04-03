@@ -19,7 +19,7 @@ interface SetPaymentModalProps {
       phone: string
     }
   } | null
-  employees: Array<{ id: number; name: string; email: string }>
+  employees: Array<{ id: number; first_name: string; last_name: string; email: string; user_type: string }>
   onConfirm: (paymentType: "downpayment" | "fullpayment", employeeId: number, formData: any) => Promise<void>
   isSaving?: boolean
 }
@@ -104,9 +104,9 @@ export function SetPaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700" aria-describedby="payment-modal-description">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <DialogTitle id="payment-modal-description" className="text-2xl font-bold text-neutral-900 dark:text-white">
             Set Payment & Schedule Order
           </DialogTitle>
         </DialogHeader>
@@ -263,13 +263,13 @@ export function SetPaymentModal({
               <option value="">-- Select Employee --</option>
               {employees.map((emp) => (
                 <option key={emp.id} value={emp.id}>
-                  {emp.name} - {emp.email}
+                  {emp.first_name} {emp.last_name} ({emp.user_type})
                 </option>
               ))}
             </select>
             {selectedEmployeeId && (
               <p className="text-xs text-green-600 dark:text-green-400">
-                ✓ {employees.find(e => e.id === selectedEmployeeId)?.name} selected
+                ✓ {`${employees.find(e => e.id === selectedEmployeeId)?.first_name} ${employees.find(e => e.id === selectedEmployeeId)?.last_name}`} selected
               </p>
             )}
           </div>
