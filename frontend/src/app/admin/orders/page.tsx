@@ -67,29 +67,36 @@ export default function OrdersPage() {
       const response = await fetch(`${apiUrl}/admin/quotations?status=sent`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
 
       if (!response.ok) {
-        console.log("[v0] Response status:", response.status)
-        throw new Error(`Failed to fetch quotations: ${response.statusText}`)
+        const errorText = await response.text()
+        console.error("[v0] API Error Response:", {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        })
+        throw new Error(`API Error ${response.status}: ${response.statusText}`)
       }
 
       const data = await response.json()
       console.log("[v0] Quotations data:", data)
       
-      const quotations = data.data || data
+      const quotations = Array.isArray(data) ? data : (data.data || data)
       
       // Filter only sent status quotations
       const sent = Array.isArray(quotations) 
-        ? quotations.filter((q: any) => q.status === "sent")
+        ? quotations.filter((q: any) => q && q.status === "sent")
         : []
       
       console.log("[v0] Filtered sent quotations:", sent)
       setSentQuotations(sent)
     } catch (err) {
       console.error("[v0] Error fetching quotations:", err)
-      setError("Failed to load orders. Please check console for details.")
+      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
+      setError(`Failed to load orders: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
