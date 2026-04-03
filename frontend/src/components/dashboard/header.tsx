@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { LogOut, User, ChevronDown, Bell, Menu, X, Home } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
+import { useSidebar } from "@/contexts/sidebar-context"
 
 interface HeaderProps {
   user: any
@@ -12,7 +13,7 @@ interface HeaderProps {
 
 export function DashboardHeader({ user }: HeaderProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const { toggle: toggleSidebar } = useSidebar()
   const router = useRouter()
 
   const handleLogout = () => {
@@ -44,13 +45,14 @@ export function DashboardHeader({ user }: HeaderProps) {
           </Link>
 
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-            {/* Home Link */}
-            {/* <Link
-              href="/dashboard"
-              className="hidden md:flex items-center justify-center w-10 h-10 rounded-lg hover:bg-red-50 transition group"
+            {/* Mobile Menu Button */}
+            <button
+              onClick={toggleSidebar}
+              className="md:hidden p-2 hover:bg-red-50 rounded-lg transition duration-200 group flex-shrink-0"
+              aria-label="Toggle sidebar"
             >
-              <Home size={20} className="text-neutral-600 group-hover:text-red-600 transition" />
-            </Link> */}
+              <Menu size={24} className="text-neutral-600 group-hover:text-red-600 transition" />
+            </button>
 
             {/* Notifications */}
             <button className="hidden md:flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-lg hover:bg-red-50 transition relative group flex-shrink-0">

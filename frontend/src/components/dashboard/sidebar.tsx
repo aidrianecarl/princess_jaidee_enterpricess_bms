@@ -4,34 +4,25 @@ import { useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { FileText, Home, Eye, ChevronDown, Menu, X, Package } from "lucide-react"
+import { useSidebar } from "@/contexts/sidebar-context"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
   const [quotationsExpanded, setQuotationsExpanded] = useState(pathname.includes("/quotations"))
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { isOpen: mobileMenuOpen, toggle: toggleMobileMenu, close: closeMobileMenu } = useSidebar()
 
   const isActive = (href: string) => pathname === href
 
   return (
     <>
-      {/* Mobile Menu Button */}
-      <div className="md:hidden fixed bottom-6 right-6 z-40">
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="bg-red-600 text-white p-3 rounded-full shadow-lg hover:bg-red-700 transition"
-        >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
-
       {/* Sidebar */}
       <aside
         className={`fixed top-14 sm:top-16 left-0 w-64 
-        bg-white border-r border-gray-200 
+        bg-white border-r border-gray-200 shadow-lg
         h-[calc(100vh-56px)] sm:h-[calc(100vh-64px)] 
         overflow-y-auto
-        transition-all duration-300 z-30 
-        ${mobileMenuOpen ? "left-0" : "-left-64 md:left-0"}`}
+        transition-all duration-300 ease-in-out z-40
+        transform ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}
         >
       <nav className="p-6 space-y-2">
         {/* Main Menu */}
@@ -74,10 +65,26 @@ export function DashboardSidebar() {
     {/* Mobile Overlay */}
     {mobileMenuOpen && (
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 md:hidden z-20"
-        onClick={() => setMobileMenuOpen(false)}
+        className="fixed inset-0 bg-black bg-opacity-30 md:hidden z-30 transition-all duration-300"
+        onClick={closeMobileMenu}
       />
     )}
     </>
+  )
+}
+
+export function DashboardSidebarToggle({ isOpen, onToggle }: { isOpen: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      className="md:hidden p-2 hover:bg-red-50 rounded-lg transition duration-200 group"
+      aria-label="Toggle sidebar"
+    >
+      {isOpen ? (
+        <X size={24} className="text-neutral-600 group-hover:text-red-600" />
+      ) : (
+        <Menu size={24} className="text-neutral-600 group-hover:text-red-600" />
+      )}
+    </button>
   )
 }

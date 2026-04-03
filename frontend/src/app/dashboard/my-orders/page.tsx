@@ -121,14 +121,14 @@ export default function MyOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
+    <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20">
       <DashboardHeader user={user} />
 
-      <main className="container mx-auto px-4 py-8 md:py-12">
+      <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
         {/* Header Section */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-2">My Orders</h1>
-          <p className="text-neutral-600 dark:text-neutral-400">Track and manage your job orders</p>
+        <div className="mb-8 animate-fadeInUp">
+          <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-2">My Orders</h1>
+          <p className="text-neutral-600">Track and manage your job orders</p>
         </div>
 
         {/* Error Message */}
