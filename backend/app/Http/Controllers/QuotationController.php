@@ -175,6 +175,50 @@ class QuotationController extends Controller
         return response()->json($quotation, 200);
     }
 
+    // Update quotation (for paid_amount and other fields)
+    public function update(Request $request, $id)
+    {
+        try {
+            $quotation = Quotation::find($id);
+
+            if (!$quotation) {
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
+            $allowedFields = ['paid_amount', 'status', 'notes', 'discount', 'tax', 'total'];
+            $updateData = [];
+
+            foreach ($allowedFields as $field) {
+                if ($request->has($field)) {
+                    $updateData[$field] = $request->input($field);
+                }
+            }
+
+            if (empty($updateData)) {
+                return response()->json(['error' => 'No valid fields to update'], 400);
+            }
+
+            $quotation->update($updateData);
+
+            Log::info('Quotation updated successfully', [
+                'quotation_id' => $id,
+                'updated_fields' => array_keys($updateData),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quotation updated successfully',
+                'data' => $quotation
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error updating quotation', [
+                'quotation_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Failed to update quotation', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function getNextQuotationNumber()
     {
         $today = Carbon::today()->format('Ymd');
@@ -766,52 +810,7 @@ class QuotationController extends Controller
         ], 200);
     }
 
-    // Admin get all quotations with optional status filter
-    public function adminIndex(Request $request)
-    {
-        try {
-            error_log('[v0] AdminIndex START - Request params: ' . json_encode($request->all()));
-            error_log('[v0] AdminIndex - Status filter: ' . ($request->status ?? 'none'));
-            
-            // Load quotations with customer and items relationships
-            error_log('[v0] AdminIndex - Building query with relationships: customer, items');
-            $query = Quotation::with(['customer', 'items']);
-            error_log('[v0] AdminIndex - Query builder initialized');
-
-            // Filter by status if provided
-            if ($request->has('status') && !empty($request->status)) {
-                error_log('[v0] AdminIndex - Applying status filter: ' . $request->status);
-                $query->where('status', $request->status);
-            }
-
-            // Search by quotation number if provided
-            if ($request->has('search') && !empty($request->search)) {
-                error_log('[v0] AdminIndex - Applying search filter: ' . $request->search);
-                $query->where('quotation_number', 'like', '%' . $request->search . '%');
-            }
-
-            error_log('[v0] AdminIndex - Ordering and paginating');
-            $quotations = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
-            
-            error_log('[v0] AdminIndex - SUCCESS! Fetched ' . count($quotations->items()) . ' quotations');
-            return response()->json($quotations, 200);
-            
-        } catch (\Throwable $e) {
-            error_log('[v0] AdminIndex EXCEPTION - Type: ' . get_class($e));
-            error_log('[v0] AdminIndex EXCEPTION - Message: ' . $e->getMessage());
-            error_log('[v0] AdminIndex EXCEPTION - File: ' . $e->getFile());
-            error_log('[v0] AdminIndex EXCEPTION - Line: ' . $e->getLine());
-            error_log('[v0] AdminIndex EXCEPTION - Trace: ' . $e->getTraceAsString());
-            
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-                'exception_type' => get_class($e),
-                'file' => $e->getFile(),
-                'line' => $e->getLine()
-            ], 500);
-        }
-    }
+    
 
     // Admin view single quotation
     public function adminShow($id)

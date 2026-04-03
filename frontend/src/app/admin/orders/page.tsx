@@ -147,14 +147,54 @@ export default function OrdersPage() {
     }
   }
 
-  const handleSaveOrder = async (paymentType: "downpayment" | "fullpayment", employeeId: number) => {
+  const handleSaveOrder = async (paymentType: "downpayment" | "fullpayment", employeeId: number, formData: any) => {
     if (!selectedQuotation) return
 
     try {
       setSavingId(selectedQuotation.id)
       const token = localStorage.getItem("admin_token")
 
-      const response = await fetch(`${apiUrl}/admin/job-orders`, {
+      // Calculate paid amount
+      let paidAmount = 0
+      if (paymentType === "fullpayment") {
+        paidAmount = selectedQuotation.total
+      } else if (formData.downPaymentInput) {
+        paidAmount = parseFloat(formData.downPaymentInput)
+      }
+
+      console.log("[v0] Creating job order with data:", {
+        quotation_id: selectedQuotation.id,
+        assigned_to: employeeId,
+        customer_id: selectedQuotation.customer?.id || 1,
+        payment_type: paymentType,
+        paid_amount: paidAmount,
+        start_date: formData.startDate,
+        due_date: formData.dueDate,
+        priority: formData.priority,
+        notes: formData.notes,
+      })
+
+      // First, update the quotation with paid_amount
+      const quotationUpdateResponse = await fetch(
+        `${apiUrl}/admin/quotations/${selectedQuotation.id}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paid_amount: paidAmount,
+          }),
+        }
+      )
+
+      if (!quotationUpdateResponse.ok) {
+        console.error("[v0] Failed to update quotation paid_amount")
+      }
+
+      // Then create the job order
+      const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -163,14 +203,22 @@ export default function OrdersPage() {
         body: JSON.stringify({
           quotation_id: selectedQuotation.id,
           assigned_to: employeeId,
-          customer_id: 1, // This should be from quotation data
+          customer_id: selectedQuotation.customer?.id || 1,
           payment_type: paymentType,
-          start_date: new Date().toISOString().split('T')[0],
-          due_date: new Date(Date.now() + 7*24*60*60*1000).toISOString().split('T')[0],
+          paid_amount: paidAmount,
+          start_date: formData.startDate,
+          due_date: formData.dueDate,
+          priority: formData.priority,
+          notes: formData.notes,
         }),
       })
 
-      if (!response.ok) throw new Error("Failed to save order")
+      if (!jobOrderResponse.ok) {
+        const errorData = await jobOrderResponse.json()
+        throw new Error(errorData.message || "Failed to create job order")
+      }
+
+      console.log("[v0] Job order created successfully")
 
       // Remove from pending list
       setSentQuotations(sentQuotations.filter(q => q.id !== selectedQuotation.id))
