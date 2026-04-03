@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { X, ZoomIn, Package } from "lucide-react"
+import { getApiImageUrl } from "@/lib/api-urls"
 
 interface TeamMember {
   id?: string
@@ -169,10 +170,10 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
                             <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Design Preview</h4>
                             <div className="relative group">
                               <img
-                                src={item.design_file_url}
+                                src={getApiImageUrl(item.design_file_url)}
                                 alt="Design Preview"
                                 className="w-full h-48 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 cursor-zoom-in bg-neutral-100 dark:bg-neutral-700"
-                                onClick={() => setExpandedImage(item.design_file_url || null)}
+                                onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || null))}
                                 onError={(e) => {
                                   // Fallback if image fails to load
                                   const target = e.target as HTMLImageElement
@@ -181,7 +182,7 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
                                 }}
                               />
                               <button
-                                onClick={() => setExpandedImage(item.design_file_url || null)}
+                                onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || null))}
                                 className="absolute top-2 right-2 p-2 bg-white dark:bg-neutral-800 rounded-full shadow-lg hover:shadow-xl transition opacity-0 group-hover:opacity-100"
                               >
                                 <ZoomIn size={18} className="text-neutral-900 dark:text-white" />

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { getApiImageUrl } from "@/lib/api-urls"
 import { Save, ArrowLeft, Loader2, AlertTriangle, Check, ChevronDown, ChevronUp, X, ZoomIn } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { z } from "zod"
@@ -406,7 +407,7 @@ export function AdminQuotationPricing() {
                   {quotation.logo_url && (
                     <div className="flex justify-start">
                       <img
-                        src={quotation.logo_url}
+                        src={getApiImageUrl(quotation.logo_url)}
                         alt="Logo"
                         className="max-w-32 h-auto rounded-lg bg-gray-100"
                         onError={(e) => {
@@ -530,7 +531,7 @@ export function AdminQuotationPricing() {
                         <div className="flex-1 flex gap-2 min-w-0">
                           {item.design_file_url ? (
                             <img
-                              src={item.design_file_url}
+                              src={getApiImageUrl(item.design_file_url)}
                               alt={item.service?.name || "Design"}
                               className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
                               onError={(e) => {
@@ -539,7 +540,7 @@ export function AdminQuotationPricing() {
                             />
                           ) : item.service?.image_url ? (
                             <img
-                              src={item.service.image_url}
+                              src={getApiImageUrl(item.service.image_url)}
                               alt={item.service.name}
                               className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
                               onError={(e) => {
@@ -694,12 +695,12 @@ export function AdminQuotationPricing() {
                                 className="relative inline-block cursor-pointer group"
                                 onClick={() => {
                                   if (item.design_file_url) {
-                                    setExpandedImage(item.design_file_url)
+                                    setExpandedImage(getApiImageUrl(item.design_file_url))
                                   }
                                 }}
                               >
                                 <img
-                                  src={item.design_file_url}
+                                  src={getApiImageUrl(item.design_file_url)}
                                   alt="Design"
                                   className="max-w-md max-h-64 rounded bg-white hover:opacity-90 transition-opacity"
                                   onError={(e) => {

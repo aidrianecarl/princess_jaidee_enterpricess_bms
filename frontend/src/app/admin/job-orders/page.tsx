@@ -61,8 +61,12 @@ export default function JobOrdersPage() {
   const [expandedOrder, setExpandedOrder] = useState<number | null>(null)
   const [savingItemId, setSavingItemId] = useState<number | null>(null)
   const [error, setError] = useState("")
-  const [user, setUser] = useState(null)
+  const [user, setUser] = useState<any>(null)
   const router = useRouter()
+
+  const handleSidebarToggle = (open: boolean) => {
+    setIsSidebarOpen(open)
+  }
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -261,10 +265,10 @@ export default function JobOrdersPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <AdminHeader onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       <div className="flex">
-        <AdminSidebar isOpen={isSidebarOpen} />
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
 
         <main className="flex-1 p-4 md:p-8">
           <div className="max-w-7xl mx-auto">
