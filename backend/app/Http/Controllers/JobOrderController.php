@@ -252,6 +252,115 @@ class JobOrderController extends Controller
         }
     }
 
+    public function update(Request $request, $id)
+    {
+        $jobOrder = JobOrder::find($id);
+
+        if (!$jobOrder) {
+            return response()->json(['error' => 'Job Order not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'nullable|in:pending,ongoing,completed',
+            'completed_date' => 'nullable|date',
+            'notes' => 'nullable|string',
+            'priority' => 'nullable|in:low,medium,high',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $updateData = [];
+
+            if ($request->has('status')) {
+                $updateData['status'] = $request->status;
+            }
+
+            if ($request->has('completed_date')) {
+                $updateData['completed_date'] = $request->completed_date;
+            }
+
+            if ($request->has('notes')) {
+                $updateData['notes'] = $request->notes;
+            }
+
+            if ($request->has('priority')) {
+                $updateData['priority'] = $request->priority;
+            }
+
+            if (!empty($updateData)) {
+                $jobOrder->update($updateData);
+            }
+
+            $jobOrder->load(['assignedTo', 'customer', 'items.product', 'items.service']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Job Order updated successfully',
+                'data' => $jobOrder,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error updating job order', [
+                'job_order_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Failed to update job order', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateItem(Request $request, $id)
+    {
+        $item = JobOrderItem::find($id);
+
+        if (!$item) {
+            return response()->json(['error' => 'Job Order Item not found'], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'completed' => 'nullable|boolean',
+            'completed_at' => 'nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $updateData = [];
+
+            if ($request->has('completed')) {
+                $updateData['completed'] = $request->completed;
+                if ($request->completed && !$request->has('completed_at')) {
+                    $updateData['completed_at'] = now();
+                }
+            }
+
+            if ($request->has('completed_at')) {
+                $updateData['completed_at'] = $request->completed_at;
+            }
+
+            if (!empty($updateData)) {
+                $item->update($updateData);
+            }
+
+            $item->load(['product', 'service']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Item updated successfully',
+                'data' => $item,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error updating job order item', [
+                'item_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json(['error' => 'Failed to update item', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function destroy($id)
     {
         $jobOrder = JobOrder::find($id);

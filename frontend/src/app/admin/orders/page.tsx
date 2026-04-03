@@ -174,7 +174,7 @@ export default function OrdersPage() {
         notes: formData.notes,
       })
 
-      // First, update the quotation with paid_amount
+      // First, update the quotation with paid_amount and status
       const quotationUpdateResponse = await fetch(
         `${apiUrl}/admin/quotations/${selectedQuotation.id}`,
         {
@@ -185,6 +185,7 @@ export default function OrdersPage() {
           },
           body: JSON.stringify({
             paid_amount: paidAmount,
+            status: "approved",
           }),
         }
       )

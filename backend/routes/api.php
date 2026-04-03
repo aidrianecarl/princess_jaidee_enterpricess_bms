@@ -69,9 +69,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/job-orders', [JobOrderController::class, 'index']);
     Route::get('/admin/job-orders/{id}', [JobOrderController::class, 'show']);
     Route::post('/admin/job-orders', [JobOrderController::class, 'store']);
+    Route::put('/admin/job-orders/{id}', [JobOrderController::class, 'update']);
     Route::post('/admin/job-orders/{jobOrderId}/complete-item', [JobOrderController::class, 'completeItem']);
     Route::put('/admin/job-orders/{id}/status', [JobOrderController::class, 'updateStatus']);
     Route::delete('/admin/job-orders/{id}', [JobOrderController::class, 'destroy']);
+
+    // Job Order Items
+    Route::put('/admin/job-order-items/{id}', [JobOrderController::class, 'updateItem']);
 
     // Branches
     Route::get('/admin/branches', [BranchController::class, 'index']);

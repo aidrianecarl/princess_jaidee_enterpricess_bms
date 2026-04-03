@@ -1,413 +1,492 @@
 "use client"
 
-import { AdminLayout } from "@/components/admin/admin-layout"
+import { AdminHeader } from "@/components/admin/header"
+import { AdminSidebar } from "@/components/admin/sidebar"
 import { useState, useEffect } from "react"
-import { apiClient } from "@/lib/api-client"
-import { CheckCircle, Circle, Clock, AlertCircle, Calendar, User, Loader2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import {
+  FileText,
+  Loader2,
+  AlertCircle,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle,
+  Clock,
+  Package,
+} from "lucide-react"
 
-const JobOrderSkeleton = () => (
-  <div className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 animate-pulse">
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex-1">
-        <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-20 mb-2" />
-        <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-32" />
-      </div>
-      <div className="h-6 bg-neutral-200 dark:bg-neutral-700 rounded w-24" />
-    </div>
-    <div className="space-y-2 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
-      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-48" />
-      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-40" />
-    </div>
-    <div className="space-y-2">
-      <div className="h-2 bg-neutral-200 dark:bg-neutral-700 rounded w-full" />
-      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-32" />
-    </div>
-  </div>
-)
+interface JobOrderItem {
+  id: number
+  job_order_id: number
+  description: string
+  quantity: number
+  unit_price: string | number
+  line_total: string | number
+  completed: boolean
+  completed_at?: string
+}
+
+interface JobOrder {
+  id: number
+  job_order_number: string
+  quotation_id?: number
+  customer_id: number
+  assigned_to: number
+  start_date: string
+  due_date: string
+  completed_date?: string
+  status: "pending" | "ongoing" | "completed"
+  priority: "low" | "medium" | "high"
+  notes?: string
+  items?: JobOrderItem[]
+  customer?: {
+    id: number
+    bill_to_name: string
+    bill_to_email: string
+    bill_to_phone?: string
+  }
+  assignedTo?: {
+    id: number
+    name: string
+    email: string
+  }
+}
 
 export default function JobOrdersPage() {
-  const [jobOrders, setJobOrders] = useState<any[]>([])
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedJobOrder, setSelectedJobOrder] = useState<any>(null)
-  const [showModal, setShowModal] = useState(false)
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [isUpdating, setIsUpdating] = useState(false)
-  const { toast } = useToast()
+  const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
+  const [expandedOrder, setExpandedOrder] = useState<number | null>(null)
+  const [savingItemId, setSavingItemId] = useState<number | null>(null)
+  const [error, setError] = useState("")
+  const [user, setUser] = useState(null)
+  const router = useRouter()
 
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+
+  // Check authentication
   useEffect(() => {
-    fetchJobOrders()
-  }, [statusFilter])
+    const token = localStorage.getItem("admin_token")
+    if (!token) {
+      router.push("/admin/login")
+      return
+    }
 
-  const fetchJobOrders = async () => {
+    const userData = localStorage.getItem("admin_user")
+    if (userData) setUser(JSON.parse(userData))
+
+    fetchJobOrders(token)
+  }, [])
+
+  const fetchJobOrders = async (token: string) => {
     try {
       setIsLoading(true)
-      const response = await apiClient.admin().get("/admin/job-orders", {
-        params: statusFilter !== "all" ? { status: statusFilter } : {},
+      setError("")
+
+      console.log("[v0] Fetching job orders from:", `${apiUrl}/admin/job-orders`)
+
+      const response = await fetch(`${apiUrl}/admin/job-orders`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       })
-      const data = response.data.data || response.data
-      if (Array.isArray(data)) {
-        setJobOrders(data)
-      } else {
-        console.error("Invalid data structure:", data)
-        toast({ title: "Error", description: "Invalid data structure", variant: "destructive" })
+
+      console.log("[v0] Response status:", response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[v0] API Error:", errorText)
+        throw new Error(`API Error ${response.status}`)
       }
-    } catch (error) {
-      console.error("Error fetching job orders:", error)
-      toast({ title: "Error", description: "Failed to fetch job orders", variant: "destructive" })
+
+      const data = await response.json()
+      console.log("[v0] Job orders received:", data)
+
+      const jobOrders = Array.isArray(data) ? data : data.data || data
+      setJobOrders(jobOrders)
+    } catch (err) {
+      console.error("[v0] Error fetching job orders:", err)
+      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
+      setError(`Failed to load job orders: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleCompleteItem = async (jobOrderId: number, itemId: number) => {
-    if (!selectedJobOrder) return
+  const handleUpdateItemStatus = async (itemId: number, jobOrderId: number, newStatus: "pending" | "ongoing" | "finished") => {
+    const token = localStorage.getItem("admin_token")
+    if (!token) return
 
     try {
-      setIsUpdating(true)
+      setSavingItemId(itemId)
+      console.log("[v0] Updating item status:", { itemId, jobOrderId, status: newStatus })
 
-      // Update the item status locally for immediate feedback
-      const updatedItems = selectedJobOrder.items.map((item: any) =>
-        item.id === itemId ? { ...item, completed: true } : item,
+      const response = await fetch(`${apiUrl}/admin/job-order-items/${itemId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: newStatus,
+          completed: newStatus === "finished",
+          completed_at: newStatus === "finished" ? new Date().toISOString() : null,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update item status")
+      }
+
+      console.log("[v0] Item status updated")
+
+      // Update local state
+      setJobOrders((prevOrders) =>
+        prevOrders.map((order) => {
+          if (order.id === jobOrderId && order.items) {
+            const updatedItems = order.items.map((item) =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    completed: newStatus === "finished",
+                    completed_at: newStatus === "finished" ? new Date().toISOString() : undefined,
+                  }
+                : item
+            )
+
+            // Check if all items are finished
+            const allFinished = updatedItems.every((item) => item.completed)
+
+            // If all items are finished, update job order status to completed
+            if (allFinished && order.status !== "completed") {
+              updateJobOrderStatus(jobOrderId, "completed", token)
+            }
+
+            return { ...order, items: updatedItems }
+          }
+          return order
+        })
       )
-      setSelectedJobOrder({ ...selectedJobOrder, items: updatedItems })
-
-      // Send completion update to backend
-      await apiClient.admin().post(`/admin/job-orders/${jobOrderId}/complete-item`, { item_id: itemId })
-
-      toast({ title: "Success", description: "Item marked as complete" })
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to mark item as complete", variant: "destructive" })
-      // Revert on error
-      fetchJobOrders()
+    } catch (err) {
+      console.error("[v0] Error updating item status:", err)
+      alert("Failed to update item status")
     } finally {
-      setIsUpdating(false)
+      setSavingItemId(null)
     }
   }
 
-  const handleCompleteJobOrder = async (jobOrderId: number) => {
+  const updateJobOrderStatus = async (jobOrderId: number, status: string, token: string) => {
     try {
-      setIsUpdating(true)
-      await apiClient.admin().put(`/admin/job-orders/${jobOrderId}/status`, {
-        status: "completed",
+      console.log("[v0] Updating job order status:", { jobOrderId, status })
+
+      const response = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: status,
+          completed_date: status === "completed" ? new Date().toISOString().split("T")[0] : null,
+        }),
       })
-      toast({ title: "Success", description: "Job order marked as complete" })
-      fetchJobOrders()
-      setShowModal(false)
-    } catch (error) {
-      toast({ title: "Error", description: "Failed to complete job order", variant: "destructive" })
-    } finally {
-      setIsUpdating(false)
+
+      if (!response.ok) {
+        throw new Error("Failed to update job order status")
+      }
+
+      console.log("[v0] Job order status updated successfully")
+
+      // Update local state
+      setJobOrders((prevOrders) =>
+        prevOrders.map((order) => (order.id === jobOrderId ? { ...order, status: status as any } : order))
+      )
+    } catch (err) {
+      console.error("[v0] Error updating job order status:", err)
     }
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
+
+  const formatCurrency = (value: number | string) => {
+    const num = typeof value === "string" ? parseFloat(value) : value
+    return new Intl.NumberFormat("en-PH", {
+      style: "currency",
+      currency: "PHP",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(num)
   }
 
   const getStatusColor = (status: string) => {
-    const normalizedStatus = status.replace("_", "-")
-    switch (normalizedStatus) {
+    switch (status) {
       case "pending":
-        return "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-      case "in-progress":
-        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+      case "ongoing":
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
       case "completed":
-        return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-      case "on-hold":
-        return "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400"
+        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
       default:
-        return "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400"
+        return "bg-neutral-100 dark:bg-neutral-900/30 text-neutral-700 dark:text-neutral-400"
     }
   }
 
-  const getStatusIcon = (status: string) => {
-    const normalizedStatus = status.replace("_", "-")
-    switch (normalizedStatus) {
-      case "completed":
-        return <CheckCircle size={18} />
-      case "pending":
-        return <Circle size={18} />
-      case "in-progress":
-        return <Clock size={18} />
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "low":
+        return "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+      case "medium":
+        return "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800"
+      case "high":
+        return "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
       default:
-        return <AlertCircle size={18} />
+        return "bg-neutral-50 dark:bg-neutral-900/20 text-neutral-700 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800"
     }
   }
 
-  const getCompletionPercentage = (items: any[]) => {
-    if (!items || items.length === 0) return 0
-    const completed = items.filter((item) => item.completed).length
-    return Math.round((completed / items.length) * 100)
+  const getItemStatusColor = (completed: boolean) => {
+    return completed
+      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+      : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
   }
 
   return (
-    <AdminLayout>
-      <div className="space-y-6 p-4 md:p-6 lg:p-8">
-        {/* Header */}
-        <div className="space-y-2 animate-fade-in">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white">Job Orders Management</h1>
-          <p className="text-neutral-600 dark:text-neutral-400">Track job progress and mark items as complete</p>
-        </div>
+    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+      <AdminHeader onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-2 animate-slide-up">
-          {["pending", "in_progress", "completed", "all"].map((filter, idx) => (
-            <button
-              key={filter}
-              onClick={() => setStatusFilter(filter)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 hover:scale-105 active:scale-95 ${
-                statusFilter === filter
-                  ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg"
-                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              }`}
-              style={{ transitionDelay: `${idx * 50}ms` }}
-            >
-              {filter === "in_progress" ? "In Progress" : filter.charAt(0).toUpperCase() + filter.slice(1)}
-            </button>
-          ))}
-        </div>
+      <div className="flex">
+        <AdminSidebar isOpen={isSidebarOpen} />
 
-        {/* Job Orders Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {isLoading ? (
-            Array.from({ length: 6 }).map((_, i) => <JobOrderSkeleton key={i} />)
-          ) : jobOrders.length === 0 ? (
-            <div className="col-span-full flex items-center justify-center p-12 text-neutral-500 dark:text-neutral-400">
-              <p>No job orders found</p>
+        <main className="flex-1 p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">Job Orders</h1>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                Manage and track all job orders and their progress
+              </p>
             </div>
-          ) : (
-            jobOrders.map((jobOrder, idx) => (
-              <div
-                key={jobOrder.id}
-                className="bg-white dark:bg-neutral-900 rounded-xl border border-neutral-200 dark:border-neutral-800 p-5 hover:shadow-lg hover:border-red-300 dark:hover:border-red-700 transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 animate-fade-in"
-                onClick={() => {
-                  setSelectedJobOrder(jobOrder)
-                  setShowModal(true)
-                }}
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-3">
+
+            {/* Error Message */}
+            {error && (
+              <Card className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                <div className="flex gap-3">
+                  <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
                   <div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Job Order</p>
-                    <p className="font-bold text-neutral-900 dark:text-white">{jobOrder.job_order_number}</p>
-                  </div>
-                  <span
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${getStatusColor(jobOrder.status)}`}
-                  >
-                    {getStatusIcon(jobOrder.status)}
-                    {jobOrder.status.replace("_", " ").toUpperCase()}
-                  </span>
-                </div>
-
-                {/* Customer Info */}
-                <div className="space-y-2 mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
-                  <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-                    <User size={16} />
-                    <span>
-                      {jobOrder.customer?.first_name} {jobOrder.customer?.last_name}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-                    <Calendar size={16} />
-                    <span>
-                      Due: {new Date(jobOrder.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
+                    <h3 className="font-semibold text-red-900 dark:text-red-400">Error</h3>
+                    <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
                   </div>
                 </div>
+              </Card>
+            )}
 
-                {/* Progress Bar */}
-                {jobOrder.items && jobOrder.items.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Progress</p>
-                      <p className="text-xs font-bold text-red-600 dark:text-red-400">
-                        {getCompletionPercentage(jobOrder.items)}%
-                      </p>
-                    </div>
-                    <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2 overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-red-600 to-orange-600 h-full transition-all duration-300"
-                        style={{ width: `${getCompletionPercentage(jobOrder.items)}%` }}
-                      />
-                    </div>
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                      {jobOrder.items.filter((item: any) => item.completed).length} of {jobOrder.items.length} items
-                      done
-                    </p>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Modal */}
-      {showModal && selectedJobOrder && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white dark:bg-neutral-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-scale-in">
-            <div className="sticky top-0 bg-white dark:bg-neutral-900 border-b border-neutral-200 dark:border-neutral-800 p-6 flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-neutral-900 dark:text-white">
-                  {selectedJobOrder.job_order_number}
-                </h2>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  {selectedJobOrder.customer?.first_name} {selectedJobOrder.customer?.last_name}
+            {/* Loading State */}
+            {isLoading ? (
+              <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                <Loader2 size={32} className="animate-spin text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+                <p className="text-neutral-600 dark:text-neutral-400 font-medium">Loading job orders...</p>
+              </Card>
+            ) : jobOrders.length === 0 ? (
+              <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                <Package size={32} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+                <p className="text-neutral-600 dark:text-neutral-400 font-medium">No job orders found</p>
+                <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-2">
+                  Create one from the Sales & Orders page
                 </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 text-2xl hover:scale-110 active:scale-95 transition-transform"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Job Details */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">Status</p>
-                  <div
-                    className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-semibold mt-1 ${getStatusColor(selectedJobOrder.status)}`}
+              </Card>
+            ) : (
+              <div className="grid gap-4">
+                {jobOrders.map((jobOrder) => (
+                  <Card
+                    key={jobOrder.id}
+                    className="overflow-hidden hover:shadow-lg transition bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700"
                   >
-                    {getStatusIcon(selectedJobOrder.status)}
-                    {selectedJobOrder.status.replace("_", " ").toUpperCase()}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">Due Date</p>
-                  <p className="font-semibold text-neutral-900 dark:text-white mt-1">
-                    {new Date(selectedJobOrder.due_date).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">Start Date</p>
-                  <p className="font-semibold text-neutral-900 dark:text-white mt-1">
-                    {new Date(selectedJobOrder.start_date).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-neutral-600 dark:text-neutral-400">Assigned To</p>
-                  <p className="font-semibold text-neutral-900 dark:text-white mt-1">
-                    {selectedJobOrder.assignedTo?.first_name} {selectedJobOrder.assignedTo?.last_name}
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress */}
-              {selectedJobOrder.items && selectedJobOrder.items.length > 0 && (
-                <div>
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="font-semibold text-neutral-900 dark:text-white">Progress</h3>
-                    <p className="text-sm font-bold text-red-600 dark:text-red-400">
-                      {getCompletionPercentage(selectedJobOrder.items)}% Complete
-                    </p>
-                  </div>
-                  <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-3 overflow-hidden mb-4">
+                    {/* Job Order Header */}
                     <div
-                      className="bg-gradient-to-r from-red-600 to-orange-600 h-full transition-all duration-300"
-                      style={{ width: `${getCompletionPercentage(selectedJobOrder.items)}%` }}
-                    />
-                  </div>
-                </div>
-              )}
+                      onClick={() => setExpandedOrder(expandedOrder === jobOrder.id ? null : jobOrder.id)}
+                      className="p-4 md:p-6 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-3 flex-wrap">
+                            <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
+                              {jobOrder.job_order_number}
+                            </h3>
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(jobOrder.status)}`}>
+                              {jobOrder.status.charAt(0).toUpperCase() + jobOrder.status.slice(1)}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(jobOrder.priority)}`}>
+                              {jobOrder.priority.toUpperCase()}
+                            </span>
+                          </div>
 
-              {/* Items Checklist */}
-              {selectedJobOrder.items && selectedJobOrder.items.length > 0 && (
-                <div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-3">Items to Complete</h3>
-                  <div className="space-y-2">
-                    {selectedJobOrder.items.map((item: any, idx: number) => (
-                      <button
-                        key={idx}
-                        onClick={() => !item.completed && handleCompleteItem(selectedJobOrder.id, item.id)}
-                        disabled={isUpdating}
-                        className={`w-full flex items-start gap-3 p-4 rounded-lg border-2 transition-all text-left hover:scale-102 ${
-                          item.completed
-                            ? "bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700"
-                            : "bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-red-400 dark:hover:border-red-600"
-                        } ${isUpdating ? "opacity-50 cursor-not-allowed" : ""}`}
-                      >
-                        <div className="mt-1">
-                          {item.completed ? (
-                            <CheckCircle size={20} className="text-green-600 dark:text-green-400" />
-                          ) : (
-                            <Circle size={20} className="text-neutral-400 dark:text-neutral-600" />
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs">Customer</p>
+                              <p className="font-semibold text-neutral-900 dark:text-white">
+                                {jobOrder.customer?.bill_to_name || "N/A"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs">Assigned To</p>
+                              <p className="font-semibold text-neutral-900 dark:text-white">
+                                {jobOrder.assignedTo?.name || "N/A"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs">Start Date</p>
+                              <p className="font-semibold text-neutral-900 dark:text-white">
+                                {formatDate(jobOrder.start_date)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs">Due Date</p>
+                              <p className="font-semibold text-neutral-900 dark:text-white">
+                                {formatDate(jobOrder.due_date)}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Progress Bar */}
+                          {jobOrder.items && jobOrder.items.length > 0 && (
+                            <div>
+                              <div className="flex justify-between items-center mb-2">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Progress</p>
+                                <p className="text-xs font-bold text-neutral-900 dark:text-white">
+                                  {jobOrder.items.filter((i) => i.completed).length}/{jobOrder.items.length} items finished
+                                </p>
+                              </div>
+                              <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
+                                <div
+                                  className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all"
+                                  style={{
+                                    width: `${(jobOrder.items.filter((i) => i.completed).length / jobOrder.items.length) * 100}%`,
+                                  }}
+                                ></div>
+                              </div>
+                            </div>
                           )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p
-                            className={`font-medium ${item.completed ? "line-through text-neutral-500 dark:text-neutral-400" : "text-neutral-900 dark:text-white"}`}
-                          >
-                            {item.product?.name || item.service?.name}
-                          </p>
-                          {item.quantity && (
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400">Qty: {item.quantity}</p>
-                          )}
-                          {item.description && (
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{item.description}</p>
-                          )}
-                        </div>
-                        <div className="text-xs font-semibold text-neutral-500 dark:text-neutral-400 flex-shrink-0">
-                          {item.completed ? "Done" : "Click to mark done"}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
 
-              {/* Notes */}
-              {selectedJobOrder.notes && (
-                <div>
-                  <h3 className="font-semibold text-neutral-900 dark:text-white mb-2">Notes</h3>
-                  <p className="text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800 p-3 rounded-lg">
-                    {selectedJobOrder.notes}
-                  </p>
-                </div>
-              )}
-            </div>
+                        {/* Expand Icon */}
+                        <button className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition mt-1">
+                          {expandedOrder === jobOrder.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                        </button>
+                      </div>
+                    </div>
 
-            {/* Actions */}
-            {selectedJobOrder.status !== "completed" && (
-              <div className="sticky bottom-0 bg-white dark:bg-neutral-900 border-t border-neutral-200 dark:border-neutral-800 p-6 flex gap-3">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className="flex-1 px-4 py-3 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700 font-semibold transition hover:scale-105 active:scale-95"
-                >
-                  Close
-                </button>
-                {getCompletionPercentage(selectedJobOrder.items) === 100 && (
-                  <button
-                    onClick={() => handleCompleteJobOrder(selectedJobOrder.id)}
-                    disabled={isUpdating}
-                    className="flex-1 px-4 py-3 rounded-lg bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:from-green-700 hover:to-emerald-700 font-semibold transition disabled:opacity-50 flex items-center justify-center gap-2 hover:scale-105 active:scale-95"
-                  >
-                    {isUpdating ? (
-                      <>
-                        <Loader2 size={18} className="animate-spin" />
-                        Completing...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle size={18} />
-                        Mark Job Complete
-                      </>
+                    {/* Expanded Details */}
+                    {expandedOrder === jobOrder.id && (
+                      <div className="p-4 md:p-6 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-700/50 space-y-6">
+                        {/* Job Order Items */}
+                        {jobOrder.items && jobOrder.items.length > 0 ? (
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">
+                              Items ({jobOrder.items.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {jobOrder.items.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 gap-3"
+                                >
+                                  <div className="flex-1">
+                                    <p className="font-medium text-neutral-900 dark:text-white text-sm">{item.description}</p>
+                                    <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+                                      Qty: {item.quantity} × {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total)}
+                                    </p>
+                                  </div>
+
+                                  {/* Item Status Selector */}
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleUpdateItemStatus(item.id, jobOrder.id, "pending")}
+                                      disabled={savingItemId === item.id}
+                                      className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                                        !item.completed
+                                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-2 border-yellow-400 dark:border-yellow-600"
+                                          : "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-2 border-neutral-200 dark:border-neutral-600 hover:border-yellow-400 dark:hover:border-yellow-600"
+                                      }`}
+                                    >
+                                      Pending
+                                    </button>
+                                    <button
+                                      onClick={() => handleUpdateItemStatus(item.id, jobOrder.id, "ongoing")}
+                                      disabled={savingItemId === item.id}
+                                      className={`px-3 py-1 rounded text-xs font-semibold transition ${
+                                        !item.completed
+                                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-2 border-blue-400 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-600"
+                                          : "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-2 border-neutral-200 dark:border-neutral-600"
+                                      }`}
+                                    >
+                                      Ongoing
+                                    </button>
+                                    <button
+                                      onClick={() => handleUpdateItemStatus(item.id, jobOrder.id, "finished")}
+                                      disabled={savingItemId === item.id}
+                                      className={`px-3 py-1 rounded text-xs font-semibold transition flex items-center gap-1 ${
+                                        item.completed
+                                          ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-2 border-green-400 dark:border-green-600"
+                                          : "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-2 border-neutral-200 dark:border-neutral-600 hover:border-green-400 dark:hover:border-green-600"
+                                      }`}
+                                    >
+                                      {savingItemId === item.id ? (
+                                        <Loader2 size={12} className="animate-spin" />
+                                      ) : (
+                                        <CheckCircle size={12} />
+                                      )}
+                                      Finished
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {/* Notes */}
+                        {jobOrder.notes && (
+                          <div>
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-2">Notes</h4>
+                            <p className="text-sm text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                              {jobOrder.notes}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Contact Info */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-white dark:bg-neutral-800 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1">Customer Email</p>
+                            <p className="text-sm font-medium text-neutral-900 dark:text-white break-all">
+                              {jobOrder.customer?.bill_to_email || "N/A"}
+                            </p>
+                          </div>
+                          <div className="bg-white dark:bg-neutral-800 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1">Customer Phone</p>
+                            <p className="text-sm font-medium text-neutral-900 dark:text-white">
+                              {jobOrder.customer?.bill_to_phone || "N/A"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  </button>
-                )}
+                  </Card>
+                ))}
               </div>
             )}
           </div>
-        </div>
-      )}
-    </AdminLayout>
+        </main>
+      </div>
+    </div>
   )
 }
