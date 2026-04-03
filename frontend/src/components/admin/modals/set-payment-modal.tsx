@@ -37,7 +37,6 @@ export function SetPaymentModal({
   const [downPaymentInput, setDownPaymentInput] = useState<string>("")
   const [startDate, setStartDate] = useState<string>("")
   const [dueDate, setDueDate] = useState<string>("")
-  const [priority, setPriority] = useState<"low" | "medium" | "high">("medium")
   const [notes, setNotes] = useState<string>("")
   const [error, setError] = useState("")
 
@@ -83,7 +82,6 @@ export function SetPaymentModal({
         downPaymentInput,
         startDate,
         dueDate,
-        priority,
         notes,
       })
       onOpenChange(false)
@@ -92,7 +90,6 @@ export function SetPaymentModal({
       setDownPaymentInput("")
       setStartDate("")
       setDueDate("")
-      setPriority("medium")
       setNotes("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save order")
@@ -218,7 +215,17 @@ export function SetPaymentModal({
                   min="0"
                   max={quotation.total}
                   value={downPaymentInput}
-                  onChange={(e) => setDownPaymentInput(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    if (value) {
+                      const numValue = parseFloat(value)
+                      // Auto-cap to total amount if it exceeds
+                      const cappedValue = numValue > quotation.total ? quotation.total : numValue
+                      setDownPaymentInput(cappedValue.toString())
+                    } else {
+                      setDownPaymentInput(value)
+                    }
+                  }}
                   placeholder={`Min: 0, Max: ${quotation.total.toLocaleString('en-PH')}`}
                   className="w-full pl-8 pr-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
                 />
@@ -291,30 +298,6 @@ export function SetPaymentModal({
               onChange={(e) => setDueDate(e.target.value)}
               className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
             />
-          </div>
-
-          {/* Priority */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-neutral-900 dark:text-white">
-              Priority
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {(['low', 'medium', 'high'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPriority(p)}
-                  className={`py-2 px-3 rounded-lg border-2 transition capitalize font-medium text-sm ${
-                    priority === p
-                      ? p === 'low' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400'
-                        : p === 'medium' ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400'
-                        : 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'
-                      : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:border-neutral-300 dark:hover:border-neutral-600'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Notes */}

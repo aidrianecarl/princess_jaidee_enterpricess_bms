@@ -108,9 +108,9 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700" aria-describedby="quotation-items-description">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-neutral-900 dark:text-white">
+          <DialogTitle id="quotation-items-description" className="text-2xl font-bold text-neutral-900 dark:text-white">
             Quotation Items - {quotation.quotation_number}
           </DialogTitle>
         </DialogHeader>
@@ -171,8 +171,14 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
                               <img
                                 src={item.design_file_url}
                                 alt="Design Preview"
-                                className="w-full h-48 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 cursor-zoom-in"
+                                className="w-full h-48 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 cursor-zoom-in bg-neutral-100 dark:bg-neutral-700"
                                 onClick={() => setExpandedImage(item.design_file_url || null)}
+                                onError={(e) => {
+                                  // Fallback if image fails to load
+                                  const target = e.target as HTMLImageElement
+                                  target.src = '/placeholder.svg?height=192&width=400'
+                                  target.classList.add('opacity-50')
+                                }}
                               />
                               <button
                                 onClick={() => setExpandedImage(item.design_file_url || null)}

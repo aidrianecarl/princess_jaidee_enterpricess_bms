@@ -170,15 +170,14 @@ export default function OrdersPage() {
         paid_amount: paidAmount,
         start_date: formData.startDate,
         due_date: formData.dueDate,
-        priority: formData.priority,
         notes: formData.notes,
       })
 
-      // First, update the quotation with paid_amount and status
+      // First, update the quotation with paid_amount and status using the new PATCH route
       const quotationUpdateResponse = await fetch(
-        `${apiUrl}/admin/quotations/${selectedQuotation.id}`,
+        `${apiUrl}/quotations/${selectedQuotation.id}/payment`,
         {
-          method: "PUT",
+          method: "PATCH",
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -192,6 +191,8 @@ export default function OrdersPage() {
 
       if (!quotationUpdateResponse.ok) {
         console.error("[v0] Failed to update quotation paid_amount")
+        const errorData = await quotationUpdateResponse.json()
+        console.error("[v0] Quotation update error:", errorData)
       }
 
       // Then create the job order
@@ -209,7 +210,6 @@ export default function OrdersPage() {
           paid_amount: paidAmount,
           start_date: formData.startDate,
           due_date: formData.dueDate,
-          priority: formData.priority,
           notes: formData.notes,
         }),
       })
