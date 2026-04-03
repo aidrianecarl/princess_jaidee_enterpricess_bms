@@ -44,35 +44,120 @@ class QuotationController extends Controller
     public function adminIndex(Request $request)
     {
         try {
-            $query = Quotation::with(['customer', 'items.service']);
+            Log::info('Admin quotations request received', [
+                'status_filter' => $request->get('status'),
+                'search_filter' => $request->get('search'),
+            ]);
 
-            if ($request->has('search')) {
-                $query->where('quotation_number', 'like', '%' . $request->search . '%');
+            $query = Quotation::with(['customer', 'items.service']);
+            Log::info('Base query built');
+
+            if ($request->has('search') && !empty($request->get('search'))) {
+                $searchTerm = $request->get('search');
+                Log::info('Applying search filter', ['search' => $searchTerm]);
+                $query->where('quotation_number', 'like', '%' . $searchTerm . '%');
             }
 
-            if ($request->has('status')) {
-                $query->where('status', $request->status);
+            if ($request->has('status') && !empty($request->get('status'))) {
+                $statusFilter = $request->get('status');
+                Log::info('Applying status filter', ['status' => $statusFilter]);
+                $query->where('status', $statusFilter);
             }
 
             $quotations = $query->orderBy('created_at', 'desc')->get();
+            Log::info('Quotations retrieved from database', [
+                'count' => $quotations->count(),
+                'status_filter' => $request->get('status'),
+            ]);
             
-            $quotations->transform(function ($quotation) {
-                $quotation->items_count = $quotation->items->count();
-                
-                // Transform customer data for frontend compatibility
-                if ($quotation->customer) {
-                    $quotation->customer->name = $quotation->customer->bill_to_name;
-                    $quotation->customer->email = $quotation->customer->bill_to_email;
-                    $quotation->customer->phone = $quotation->customer->bill_to_phone;
-                }
-                
-                return $quotation;
-            });
+            // Transform quotations for frontend response
+            $result = [];
+            foreach ($quotations as $quotation) {
+                try {
+                    $quotationArray = [
+                        'id' => $quotation->id,
+                        'quotation_number' => $quotation->quotation_number,
+                        'customer_id' => $quotation->customer_id,
+                        'created_by' => $quotation->created_by,
+                        'business_name' => $quotation->business_name,
+                        'business_address' => $quotation->business_address,
+                        'business_city' => $quotation->business_city,
+                        'business_state' => $quotation->business_state,
+                        'business_postal' => $quotation->business_postal,
+                        'business_phone' => $quotation->business_phone,
+                        'business_email' => $quotation->business_email,
+                        'logo_url' => $quotation->logo_url,
+                        'subtotal' => (float) $quotation->subtotal,
+                        'discount' => (float) $quotation->discount,
+                        'paid_amount' => (float) $quotation->paid_amount,
+                        'tax' => (float) $quotation->tax,
+                        'total' => (float) $quotation->total,
+                        'currency' => $quotation->currency,
+                        'status' => $quotation->status,
+                        'has_price' => $quotation->has_price,
+                        'notes' => $quotation->notes,
+                        'valid_until' => $quotation->valid_until,
+                        'created_at' => $quotation->created_at,
+                        'updated_at' => $quotation->updated_at,
+                        'items_count' => $quotation->items ? count($quotation->items) : 0,
+                    ];
 
-            return response()->json($quotations, 200);
+                    // Add customer data if exists
+                    if ($quotation->customer) {
+                        Log::debug('Processing customer for quotation', [
+                            'quotation_id' => $quotation->id,
+                            'customer_id' => $quotation->customer->id,
+                        ]);
+                        $quotationArray['customer'] = [
+                            'id' => $quotation->customer->id,
+                            'quotation_id' => $quotation->customer->quotation_id,
+                            'name' => $quotation->customer->bill_to_name ?? '',
+                            'email' => $quotation->customer->bill_to_email ?? '',
+                            'phone' => $quotation->customer->bill_to_phone ?? '',
+                            'bill_to_name' => $quotation->customer->bill_to_name,
+                            'bill_to_street' => $quotation->customer->bill_to_street,
+                            'bill_to_city' => $quotation->customer->bill_to_city,
+                            'bill_to_state' => $quotation->customer->bill_to_state,
+                            'bill_to_postal' => $quotation->customer->bill_to_postal,
+                            'bill_to_phone' => $quotation->customer->bill_to_phone,
+                            'bill_to_email' => $quotation->customer->bill_to_email,
+                        ];
+                    } else {
+                        Log::warning('Quotation has no customer', ['quotation_id' => $quotation->id]);
+                        $quotationArray['customer'] = null;
+                    }
+
+                    // Add items data if exists
+                    if ($quotation->items) {
+                        $quotationArray['items'] = $quotation->items->toArray();
+                    } else {
+                        $quotationArray['items'] = [];
+                    }
+
+                    $result[] = $quotationArray;
+                } catch (\Exception $itemError) {
+                    Log::error('Error processing quotation item', [
+                        'quotation_id' => $quotation->id ?? 'unknown',
+                        'error' => $itemError->getMessage(),
+                        'line' => $itemError->getLine(),
+                    ]);
+                    throw $itemError;
+                }
+            }
+
+            Log::info('Admin quotations returned successfully', ['count' => count($result)]);
+            return response()->json($result, 200);
         } catch (\Exception $e) {
-            Log::error('Admin quotations fetch error: ' . $e->getMessage());
-            return response()->json(['error' => 'Failed to fetch quotations', 'message' => $e->getMessage()], 500);
+            Log::error('Admin quotations fetch error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'code' => $e->getCode(),
+            ]);
+            return response()->json([
+                'error' => 'Failed to fetch quotations',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 
