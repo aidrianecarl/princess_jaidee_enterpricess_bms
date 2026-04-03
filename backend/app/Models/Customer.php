@@ -19,8 +19,6 @@ class Customer extends Model
         'bill_to_email',
     ];
 
-    protected $appends = ['name', 'email', 'phone'];
-
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -39,21 +37,5 @@ class Customer extends Model
     public function jobOrders(): HasMany
     {
         return $this->hasMany(JobOrder::class);
-    }
-
-    // Accessors for compatibility with frontend expectations
-    public function getNameAttribute()
-    {
-        return $this->bill_to_name ?? '';
-    }
-
-    public function getEmailAttribute()
-    {
-        return $this->bill_to_email ?? '';
-    }
-
-    public function getPhoneAttribute()
-    {
-        return $this->bill_to_phone ?? '';
     }
 }

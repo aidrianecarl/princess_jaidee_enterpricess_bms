@@ -43,24 +43,37 @@ class QuotationController extends Controller
     // Get all quotations for admin (no user filter - retrieves all quotations)
     public function adminIndex(Request $request)
     {
-        $query = Quotation::with(['customer', 'items.service']);
+        try {
+            $query = Quotation::with(['customer', 'items.service']);
 
-        if ($request->has('search')) {
-            $query->where('quotation_number', 'like', '%' . $request->search . '%');
+            if ($request->has('search')) {
+                $query->where('quotation_number', 'like', '%' . $request->search . '%');
+            }
+
+            if ($request->has('status')) {
+                $query->where('status', $request->status);
+            }
+
+            $quotations = $query->orderBy('created_at', 'desc')->get();
+            
+            $quotations->transform(function ($quotation) {
+                $quotation->items_count = $quotation->items->count();
+                
+                // Transform customer data for frontend compatibility
+                if ($quotation->customer) {
+                    $quotation->customer->name = $quotation->customer->bill_to_name;
+                    $quotation->customer->email = $quotation->customer->bill_to_email;
+                    $quotation->customer->phone = $quotation->customer->bill_to_phone;
+                }
+                
+                return $quotation;
+            });
+
+            return response()->json($quotations, 200);
+        } catch (\Exception $e) {
+            Log::error('Admin quotations fetch error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to fetch quotations', 'message' => $e->getMessage()], 500);
         }
-
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $quotations = $query->orderBy('created_at', 'desc')->get();
-        
-        $quotations->transform(function ($quotation) {
-            $quotation->items_count = $quotation->items->count();
-            return $quotation;
-        });
-
-        return response()->json($quotations, 200);
     }
 
     // Get single quotation
