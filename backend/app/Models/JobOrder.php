@@ -18,7 +18,6 @@ class JobOrder extends Model
         'due_date',
         'completed_date',
         'status',
-        'priority',
         'notes',
     ];
 

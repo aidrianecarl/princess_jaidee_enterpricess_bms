@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { FileText, Home, Eye, ChevronDown, Menu, X } from "lucide-react"
+import { FileText, Home, Eye, ChevronDown, Menu, X, Package } from "lucide-react"
 
 export function DashboardSidebar() {
   const pathname = usePathname()
@@ -56,6 +56,17 @@ export function DashboardSidebar() {
           >
             <Home size={20} />
             <span>Quoted Proposal</span>
+          </Link>
+
+        <Link
+            href="/dashboard/my-orders"
+            className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition ${isActive("/dashboard/my-orders")
+                ? "bg-red-100 text-red-600 font-semibold"
+                : "text-gray-700 hover:bg-gray-100"
+              }`}
+          >
+            <Package size={20} />
+            <span>My Orders</span>
           </Link>
       </nav>
     </aside>
