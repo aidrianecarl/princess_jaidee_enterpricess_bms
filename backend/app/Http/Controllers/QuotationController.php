@@ -175,49 +175,6 @@ class QuotationController extends Controller
         return response()->json($quotation, 200);
     }
 
-    // Update quotation (for paid_amount and other fields)
-    public function updatePayment(Request $request, $id)
-    {
-        try {
-            $quotation = Quotation::find($id);
-
-            if (!$quotation) {
-                return response()->json(['error' => 'Quotation not found'], 404);
-            }
-
-            $allowedFields = ['paid_amount', 'status', 'notes', 'discount', 'tax', 'total'];
-            $updateData = [];
-
-            foreach ($allowedFields as $field) {
-                if ($request->has($field)) {
-                    $updateData[$field] = $request->input($field);
-                }
-            }
-
-            if (empty($updateData)) {
-                return response()->json(['error' => 'No valid fields to update'], 400);
-            }
-
-            $quotation->update($updateData);
-
-            Log::info('Quotation updated successfully', [
-                'quotation_id' => $id,
-                'updated_fields' => array_keys($updateData),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Quotation updated successfully',
-                'data' => $quotation
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error updating quotation', [
-                'quotation_id' => $id,
-                'message' => $e->getMessage(),
-            ]);
-            return response()->json(['error' => 'Failed to update quotation', 'message' => $e->getMessage()], 500);
-        }
-    }
 
     public function getNextQuotationNumber()
     {
@@ -965,7 +922,7 @@ class QuotationController extends Controller
         }
     }
 
-    // Update payment amount and status for quotation
+    // Update quotation payment and status
     public function updatePayment(Request $request, $id)
     {
         try {
@@ -975,37 +932,66 @@ class QuotationController extends Controller
                 return response()->json(['error' => 'Quotation not found'], 404);
             }
 
+            // Validation (only validate if fields are present)
             $validator = Validator::make($request->all(), [
-                'paid_amount' => 'required|numeric|min:0',
-                'status' => 'required|in:approved,pending,draft,sent',
+                'paid_amount' => 'nullable|numeric|min:0',
+                'status' => 'nullable|in:approved,pending,draft,sent',
+                'notes' => 'nullable|string',
+                'discount' => 'nullable|numeric|min:0',
+                'tax' => 'nullable|numeric|min:0',
+                'total' => 'nullable|numeric|min:0',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            // Update paid_amount and status
-            $quotation->paid_amount = $request->paid_amount;
-            $quotation->status = $request->status;
-            $quotation->save();
+            // Allowed fields for update
+            $allowedFields = [
+                'paid_amount',
+                'status',
+                'notes',
+                'discount',
+                'tax',
+                'total'
+            ];
+
+            $updateData = [];
+
+            foreach ($allowedFields as $field) {
+                if ($request->has($field)) {
+                    $updateData[$field] = $request->input($field);
+                }
+            }
+
+            if (empty($updateData)) {
+                return response()->json(['error' => 'No valid fields to update'], 400);
+            }
+
+            // Update quotation
+            $quotation->update($updateData);
 
             Log::info('Quotation payment updated', [
                 'quotation_id' => $id,
-                'paid_amount' => $request->paid_amount,
-                'status' => $request->status,
+                'updated_fields' => $updateData,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Quotation payment updated successfully',
+                'message' => 'Quotation updated successfully',
                 'data' => $quotation,
             ], 200);
+
         } catch (\Exception $e) {
             Log::error('Update payment error', [
                 'quotation_id' => $id,
                 'message' => $e->getMessage(),
             ]);
-            return response()->json(['error' => 'Failed to update payment', 'message' => $e->getMessage()], 500);
+
+            return response()->json([
+                'error' => 'Failed to update payment',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 }
