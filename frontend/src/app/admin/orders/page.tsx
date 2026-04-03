@@ -44,7 +44,7 @@ export default function OrdersPage() {
   const [viewItemsModalOpen, setViewItemsModalOpen] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<SentQuotation | null>(null)
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
   useEffect(() => {
     checkAuth()

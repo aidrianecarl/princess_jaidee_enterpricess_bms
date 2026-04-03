@@ -11,6 +11,18 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ContactController;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
+
+Route::get('/storage/app/public/{path}', function ($path) {
+    $filePath = storage_path('app/public/' . $path);
+
+    if (!File::exists($filePath)) {
+        abort(404);
+    }
+
+    return response()->file($filePath);
+})->where('path', '.*');
 
 Route::post('/register', [AuthController::class, 'clientRegister']);
 Route::post('/login', [AuthController::class, 'clientLogin']);
