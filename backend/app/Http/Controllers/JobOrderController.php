@@ -70,7 +70,6 @@ class JobOrderController extends Controller
             'assigned_to' => 'required|exists:users,id',
             'start_date' => 'required|date',
             'due_date' => 'required|date|after:start_date',
-            'priority' => 'nullable|in:low,medium,high',
             'payment_type' => 'nullable|in:downpayment,fullpayment',
             'paid_amount' => 'nullable|numeric|min:0',
         ]);
@@ -87,12 +86,11 @@ class JobOrderController extends Controller
             $jobOrder = JobOrder::create([
                 'job_order_number' => $jobNumber,
                 'quotation_id' => $request->quotation_id,
-                'order_id' => $request->order_id,
+                'order_id' => $request->order_id ?? null,
                 'customer_id' => $request->customer_id,
                 'assigned_to' => $request->assigned_to,
                 'start_date' => $request->start_date,
                 'due_date' => $request->due_date,
-                'priority' => $request->priority ?? 'medium',
                 'status' => 'pending',
                 'notes' => $request->notes ?? null,
             ]);

@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, Calendar, User, FileText, Package } from "lucide-react"
+import { ChevronDown, Calendar, User, FileText, Package, Loader } from "lucide-react"
 
 interface JobOrderItem {
   id: number
@@ -46,7 +46,16 @@ export default function MyOrdersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null)
   const [error, setError] = useState("")
+  const [user, setUser] = useState<any>(null)
   const router = useRouter()
+
+  // Get user from localStorage on mount
+  useEffect(() => {
+    const userData = localStorage.getItem("user")
+    if (userData) {
+      setUser(JSON.parse(userData))
+    }
+  }, [])
 
   useEffect(() => {
     fetchMyOrders()
@@ -55,15 +64,15 @@ export default function MyOrdersPage() {
   const fetchMyOrders = async () => {
     try {
       setIsLoading(true)
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("auth_token")
       const userData = localStorage.getItem("user")
 
       if (!token || !userData) {
-        router.push("/login")
+        router.push("/")
         return
       }
 
-      const user = JSON.parse(userData)
+      const userData_parsed = JSON.parse(userData)
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com"
 
       // Fetch job orders for this customer
@@ -81,7 +90,7 @@ export default function MyOrdersPage() {
       const data = await response.json()
       
       // Filter orders for current customer
-      const myOrders = data.data.filter((order: JobOrder) => order.customer_id === user.customer_id)
+      const myOrders = data.data.filter((order: JobOrder) => order.customer_id === userData_parsed.customer_id)
       setJobOrders(myOrders)
     } catch (err) {
       console.error("[v0] Error fetching orders:", err)
@@ -113,7 +122,7 @@ export default function MyOrdersPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900">
-      <DashboardHeader />
+      <DashboardHeader user={user} />
 
       <main className="container mx-auto px-4 py-8 md:py-12">
         {/* Header Section */}
