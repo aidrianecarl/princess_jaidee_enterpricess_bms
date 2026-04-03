@@ -64,37 +64,61 @@ export default function OrdersPage() {
     try {
       setIsLoading(true)
       setError("")
+      
+      console.log("[v0] Fetching orders from:", `${apiUrl}/admin/quotations?status=sent`)
+      console.log("[v0] Token exists:", !!token)
+      
       const response = await fetch(`${apiUrl}/admin/quotations?status=sent`, {
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
       })
 
+      console.log("[v0] Response status:", response.status)
+      console.log("[v0] Response statusText:", response.statusText)
+
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("[v0] API Error Response:", {
+        console.error("[v0] API Error Response Body:", errorText)
+        console.error("[v0] Error Details:", {
           status: response.status,
           statusText: response.statusText,
-          body: errorText,
+          contentType: response.headers.get('content-type'),
+          body: errorText.substring(0, 500), // First 500 chars
         })
         throw new Error(`API Error ${response.status}: ${response.statusText}`)
       }
 
+      const contentType = response.headers.get('content-type')
+      console.log("[v0] Content-Type:", contentType)
+      
       const data = await response.json()
-      console.log("[v0] Quotations data:", data)
+      console.log("[v0] Raw API Response:", data)
       
       const quotations = Array.isArray(data) ? data : (data.data || data)
+      console.log("[v0] Quotations array:", quotations)
+      console.log("[v0] Is array:", Array.isArray(quotations))
+      console.log("[v0] Array length:", Array.isArray(quotations) ? quotations.length : 'N/A')
       
       // Filter only sent status quotations
       const sent = Array.isArray(quotations) 
-        ? quotations.filter((q: any) => q && q.status === "sent")
+        ? quotations.filter((q: any) => {
+            console.log("[v0] Checking quotation:", { id: q?.id, status: q?.status })
+            return q && q.status === "sent"
+          })
         : []
       
-      console.log("[v0] Filtered sent quotations:", sent)
+      console.log("[v0] Final filtered sent quotations:", sent)
+      console.log("[v0] Sent count:", sent.length)
       setSentQuotations(sent)
     } catch (err) {
       console.error("[v0] Error fetching quotations:", err)
+      if (err instanceof Error) {
+        console.error("[v0] Error message:", err.message)
+        console.error("[v0] Error stack:", err.stack)
+      }
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
       setError(`Failed to load orders: ${errorMessage}`)
     } finally {
