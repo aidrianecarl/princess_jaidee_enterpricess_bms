@@ -65,7 +65,7 @@ export function DashboardSidebar() {
     {/* Mobile Overlay */}
     {mobileMenuOpen && (
       <div
-        className="fixed inset-0 bg-black bg-opacity-30 md:hidden z-30 transition-all duration-300"
+        className="fixed inset-0 bg-opacity-30 md:hidden z-30 transition-all duration-300"
         onClick={closeMobileMenu}
       />
     )}
