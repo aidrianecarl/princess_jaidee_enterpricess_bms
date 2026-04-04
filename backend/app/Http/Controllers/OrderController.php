@@ -19,27 +19,9 @@ class OrderController extends Controller
             
             Log::info('OrderController index - Fetching orders for user:', ['user_id' => $userId]);
             
-            // Get all quotations created by this authenticated user
-            $quotations = Quotation::where('created_by', $userId)->get();
-            Log::info('Found quotations:', ['count' => $quotations->count(), 'quotations' => $quotations->pluck('id')]);
-            
-            // Extract all unique customer IDs from those quotations
-            $customerIds = $quotations->pluck('customer_id')->unique()->filter()->values();
-            Log::info('Customer IDs from quotations:', ['customer_ids' => $customerIds]);
-            
+            // Fetch orders where customer_id equals the authenticated user's ID
             $query = Order::with(['customer', 'items', 'quotation']);
-
-            // Filter orders by customer IDs
-            if ($customerIds->count() > 0) {
-                $query->whereIn('customer_id', $customerIds);
-            } else {
-                // If no quotations found for user, return empty
-                Log::info('No quotations found for user, returning empty orders');
-                return response()->json([
-                    'success' => true,
-                    'data' => []
-                ], 200);
-            }
+            $query->where('customer_id', $userId);
 
             if ($request->has('search')) {
                 $query->where('order_number', 'like', '%' . $request->search . '%');
@@ -51,7 +33,7 @@ class OrderController extends Controller
 
             $orders = $query->orderBy('created_at', 'desc')->get();
             
-            Log::info('Orders fetched:', ['count' => $orders->count()]);
+            Log::info('Orders fetched:', ['count' => $orders->count(), 'user_id' => $userId]);
 
             return response()->json([
                 'success' => true,
@@ -81,13 +63,13 @@ class OrderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'quotation_id' => 'nullable|exists:quotations,id',
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => 'required|exists:users,id',
             'order_date' => 'required|date',
             'subtotal' => 'required|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'total' => 'required|numeric|min:0',
-            'payment_status' => 'nullable|in:unpaid,partial,paid',
+            'payment_status' => 'nullable|in:unpaid,partial,paid,pending',
             'order_status' => 'nullable|in:pending,processing,completed,shipped,delivered,cancelled',
             'payment_method' => 'required|in:cash,credit_card,bank_transfer,check',
             'notes' => 'nullable|string',

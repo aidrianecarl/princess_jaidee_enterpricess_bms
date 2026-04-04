@@ -71,9 +71,6 @@ export default function OrdersPage() {
       setIsLoading(true)
       setError("")
       
-      console.log("[v0] Fetching orders from:", `${apiUrl}/admin/quotations?status=sent`)
-      console.log("[v0] Token exists:", !!token)
-      
       const response = await fetch(`${apiUrl}/admin/quotations?status=sent`, {
         method: 'GET',
         headers: {
@@ -82,49 +79,22 @@ export default function OrdersPage() {
         },
       })
 
-      console.log("[v0] Response status:", response.status)
-      console.log("[v0] Response statusText:", response.statusText)
-
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("[v0] API Error Response Body:", errorText)
-        console.error("[v0] Error Details:", {
-          status: response.status,
-          statusText: response.statusText,
-          contentType: response.headers.get('content-type'),
-          body: errorText.substring(0, 500), // First 500 chars
-        })
         throw new Error(`API Error ${response.status}: ${response.statusText}`)
       }
 
-      const contentType = response.headers.get('content-type')
-      console.log("[v0] Content-Type:", contentType)
-      
       const data = await response.json()
-      console.log("[v0] Raw API Response:", data)
-      
       const quotations = Array.isArray(data) ? data : (data.data || data)
-      console.log("[v0] Quotations array:", quotations)
-      console.log("[v0] Is array:", Array.isArray(quotations))
-      console.log("[v0] Array length:", Array.isArray(quotations) ? quotations.length : 'N/A')
       
       // Filter only sent status quotations
       const sent = Array.isArray(quotations) 
-        ? quotations.filter((q: any) => {
-            console.log("[v0] Checking quotation:", { id: q?.id, status: q?.status })
-            return q && q.status === "sent"
-          })
+        ? quotations.filter((q: any) => q && q.status === "sent")
         : []
       
-      console.log("[v0] Final filtered sent quotations:", sent)
-      console.log("[v0] Sent count:", sent.length)
       setSentQuotations(sent)
     } catch (err) {
       console.error("[v0] Error fetching quotations:", err)
-      if (err instanceof Error) {
-        console.error("[v0] Error message:", err.message)
-        console.error("[v0] Error stack:", err.stack)
-      }
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
       setError(`Failed to load orders: ${errorMessage}`)
     } finally {
@@ -164,17 +134,6 @@ export default function OrdersPage() {
         paidAmount = parseFloat(formData.downPaymentInput)
       }
 
-      console.log("[v0] Creating job order with data:", {
-        quotation_id: selectedQuotation.id,
-        assigned_to: employeeId,
-        customer_id: selectedQuotation.customer?.id || 1,
-        payment_type: paymentType,
-        paid_amount: paidAmount,
-        start_date: formData.startDate,
-        due_date: formData.dueDate,
-        notes: formData.notes,
-      })
-
       // First, update the quotation with paid_amount and status using the new PATCH route
       const quotationUpdateResponse = await fetch(
         `${apiUrl}/quotations/${selectedQuotation.id}/payment`,
@@ -192,20 +151,17 @@ export default function OrdersPage() {
       )
 
       if (!quotationUpdateResponse.ok) {
-        console.error("[v0] Failed to update quotation paid_amount")
         try {
           const errorData = await quotationUpdateResponse.json()
-          console.error("[v0] Quotation update error:", errorData)
           throw new Error(errorData.message || errorData.error || "Failed to update quotation payment")
         } catch (parseErr) {
           const errorText = await quotationUpdateResponse.text()
-          console.error("[v0] Error response text:", errorText)
           throw new Error(`Failed to update quotation: ${quotationUpdateResponse.status} ${quotationUpdateResponse.statusText}`)
         }
       }
 
       // Step 2: Create an Order from the quotation
-      console.log("[v0] Creating order from quotation...")
+
       const orderResponse = await fetch(`${apiUrl}/orders`, {
         method: "POST",
         headers: {
@@ -214,7 +170,7 @@ export default function OrdersPage() {
         },
         body: JSON.stringify({
           quotation_id: selectedQuotation.id,
-          customer_id: selectedQuotation.customer?.id || 1,
+          customer_id: user?.id || 1,
           order_date: new Date().toISOString().split('T')[0],
           subtotal: selectedQuotation.total,
           discount: 0,
@@ -234,11 +190,9 @@ export default function OrdersPage() {
 
       const orderData = await orderResponse.json()
       const orderId = orderData.data?.id || orderData.id
-      console.log("[v0] Order created with ID:", orderId)
 
       // Step 3: Create Order Items from quotation items
       if (selectedQuotation.items && selectedQuotation.items.length > 0) {
-        console.log("[v0] Creating order items...")
         for (const item of selectedQuotation.items) {
           await fetch(`${apiUrl}/order-items`, {
             method: "POST",
@@ -256,11 +210,9 @@ export default function OrdersPage() {
             }),
           })
         }
-        console.log("[v0] Order items created successfully")
       }
 
       // Step 4: Create Job Order with the new order_id
-      console.log("[v0] Creating job order...")
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders`, {
         method: "POST",
         headers: {
@@ -271,7 +223,7 @@ export default function OrdersPage() {
           quotation_id: selectedQuotation.id,
           order_id: orderId,
           assigned_to: employeeId,
-          customer_id: selectedQuotation.customer?.id || 1,
+          customer_id: user?.id || 1,
           start_date: formData.startDate,
           due_date: formData.dueDate,
           notes: formData.notes,
@@ -283,14 +235,11 @@ export default function OrdersPage() {
         throw new Error(errorData.message || "Failed to create job order")
       }
 
-      console.log("[v0] Job order created successfully")
-
       // Remove from pending list
       setSentQuotations(sentQuotations.filter(q => q.id !== selectedQuotation.id))
       setSelectedQuotation(null)
       setPaymentModalOpen(false)
     } catch (err) {
-      console.error("[v0] Error saving order:", err)
       const errorMsg = err instanceof Error ? err.message : "Failed to save order"
       setError(errorMsg)
       throw err

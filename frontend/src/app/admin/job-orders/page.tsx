@@ -355,7 +355,10 @@ export default function JobOrdersPage() {
                             <div>
                               <p className="text-neutral-600 dark:text-neutral-400 text-xs">Assigned To</p>
                               <p className="font-semibold text-neutral-900 dark:text-white">
-                                {jobOrder.assignedTo?.name || "N/A"}
+                                {jobOrder.assignedTo 
+                                  ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name}`
+                                  : "N/A"
+                                }
                               </p>
                             </div>
                             <div>
