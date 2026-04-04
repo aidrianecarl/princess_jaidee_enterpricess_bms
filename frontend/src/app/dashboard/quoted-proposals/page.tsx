@@ -26,9 +26,11 @@ export default function QuotedProposalsPage() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [quotations, setQuotations] = useState<Quotation[]>([])
+  const [filteredQuotations, setFilteredQuotations] = useState<Quotation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [sendingId, setSendingId] = useState<number | null>(null)
+  const [statusFilter, setStatusFilter] = useState<"all" | "sent" | "approved">("all")
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; quotationId: number | null }>({
     isOpen: false,
     quotationId: null,
@@ -118,6 +120,7 @@ export default function QuotedProposalsPage() {
       )
 
       setQuotations(pricedQuotations)
+      filterQuotations(pricedQuotations, "all")
 
       if (pricedQuotations.length === 0) {
         setError("No quoted proposals available yet. Check back when the admin has set prices.")
@@ -128,6 +131,17 @@ export default function QuotedProposalsPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const filterQuotations = (quots: Quotation[], status: "all" | "sent" | "approved") => {
+    let filtered = quots
+    if (status === "sent") {
+      filtered = quots.filter((q) => q.status === "sent")
+    } else if (status === "approved") {
+      filtered = quots.filter((q) => q.status === "approved")
+    }
+    setFilteredQuotations(filtered)
+    setStatusFilter(status)
   }
 
   const formatDate = (dateString: string) => {
@@ -161,62 +175,94 @@ export default function QuotedProposalsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white dark:bg-neutral-950">
       <DashboardHeader user={user} />
 
       <div className="pt-14 sm:pt-16 md:ml-64 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Quoted Proposals</h1>
-            <p className="text-gray-600">
-              View all quotation proposals with pricing set by the admin
-            </p>
-          </div>
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900">
-            <ArrowLeft size={20} />
-            Back to Dashboard
-          </Link>
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-2">Quoted Proposals</h1>
+          <p className="text-neutral-600 dark:text-neutral-400">
+            View all quotation proposals with pricing set by the admin
+          </p>
+        </div>
+
+        {/* Filter Buttons */}
+        <div className="mb-8 flex flex-wrap gap-3">
+          <button
+            onClick={() => filterQuotations(quotations, "all")}
+            className={`px-6 py-2 rounded-lg font-medium transition ${
+              statusFilter === "all"
+                ? "bg-orange-500 text-white"
+                : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
+            }`}
+          >
+            All Proposals ({quotations.length})
+          </button>
+          <button
+            onClick={() => filterQuotations(quotations, "sent")}
+            className={`px-6 py-2 rounded-lg font-medium transition ${
+              statusFilter === "sent"
+                ? "bg-green-500 text-white"
+                : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
+            }`}
+          >
+            Sent to Production ({quotations.filter((q) => q.status === "sent").length})
+          </button>
+          <button
+            onClick={() => filterQuotations(quotations, "approved")}
+            className={`px-6 py-2 rounded-lg font-medium transition ${
+              statusFilter === "approved"
+                ? "bg-blue-500 text-white"
+                : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
+            }`}
+          >
+            Approved ({quotations.filter((q) => q.status === "approved").length})
+          </button>
         </div>
 
         {/* Loading State */}
         {isLoading && (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-red-600" />
-            <span className="ml-2 text-gray-600">Loading quoted proposals...</span>
+            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+            <span className="ml-2 text-neutral-600 dark:text-neutral-400">Loading quoted proposals...</span>
           </div>
         )}
 
         {/* Error State */}
         {error && !isLoading && (
-          <Card className="p-8 text-center bg-yellow-50 border-yellow-200">
-            <FileText className="w-12 h-12 text-yellow-600 mx-auto mb-4" />
-            <p className="text-yellow-800 font-medium">{error}</p>
+          <Card className="p-8 text-center bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900">
+            <FileText className="w-12 h-12 text-yellow-600 dark:text-yellow-400 mx-auto mb-4" />
+            <p className="text-yellow-800 dark:text-yellow-200 font-medium">{error}</p>
           </Card>
         )}
 
         {/* Quotations List */}
-        {!isLoading && quotations.length > 0 && (
+        {!isLoading && filteredQuotations.length > 0 && (
           <div className="space-y-4">
-            {quotations.map((quotation) => (
-              <Card key={quotation.id} className="p-6 hover:shadow-lg transition">
+            {filteredQuotations.map((quotation) => (
+              <Card key={quotation.id} className="p-6 hover:shadow-md transition border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
+                    <div className="flex items-center gap-3 mb-3 flex-wrap">
+                      <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">
                         {quotation.quotation_number}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(quotation.status)}`}>
-                        {quotation.status === "sent" ? "Sent to Production" : quotation.status}
-                      </span>
+                      <Badge className={`${getStatusColor(quotation.status)}`}>
+                        {quotation.status === "sent" ? "Sent to Production" : quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
+                      </Badge>
                     </div>
-                    <p className="text-sm text-gray-600 mb-1">
-                      Items: <span className="font-medium">{quotation.items?.length || 0} item(s)</span>
-                    </p>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Date: {formatDate(quotation.created_at)}
-                    </p>
-                    <p className="text-lg font-bold text-red-600">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Items</p>
+                        <p className="font-semibold text-neutral-900 dark:text-white">{quotation.items?.length || 0} item(s)</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Date</p>
+                        <p className="font-semibold text-neutral-900 dark:text-white">{formatDate(quotation.created_at)}</p>
+                      </div>
+                    </div>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-3">
                       {formatCurrency(quotation.total)}
                     </p>
                   </div>
@@ -226,7 +272,7 @@ export default function QuotedProposalsPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex items-center gap-2 w-full sm:w-auto"
+                        className="flex items-center gap-2 w-full sm:w-auto border-neutral-300 dark:border-neutral-700"
                       >
                         <Eye size={16} />
                         View Details
@@ -236,7 +282,7 @@ export default function QuotedProposalsPage() {
                       <Button
                         onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
                         disabled={sendingId === quotation.id}
-                        className="flex items-center gap-2 w-full sm:w-auto bg-gradient-to-r from-red-600 to-orange-500 text-white hover:shadow-lg"
+                        className="flex items-center gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
                         size="sm"
                       >
                         {sendingId === quotation.id ? (
@@ -260,13 +306,22 @@ export default function QuotedProposalsPage() {
         )}
 
         {/* Empty State */}
+        {!isLoading && filteredQuotations.length === 0 && quotations.length > 0 && !error && (
+          <Card className="p-8 text-center border-neutral-200 dark:border-neutral-800">
+            <FileText className="w-12 h-12 text-neutral-400 dark:text-neutral-600 mx-auto mb-4" />
+            <p className="text-neutral-600 dark:text-neutral-400 font-medium">
+              No proposals with this status
+            </p>
+          </Card>
+        )}
+
         {!isLoading && quotations.length === 0 && !error && (
-          <Card className="p-8 text-center">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600 font-medium">
+          <Card className="p-8 text-center border-neutral-200 dark:border-neutral-800">
+            <FileText className="w-12 h-12 text-neutral-400 dark:text-neutral-600 mx-auto mb-4" />
+            <p className="text-neutral-600 dark:text-neutral-400 font-medium">
               No quoted proposals available yet
             </p>
-            <p className="text-sm text-gray-500 mt-2">
+            <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-2">
               Check back when the admin has set prices for your quotations
             </p>
           </Card>
@@ -274,18 +329,18 @@ export default function QuotedProposalsPage() {
 
         {/* Confirmation Modal */}
         {confirmModal.isOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-slideIn">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Confirm Order</h2>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to make an order for this quotation? This will finalize your proposal and send it to our production team.
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-neutral-200 dark:border-neutral-800">
+              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Confirm Order</h2>
+              <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+                Are you sure you want to send this quotation for production? This will finalize your proposal and send it to our production team.
               </p>
 
               <div className="flex gap-3">
                 <Button
                   onClick={() => setConfirmModal({ isOpen: false, quotationId: null })}
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 border-neutral-300 dark:border-neutral-700"
                 >
                   Cancel
                 </Button>
@@ -296,7 +351,7 @@ export default function QuotedProposalsPage() {
                     }
                   }}
                   disabled={sendingId !== null}
-                  className="flex-1 bg-gradient-to-r from-red-600 to-orange-500 text-white hover:shadow-lg"
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
                 >
                   {sendingId ? (
                     <>
@@ -304,7 +359,7 @@ export default function QuotedProposalsPage() {
                       Confirming...
                     </>
                   ) : (
-                    "Yes, Confirm Order"
+                    "Yes, Confirm"
                   )}
                 </Button>
               </div>

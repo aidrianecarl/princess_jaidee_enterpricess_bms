@@ -6,50 +6,51 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ChevronDown, Calendar, User, FileText, Package, Loader } from "lucide-react"
+import { ChevronDown, Calendar, Eye, DollarSign, FileText, Loader, Eye as EyeIcon } from "lucide-react"
 
-interface JobOrderItem {
+interface OrderItem {
   id: number
-  product_id: number | null
+  order_id: number
+  quotation_items_id: number
   service_id: number | null
-  description: string
   quantity: number
   unit_price: number
-  product?: { id: number; name: string }
   service?: { id: number; name: string }
 }
 
-interface JobOrder {
+interface Order {
   id: number
-  job_order_number: string
+  order_number: string
   quotation_id: number
   customer_id: number
-  assigned_to: number
-  start_date: string
-  due_date: string
-  status: string
+  order_date: string
+  subtotal: number
+  discount: number
+  tax: number
+  total: number
+  payment_status: string
+  order_status: string
+  payment_method: string | null
   notes: string | null
   created_at: string
-  assignedTo?: { first_name: string; last_name: string; email: string }
-  items?: JobOrderItem[]
+  items?: OrderItem[]
 }
 
-const statusColors: Record<string, { bg: string; text: string; badge: string }> = {
-  pending: { bg: "bg-yellow-50 dark:bg-yellow-900/20", text: "text-yellow-700 dark:text-yellow-400", badge: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200" },
-  "in-progress": { bg: "bg-blue-50 dark:bg-blue-900/20", text: "text-blue-700 dark:text-blue-400", badge: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" },
-  completed: { bg: "bg-green-50 dark:bg-green-900/20", text: "text-green-700 dark:text-green-400", badge: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" },
-  cancelled: { bg: "bg-red-50 dark:bg-red-900/20", text: "text-red-700 dark:text-red-400", badge: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200" },
+const statusColors: Record<string, { badge: string; text: string }> = {
+  pending: { badge: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200", text: "text-yellow-700" },
+  paid: { badge: "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200", text: "text-green-700" },
+  unpaid: { badge: "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200", text: "text-red-700" },
+  completed: { badge: "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200", text: "text-blue-700" },
 }
 
 export default function MyOrdersPage() {
-  const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null)
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
 
-  // Get user from localStorage on mount
   useEffect(() => {
     const userData = localStorage.getItem("user")
     if (userData) {
@@ -58,25 +59,25 @@ export default function MyOrdersPage() {
   }, [])
 
   useEffect(() => {
-    fetchMyOrders()
-  }, [])
+    if (user) {
+      fetchMyOrders()
+    }
+  }, [user])
 
   const fetchMyOrders = async () => {
     try {
       setIsLoading(true)
       const token = localStorage.getItem("auth_token")
-      const userData = localStorage.getItem("user")
 
-      if (!token || !userData) {
+      if (!token || !user) {
         router.push("/")
         return
       }
 
-      const userData_parsed = JSON.parse(userData)
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com"
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
-      // Fetch job orders for this customer
-      const response = await fetch(`${apiUrl}/api/job-orders`, {
+      // Fetch orders for current customer
+      const response = await fetch(`${apiUrl}/orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -88,10 +89,10 @@ export default function MyOrdersPage() {
       }
 
       const data = await response.json()
-      
-      // Filter orders for current customer
-      const myOrders = data.data.filter((order: JobOrder) => order.customer_id === userData_parsed.customer_id)
-      setJobOrders(myOrders)
+      const myOrders = (Array.isArray(data) ? data : data.data || []).filter(
+        (order: Order) => order.customer_id === user.customer_id
+      )
+      setOrders(myOrders)
     } catch (err) {
       console.error("[v0] Error fetching orders:", err)
       setError(err instanceof Error ? err.message : "Failed to load orders")
@@ -121,14 +122,14 @@ export default function MyOrdersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20">
+    <div className="min-h-screen bg-white dark:bg-neutral-950">
       <DashboardHeader user={user} />
 
       <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
         {/* Header Section */}
-        <div className="mb-8 animate-fadeInUp">
-          <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-2">My Orders</h1>
-          <p className="text-neutral-600">Track and manage your job orders</p>
+        <div className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-2">My Orders</h1>
+          <p className="text-neutral-600 dark:text-neutral-400">View and track your orders</p>
         </div>
 
         {/* Error Message */}
@@ -142,123 +143,69 @@ export default function MyOrdersPage() {
         {isLoading && (
           <div className="flex justify-center items-center py-12">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+              <Loader className="h-12 w-12 text-orange-500 mx-auto mb-4 animate-spin" />
               <p className="text-neutral-600 dark:text-neutral-400">Loading your orders...</p>
             </div>
           </div>
         )}
 
         {/* Empty State */}
-        {!isLoading && jobOrders.length === 0 && (
+        {!isLoading && orders.length === 0 && (
           <div className="text-center py-12">
-            <Package className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-600 mb-4" />
+            <FileText className="mx-auto h-12 w-12 text-neutral-400 dark:text-neutral-600 mb-4" />
             <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">No orders yet</h3>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-6">You don&apos;t have any job orders yet. Create a quotation to get started.</p>
-            <Button onClick={() => router.push("/dashboard/quotations/create")} className="bg-orange-500 hover:bg-orange-600 text-white">
-              Create New Quotation
-            </Button>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-6">You don&apos;t have any orders yet.</p>
           </div>
         )}
 
         {/* Orders List */}
-        {!isLoading && jobOrders.length > 0 && (
-          <div className="space-y-4">
-            {jobOrders.map((order) => {
-              const colors = getStatusColor(order.status)
-              const daysRemaining = calculateDaysRemaining(order.due_date)
-              const isOverdue = daysRemaining < 0
-              const isUrgent = daysRemaining >= 0 && daysRemaining <= 7
-
-              return (
-                <Card key={order.id} className={`overflow-hidden transition-all duration-300 ${colors.bg} border-l-4 border-orange-500`}>
-                  <div
-                    className="p-6 cursor-pointer hover:shadow-lg transition-shadow"
-                    onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}
-                  >
-                    {/* Header Row */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-lg font-semibold text-neutral-900 dark:text-white">{order.job_order_number}</h3>
-                          <Badge className={colors.badge}>{order.status.replace("_", " ").toUpperCase()}</Badge>
-                        </div>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">Created on {formatDate(order.created_at)}</p>
+        {!isLoading && orders.length > 0 && (
+          <div className="grid gap-4 md:gap-6">
+            {orders.map((order) => (
+              <Card key={order.id} className="overflow-hidden border border-neutral-200 dark:border-neutral-800 hover:shadow-md transition-shadow">
+                <div className="p-6">
+                  {/* Header Row */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-xl font-bold text-neutral-900 dark:text-white">{order.order_number}</h3>
+                        <Badge className={statusColors[order.payment_status]?.badge || statusColors.unpaid.badge}>
+                          {order.payment_status.toUpperCase()}
+                        </Badge>
                       </div>
-                      <ChevronDown
-                        size={24}
-                        className={`text-neutral-600 dark:text-neutral-400 transition-transform ${expandedOrderId === order.id ? "rotate-180" : ""}`}
-                      />
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">Order Date: {formatDate(order.order_date)}</p>
                     </div>
-
-                    {/* Summary Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar size={18} className="text-orange-500" />
-                        <div>
-                          <p className="text-xs text-neutral-600 dark:text-neutral-400">Start Date</p>
-                          <p className="font-semibold text-neutral-900 dark:text-white">{formatDate(order.start_date)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar size={18} className={isOverdue ? "text-red-500" : isUrgent ? "text-yellow-500" : "text-green-500"} />
-                        <div>
-                          <p className="text-xs text-neutral-600 dark:text-neutral-400">Due Date</p>
-                          <p className="font-semibold text-neutral-900 dark:text-white">{formatDate(order.due_date)}</p>
-                          <p className={`text-xs font-semibold ${isOverdue ? "text-red-600 dark:text-red-400" : isUrgent ? "text-yellow-600 dark:text-yellow-400" : "text-green-600 dark:text-green-400"}`}>
-                            {isOverdue ? `${Math.abs(daysRemaining)} days overdue` : `${daysRemaining} days remaining`}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User size={18} className="text-orange-500" />
-                        <div>
-                          <p className="text-xs text-neutral-600 dark:text-neutral-400">Assigned To</p>
-                          <p className="font-semibold text-neutral-900 dark:text-white">{order.assignedTo?.first_name} {order.assignedTo?.last_name}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <FileText size={18} className="text-orange-500" />
-                        <div>
-                          <p className="text-xs text-neutral-600 dark:text-neutral-400">Items</p>
-                          <p className="font-semibold text-neutral-900 dark:text-white">{order.items?.length || 0} item{(order.items?.length || 0) !== 1 ? "s" : ""}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Notes */}
-                    {order.notes && <p className="text-sm text-neutral-700 dark:text-neutral-300 bg-white/50 dark:bg-neutral-800/50 p-2 rounded italic border-l-2 border-orange-300">"{order.notes}"</p>}
+                    <Button
+                      onClick={() => router.push(`/dashboard/orders/${order.id}`)}
+                      className="bg-orange-500 hover:bg-orange-600 text-white"
+                    >
+                      <EyeIcon size={16} className="mr-2" />
+                      View Details
+                    </Button>
                   </div>
 
-                  {/* Expanded Items Section */}
-                  {expandedOrderId === order.id && (
-                    <div className="border-t border-neutral-300 dark:border-neutral-700 p-6 bg-white/30 dark:bg-neutral-800/30">
-                      <h4 className="font-semibold text-neutral-900 dark:text-white mb-4 flex items-center gap-2">
-                        <Package size={18} />
-                        Order Items
-                      </h4>
-                      <div className="space-y-3">
-                        {order.items && order.items.length > 0 ? (
-                          order.items.map((item) => (
-                            <div key={item.id} className="flex items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                              <div className="flex-1">
-                                <p className="font-semibold text-neutral-900 dark:text-white">{item.service?.name || item.product?.name || item.description}</p>
-                                <p className="text-sm text-neutral-600 dark:text-neutral-400">{item.description}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-semibold text-neutral-900 dark:text-white">Qty: {item.quantity}</p>
-                                <p className="text-sm text-neutral-600 dark:text-neutral-400">₱{(item.unit_price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="text-neutral-600 dark:text-neutral-400 text-center py-4">No items in this order</p>
-                        )}
-                      </div>
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                    <div>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Subtotal</p>
+                      <p className="font-semibold text-neutral-900 dark:text-white">₱{order.subtotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
                     </div>
-                  )}
-                </Card>
-              )
-            })}
+                    <div>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Items</p>
+                      <p className="font-semibold text-neutral-900 dark:text-white">{order.items?.length || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Tax</p>
+                      <p className="font-semibold text-neutral-900 dark:text-white">₱{order.tax.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
+                      <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">Total</p>
+                      <p className="text-lg font-bold text-orange-600 dark:text-orange-400">₱{order.total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
       </main>

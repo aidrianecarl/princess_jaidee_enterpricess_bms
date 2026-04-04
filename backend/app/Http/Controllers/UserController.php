@@ -199,8 +199,19 @@ class UserController extends Controller
         try {
             $users = User::where('user_type', 'employee')
                 ->where('status', 'active')
+                ->with('roles')
                 ->select('id', 'first_name', 'last_name', 'email', 'user_type')
-                ->get();
+                ->get()
+                ->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'first_name' => $user->first_name,
+                        'last_name' => $user->last_name,
+                        'email' => $user->email,
+                        'user_type' => $user->user_type,
+                        'role' => $user->roles->first()?->name ?? 'employee'
+                    ];
+                });
             
             return response()->json([
                 'success' => true,
