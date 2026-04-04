@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft, Eye, FileText, Loader2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-
 import Link from "next/link"
 
 interface Quotation {
@@ -32,7 +31,7 @@ export default function QuotedProposalsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [sendingId, setSendingId] = useState<number | null>(null)
-  const [statusFilter, setStatusFilter] = useState<"all" | "sent" | "approved">("all")
+  const [statusFilter, setStatusFilter] = useState<"priced" | "sent" | "all">("priced")
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; quotationId: number | null }>({
     isOpen: false,
     quotationId: null,
@@ -118,7 +117,7 @@ export default function QuotedProposalsPage() {
 
       // Filter to only show quotations with has_price = 1
       const pricedQuotations = allQuotations.filter(
-        (q: any) => Number(q.has_price) === 1
+        (q: Quotation) => q.has_price === 1 || q.has_price === "1"
       )
 
       setQuotations(pricedQuotations)
@@ -135,13 +134,14 @@ export default function QuotedProposalsPage() {
     }
   }
 
-  const filterQuotations = (quots: Quotation[], status: "all" | "sent" | "approved") => {
+  const filterQuotations = (quots: Quotation[], status: "priced" | "sent" | "all") => {
     let filtered = quots
-    if (status === "sent") {
+    if (status === "priced") {
+      filtered = quots.filter((q) => q.has_price === 1 || q.has_price === "1")
+    } else if (status === "sent") {
       filtered = quots.filter((q) => q.status === "sent")
-    } else if (status === "approved") {
-      filtered = quots.filter((q) => q.status === "approved")
     }
+    // "all" shows everything that has_price
     setFilteredQuotations(filtered)
     setStatusFilter(status)
   }
@@ -192,14 +192,14 @@ export default function QuotedProposalsPage() {
         {/* Filter Buttons */}
         <div className="mb-8 flex flex-wrap gap-3">
           <button
-            onClick={() => filterQuotations(quotations, "all")}
+            onClick={() => filterQuotations(quotations, "priced")}
             className={`px-6 py-2 rounded-lg font-medium transition ${
-              statusFilter === "all"
+              statusFilter === "priced"
                 ? "bg-orange-500 text-white"
                 : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
             }`}
           >
-            All Proposals ({quotations.length})
+            Priced Quotations ({quotations.filter((q) => (q.has_price === 1 || q.has_price === "1")).length})
           </button>
           <button
             onClick={() => filterQuotations(quotations, "sent")}
@@ -212,14 +212,14 @@ export default function QuotedProposalsPage() {
             Sent to Production ({quotations.filter((q) => q.status === "sent").length})
           </button>
           <button
-            onClick={() => filterQuotations(quotations, "approved")}
+            onClick={() => filterQuotations(quotations, "all")}
             className={`px-6 py-2 rounded-lg font-medium transition ${
-              statusFilter === "approved"
+              statusFilter === "all"
                 ? "bg-blue-500 text-white"
                 : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
             }`}
           >
-            Approved ({quotations.filter((q) => q.status === "approved").length})
+            All Proposals ({quotations.length})
           </button>
         </div>
 
@@ -251,17 +251,13 @@ export default function QuotedProposalsPage() {
                         {quotation.quotation_number}
                       </h3>
                       <Badge className={`${getStatusColor(quotation.status)}`}>
-                        {quotation.status === "sent"
-                          ? "Sent to Production"
-                          : quotation.status
-                            ? quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)
-                            : "Unknown"}
+                        {quotation.status === "sent" ? "Sent to Production" : quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Items</p>
-                        <p className="font-semibold text-neutral-900 dark:text-white">{Array.isArray(quotation.items) ? quotation.items.length : 0} item(s)</p>
+                        <p className="font-semibold text-neutral-900 dark:text-white">{quotation.items?.length || 0} item(s)</p>
                       </div>
                       <div>
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Date</p>
@@ -284,7 +280,7 @@ export default function QuotedProposalsPage() {
                         View Details
                       </Button>
                     </Link>
-                    {quotation.status !== "sent" && (
+                    {(quotation.has_price === 1 || quotation.has_price === "1") && quotation.status !== "sent" && (
                       <Button
                         onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
                         disabled={sendingId === quotation.id}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Quotation;
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -13,19 +14,40 @@ class OrderController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Order::with(['user', 'items']);
+        try {
+            $query = Order::with(['customer', 'items', 'quotation']);
+            
+            $userId = auth()->id();
+            
+            // Get customer associated with authenticated user
+            $customer = Customer::where('user_id', $userId)->first();
 
-        if ($request->has('search')) {
-            $query->where('order_number', 'like', '%' . $request->search . '%');
+            // If user is a customer account holder, filter by their customer ID
+            if ($customer) {
+                $query->where('customer_id', $customer->id);
+            }
+
+            if ($request->has('search')) {
+                $query->where('order_number', 'like', '%' . $request->search . '%');
+            }
+
+            if ($request->has('status')) {
+                $query->where('payment_status', $request->status);
+            }
+
+            $orders = $query->orderBy('created_at', 'desc')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching orders: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $orders = $query->orderBy('created_at', 'desc')->paginate($request->per_page ?? 15);
-
-        return response()->json($orders, 200);
     }
 
     public function show($id)

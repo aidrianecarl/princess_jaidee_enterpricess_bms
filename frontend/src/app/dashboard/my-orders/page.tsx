@@ -74,9 +74,9 @@ export default function MyOrdersPage() {
         return
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
-      // Fetch orders for current customer
+      // Fetch all orders and filter by created user (current logged in user)
       const response = await fetch(`${apiUrl}/orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -89,10 +89,8 @@ export default function MyOrdersPage() {
       }
 
       const data = await response.json()
-      const myOrders = (Array.isArray(data) ? data : data.data || []).filter(
-        (order: Order) => order.customer_id === user.customer_id
-      )
-      setOrders(myOrders)
+      const ordersData = data.data || data
+      setOrders(Array.isArray(ordersData) ? ordersData : [])
     } catch (err) {
       console.error("[v0] Error fetching orders:", err)
       setError(err instanceof Error ? err.message : "Failed to load orders")
