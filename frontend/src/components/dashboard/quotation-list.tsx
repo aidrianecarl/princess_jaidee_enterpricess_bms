@@ -102,8 +102,8 @@ export function QuotationList() {
   }
 
   const filteredQuotations = quotations.filter((q) => {
-    if (filter === "all") return true
-    return q.status === filter
+    // Only show Draft and Pending quotations
+    return q.status === "draft" || q.status === "pending"
   })
 
   const getStatusColor = (status: string) => {
@@ -205,26 +205,7 @@ export function QuotationList() {
   return (
     <>
       <div className="space-y-4">
-        {/* Filter Tabs */}
-        <div className="flex gap-2 mb-6 flex-wrap border-b border-gray-200 pb-4">
-          {["all", "draft", "pending", "approved", "rejected"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilter(status)}
-              className={`px-4 py-2 rounded-lg font-medium transition ${
-                filter === status
-                  ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
-              {status.charAt(0).toUpperCase() + status.slice(1)}
-              {/* Show count badge */}
-              <span className="ml-2 text-xs opacity-75">
-                ({counts[status as keyof typeof counts]})
-              </span>
-            </button>
-          ))}
-        </div>
+        {/* Filter - Only show Draft and Pending */}
 
         {/* List */}
         {filteredQuotations.length === 0 ? (
@@ -278,16 +259,6 @@ export function QuotationList() {
                   >
                     <Eye size={18} />
                   </button>
-
-                  {quotation.has_price && (
-                    <button
-                      onClick={() => window.location.href = `/dashboard/quotations/view/${quotation.id}`}
-                      className="p-2 hover:bg-green-100 text-gray-600 hover:text-green-600 rounded-lg transition"
-                      title="View Priced Quotation"
-                    >
-                      <FileText size={18} />
-                    </button>
-                  )}
 
                   {quotation.status === "draft" && (
                     <button

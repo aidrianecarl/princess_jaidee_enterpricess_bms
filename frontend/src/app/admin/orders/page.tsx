@@ -204,7 +204,63 @@ export default function OrdersPage() {
         }
       }
 
-      // Then create the job order
+      // Step 2: Create an Order from the quotation
+      console.log("[v0] Creating order from quotation...")
+      const orderResponse = await fetch(`${apiUrl}/orders`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quotation_id: selectedQuotation.id,
+          customer_id: selectedQuotation.customer?.id || 1,
+          order_date: new Date().toISOString().split('T')[0],
+          subtotal: selectedQuotation.total,
+          discount: 0,
+          tax: 0,
+          total: selectedQuotation.total,
+          payment_status: paymentType === "fullpayment" ? "paid" : "partial",
+          order_status: "pending",
+          payment_method: "cash",
+          notes: formData.notes || "",
+        }),
+      })
+
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json()
+        throw new Error(errorData.message || "Failed to create order")
+      }
+
+      const orderData = await orderResponse.json()
+      const orderId = orderData.data?.id || orderData.id
+      console.log("[v0] Order created with ID:", orderId)
+
+      // Step 3: Create Order Items from quotation items
+      if (selectedQuotation.items && selectedQuotation.items.length > 0) {
+        console.log("[v0] Creating order items...")
+        for (const item of selectedQuotation.items) {
+          await fetch(`${apiUrl}/order-items`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              order_id: orderId,
+              service_id: item.service_id,
+              description: item.description,
+              quantity: item.quantity || 1,
+              unit_price: item.unit_price || 0,
+              line_total: item.line_total || 0,
+            }),
+          })
+        }
+        console.log("[v0] Order items created successfully")
+      }
+
+      // Step 4: Create Job Order with the new order_id
+      console.log("[v0] Creating job order...")
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders`, {
         method: "POST",
         headers: {
@@ -213,10 +269,9 @@ export default function OrdersPage() {
         },
         body: JSON.stringify({
           quotation_id: selectedQuotation.id,
+          order_id: orderId,
           assigned_to: employeeId,
           customer_id: selectedQuotation.customer?.id || 1,
-          payment_type: paymentType,
-          paid_amount: paidAmount,
           start_date: formData.startDate,
           due_date: formData.dueDate,
           notes: formData.notes,

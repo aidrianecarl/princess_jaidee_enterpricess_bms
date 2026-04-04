@@ -55,8 +55,8 @@ export function DashboardHeader({ user }: HeaderProps) {
             </button>
 
             {/* Notifications */}
-            <button className="hidden md:flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-lg hover:bg-red-50 transition relative group flex-shrink-0">
-              <Bell size={18} className="md:w-5 md:h-5 text-neutral-600 group-hover:text-red-600 transition" />
+            <button className="flex items-center justify-center w-9 h-9 md:w-10 md:h-10 rounded-lg hover:bg-red-50 transition relative group flex-shrink-0">
+              <Bell size={18} className="w-5 h-5 md:w-5 md:h-5 text-neutral-600 group-hover:text-red-600 transition" />
               <span className="absolute top-1.5 md:top-2 right-1.5 md:right-2 w-2 h-2 md:w-2.5 md:h-2.5 bg-red-500 rounded-full animate-pulse" />
             </button>
 

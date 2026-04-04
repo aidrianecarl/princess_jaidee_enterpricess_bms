@@ -18,7 +18,7 @@ export default function DashboardPage() {
     approvedQuotations: 0,
     pendingQuotations: 0,
     draftQuotations: 0,
-    totalValue: 0,
+    totalOrders: 0,
   })
   const [showTerms, setShowTerms] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -60,14 +60,19 @@ export default function DashboardPage() {
         const approved = quotations.filter((q: any) => q.status === "approved").length
         const pending = quotations.filter((q: any) => q.status === "pending").length
         const draft = quotations.filter((q: any) => q.status === "draft").length
-        const total = quotations.reduce((sum: number, q: any) => sum + (Number(q.total) || 0), 0)
+        
+        // Count total order items from all quotations
+        const totalOrders = quotations.reduce((sum: number, q: any) => {
+          const itemsCount = Array.isArray(q.items) ? q.items.length : 0
+          return sum + itemsCount
+        }, 0)
 
         setStats({
           totalQuotations: quotations.length,
           approvedQuotations: approved,
           pendingQuotations: pending,
           draftQuotations: draft,
-          totalValue: total,
+          totalOrders: totalOrders,
         })
       }
     } catch (error) {
@@ -153,8 +158,8 @@ export default function DashboardPage() {
           <div className="animate-slideUp animation-delay-300">
             <StatsCard
               icon={DollarSign}
-              label="Total Value"
-              value={`₱${stats.totalValue.toLocaleString()}`}
+              label="Total Orders"
+              value={stats.totalOrders}
               color="from-red-100 to-orange-100 text-red-600"
             />
           </div>
