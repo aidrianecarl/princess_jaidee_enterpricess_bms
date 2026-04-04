@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobOrder;
-use App\Models\JobOrderItem;
 use App\Models\Quotation;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -16,7 +15,7 @@ class JobOrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = JobOrder::with(['assignedTo', 'customer', 'items.product', 'items.service']);
+            $query = JobOrder::with(['assignedTo', 'customer']);
 
             if ($request->has('search')) {
                 $query->where('job_order_number', 'like', '%' . $request->search . '%');
@@ -46,7 +45,7 @@ class JobOrderController extends Controller
     public function show($id)
     {
         try {
-            $jobOrder = JobOrder::with(['assignedTo', 'customer', 'items.product', 'items.service'])->find($id);
+            $jobOrder = JobOrder::with(['assignedTo', 'customer'])->find($id);
 
             if (!$jobOrder) {
                 return response()->json(['error' => 'Job Order not found'], 404);
@@ -66,7 +65,7 @@ class JobOrderController extends Controller
         $validator = Validator::make($request->all(), [
             'quotation_id' => 'nullable|exists:quotations,id',
             'order_id' => 'nullable|exists:orders,id',
-            'customer_id' => 'required|exists:customers,id',
+            'customer_id' => 'required|exists:users,id',
             'assigned_to' => 'required|exists:users,id',
             'start_date' => 'required|date',
             'due_date' => 'required|date|after:start_date',
@@ -106,21 +105,7 @@ class JobOrderController extends Controller
                 ]);
             }
 
-            if ($request->quotation_id) {
-                $quotation = Quotation::with('items')->find($request->quotation_id);
-                if ($quotation && $quotation->items) {
-                    foreach ($quotation->items as $item) {
-                        JobOrderItem::create([
-                            'job_order_id' => $jobOrder->id,
-                            'product_id' => $item->product_id,
-                            'service_id' => $item->service_id,
-                            'description' => $item->description,
-                            'quantity' => $item->quantity,
-                            'unit_price' => $item->unit_price,
-                        ]);
-                    }
-                }
-            }
+
 
             Log::info('Job order created successfully', [
                 'job_order_id' => $jobOrder->id,
@@ -142,53 +127,7 @@ class JobOrderController extends Controller
         }
     }
 
-    public function completeItem(Request $request, $jobOrderId)
-    {
-        $validator = Validator::make($request->all(), [
-            'item_id' => 'required|exists:job_order_items,id',
-        ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        try {
-            $jobOrder = JobOrder::findOrFail($jobOrderId);
-            $item = JobOrderItem::findOrFail($request->item_id);
-
-            if ($item->job_order_id !== $jobOrder->id) {
-                return response()->json(['error' => 'Item does not belong to this job order'], 422);
-            }
-
-            // Mark item as completed
-            $item->update([
-                'completed' => true,
-                'completed_at' => now(),
-            ]);
-
-            // Reduce product stock if applicable
-            if ($item->product_id) {
-                $product = Product::find($item->product_id);
-                if ($product) {
-                    $product->decrement('quantity_in_stock', $item->quantity);
-                    Log::info('Product stock reduced', [
-                        'product_id' => $item->product_id,
-                        'quantity' => $item->quantity,
-                    ]);
-                }
-            }
-
-            $item->load(['product', 'service']);
-
-            return response()->json([
-                'message' => 'Item marked as complete',
-                'item' => $item,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error marking item complete: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
-        }
-    }
 
     public function updateStatus(Request $request, $id)
     {
