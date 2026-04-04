@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Quotation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 
 class OrderController extends Controller
 {
@@ -76,13 +78,29 @@ class OrderController extends Controller
                 'notes' => $request->notes,
             ]);
 
+            // If quotation_id is provided, copy quotation items to order_items
+            if ($request->quotation_id) {
+                $quotation = Quotation::with('items')->find($request->quotation_id);
+                if ($quotation && $quotation->items) {
+                    foreach ($quotation->items as $quotationItem) {
+                        OrderItem::create([
+                            'order_id' => $order->id,
+                            'quotation_items_id' => $quotationItem->id,
+                            'service_id' => $quotationItem->service_id,
+                            'quantity' => $quotationItem->quantity,
+                            'unit_price' => $quotationItem->unit_price,
+                        ]);
+                    }
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully',
                 'data' => $order->load('items'),
             ], 201);
         } catch (\Exception $e) {
-            \Log::error('Order creation error: ' . $e->getMessage());
+            Log::error('Order creation error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

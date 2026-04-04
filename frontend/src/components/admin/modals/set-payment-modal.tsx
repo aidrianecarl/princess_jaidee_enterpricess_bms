@@ -19,7 +19,7 @@ interface SetPaymentModalProps {
       phone: string
     }
   } | null
-  employees: Array<{ id: number; first_name: string; last_name: string; email: string; user_type: string }>
+  employees: Array<{ id: number; first_name: string; last_name: string; email: string; role?: string; user_type?: string }>
   onConfirm: (paymentType: "downpayment" | "fullpayment", employeeId: number, formData: any) => Promise<void>
   isSaving?: boolean
 }
@@ -281,11 +281,13 @@ export function SetPaymentModal({
               className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
             >
               <option value="">-- Select Employee --</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.first_name} {emp.last_name} ({emp.user_type})
-                </option>
-              ))}
+              {employees
+                .filter((emp) => emp.role && emp.role !== "admin" && emp.role !== "manager")
+                .map((emp) => (
+                  <option key={emp.id} value={emp.id}>
+                    {emp.first_name} {emp.last_name} ({emp.role})
+                  </option>
+                ))}
             </select>
             {selectedEmployeeId && (
               <p className="text-xs text-green-600 dark:text-green-400">

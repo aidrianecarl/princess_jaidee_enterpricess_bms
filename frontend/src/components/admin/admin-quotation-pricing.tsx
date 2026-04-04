@@ -231,6 +231,30 @@ export function AdminQuotationPricing() {
     return quantity * price
   }
 
+  const handlePlayerPriceChange = (itemId: number, playerIndex: number, price: string) => {
+    const playerKey = `item-${itemId}-player-${playerIndex}`
+    setPlayerPrices(prev => ({ ...prev, [playerKey]: price }))
+    
+    // Auto-update the main item price if this is a team roster item (sublimation printing)
+    const item = quotation?.items.find(i => i.id === itemId)
+    if (item && Array.isArray(item.team_roster) && item.team_roster.length > 0) {
+      // Calculate total price by summing all player prices
+      const totalPrice = item.team_roster.reduce((sum: number, _player: any, idx: number) => {
+        const key = `item-${itemId}-player-${idx}`
+        const playerPrice = parseFloat(playerPrices[key] || price || "0") || 0
+        return sum + playerPrice
+      }, 0)
+      
+      // Update the main item price
+      if (totalPrice > 0) {
+        setEditingPrices(prev => ({
+          ...prev,
+          [itemId]: totalPrice.toString()
+        }))
+      }
+    }
+  }
+
   const calculateSubtotal = (): number => {
     if (!quotation) return 0
     return quotation.items.reduce((sum, item) => {
@@ -616,7 +640,7 @@ export function AdminQuotationPricing() {
                                         <input
                                           type="number"
                                           value={playerPrices[playerKey] || ""}
-                                          onChange={(e) => setPlayerPrices(prev => ({ ...prev, [playerKey]: e.target.value }))}
+                                          onChange={(e) => handlePlayerPriceChange(item.id, idx, e.target.value)}
                                           placeholder="0.00"
                                           step="0.01"
                                           className="w-full px-2 py-1 border border-orange-400 rounded text-right text-xs focus:outline-none bg-white focus:border-orange-500"

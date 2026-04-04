@@ -10,15 +10,13 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id',
         'service_id',
-        'description',
+        'quotation_items_id',
         'quantity',
         'unit_price',
-        'line_total',
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
-        'line_total' => 'decimal:2',
     ];
 
     public function order(): BelongsTo
@@ -29,5 +27,10 @@ class OrderItem extends Model
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
+    }
+
+    public function quotationItem(): BelongsTo
+    {
+        return $this->belongsTo(QuotationItem::class, 'quotation_items_id');
     }
 }
