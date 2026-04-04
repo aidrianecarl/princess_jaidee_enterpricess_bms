@@ -75,7 +75,7 @@ export default function MyOrdersPage() {
         return
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
       // Fetch orders via the orders endpoint which filters by authenticated user
       const response = await fetch(`${apiUrl}/orders`, {
