@@ -70,34 +70,73 @@ export default function MyOrdersPage() {
       setError("")
       const token = localStorage.getItem("auth_token")
 
+      console.log("[v0] Fetching orders - Token exists:", !!token)
+      console.log("[v0] Fetching orders - User:", user?.id)
+
       if (!token || !user) {
+        console.log("[v0] No token or user, redirecting to home")
         router.push("/")
         return
       }
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+      const endpoint = `${apiUrl}/orders`
+      
+      console.log("[v0] API URL:", apiUrl)
+      console.log("[v0] Fetching from endpoint:", endpoint)
 
       // Fetch orders via the orders endpoint which filters by authenticated user
-      const response = await fetch(`${apiUrl}/orders`, {
-  method: "GET",
-  headers: {
-    Authorization: `Bearer ${token}`,
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-})
+      const response = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+      })
 
-console.log("[DEBUG] Response status:", response.status)
+      console.log("[v0] Response status:", response.status)
+      console.log("[v0] Response ok:", response.ok)
 
-const rawText = await response.text()
-console.log("[DEBUG] Raw response:", rawText)
-
-let data
-try {
-  data = JSON.parse(rawText)
-} catch (e) {
-  console.error("[DEBUG] JSON parse error:", e)
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log("[v0] Unauthorized - redirecting")
+          router.push("/")
+          return
+        }
+        throw new Error(`Failed to fetch orders: ${response.statusText}`)
       }
+
+      const data = await response.json()
+      console.log("[v0] Response data:", data)
+      
+      const ordersData = data.data || data
+      console.log("[v0] Orders data:", ordersData)
+      console.log("[v0] Is array:", Array.isArray(ordersData))
+      
+      if (Array.isArray(ordersData)) {
+        console.log("[v0] Setting orders, count:", ordersData.length)
+        setOrders(ordersData)
+        if (ordersData.length === 0) {
+          console.log("[v0] No orders found")
+          setError("")
+        }
+      } else {
+        console.log("[v0] Orders data is not an array, setting empty")
+        setOrders([])
+      }
+    } catch (err) {
+      console.error("[v0] Error fetching orders:", err)
+      console.log("[v0] Error details:", {
+        message: err instanceof Error ? err.message : String(err),
+        error: err,
+      })
+      setError(err instanceof Error ? err.message : "Failed to load orders")
+      setOrders([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getStatusColor = (status: string) => {
     return statusColors[status] || statusColors.pending

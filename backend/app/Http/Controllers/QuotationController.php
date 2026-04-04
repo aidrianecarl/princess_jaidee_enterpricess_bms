@@ -994,4 +994,53 @@ class QuotationController extends Controller
             ], 500);
         }
     }
+
+    // Reject quotation and add rejection message
+    public function rejectQuotation(Request $request, $id)
+    {
+        try {
+            $quotation = Quotation::find($id);
+
+            if (!$quotation) {
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:rejected',
+                'rejection_message' => 'nullable|string',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            // Update quotation status to rejected
+            $quotation->update([
+                'status' => 'rejected',
+                'notes' => $request->rejection_message ?? $quotation->notes,
+            ]);
+
+            Log::info('Quotation rejected', [
+                'quotation_id' => $id,
+                'rejection_message' => $request->rejection_message,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quotation has been rejected',
+                'data' => $quotation,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Reject quotation error', [
+                'quotation_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to reject quotation',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
