@@ -38,6 +38,7 @@ export function SetPaymentModal({
   const [startDate, setStartDate] = useState<string>("")
   const [dueDate, setDueDate] = useState<string>("")
   const [notes, setNotes] = useState<string>("")
+  const [paymentMethod, setPaymentMethod] = useState<string>("cash")
   const [error, setError] = useState("")
 
   const handleConfirm = async () => {
@@ -83,6 +84,7 @@ export function SetPaymentModal({
         startDate,
         dueDate,
         notes,
+        paymentMethod,
       })
       onOpenChange(false)
       setPaymentType("downpayment")
@@ -91,6 +93,7 @@ export function SetPaymentModal({
       setStartDate("")
       setDueDate("")
       setNotes("")
+      setPaymentMethod("cash")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save order")
     }
@@ -249,6 +252,23 @@ export function SetPaymentModal({
               </p>
             </Card>
           )}
+
+          {/* Payment Method */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-neutral-900 dark:text-white">
+              Payment Method
+            </label>
+            <select
+              value={paymentMethod}
+              onChange={(e) => setPaymentMethod(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
+            >
+              <option value="cash">Cash</option>
+              <option value="credit_card">Credit Card</option>
+              <option value="bank_transfer">Bank Transfer</option>
+              <option value="check">Check</option>
+            </select>
+          </div>
 
           {/* Employee Selection */}
           <div className="space-y-2">

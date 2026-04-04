@@ -49,6 +49,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/quotations/{id}/payment', [QuotationController::class, 'updatePayment']);
     Route::put('/quotations/{id}/send-production', [QuotationController::class, 'sendForProduction']);
 
+    // Orders - Customer & Admin
+    Route::post('/orders', [OrderController::class, 'store']);
+    Route::get('/orders', [OrderController::class, 'customerIndex']);
+    Route::get('/order-items', [OrderController::class, 'getOrderItems']);
+    Route::post('/order-items', [OrderController::class, 'storeOrderItem']);
+
     // Users - Profile Management
     Route::get('/users/me', [UserController::class, 'getCurrentUser']);
     Route::get('/users', [UserController::class, 'index']);

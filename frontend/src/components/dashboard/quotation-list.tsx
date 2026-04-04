@@ -102,8 +102,8 @@ export function QuotationList() {
   }
 
   const filteredQuotations = quotations.filter((q) => {
-    // Only show Draft and Pending quotations
-    return q.status === "draft" || q.status === "pending"
+    if (filter === "all") return q.status === "draft" || q.status === "pending"
+    return q.status === filter && (filter === "draft" || filter === "pending")
   })
 
   const getStatusColor = (status: string) => {
@@ -205,7 +205,26 @@ export function QuotationList() {
   return (
     <>
       <div className="space-y-4">
-        {/* Filter - Only show Draft and Pending */}
+        {/* Filter Tabs */}
+        <div className="flex gap-2 mb-6 flex-wrap border-b border-gray-200 pb-4">
+          {["all", "draft", "pending"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setFilter(status)}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                filter === status
+                  ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+              {/* Show count badge */}
+              <span className="ml-2 text-xs opacity-75">
+                ({counts[status as keyof typeof counts] || 0})
+              </span>
+            </button>
+          ))}
+        </div>
 
         {/* List */}
         {filteredQuotations.length === 0 ? (

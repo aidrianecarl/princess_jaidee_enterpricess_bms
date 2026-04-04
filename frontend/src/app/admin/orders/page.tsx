@@ -222,7 +222,7 @@ export default function OrdersPage() {
           total: selectedQuotation.total,
           payment_status: paymentType === "fullpayment" ? "paid" : "partial",
           order_status: "pending",
-          payment_method: "cash",
+          payment_method: formData.paymentMethod || "cash",
           notes: formData.notes || "",
         }),
       })
