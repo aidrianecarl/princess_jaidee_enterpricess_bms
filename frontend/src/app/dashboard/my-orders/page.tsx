@@ -67,6 +67,7 @@ export default function MyOrdersPage() {
   const fetchMyOrders = async () => {
     try {
       setIsLoading(true)
+      setError("")
       const token = localStorage.getItem("auth_token")
 
       if (!token || !user) {
@@ -76,24 +77,39 @@ export default function MyOrdersPage() {
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
-      // Fetch all orders and filter by created user (current logged in user)
+      // Fetch orders via the orders endpoint which filters by authenticated user
       const response = await fetch(`${apiUrl}/orders`, {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          Accept: "application/json",
         },
       })
 
       if (!response.ok) {
+        if (response.status === 401) {
+          router.push("/")
+          return
+        }
         throw new Error(`Failed to fetch orders: ${response.statusText}`)
       }
 
       const data = await response.json()
       const ordersData = data.data || data
-      setOrders(Array.isArray(ordersData) ? ordersData : [])
+      
+      if (Array.isArray(ordersData)) {
+        setOrders(ordersData)
+        if (ordersData.length === 0) {
+          setError("") // Don't show error for empty orders
+        }
+      } else {
+        setOrders([])
+      }
     } catch (err) {
       console.error("[v0] Error fetching orders:", err)
       setError(err instanceof Error ? err.message : "Failed to load orders")
+      setOrders([])
     } finally {
       setIsLoading(false)
     }

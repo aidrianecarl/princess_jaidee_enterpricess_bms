@@ -115,9 +115,9 @@ export default function QuotedProposalsPage() {
       const data = await response.json()
       const allQuotations = data.data || data
 
-      // Filter to only show quotations with has_price = 1
+      // Filter to only show quotations with has_price = 1 and exclude approved quotations
       const pricedQuotations = allQuotations.filter(
-        (q: Quotation) => q.has_price === 1 || q.has_price === "1"
+        (q: Quotation) => (q.has_price === 1 || q.has_price === "1") && q.status !== "approved"
       )
 
       setQuotations(pricedQuotations)

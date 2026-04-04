@@ -19,12 +19,19 @@ class OrderController extends Controller
             
             $userId = auth()->id();
             
-            // Get customer associated with authenticated user
-            $customer = Customer::where('user_id', $userId)->first();
+            // Get customer associated with authenticated user via quotation
+            // Find quotations created by this user, then get their customers
+            $quotationIds = Quotation::where('created_by', $userId)->pluck('customer_id')->unique();
+            
+            // Get all unique customer IDs from orders created by this user
+            $userOrders = Order::where('created_by', $userId)->pluck('customer_id')->unique();
+            
+            // Combine both customer ID collections
+            $customerIds = $quotationIds->merge($userOrders)->unique();
 
-            // If user is a customer account holder, filter by their customer ID
-            if ($customer) {
-                $query->where('customer_id', $customer->id);
+            // Filter orders by customer IDs
+            if ($customerIds->count() > 0) {
+                $query->whereIn('customer_id', $customerIds);
             }
 
             if ($request->has('search')) {

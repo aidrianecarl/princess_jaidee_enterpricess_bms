@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { FileText, Home, Eye, ChevronDown, Menu, X, Package } from "lucide-react"
+import { FileText, Home, Eye, ChevronDown, Menu, X, Package, CheckCircle } from "lucide-react"
 import { useSidebar } from "@/contexts/sidebar-context"
 
 export function DashboardSidebar() {
@@ -45,7 +45,7 @@ export function DashboardSidebar() {
                 : "text-gray-700 hover:bg-gray-100"
               }`}
           >
-            <Home size={20} />
+            <CheckCircle size={20} />
             <span>Quoted Proposal</span>
           </Link>
 
