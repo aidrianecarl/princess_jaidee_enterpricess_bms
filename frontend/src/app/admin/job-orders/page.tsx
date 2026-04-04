@@ -213,22 +213,30 @@ export default function JobOrdersPage() {
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
+  const formatDate = (dateString?: string) => {
+  if (!dateString) return "N/A"
 
-  const formatCurrency = (value: number | string) => {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return "Invalid date"
+
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+}
+
+  const formatCurrency = (value: number | string | null | undefined) => {
     const num = typeof value === "string" ? parseFloat(value) : value
+
+    if (!num || isNaN(Number(num))) return "₱0.00"
+
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
       currency: "PHP",
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(num)
+    }).format(Number(num))
   }
 
   const getStatusColor = (status: string) => {
@@ -326,7 +334,9 @@ export default function JobOrdersPage() {
                               {jobOrder.job_order_number}
                             </h3>
                             <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusColor(jobOrder.status)}`}>
-                              {jobOrder.status.charAt(0).toUpperCase() + jobOrder.status.slice(1)}
+                              {jobOrder.status
+                                ? jobOrder.status.charAt(0).toUpperCase() + jobOrder.status.slice(1)
+                                : "Unknown"}
                             </span>
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(jobOrder.priority)}`}>
                               {jobOrder.priority.toUpperCase()}
