@@ -79,41 +79,25 @@ export default function MyOrdersPage() {
 
       // Fetch orders via the orders endpoint which filters by authenticated user
       const response = await fetch(`${apiUrl}/orders`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      })
+  method: "GET",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
+})
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          router.push("/")
-          return
-        }
-        throw new Error(`Failed to fetch orders: ${response.statusText}`)
-      }
+console.log("[DEBUG] Response status:", response.status)
 
-      const data = await response.json()
-      const ordersData = data.data || data
-      
-      if (Array.isArray(ordersData)) {
-        setOrders(ordersData)
-        if (ordersData.length === 0) {
-          setError("") // Don't show error for empty orders
-        }
-      } else {
-        setOrders([])
+const rawText = await response.text()
+console.log("[DEBUG] Raw response:", rawText)
+
+let data
+try {
+  data = JSON.parse(rawText)
+} catch (e) {
+  console.error("[DEBUG] JSON parse error:", e)
       }
-    } catch (err) {
-      console.error("[v0] Error fetching orders:", err)
-      setError(err instanceof Error ? err.message : "Failed to load orders")
-      setOrders([])
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const getStatusColor = (status: string) => {
     return statusColors[status] || statusColors.pending
