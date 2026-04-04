@@ -6,6 +6,8 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft, Eye, FileText, Loader2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+
 import Link from "next/link"
 
 interface Quotation {
@@ -116,7 +118,7 @@ export default function QuotedProposalsPage() {
 
       // Filter to only show quotations with has_price = 1
       const pricedQuotations = allQuotations.filter(
-        (q: Quotation) => q.has_price === 1 || q.has_price === "1"
+        (q: any) => Number(q.has_price) === 1
       )
 
       setQuotations(pricedQuotations)
@@ -249,13 +251,17 @@ export default function QuotedProposalsPage() {
                         {quotation.quotation_number}
                       </h3>
                       <Badge className={`${getStatusColor(quotation.status)}`}>
-                        {quotation.status === "sent" ? "Sent to Production" : quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
+                        {quotation.status === "sent"
+                          ? "Sent to Production"
+                          : quotation.status
+                            ? quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)
+                            : "Unknown"}
                       </Badge>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Items</p>
-                        <p className="font-semibold text-neutral-900 dark:text-white">{quotation.items?.length || 0} item(s)</p>
+                        <p className="font-semibold text-neutral-900 dark:text-white">{Array.isArray(quotation.items) ? quotation.items.length : 0} item(s)</p>
                       </div>
                       <div>
                         <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Date</p>
