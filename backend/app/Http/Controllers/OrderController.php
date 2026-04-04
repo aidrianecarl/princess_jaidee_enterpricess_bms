@@ -15,23 +15,30 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Order::with(['customer', 'items', 'quotation']);
-            
             $userId = auth()->id();
             
-            // Get customer associated with authenticated user via quotation
-            // Find quotations created by this user, then get their customers
-            $quotationIds = Quotation::where('created_by', $userId)->pluck('customer_id')->unique();
+            Log::info('OrderController index - Fetching orders for user:', ['user_id' => $userId]);
             
-            // Get all unique customer IDs from orders created by this user
-            $userOrders = Order::where('created_by', $userId)->pluck('customer_id')->unique();
+            // Get all quotations created by this authenticated user
+            $quotations = Quotation::where('created_by', $userId)->get();
+            Log::info('Found quotations:', ['count' => $quotations->count(), 'quotations' => $quotations->pluck('id')]);
             
-            // Combine both customer ID collections
-            $customerIds = $quotationIds->merge($userOrders)->unique();
+            // Extract all unique customer IDs from those quotations
+            $customerIds = $quotations->pluck('customer_id')->unique()->filter()->values();
+            Log::info('Customer IDs from quotations:', ['customer_ids' => $customerIds]);
+            
+            $query = Order::with(['customer', 'items', 'quotation']);
 
             // Filter orders by customer IDs
             if ($customerIds->count() > 0) {
                 $query->whereIn('customer_id', $customerIds);
+            } else {
+                // If no quotations found for user, return empty
+                Log::info('No quotations found for user, returning empty orders');
+                return response()->json([
+                    'success' => true,
+                    'data' => []
+                ], 200);
             }
 
             if ($request->has('search')) {
@@ -43,13 +50,15 @@ class OrderController extends Controller
             }
 
             $orders = $query->orderBy('created_at', 'desc')->get();
+            
+            Log::info('Orders fetched:', ['count' => $orders->count()]);
 
             return response()->json([
                 'success' => true,
                 'data' => $orders
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error fetching orders: ' . $e->getMessage());
+            Log::error('Error fetching orders: ' . $e->getMessage(), ['user_id' => auth()->id()]);
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()

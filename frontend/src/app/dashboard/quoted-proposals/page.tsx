@@ -120,10 +120,6 @@ export default function QuotedProposalsPage() {
         (q: Quotation) => (q.has_price === 1 || q.has_price === "1") && ["pending", "sent", "approved"].includes(q.status)
       )
 
-      console.log("[v0] All quotations:", allQuotations.length)
-      console.log("[v0] Priced quotations:", pricedQuotations.length)
-      console.log("[v0] Priced quotations data:", pricedQuotations)
-
       setQuotations(pricedQuotations)
       filterQuotations(pricedQuotations, "pending")
 
@@ -139,43 +135,21 @@ export default function QuotedProposalsPage() {
   }
 
   const filterQuotations = (quots: Quotation[], status: "pending" | "sent" | "approved" | "all") => {
-    console.log("[v0] Filtering with status:", status)
-    console.log("[v0] Total quotations:", quots.length)
-    
     let filtered = quots
     if (status === "pending") {
       // Only show pending quotations with prices
-      filtered = quots.filter((q) => {
-        const hasPriceCheck = q.has_price === 1 || q.has_price === "1" || q.has_price === true
-        const statusCheck = q.status === "pending"
-        console.log("[v0] Q", q.id, "- has_price:", q.has_price, "status:", q.status, "matches:", hasPriceCheck && statusCheck)
-        return hasPriceCheck && statusCheck
-      })
+      filtered = quots.filter((q) => (q.has_price === 1 || q.has_price === "1" || q.has_price === true) && q.status === "pending")
     } else if (status === "sent") {
       // Only show sent quotations
-      filtered = quots.filter((q) => {
-        const matches = q.status === "sent"
-        console.log("[v0] Q", q.id, "- status:", q.status, "matches:", matches)
-        return matches
-      })
+      filtered = quots.filter((q) => q.status === "sent")
     } else if (status === "approved") {
       // Only show approved quotations
-      filtered = quots.filter((q) => {
-        const matches = q.status === "approved"
-        console.log("[v0] Q", q.id, "- status:", q.status, "matches:", matches)
-        return matches
-      })
+      filtered = quots.filter((q) => q.status === "approved")
     } else if (status === "all") {
       // Show pending, sent, and approved (all with has_price)
-      filtered = quots.filter((q) => {
-        const hasPriceCheck = q.has_price === 1 || q.has_price === "1" || q.has_price === true
-        const statusCheck = ["pending", "sent", "approved"].includes(q.status)
-        console.log("[v0] Q", q.id, "- has_price:", q.has_price, "status:", q.status, "matches:", hasPriceCheck && statusCheck)
-        return hasPriceCheck && statusCheck
-      })
+      filtered = quots.filter((q) => (q.has_price === 1 || q.has_price === "1" || q.has_price === true) && ["pending", "sent", "approved"].includes(q.status))
     }
     
-    console.log("[v0] Filtered results:", filtered.length)
     setFilteredQuotations(filtered)
     setStatusFilter(status)
   }

@@ -338,9 +338,11 @@ export default function JobOrdersPage() {
                                 ? jobOrder.status.charAt(0).toUpperCase() + jobOrder.status.slice(1)
                                 : "Unknown"}
                             </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(jobOrder.priority)}`}>
-                              {jobOrder.priority.toUpperCase()}
-                            </span>
+                            {jobOrder.priority && (
+                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getPriorityColor(jobOrder.priority)}`}>
+                                {jobOrder.priority.toUpperCase()}
+                              </span>
+                            )}
                           </div>
 
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
