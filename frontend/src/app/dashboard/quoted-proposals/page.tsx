@@ -31,7 +31,7 @@ export default function QuotedProposalsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [sendingId, setSendingId] = useState<number | null>(null)
-  const [statusFilter, setStatusFilter] = useState<"priced" | "sent" | "all">("priced")
+  const [statusFilter, setStatusFilter] = useState<"priced" | "sent" | "approved" | "all">("priced")
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; quotationId: number | null }>({
     isOpen: false,
     quotationId: null,
@@ -134,14 +134,21 @@ export default function QuotedProposalsPage() {
     }
   }
 
-  const filterQuotations = (quots: Quotation[], status: "priced" | "sent" | "all") => {
+  const filterQuotations = (quots: Quotation[], status: "priced" | "sent" | "approved" | "all") => {
     let filtered = quots
     if (status === "priced") {
-      filtered = quots.filter((q) => q.has_price === 1 || q.has_price === "1")
+      // Only show pending quotations with prices
+      filtered = quots.filter((q) => (q.has_price === 1 || q.has_price === "1") && q.status === "pending")
     } else if (status === "sent") {
+      // Only show sent quotations
       filtered = quots.filter((q) => q.status === "sent")
+    } else if (status === "approved") {
+      // Only show approved quotations
+      filtered = quots.filter((q) => q.status === "approved")
+    } else if (status === "all") {
+      // Show pending, sent, and approved (all with has_price)
+      filtered = quots.filter((q) => (q.has_price === 1 || q.has_price === "1") && ["pending", "sent", "approved"].includes(q.status))
     }
-    // "all" shows everything that has_price
     setFilteredQuotations(filtered)
     setStatusFilter(status)
   }
@@ -199,7 +206,7 @@ export default function QuotedProposalsPage() {
                 : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
             }`}
           >
-            Priced Quotations ({quotations.filter((q) => (q.has_price === 1 || q.has_price === "1")).length})
+            Pending ({quotations.filter((q) => (q.has_price === 1 || q.has_price === "1") && q.status === "pending").length})
           </button>
           <button
             onClick={() => filterQuotations(quotations, "sent")}
@@ -212,14 +219,24 @@ export default function QuotedProposalsPage() {
             Sent to Production ({quotations.filter((q) => q.status === "sent").length})
           </button>
           <button
-            onClick={() => filterQuotations(quotations, "all")}
+            onClick={() => filterQuotations(quotations, "approved")}
             className={`px-6 py-2 rounded-lg font-medium transition ${
-              statusFilter === "all"
+              statusFilter === "approved"
                 ? "bg-blue-500 text-white"
                 : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
             }`}
           >
-            All Proposals ({quotations.length})
+            Approved ({quotations.filter((q) => q.status === "approved").length})
+          </button>
+          <button
+            onClick={() => filterQuotations(quotations, "all")}
+            className={`px-6 py-2 rounded-lg font-medium transition ${
+              statusFilter === "all"
+                ? "bg-purple-500 text-white"
+                : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
+            }`}
+          >
+            All Proposals ({quotations.filter((q) => (q.has_price === 1 || q.has_price === "1") && ["pending", "sent", "approved"].includes(q.status)).length})
           </button>
         </div>
 

@@ -85,6 +85,8 @@ export function AdminQuotationPricing() {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [playerPrices, setPlayerPrices] = useState<Record<string, string>>({})
+  const [showRejectModal, setShowRejectModal] = useState(false)
+  const [rejectMessage, setRejectMessage] = useState("")
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
@@ -362,6 +364,51 @@ export function AdminQuotationPricing() {
     }
   }
 
+  const handleRejectQuotation = async () => {
+    try {
+      setIsSaving(true)
+      setShowRejectModal(false)
+
+      if (!quotation) return
+
+      const token = localStorage.getItem("admin_token")
+      const response = await fetch(`${apiUrl}/admin/quotations/${quotationId}/reject`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "rejected",
+          rejection_message: rejectMessage,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to reject quotation")
+      }
+
+      toast({
+        title: "Success",
+        description: "Quotation has been rejected",
+      })
+
+      // Redirect back to quotations list
+      setTimeout(() => {
+        router.push("/admin/quotations")
+      }, 1000)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to reject quotation",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -408,14 +455,23 @@ export function AdminQuotationPricing() {
                 </button>
                 <h2 className="text-xl font-bold text-white">Set Pricing</h2>
               </div>
-              <button
-                onClick={handleSendPrices}
-                disabled={isSaving}
-                className="flex items-center gap-2 px-6 py-2 rounded-lg bg-orange-400 hover:bg-orange-500 text-white font-medium transition disabled:opacity-50"
-              >
-                {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={18} />}
-                Send
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShowRejectModal(true)}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-6 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white font-medium transition disabled:opacity-50"
+                >
+                  Reject
+                </button>
+                <button
+                  onClick={handleSendPrices}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-6 py-2 rounded-lg bg-orange-400 hover:bg-orange-500 text-white font-medium transition disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save size={18} />}
+                  Send
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -855,6 +911,38 @@ export function AdminQuotationPricing() {
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
               Yes, Send
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reject Modal */}
+      <AlertDialog open={showRejectModal} onOpenChange={setShowRejectModal}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-600" />
+              Reject Quotation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 mt-4">
+              <p>Are you sure you want to reject this quotation?</p>
+              <textarea
+                value={rejectMessage}
+                onChange={(e) => setRejectMessage(e.target.value)}
+                placeholder="Enter rejection reason (optional)"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-500 bg-white text-sm"
+                rows={4}
+              />
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end mt-4">
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRejectQuotation}
+              disabled={isSaving}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Reject"}
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

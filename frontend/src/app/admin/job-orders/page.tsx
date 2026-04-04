@@ -214,17 +214,17 @@ export default function JobOrdersPage() {
   }
 
   const formatDate = (dateString?: string) => {
-  if (!dateString) return "N/A"
+    if (!dateString) return "N/A"
 
-  const date = new Date(dateString)
-  if (isNaN(date.getTime())) return "Invalid date"
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return "Invalid date"
 
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  })
-}
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
+  }
 
   const formatCurrency = (value: number | string | null | undefined) => {
     const num = typeof value === "string" ? parseFloat(value) : value

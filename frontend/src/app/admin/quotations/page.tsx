@@ -41,24 +41,24 @@ export default function AdminQuotationsPage() {
   const fetchQuotations = async () => {
     try {
       setIsLoading(true)
-      console.log("[v0] Fetching quotations with status filter:", statusFilter)
       const response = await apiClient.admin().get("/admin/quotations", {
         params: {
           status: statusFilter,
+          has_price: statusFilter === "pending" ? 0 : undefined,
         },
       })
-      console.log("[v0] Quotations response:", response.data)
-      setQuotations(response.data.data || response.data || [])
+      
+      // Filter quotations based on status
+      let filtered = response.data.data || response.data || []
+      
+      // For pending, exclude quotations that already have price set (has_price = 1)
+      if (statusFilter === "pending") {
+        filtered = filtered.filter((q: any) => (q.has_price === 0 || q.has_price === "0" || !q.has_price))
+      }
+      
+      setQuotations(filtered)
     } catch (error: any) {
-      console.error("[v0] ERROR - Full error object:", error)
-      console.error("[v0] ERROR - Error message:", error?.message)
-      console.error("[v0] ERROR - Status code:", error?.response?.status)
-      console.error("[v0] ERROR - Response data:", error?.response?.data)
-      console.error("[v0] ERROR - Config:", error?.config)
-      
       const errorMessage = error?.response?.data?.error || error?.message || "Failed to fetch quotations"
-      console.error("[v0] ERROR - Final error message:", errorMessage)
-      
       toast({ 
         title: "Error", 
         description: errorMessage, 
@@ -90,9 +90,9 @@ export default function AdminQuotationsPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
-            { key: "pending", label: "Pending (Client Sent)" },
-            { key: "approved", label: "Approved by Client" },
+            { key: "pending", label: "Pending (No Price)" },
             { key: "rejected", label: "Rejected" },
+            { key: "sent", label: "Sent to Production" },
           ].map((filter) => (
             <button
               key={filter.key}
