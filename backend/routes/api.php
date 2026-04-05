@@ -84,6 +84,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/admin/orders', [OrderController::class, 'store']);
     Route::put('/admin/orders/{id}/status', [OrderController::class, 'updateStatus']);
     Route::delete('/admin/orders/{id}', [OrderController::class, 'destroy']);
+    Route::get('/orders/{id}', [OrderController::class, 'show']);
+
+    // Order Items
+    Route::put('/admin/order-items/{id}', [OrderController::class, 'updateOrderItem']);
 
     // Job Orders
     Route::get('/admin/job-orders', [JobOrderController::class, 'index']);

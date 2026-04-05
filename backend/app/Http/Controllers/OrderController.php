@@ -50,13 +50,28 @@ class OrderController extends Controller
 
     public function show($id)
     {
-        $order = Order::with(['user', 'items'])->find($id);
+        try {
+            $userId = auth()->id();
+            
+            $order = Order::with(['customer', 'items', 'quotation'])
+                ->where('customer_id', $userId)
+                ->find($id);
 
-        if (!$order) {
-            return response()->json(['error' => 'Order not found'], 404);
+            if (!$order) {
+                return response()->json(['error' => 'Order not found'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $order
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching order: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Failed to fetch order details',
+                'message' => $e->getMessage()
+            ], 500);
         }
-
-        return response()->json($order, 200);
     }
 
     public function store(Request $request)
@@ -221,6 +236,39 @@ class OrderController extends Controller
             ], 201);
         } catch (\Exception $e) {
             \Log::error('Order item creation error: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function updateOrderItem(Request $request, $id)
+    {
+        try {
+            $item = OrderItem::find($id);
+
+            if (!$item) {
+                return response()->json(['error' => 'Order item not found'], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'status' => 'nullable|in:pending,ongoing,completed',
+                'quantity' => 'nullable|integer|min:1',
+                'unit_price' => 'nullable|numeric|min:0',
+                'line_total' => 'nullable|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $item->update($request->only(['status', 'quantity', 'unit_price', 'line_total']));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order item updated successfully',
+                'data' => $item,
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Order item update error: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

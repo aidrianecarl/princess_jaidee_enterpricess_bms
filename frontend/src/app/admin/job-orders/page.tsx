@@ -49,7 +49,14 @@ interface JobOrder {
   }
   assignedTo?: {
     id: number
-    name: string
+    first_name: string
+    last_name: string
+    email: string
+  }
+  assigned_to?: {
+    id: number
+    first_name: string
+    last_name: string
     email: string
   }
 }
@@ -355,7 +362,9 @@ export default function JobOrdersPage() {
                             <div>
                               <p className="text-neutral-600 dark:text-neutral-400 text-xs">Assigned To</p>
                               <p className="font-semibold text-neutral-900 dark:text-white">
-                                {jobOrder.assignedTo 
+                                {jobOrder.assigned_to 
+                                  ? `${jobOrder.assigned_to.first_name} ${jobOrder.assigned_to.last_name}`
+                                  : jobOrder.assignedTo
                                   ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name}`
                                   : "N/A"
                                 }
@@ -396,10 +405,19 @@ export default function JobOrdersPage() {
                           )}
                         </div>
 
-                        {/* Expand Icon */}
-                        <button className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition mt-1">
-                          {expandedOrder === jobOrder.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-                        </button>
+                        {/* Action Buttons */}
+                        <div className="flex items-center gap-2 mt-1">
+                          <Button
+                            onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
+                            className="bg-orange-500 hover:bg-orange-600 text-white text-xs md:text-sm"
+                            size="sm"
+                          >
+                            View Orders
+                          </Button>
+                          <button className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition">
+                            {expandedOrder === jobOrder.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
