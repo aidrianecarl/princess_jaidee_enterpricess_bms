@@ -70,12 +70,19 @@ export default function MyOrdersPage() {
       setError("")
       const token = localStorage.getItem("auth_token")
 
+      console.log("[v0] MyOrders - Token exists:", !!token)
+      console.log("[v0] MyOrders - User:", user?.id)
+
       if (!token || !user) {
+        console.log("[v0] MyOrders - No token or user, redirecting")
         router.push("/")
         return
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+
+      console.log("[v0] MyOrders - API URL:", apiUrl)
+      console.log("[v0] MyOrders - Fetching endpoint:", `${apiUrl}/orders`)
 
       // Fetch orders via the orders endpoint which filters by authenticated user
       const response = await fetch(`${apiUrl}/orders`, {
@@ -87,8 +94,11 @@ export default function MyOrdersPage() {
         },
       })
 
+      console.log("[v0] MyOrders - Response status:", response.status)
+
       if (!response.ok) {
         if (response.status === 401) {
+          console.log("[v0] MyOrders - Unauthorized, redirecting")
           router.push("/")
           return
         }
@@ -96,18 +106,29 @@ export default function MyOrdersPage() {
       }
 
       const data = await response.json()
+      console.log("[v0] MyOrders - Raw response data:", data)
+      
       const ordersData = data.data || data
+      console.log("[v0] MyOrders - Orders data:", ordersData)
+      console.log("[v0] MyOrders - Is array:", Array.isArray(ordersData))
+      console.log("[v0] MyOrders - Count:", Array.isArray(ordersData) ? ordersData.length : 0)
       
       if (Array.isArray(ordersData)) {
         setOrders(ordersData)
+        console.log("[v0] MyOrders - Orders set successfully")
         if (ordersData.length === 0) {
+          console.log("[v0] MyOrders - No orders found for user")
           setError("")
         }
       } else {
+        console.log("[v0] MyOrders - Response data is not array, setting empty")
         setOrders([])
       }
     } catch (err) {
-      console.error("[v0] Error fetching orders:", err)
+      console.error("[v0] MyOrders - Error fetching orders:", err)
+      console.log("[v0] MyOrders - Error details:", {
+        message: err instanceof Error ? err.message : String(err),
+      })
       setError(err instanceof Error ? err.message : "Failed to load orders")
       setOrders([])
     } finally {

@@ -49,7 +49,7 @@ class QuotationController extends Controller
                 'search_filter' => $request->get('search'),
             ]);
 
-            $query = Quotation::with(['customer', 'items.service']);
+            $query = Quotation::with(['customer', 'items.service', 'creator']);
             Log::info('Base query built');
 
             if ($request->has('search') && !empty($request->get('search'))) {
@@ -125,6 +125,16 @@ class QuotationController extends Controller
                     } else {
                         Log::warning('Quotation has no customer', ['quotation_id' => $quotation->id]);
                         $quotationArray['customer'] = null;
+                    }
+
+                    // Add creator data if exists
+                    if ($quotation->creator) {
+                        $quotationArray['creator'] = [
+                            'id' => $quotation->creator->id,
+                            'first_name' => $quotation->creator->first_name,
+                            'last_name' => $quotation->creator->last_name,
+                            'email' => $quotation->creator->email,
+                        ];
                     }
 
                     // Add items data if exists

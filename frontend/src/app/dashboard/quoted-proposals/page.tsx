@@ -298,7 +298,7 @@ export default function QuotedProposalsPage() {
                         View Details
                       </Button>
                     </Link>
-                    {(quotation.has_price === 1 || quotation.has_price === "1") && quotation.status !== "sent" && (
+                    {(quotation.has_price === 1 || quotation.has_price === "1") && quotation.status === "pending" && (
                       <Button
                         onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
                         disabled={sendingId === quotation.id}

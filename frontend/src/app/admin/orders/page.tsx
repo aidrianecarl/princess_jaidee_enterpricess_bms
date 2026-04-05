@@ -15,6 +15,13 @@ interface SentQuotation {
   total: number
   status: string
   created_at: string
+  created_by?: number
+  creator?: {
+    id: number
+    first_name: string
+    last_name: string
+    email: string
+  }
   customer: {
     name: string
     email: string
@@ -170,7 +177,7 @@ export default function OrdersPage() {
         },
         body: JSON.stringify({
           quotation_id: selectedQuotation.id,
-          customer_id: user?.id || 1,
+          customer_id: selectedQuotation.created_by || selectedQuotation.creator?.id || 1,
           order_date: new Date().toISOString().split('T')[0],
           subtotal: selectedQuotation.total,
           discount: 0,
@@ -223,7 +230,7 @@ export default function OrdersPage() {
           quotation_id: selectedQuotation.id,
           order_id: orderId,
           assigned_to: employeeId,
-          customer_id: user?.id || 1,
+          customer_id: selectedQuotation.created_by || selectedQuotation.creator?.id || 1,
           start_date: formData.startDate,
           due_date: formData.dueDate,
           notes: formData.notes,
