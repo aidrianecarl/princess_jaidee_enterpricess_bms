@@ -1,6 +1,5 @@
 "use client"
 
-import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
@@ -33,18 +32,23 @@ interface AssignedUser {
 interface JobOrder {
   id: number
   job_order_number: string
+  quotation_id?: number
   customer_id: number
   assigned_to: number | AssignedUser
   start_date: string
   due_date: string
+  completed_date?: string
   status: "pending" | "ongoing" | "completed"
   priority: "low" | "medium" | "high"
+  notes?: string
   items?: JobOrderItem[]
   customer?: {
+    id: number
     bill_to_name: string
     bill_to_email: string
     bill_to_phone?: string
   }
+  assignedTo?: AssignedUser
 }
 
 export default function JobOrdersPage() {
@@ -54,9 +58,12 @@ export default function JobOrdersPage() {
   const [filterType, setFilterType] = useState<"all" | "my">("all")
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
-  const [savingItemId, setSavingItemId] = useState<number | null>(null)
-
   const router = useRouter()
+
+  const handleSidebarToggle = (open: boolean) => {
+    setIsSidebarOpen(open)
+  }
+
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
   useEffect(() => {
@@ -80,115 +87,165 @@ export default function JobOrdersPage() {
       const response = await fetch(`${apiUrl}/admin/job-orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       })
 
-      if (!response.ok) throw new Error("Failed to fetch")
+      if (!response.ok) throw new Error("API Error")
 
       const data = await response.json()
       const jobOrders = Array.isArray(data) ? data : data.data || data
 
       setJobOrders(jobOrders)
     } catch (err) {
-      setError("Failed to load job orders")
+      const errorMessage = err instanceof Error ? err.message : "Unknown error"
+      setError(`Failed to load job orders: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
   }
 
+  // ✅ SAFE HELPERS (structure fix only)
   const getAssignedUserId = (assigned: any) => {
-    if (!assigned) return null
-    return typeof assigned === "object" ? assigned.id : assigned
+    return typeof assigned === "object" ? assigned?.id : assigned
   }
 
-  const getAssignedUserName = (assigned: any) => {
-    if (!assigned) return "N/A"
-    return typeof assigned === "object"
-      ? `${assigned.first_name} ${assigned.last_name}`
-      : "User #" + assigned
+  const getAssignedUserName = (jobOrder: JobOrder) => {
+    if (typeof jobOrder.assigned_to === "object") {
+      return `${jobOrder.assigned_to.first_name} ${jobOrder.assigned_to.last_name}`
+    }
+
+    if (jobOrder.assignedTo) {
+      return `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name}`
+    }
+
+    return "N/A"
   }
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A"
-    return new Date(dateString).toLocaleDateString()
+
+    const date = new Date(dateString)
+    if (isNaN(date.getTime())) return "Invalid date"
+
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })
   }
 
   const getStatusColor = (status: string) => {
-    if (status === "pending") return "bg-yellow-200"
-    if (status === "ongoing") return "bg-blue-200"
-    if (status === "completed") return "bg-green-200"
-    return "bg-gray-200"
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+      case "ongoing":
+        return "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+      case "completed":
+        return "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+      default:
+        return "bg-neutral-100 dark:bg-neutral-900/30 text-neutral-700 dark:text-neutral-400"
+    }
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "low":
+        return "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+      case "medium":
+        return "bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border border-yellow-200 dark:border-yellow-800"
+      case "high":
+        return "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800"
+      default:
+        return "bg-neutral-50 dark:bg-neutral-900/20 text-neutral-700 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800"
+    }
   }
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-
       <div className="flex">
-        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
 
-        <main className="flex-1 p-6">
-          <h1 className="text-3xl font-bold mb-6">Job Orders</h1>
+        <main className="flex-1 p-4 md:p-8">
+          <div className="max-w-7xl mx-auto">
 
-          {/* Filter */}
-          <div className="mb-4">
-            <Button onClick={() => setFilterType("all")}>All</Button>
-            <Button onClick={() => setFilterType("my")} className="ml-2">
-              My Jobs
-            </Button>
-          </div>
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">Job Orders</h1>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                Manage and track all job orders and their progress
+              </p>
+            </div>
 
-          {error && (
-            <Card className="p-4 bg-red-100">
-              <AlertCircle />
-              <p>{error}</p>
-            </Card>
-          )}
+            <div className="mb-8 flex flex-wrap gap-3">
+              <Button onClick={() => setFilterType("all")}>
+                All Jobs
+              </Button>
+              <Button onClick={() => setFilterType("my")}>
+                My Jobs
+              </Button>
+            </div>
 
-          {isLoading ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            jobOrders
-              .filter((jo) =>
-                filterType === "my"
-                  ? getAssignedUserId(jo.assigned_to) === user?.id
-                  : true
-              )
-              .map((jobOrder) => (
-                <Card key={jobOrder.id} className="p-4 mb-4">
-                  <h2 className="font-bold">{jobOrder.job_order_number}</h2>
+            {error && (
+              <Card className="p-4 mb-6 bg-red-50">
+                <AlertCircle />
+                <p>{error}</p>
+              </Card>
+            )}
 
-                  <p>Status:</p>
-                  <span className={`px-2 py-1 ${getStatusColor(jobOrder.status)}`}>
-                    {jobOrder.status}
-                  </span>
+            {isLoading ? (
+              <Loader2 className="animate-spin" />
+            ) : (() => {
 
-                  <p>Customer: {jobOrder.customer?.bill_to_name}</p>
-                  <p>Assigned: {getAssignedUserName(jobOrder.assigned_to)}</p>
+              const filteredOrders = filterType === "my"
+                ? jobOrders.filter(jo => getAssignedUserId(jo.assigned_to) === user?.id)
+                : jobOrders
 
-                  <p>Start: {formatDate(jobOrder.start_date)}</p>
-                  <p>Due: {formatDate(jobOrder.due_date)}</p>
-
-                  <Button
-                    onClick={() => {
-                      const isAllowed =
-                        getAssignedUserId(jobOrder.assigned_to) === user?.id ||
-                        user?.role === "admin"
-
-                      if (isAllowed) {
-                        router.push(`/admin/job-orders/${jobOrder.id}/orders`)
-                      }
-                    }}
-                    disabled={
-                      getAssignedUserId(jobOrder.assigned_to) !== user?.id &&
-                      user?.role !== "admin"
-                    }
-                  >
-                    View Orders
-                  </Button>
+              return filteredOrders.length === 0 ? (
+                <Card className="p-12 text-center">
+                  <Package />
+                  <p>No job orders found</p>
                 </Card>
-              ))
-          )}
+              ) : (
+                <div className="grid gap-4">
+                  {filteredOrders.map((jobOrder) => (
+                    <Card key={jobOrder.id} className="p-4">
+
+                      <h3>{jobOrder.job_order_number}</h3>
+
+                      <span className={getStatusColor(jobOrder.status)}>
+                        {jobOrder.status}
+                      </span>
+
+                      <p>Customer: {jobOrder.customer?.bill_to_name}</p>
+
+                      <p>Assigned To: {getAssignedUserName(jobOrder)}</p>
+
+                      <p>Start: {formatDate(jobOrder.start_date)}</p>
+                      <p>Due: {formatDate(jobOrder.due_date)}</p>
+
+                      <Button
+                        onClick={() => {
+                          const isAssigned = getAssignedUserId(jobOrder.assigned_to) === user?.id
+                          const isAdmin = user?.role === "admin"
+
+                          if (isAssigned || isAdmin) {
+                            router.push(`/admin/job-orders/${jobOrder.id}/orders`)
+                          }
+                        }}
+                        disabled={
+                          getAssignedUserId(jobOrder.assigned_to) !== user?.id &&
+                          user?.role !== "admin"
+                        }
+                      >
+                        View Orders
+                      </Button>
+
+                    </Card>
+                  ))}
+                </div>
+              )
+            })()}
+          </div>
         </main>
       </div>
     </div>

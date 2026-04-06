@@ -21,7 +21,6 @@ interface OrderItem {
   quantity: number
   unit_price: string | number
   line_total: string | number
-  status?: string
 }
 
 interface JobOrder {
@@ -48,13 +47,9 @@ export default function JobOrdersManagementPage() {
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null)
-
   const router = useRouter()
   const params = useParams()
-
-  const jobOrderId = Array.isArray(params.jobOrderId)
-    ? params.jobOrderId[0]
-    : params.jobOrderId
+  const jobOrderId = params.jobOrderId
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -62,6 +57,7 @@ export default function JobOrdersManagementPage() {
     setIsSidebarOpen(open)
   }
 
+  // Check authentication and fetch data
   useEffect(() => {
     const token = localStorage.getItem("admin_token")
     if (!token) {
@@ -72,16 +68,15 @@ export default function JobOrdersManagementPage() {
     const userData = localStorage.getItem("admin_user")
     if (userData) setUser(JSON.parse(userData))
 
-    if (jobOrderId) {
-      fetchJobOrderAndOrder(token)
-    }
-  }, [jobOrderId])
+    fetchJobOrderAndOrder(token)
+  }, [])
 
   const fetchJobOrderAndOrder = async (token: string) => {
     try {
       setIsLoading(true)
       setError("")
 
+      // Fetch job order
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -95,21 +90,28 @@ export default function JobOrdersManagementPage() {
 
       const jobOrderData = await jobOrderResponse.json()
       const jobOrder = jobOrderData.data || jobOrderData
-
+      
+      console.log("[v0] Job order:", jobOrder)
+      
+      // Get user from localStorage to check permissions
       const userStr = localStorage.getItem("admin_user")
       const currentUser = userStr ? JSON.parse(userStr) : null
       const currentUserId = currentUser?.id
-
+      
+      console.log("[v0] Current user ID:", currentUserId, "Assigned to:", jobOrder.assigned_to)
+      
+      // Check if current user is assigned to this job order or is admin
       if (jobOrder.assigned_to !== currentUserId && currentUser?.role !== "admin") {
         setError("You don't have permission to view this job order")
         setIsLoading(false)
         return
       }
-
+      
       setJobOrder(jobOrder)
 
-      if (jobOrder.order_id) {
-        const orderResponse = await fetch(`${apiUrl}/admin/orders/${jobOrder.order_id}`, {
+      // Fetch order details if order_id exists
+      if (jobOrder && jobOrder.order_id) {
+        const orderResponse = await fetch(`${apiUrl}/orders/${jobOrder.order_id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -119,11 +121,12 @@ export default function JobOrdersManagementPage() {
         if (orderResponse.ok) {
           const orderData = await orderResponse.json()
           const order = orderData.data || orderData
+          console.log("[v0] Order:", order)
           setOrder(order)
         }
       }
     } catch (err) {
-      console.error("Error fetching job order:", err)
+      console.error("[v0] Error fetching job order:", err)
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
       setError(errorMessage)
     } finally {
@@ -141,7 +144,7 @@ export default function JobOrdersManagementPage() {
     try {
       setUpdatingItemId(itemId)
 
-      const response = await fetch(`${apiUrl}/admin/order-items/${itemId}`, {
+      const response = await fetch(`${apiUrl}/order-items/${itemId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -156,21 +159,20 @@ export default function JobOrdersManagementPage() {
         throw new Error("Failed to update item status")
       }
 
-      // ✅ Update UI instantly
+      // Update local state
       setOrder((prevOrder) => {
         if (!prevOrder || !prevOrder.items) return prevOrder
-
         return {
           ...prevOrder,
           items: prevOrder.items.map((item) =>
-            item.id === itemId
-              ? { ...item, status: newStatus }
-              : item
+            item.id === itemId ? { ...item, status: newStatus } : item
           ),
         }
       })
+
+      console.log("[v0] Item status updated successfully")
     } catch (err) {
-      console.error("Error updating item status:", err)
+      console.error("[v0] Error updating item status:", err)
       alert("Failed to update item status")
     } finally {
       setUpdatingItemId(null)
@@ -191,23 +193,49 @@ export default function JobOrdersManagementPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="animate-spin" />
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+        <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <div className="flex">
+          <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
+          <main className="flex-1 p-4 md:p-8 flex items-center justify-center min-h-screen">
+            <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+              <Loader2 size={32} className="animate-spin text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+              <p className="text-neutral-600 dark:text-neutral-400 font-medium">Loading job order...</p>
+            </Card>
+          </main>
+        </div>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="p-8">
-        <button onClick={() => router.back()} className="flex items-center gap-2 mb-4">
-          <ArrowLeft size={20} /> Back
-        </button>
+      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
+        <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <div className="flex">
+          <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
+          <main className="flex-1 p-4 md:p-8">
+            <div className="max-w-4xl mx-auto">
+              <button
+                onClick={() => router.back()}
+                className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white mb-6 transition"
+              >
+                <ArrowLeft size={20} />
+                Back
+              </button>
 
-        <Card className="p-6 bg-red-100">
-          <AlertCircle className="text-red-500 mb-2" />
-          <p>{error}</p>
-        </Card>
+              <Card className="p-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+                <div className="flex gap-3">
+                  <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
+                  <div>
+                    <h3 className="font-semibold text-red-900 dark:text-red-400">Error</h3>
+                    <p className="text-sm text-red-700 dark:text-red-300 mt-1">{error}</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          </main>
+        </div>
       </div>
     )
   }
@@ -220,34 +248,113 @@ export default function JobOrdersManagementPage() {
         <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
 
         <main className="flex-1 p-4 md:p-8">
-          <button onClick={() => router.back()} className="flex items-center gap-2 mb-6">
-            <ArrowLeft size={20} /> Back
-          </button>
+          <div className="max-w-4xl mx-auto">
+            {/* Back Button */}
+            <button
+              onClick={() => router.back()}
+              className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white mb-6 transition"
+            >
+              <ArrowLeft size={20} />
+              Back to Job Orders
+            </button>
 
-          <h1 className="text-2xl font-bold mb-4">{jobOrder?.job_order_number}</h1>
-
-          {order?.items?.map((item) => (
-            <Card key={item.id} className="p-4 mb-4">
-              <p className="font-semibold">{item.description}</p>
-              <p>
-                Qty: {item.quantity} × {formatCurrency(item.unit_price)}
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">
+                {jobOrder?.job_order_number}
+              </h1>
+              <p className="text-neutral-600 dark:text-neutral-400">
+                {order?.order_number && `Order: ${order.order_number}`}
               </p>
+            </div>
 
-              <div className="flex gap-2 mt-3">
-                <Button onClick={() => handleUpdateItemStatus(item.id, "pending")} size="sm">
-                  <Clock size={16} className="mr-1" /> Pending
-                </Button>
+            {/* Order Summary */}
+            {order && (
+              <Card className="p-6 mb-8 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-1">Order Number</p>
+                    <p className="font-semibold text-neutral-900 dark:text-white text-lg">{order.order_number}</p>
+                  </div>
+                  <div>
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-1">Order Date</p>
+                    <p className="font-semibold text-neutral-900 dark:text-white">
+                      {new Date(order.order_date).toLocaleDateString("en-US")}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-1">Total Amount</p>
+                    <p className="font-bold text-neutral-900 dark:text-white text-lg">{formatCurrency(order.total)}</p>
+                  </div>
+                </div>
+              </Card>
+            )}
 
-                <Button onClick={() => handleUpdateItemStatus(item.id, "ongoing")} size="sm">
-                  <Loader2 size={16} className="mr-1" /> Ongoing
-                </Button>
+            {/* Order Items */}
+            {order?.items && order.items.length > 0 ? (
+              <Card className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 overflow-hidden">
+                <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items & Status</h2>
+                </div>
+                <div className="space-y-4 p-6">
+                  {order.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:border-neutral-300 dark:hover:border-neutral-600 transition"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div className="flex-1">
+                          <p className="font-semibold text-neutral-900 dark:text-white mb-1">{item.description}</p>
+                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                            Qty: {item.quantity} × {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total)}
+                          </p>
+                        </div>
+                      </div>
 
-                <Button onClick={() => handleUpdateItemStatus(item.id, "completed")} size="sm">
-                  <CheckCircle size={16} className="mr-1" /> Completed
-                </Button>
-              </div>
-            </Card>
-          ))}
+                      {/* Status Update Buttons */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => handleUpdateItemStatus(item.id, "pending")}
+                          disabled={updatingItemId === item.id}
+                          variant="outline"
+                          className="border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
+                          size="sm"
+                        >
+                          <Clock size={16} className="mr-2" />
+                          Pending
+                        </Button>
+                        <Button
+                          onClick={() => handleUpdateItemStatus(item.id, "ongoing")}
+                          disabled={updatingItemId === item.id}
+                          variant="outline"
+                          className="border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                          size="sm"
+                        >
+                          <Loader2 size={16} className="mr-2" />
+                          Ongoing
+                        </Button>
+                        <Button
+                          onClick={() => handleUpdateItemStatus(item.id, "completed")}
+                          disabled={updatingItemId === item.id}
+                          variant="outline"
+                          className="border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                          size="sm"
+                        >
+                          <CheckCircle size={16} className="mr-2" />
+                          Completed
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                <Package size={32} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+                <p className="text-neutral-600 dark:text-neutral-400 font-medium">No order items found</p>
+              </Card>
+            )}
+          </div>
         </main>
       </div>
     </div>
