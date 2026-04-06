@@ -15,7 +15,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X, Edit2 } from 'lucide-react'
 import { getApiImageUrl } from '@/lib/api-urls'
 
 interface TeamMember {
@@ -363,44 +363,34 @@ export default function JobOrderDetailPage() {
                 </div>
               )}
 
-              {/* Order Items */}
+              {/* Order Items Table */}
               {order?.items && order.items.length > 0 ? (
-                <div className="space-y-4">
-                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-4">Order Items</h2>
+                <div className="space-y-6">
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
 
                   {order.items.map((item) => {
                     const teamRoster = parseJSON(item.team_roster) as TeamMember[] | null
-                    const sizeSpecs = parseJSON(item.size_specifications) as SizeSpecifications | null
-                    const itemNotes = parseJSON(item.notes) as ItemNotes | null
                     const isExpanded = expandedItems.has(item.id)
 
                     return (
-                      <Card
-                        key={item.id}
-                        className="border border-neutral-200 dark:border-neutral-700 overflow-hidden"
-                      >
-                        {/* Header - Clickable */}
+                      <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden">
+                        {/* Item Header */}
                         <div
                           onClick={() => toggleItemExpanded(item.id)}
-                          className="p-4 bg-orange-50 dark:bg-orange-900/20 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition"
+                          className="p-4 bg-orange-50 dark:bg-orange-900/20 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition flex items-center justify-between"
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-neutral-900 dark:text-white">
-                                {item.service?.name || 'Service Item'}
-                              </h3>
-                              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                                {item.quantity}x @ {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total || Number(item.unit_price) * item.quantity)}
-                              </p>
-                            </div>
-                            <div className="text-right ml-4">
-                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
-                                {getStatusLabel(item.status)}
-                              </span>
-                              <div className="text-xl mt-2">
-                                {isExpanded ? '▼' : '▶'}
-                              </div>
-                            </div>
+                          <div>
+                            <h3 className="font-semibold text-neutral-900 dark:text-white">
+                              {item.service?.name || 'Service Item'} (Qty: {item.quantity})
+                            </h3>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
+                              {getStatusLabel(item.status)}
+                            </span>
+                            <span className="text-neutral-600 dark:text-neutral-400">
+                              {isExpanded ? '▼' : '▶'}
+                            </span>
                           </div>
                         </div>
 
@@ -410,22 +400,21 @@ export default function JobOrderDetailPage() {
                             {/* Design Image */}
                             {item.design_file_url && (
                               <div>
-                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 text-sm">Design File</h4>
-                                <div className="relative group inline-block w-full">
+                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Design File</h4>
+                                <div className="relative group w-full max-w-sm">
                                   <img
                                     src={getApiImageUrl(item.design_file_url)}
                                     alt="Design"
-                                    className="w-full h-40 object-cover rounded border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+                                    className="w-full h-48 object-cover rounded border border-neutral-200 dark:border-neutral-700 cursor-pointer"
                                     onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || ''))}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement
                                       target.src = '/placeholder.svg'
-                                      target.classList.add('opacity-50')
                                     }}
                                   />
                                   <button
                                     onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || ''))}
-                                    className="absolute top-2 right-2 p-1.5 bg-white dark:bg-neutral-800 rounded shadow opacity-0 group-hover:opacity-100 transition"
+                                    className="absolute top-2 right-2 p-2 bg-white dark:bg-neutral-800 rounded shadow opacity-0 group-hover:opacity-100 transition"
                                   >
                                     <ZoomIn size={16} />
                                   </button>
@@ -433,92 +422,37 @@ export default function JobOrderDetailPage() {
                               </div>
                             )}
 
-                            {/* Team Roster */}
+                            {/* Team Roster Table */}
                             {teamRoster && teamRoster.length > 0 && (
                               <div>
-                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-2 text-sm">Team Roster</h4>
-                                <div className="space-y-1 text-sm">
-                                  {teamRoster.map((player, idx) => (
-                                    <div key={idx} className="flex justify-between p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
-                                      <span className="font-medium">#{player.number} {player.name}</span>
-                                      {(player.sizeTop || player.sizeBottom) && (
-                                        <span className="text-neutral-600 dark:text-neutral-300">
-                                          {player.sizeTop && `Top: ${player.sizeTop}`}
-                                          {player.sizeTop && player.sizeBottom ? ' / ' : ''}
-                                          {player.sizeBottom && `Bottom: ${player.sizeBottom}`}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Size Specifications */}
-                            {sizeSpecs && Object.keys(sizeSpecs).some((key) => sizeSpecs[key as keyof SizeSpecifications]) && (
-                              <div>
-                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-2 text-sm">Specifications</h4>
-                                <div className="grid grid-cols-2 gap-2 text-sm">
-                                  {sizeSpecs.top && (
-                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
-                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Top</p>
-                                      <p className="font-medium">{sizeSpecs.top}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.bottom && (
-                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
-                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Bottom</p>
-                                      <p className="font-medium">{sizeSpecs.bottom}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.width && (
-                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
-                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Width</p>
-                                      <p className="font-medium">{sizeSpecs.width}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.height && (
-                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
-                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Height</p>
-                                      <p className="font-medium">{sizeSpecs.height}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.totalSqft && (
-                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
-                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Total Sqft</p>
-                                      <p className="font-medium">{sizeSpecs.totalSqft}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.totalPrice && (
-                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
-                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Price</p>
-                                      <p className="font-medium text-green-600 dark:text-green-400">{formatCurrency(sizeSpecs.totalPrice)}</p>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Notes */}
-                            {itemNotes && Object.values(itemNotes).some((v) => v) && (
-                              <div>
-                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-2 text-sm">Notes</h4>
-                                <div className="space-y-2 text-sm bg-neutral-100 dark:bg-neutral-700 p-3 rounded">
-                                  {itemNotes.designNotes && (
-                                    <p><span className="font-medium">Design:</span> {itemNotes.designNotes}</p>
-                                  )}
-                                  {itemNotes.jerseyCustomizationNotes && (
-                                    <p><span className="font-medium">Jersey:</span> {itemNotes.jerseyCustomizationNotes}</p>
-                                  )}
-                                  {itemNotes.teamRosterNotes && (
-                                    <p><span className="font-medium">Roster:</span> {itemNotes.teamRosterNotes}</p>
-                                  )}
-                                  {itemNotes.sizeNotes && (
-                                    <p><span className="font-medium">Sizes:</span> {itemNotes.sizeNotes}</p>
-                                  )}
-                                  {itemNotes.additionalNotes && (
-                                    <p><span className="font-medium">Additional:</span> {itemNotes.additionalNotes}</p>
-                                  )}
+                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Team Roster</h4>
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-sm">
+                                    <thead>
+                                      <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-700/50">
+                                        <th className="px-4 py-2 text-left font-semibold text-neutral-900 dark:text-white">Player Name</th>
+                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Number</th>
+                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Top Size</th>
+                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Bottom Size</th>
+                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Action</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {teamRoster.map((player, idx) => (
+                                        <tr key={idx} className="border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition">
+                                          <td className="px-4 py-3 text-neutral-900 dark:text-white">{player.name}</td>
+                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-medium">#{player.number}</td>
+                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '—'}</td>
+                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</td>
+                                          <td className="px-4 py-3 text-center">
+                                            <Button variant="outline" size="sm" className="text-xs">
+                                              Edit
+                                            </Button>
+                                          </td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
                                 </div>
                               </div>
                             )}
@@ -535,7 +469,7 @@ export default function JobOrderDetailPage() {
                             )}
                           </div>
                         )}
-                      </Card>
+                      </div>
                     )
                   })}
                 </div>
