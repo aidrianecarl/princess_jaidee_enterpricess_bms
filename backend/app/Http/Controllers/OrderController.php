@@ -135,6 +135,11 @@ class OrderController extends Controller
                             'service_id' => $quotationItem->service_id,
                             'quantity' => $quotationItem->quantity,
                             'unit_price' => $quotationItem->unit_price,
+                            'design_file_url' => $quotationItem->design_file_url ?? null,
+                            'team_roster' => $quotationItem->team_roster ?? null,
+                            'size_specifications' => $quotationItem->size_specifications ?? null,
+                            'notes' => $quotationItem->notes ?? null,
+                            'status' => 'pending',
                         ]);
                     }
                 }
@@ -220,18 +225,20 @@ class OrderController extends Controller
         $validator = Validator::make($request->all(), [
             'order_id' => 'required|exists:orders,id',
             'service_id' => 'nullable|exists:services,id',
+            'quotation_items_id' => 'nullable|exists:quotation_items,id',
             'description' => 'nullable|string',
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
-            'line_total' => 'required|numeric|min:0',
+            'line_total' => 'nullable|numeric|min:0',
             'design_file_url' => 'nullable|string',
-            'team_roster' => 'nullable|string|json',
-            'size_specifications' => 'nullable|string|json',
-            'notes' => 'nullable|string|json',
+            'team_roster' => 'nullable|string',
+            'size_specifications' => 'nullable|string',
+            'notes' => 'nullable|string',
             'status' => 'nullable|in:pending,ongoing,completed',
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Order item validation failed', ['errors' => $validator->errors()]);
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
@@ -241,18 +248,18 @@ class OrderController extends Controller
             $item = OrderItem::create([
                 'order_id' => $request->order_id,
                 'service_id' => $request->service_id,
-                'description' => $request->description,
+                'quotation_items_id' => $request->quotation_items_id ?? null,
                 'quantity' => $request->quantity,
                 'unit_price' => $request->unit_price,
-                'line_total' => $request->line_total,
-                'design_file_url' => $request->design_file_url,
-                'team_roster' => $request->team_roster,
-                'size_specifications' => $request->size_specifications,
-                'notes' => $request->notes,
+                'line_total' => $request->line_total ?? ($request->quantity * $request->unit_price),
+                'design_file_url' => $request->design_file_url ?? null,
+                'team_roster' => $request->team_roster ?? null,
+                'size_specifications' => $request->size_specifications ?? null,
+                'notes' => $request->notes ?? null,
                 'status' => $request->status ?? 'pending',
             ]);
 
-            \Log::info('Order item created', ['item_id' => $item->id]);
+            \Log::info('Order item created', ['item_id' => $item->id, 'order_id' => $request->order_id]);
 
             return response()->json([
                 'success' => true,
@@ -260,8 +267,16 @@ class OrderController extends Controller
                 'data' => $item,
             ], 201);
         } catch (\Exception $e) {
-            \Log::error('Order item creation error: ' . $e->getMessage(), ['exception' => $e]);
-            return response()->json(['error' => $e->getMessage()], 500);
+            \Log::error('Order item creation error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to create order item',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 

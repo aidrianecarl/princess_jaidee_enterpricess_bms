@@ -64,16 +64,16 @@ class JobOrderController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'quotation_id' => 'nullable|exists:quotations,id',
-            'order_id' => 'nullable|exists:orders,id',
+            'order_id' => 'required|exists:orders,id',
             'customer_id' => 'required|exists:users,id',
             'assigned_to' => 'required|exists:users,id',
             'start_date' => 'required|date',
-            'due_date' => 'required|date|after:start_date',
-            'payment_type' => 'nullable|in:downpayment,fullpayment',
-            'paid_amount' => 'nullable|numeric|min:0',
+            'due_date' => 'required|date|after_or_equal:start_date',
+            'notes' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
+            Log::error('Job order validation failed', ['errors' => $validator->errors()]);
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
@@ -84,8 +84,8 @@ class JobOrderController extends Controller
 
             $jobOrder = JobOrder::create([
                 'job_order_number' => $jobNumber,
-                'quotation_id' => $request->quotation_id,
-                'order_id' => $request->order_id ?? null,
+                'quotation_id' => $request->quotation_id ?? null,
+                'order_id' => $request->order_id,
                 'customer_id' => $request->customer_id,
                 'assigned_to' => $request->assigned_to,
                 'start_date' => $request->start_date,
@@ -94,36 +94,29 @@ class JobOrderController extends Controller
                 'notes' => $request->notes ?? null,
             ]);
 
-            // Update quotation with paid_amount if provided
-            if ($request->quotation_id && $request->has('paid_amount')) {
-                Quotation::where('id', $request->quotation_id)->update([
-                    'paid_amount' => $request->paid_amount,
-                ]);
-                Log::info('Updated quotation paid_amount', [
-                    'quotation_id' => $request->quotation_id,
-                    'paid_amount' => $request->paid_amount,
-                ]);
-            }
-
-
-
             Log::info('Job order created successfully', [
                 'job_order_id' => $jobOrder->id,
                 'job_order_number' => $jobOrder->job_order_number,
+                'order_id' => $request->order_id,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Job order created successfully',
-                'data' => $jobOrder
+                'data' => $jobOrder->load(['assignedTo', 'customer', 'order'])
             ], 201);
         } catch (\Exception $e) {
             Log::error('Error creating job order', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json(['error' => 'Failed to create job order', 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to create job order',
+                'message' => $e->getMessage()
+            ], 500);
         }
     }
 

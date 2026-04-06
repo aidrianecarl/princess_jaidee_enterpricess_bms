@@ -201,38 +201,55 @@ export default function OrdersPage() {
       // Step 3: Create Order Items from quotation items
       if (formData.items && formData.items.length > 0) {
         for (const item of formData.items) {
-          console.log("[v0] Creating order item:", item)
-          const orderItemResponse = await fetch(`${apiUrl}/order-items`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+          console.log("[v0] Creating order item from quotation item:", item)
+          try {
+            const orderItemPayload = {
               order_id: orderId,
               service_id: item.service_id,
-              description: item.description,
+              quotation_items_id: item.id, // Pass the quotation item ID
               quantity: item.quantity || 1,
               unit_price: item.unit_price || 0,
-              line_total: item.line_total || 0,
+              line_total: (item.quantity || 1) * (item.unit_price || 0),
               design_file_url: item.design_file_url || null,
               team_roster: item.team_roster ? (typeof item.team_roster === 'string' ? item.team_roster : JSON.stringify(item.team_roster)) : null,
               size_specifications: item.size_specifications ? (typeof item.size_specifications === 'string' ? item.size_specifications : JSON.stringify(item.size_specifications)) : null,
               notes: item.notes ? (typeof item.notes === 'string' ? item.notes : JSON.stringify(item.notes)) : null,
               status: "pending",
-            }),
-          })
-          
-          if (!orderItemResponse.ok) {
-            const errorData = await orderItemResponse.json()
-            console.log("[v0] Error creating order item:", errorData)
-            throw new Error(errorData.message || "Failed to create order item")
+            }
+            console.log("[v0] Order item payload:", orderItemPayload)
+            
+            const orderItemResponse = await fetch(`${apiUrl}/order-items`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(orderItemPayload),
+            })
+            
+            if (!orderItemResponse.ok) {
+              const errorText = await orderItemResponse.text()
+              console.error("[v0] Order item error response:", errorText)
+              let errorData
+              try {
+                errorData = JSON.parse(errorText)
+              } catch {
+                throw new Error(`HTTP ${orderItemResponse.status}: ${errorText}`)
+              }
+              throw new Error(errorData.message || errorData.error || "Failed to create order item")
+            }
+            
+            const itemResult = await orderItemResponse.json()
+            console.log("[v0] Order item created successfully:", itemResult)
+          } catch (itemError) {
+            console.error("[v0] Error creating order item:", itemError)
+            throw new Error(`Failed to create order item: ${itemError instanceof Error ? itemError.message : String(itemError)}`)
           }
-          console.log("[v0] Order item created successfully")
         }
       }
 
       // Step 4: Create Job Order with the new order_id
+      console.log("[v0] Creating job order with order ID:", orderId)
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders`, {
         method: "POST",
         headers: {
@@ -251,16 +268,30 @@ export default function OrdersPage() {
       })
 
       if (!jobOrderResponse.ok) {
-        const errorData = await jobOrderResponse.json()
-        throw new Error(errorData.message || "Failed to create job order")
+        const errorText = await jobOrderResponse.text()
+        console.error("[v0] Job order error response:", errorText)
+        let errorData
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          throw new Error(`HTTP ${jobOrderResponse.status}: ${errorText}`)
+        }
+        throw new Error(errorData.message || errorData.error || "Failed to create job order")
       }
+
+      const jobOrderResult = await jobOrderResponse.json()
+      console.log("[v0] Job order created successfully:", jobOrderResult)
 
       // Remove from pending list
       setSentQuotations(sentQuotations.filter(q => q.id !== selectedQuotation.id))
       setSelectedQuotation(null)
       setPaymentModalOpen(false)
+      
+      // Show success message
+      setError("")
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to save order"
+      console.error("[v0] Save order error:", errorMsg)
       setError(errorMsg)
       throw err
     } finally {
