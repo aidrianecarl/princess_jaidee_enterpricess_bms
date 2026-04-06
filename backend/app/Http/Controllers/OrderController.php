@@ -224,6 +224,11 @@ class OrderController extends Controller
             'quantity' => 'required|integer|min:1',
             'unit_price' => 'required|numeric|min:0',
             'line_total' => 'required|numeric|min:0',
+            'design_file_url' => 'nullable|string',
+            'team_roster' => 'nullable|string|json',
+            'size_specifications' => 'nullable|string|json',
+            'notes' => 'nullable|string|json',
+            'status' => 'nullable|in:pending,ongoing,completed',
         ]);
 
         if ($validator->fails()) {
@@ -231,6 +236,8 @@ class OrderController extends Controller
         }
 
         try {
+            \Log::info('Creating order item', $request->all());
+            
             $item = OrderItem::create([
                 'order_id' => $request->order_id,
                 'service_id' => $request->service_id,
@@ -238,7 +245,14 @@ class OrderController extends Controller
                 'quantity' => $request->quantity,
                 'unit_price' => $request->unit_price,
                 'line_total' => $request->line_total,
+                'design_file_url' => $request->design_file_url,
+                'team_roster' => $request->team_roster,
+                'size_specifications' => $request->size_specifications,
+                'notes' => $request->notes,
+                'status' => $request->status ?? 'pending',
             ]);
+
+            \Log::info('Order item created', ['item_id' => $item->id]);
 
             return response()->json([
                 'success' => true,
@@ -246,7 +260,7 @@ class OrderController extends Controller
                 'data' => $item,
             ], 201);
         } catch (\Exception $e) {
-            \Log::error('Order item creation error: ' . $e->getMessage());
+            \Log::error('Order item creation error: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -257,6 +271,7 @@ class OrderController extends Controller
             $item = OrderItem::find($id);
 
             if (!$item) {
+                \Log::warning('Order item not found: ' . $id);
                 return response()->json(['error' => 'Order item not found'], 404);
             }
 
@@ -265,13 +280,42 @@ class OrderController extends Controller
                 'quantity' => 'nullable|integer|min:1',
                 'unit_price' => 'nullable|numeric|min:0',
                 'line_total' => 'nullable|numeric|min:0',
+                'design_file_url' => 'nullable|string',
+                'team_roster' => 'nullable|string|json',
+                'size_specifications' => 'nullable|string|json',
+                'notes' => 'nullable|string|json',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            $item->update($request->only(['status', 'quantity', 'unit_price', 'line_total']));
+            \Log::info('Updating order item', ['item_id' => $id, 'data' => $request->all()]);
+
+            $updateData = [
+                'status' => $request->status ?? $item->status,
+                'quantity' => $request->quantity ?? $item->quantity,
+                'unit_price' => $request->unit_price ?? $item->unit_price,
+                'line_total' => $request->line_total ?? $item->line_total,
+            ];
+
+            // Add new fields if provided
+            if ($request->has('design_file_url')) {
+                $updateData['design_file_url'] = $request->design_file_url;
+            }
+            if ($request->has('team_roster')) {
+                $updateData['team_roster'] = $request->team_roster;
+            }
+            if ($request->has('size_specifications')) {
+                $updateData['size_specifications'] = $request->size_specifications;
+            }
+            if ($request->has('notes')) {
+                $updateData['notes'] = $request->notes;
+            }
+
+            $item->update($updateData);
+
+            \Log::info('Order item updated successfully', ['item_id' => $id]);
 
             return response()->json([
                 'success' => true,
@@ -279,7 +323,7 @@ class OrderController extends Controller
                 'data' => $item,
             ], 200);
         } catch (\Exception $e) {
-            \Log::error('Order item update error: ' . $e->getMessage());
+            \Log::error('Order item update error: ' . $e->getMessage(), ['item_id' => $id, 'exception' => $e]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

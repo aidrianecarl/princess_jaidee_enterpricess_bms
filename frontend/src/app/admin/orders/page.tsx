@@ -199,9 +199,10 @@ export default function OrdersPage() {
       const orderId = orderData.data?.id || orderData.id
 
       // Step 3: Create Order Items from quotation items
-      if (selectedQuotation.items && selectedQuotation.items.length > 0) {
-        for (const item of selectedQuotation.items) {
-          await fetch(`${apiUrl}/order-items`, {
+      if (formData.items && formData.items.length > 0) {
+        for (const item of formData.items) {
+          console.log("[v0] Creating order item:", item)
+          const orderItemResponse = await fetch(`${apiUrl}/order-items`, {
             method: "POST",
             headers: {
               Authorization: `Bearer ${token}`,
@@ -214,8 +215,20 @@ export default function OrdersPage() {
               quantity: item.quantity || 1,
               unit_price: item.unit_price || 0,
               line_total: item.line_total || 0,
+              design_file_url: item.design_file_url || null,
+              team_roster: item.team_roster ? (typeof item.team_roster === 'string' ? item.team_roster : JSON.stringify(item.team_roster)) : null,
+              size_specifications: item.size_specifications ? (typeof item.size_specifications === 'string' ? item.size_specifications : JSON.stringify(item.size_specifications)) : null,
+              notes: item.notes ? (typeof item.notes === 'string' ? item.notes : JSON.stringify(item.notes)) : null,
+              status: "pending",
             }),
           })
+          
+          if (!orderItemResponse.ok) {
+            const errorData = await orderItemResponse.json()
+            console.log("[v0] Error creating order item:", errorData)
+            throw new Error(errorData.message || "Failed to create order item")
+          }
+          console.log("[v0] Order item created successfully")
         }
       }
 

@@ -125,6 +125,10 @@ export default function JobOrderDetailPage() {
     try {
       setIsLoading(true)
       setError('')
+      
+      console.log('[v0] === FETCHING JOB ORDER DATA ===')
+      console.log('[v0] Job Order ID:', jobOrderId)
+      console.log('[v0] API URL:', apiUrl)
 
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
         headers: {
@@ -133,15 +137,24 @@ export default function JobOrderDetailPage() {
         },
       })
 
+      console.log('[v0] Job Order Response Status:', jobOrderResponse.status)
+
       if (!jobOrderResponse.ok) {
+        const errorText = await jobOrderResponse.text()
+        console.error('[v0] Job Order Error Response:', errorText)
         throw new Error(`Job order not found (${jobOrderResponse.status})`)
       }
 
       const jobOrderData = await jobOrderResponse.json()
+      console.log('[v0] Job Order Data:', jobOrderData)
       const fetchedJobOrder = jobOrderData.data || jobOrderData
+      console.log('[v0] Fetched Job Order:', fetchedJobOrder)
       setJobOrder(fetchedJobOrder)
 
       if (fetchedJobOrder?.order_id) {
+        console.log('[v0] === FETCHING ORDER DATA ===')
+        console.log('[v0] Order ID:', fetchedJobOrder.order_id)
+        
         const orderResponse = await fetch(`${apiUrl}/admin/orders/${fetchedJobOrder.order_id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -149,16 +162,43 @@ export default function JobOrderDetailPage() {
           },
         })
 
+        console.log('[v0] Order Response Status:', orderResponse.status)
+
         if (!orderResponse.ok) {
+          const errorText = await orderResponse.text()
+          console.error('[v0] Order Error Response:', errorText)
           throw new Error(`Failed to fetch order (${orderResponse.status})`)
         }
 
         const orderData = await orderResponse.json()
+        console.log('[v0] Order Data:', orderData)
         const fetchedOrder = orderData.data || orderData
+        console.log('[v0] Fetched Order:', fetchedOrder)
+        console.log('[v0] Order Items:', fetchedOrder?.items)
+        
+        if (fetchedOrder?.items && fetchedOrder.items.length > 0) {
+          fetchedOrder.items.forEach((item: OrderItem, idx: number) => {
+            console.log(`[v0] Item ${idx + 1}:`, {
+              id: item.id,
+              service: item.service?.name,
+              quantity: item.quantity,
+              status: item.status,
+              design_file_url: item.design_file_url,
+              team_roster: item.team_roster,
+              size_specifications: item.size_specifications,
+              notes: item.notes,
+            })
+          })
+        }
+        
         setOrder(fetchedOrder)
+      } else {
+        console.warn('[v0] No order_id found in job order')
       }
+      console.log('[v0] === FETCH COMPLETE ===')
     } catch (err) {
       console.error('[v0] Error fetching data:', err)
+      console.error('[v0] Error message:', err instanceof Error ? err.message : 'Unknown error')
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setIsLoading(false)
@@ -194,6 +234,10 @@ export default function JobOrderDetailPage() {
 
     try {
       setIsSubmitting(true)
+      
+      console.log('[v0] === MARKING ITEM AS COMPLETED ===')
+      console.log('[v0] Item ID:', completingItemId)
+      console.log('[v0] API Endpoint:', `${apiUrl}/admin/order-items/${completingItemId}`)
 
       const response = await fetch(`${apiUrl}/admin/order-items/${completingItemId}`, {
         method: 'PUT',
@@ -204,9 +248,16 @@ export default function JobOrderDetailPage() {
         body: JSON.stringify({ status: 'completed' }),
       })
 
+      console.log('[v0] Response Status:', response.status)
+
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error('[v0] Error Response:', errorText)
         throw new Error('Failed to mark item as completed')
       }
+
+      const responseData = await response.json()
+      console.log('[v0] Response Data:', responseData)
 
       // Update local state
       const updatedOrder = { ...order } as Order
@@ -215,12 +266,15 @@ export default function JobOrderDetailPage() {
           item.id === completingItemId ? { ...item, status: 'completed' } : item
         )
         setOrder(updatedOrder)
+        console.log('[v0] Local state updated')
       }
 
       setCompleteDialogOpen(false)
       setCompletingItemId(null)
+      console.log('[v0] Item marked as completed successfully')
     } catch (err) {
       console.error('[v0] Error completing item:', err)
+      console.error('[v0] Error details:', err instanceof Error ? err.message : 'Unknown error')
       alert('Failed to mark item as completed')
     } finally {
       setIsSubmitting(false)

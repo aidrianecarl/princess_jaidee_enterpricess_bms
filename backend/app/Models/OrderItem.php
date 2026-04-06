@@ -11,9 +11,15 @@ class OrderItem extends Model
         'order_id',
         'service_id',
         'quotation_items_id',
+        'description',
         'quantity',
         'unit_price',
+        'line_total',
         'status',
+        'design_file_url',
+        'team_roster',
+        'size_specifications',
+        'notes',
     ];
 
     protected $casts = [

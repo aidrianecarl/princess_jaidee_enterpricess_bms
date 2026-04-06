@@ -13,6 +13,13 @@ interface SetPaymentModalProps {
     id: number
     quotation_number: string
     total: number
+    items?: Array<{
+      id: number
+      design_file_url?: string
+      team_roster?: any
+      size_specifications?: any
+      notes?: any
+    }>
     customer?: {
       name: string
       email: string
@@ -85,6 +92,7 @@ export function SetPaymentModal({
         dueDate,
         notes,
         paymentMethod,
+        items: quotation.items || [],
       })
       onOpenChange(false)
       setPaymentType("downpayment")
