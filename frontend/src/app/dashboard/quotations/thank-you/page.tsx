@@ -34,7 +34,7 @@ function ThankYouContent() {
   }, [router, isClient])
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-red-50 to-orange-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-red-50 to-orange-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
         {/* Success Animation Container */}
         <div className="animate-fadeIn mb-8">
@@ -120,7 +120,7 @@ function ThankYouContent() {
           </div>
         </div>
       </div>
-    </main>
+    </div>
   )
 }
 
