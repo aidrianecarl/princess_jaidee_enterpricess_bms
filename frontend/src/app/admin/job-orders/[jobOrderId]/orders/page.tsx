@@ -6,19 +6,54 @@ import { AdminHeader } from '@/components/admin/header'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Loader2, AlertCircle, Package, CheckCircle, Clock, Zap } from 'lucide-react'
+import { ArrowLeft, Loader2, AlertCircle, Package, CheckCircle, Clock, Zap, ZoomIn, X } from 'lucide-react'
+import { getApiImageUrl } from '@/lib/api-urls'
+
+interface TeamMember {
+  id?: string
+  name: string
+  number: string | number
+  sizeTop?: string
+  sizeBottom?: string
+}
+
+interface SizeSpecifications {
+  top?: string
+  bottom?: string
+  width?: number
+  height?: number
+  totalSqft?: number
+  totalPrice?: number
+  [key: string]: any
+}
+
+interface ItemNotes {
+  designNotes?: string
+  jerseyCustomizationNotes?: string
+  teamRosterNotes?: string
+  sizeNotes?: string
+  additionalNotes?: string
+  [key: string]: string | undefined
+}
 
 interface OrderItem {
   id: number
   order_id: number
   service_id?: number
   service?: {
+    id: number
     name: string
     description?: string
+    image_url?: string
   }
   quantity: number
   unit_price: string | number
+  line_total?: string | number
   status: 'pending' | 'ongoing' | 'completed'
+  design_file_url?: string
+  notes?: any
+  team_roster?: any
+  size_specifications?: any
 }
 
 interface Order {
@@ -27,6 +62,9 @@ interface Order {
   order_date: string
   total: number
   order_status: string
+  subtotal?: number
+  discount?: number
+  tax?: number
   items?: OrderItem[]
 }
 
@@ -48,6 +86,8 @@ export default function JobOrderDetailPage() {
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState('')
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null)
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
+  const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const router = useRouter()
   const params = useParams()
   const jobOrderId = params.jobOrderId
@@ -75,14 +115,6 @@ export default function JobOrderDetailPage() {
       setIsLoading(true)
       setError('')
 
-      console.log('[v0] ========== FETCH DATA START ==========')
-      console.log('[v0] API URL:', apiUrl)
-      console.log('[v0] Job Order ID:', jobOrderId)
-      console.log('[v0] Token available:', !!token)
-
-      // Fetch job order
-      console.log('[v0] Fetching job order from:', `${apiUrl}/admin/job-orders/${jobOrderId}`)
-      
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -90,28 +122,15 @@ export default function JobOrderDetailPage() {
         },
       })
 
-      console.log('[v0] Job Order Response Status:', jobOrderResponse.status)
-      console.log('[v0] Job Order Response OK:', jobOrderResponse.ok)
-
       if (!jobOrderResponse.ok) {
-        const errorText = await jobOrderResponse.text()
-        console.error('[v0] Job Order Error Response:', errorText)
         throw new Error(`Job order not found (${jobOrderResponse.status})`)
       }
 
       const jobOrderData = await jobOrderResponse.json()
-      console.log('[v0] Job Order Response Data:', jobOrderData)
-      
       const fetchedJobOrder = jobOrderData.data || jobOrderData
       setJobOrder(fetchedJobOrder)
-      console.log('[v0] Fetched Job Order:', fetchedJobOrder)
 
-      // Fetch order details if order_id exists
       if (fetchedJobOrder?.order_id) {
-        console.log('[v0] ========== FETCHING ORDER ==========')
-        console.log('[v0] Order ID to fetch:', fetchedJobOrder.order_id)
-        console.log('[v0] Fetching order from:', `${apiUrl}/admin/orders/${fetchedJobOrder.order_id}`)
-        
         const orderResponse = await fetch(`${apiUrl}/admin/orders/${fetchedJobOrder.order_id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -119,39 +138,43 @@ export default function JobOrderDetailPage() {
           },
         })
 
-        console.log('[v0] Order Response Status:', orderResponse.status)
-        console.log('[v0] Order Response OK:', orderResponse.ok)
-        console.log('[v0] Order Response URL:', orderResponse.url)
-
         if (!orderResponse.ok) {
-          const errorText = await orderResponse.text()
-          console.error('[v0] Order Error Response Status:', orderResponse.status)
-          console.error('[v0] Order Error Response Text:', errorText)
-          throw new Error(`Failed to fetch order (${orderResponse.status}): ${errorText}`)
+          throw new Error(`Failed to fetch order (${orderResponse.status})`)
         }
 
         const orderData = await orderResponse.json()
-        console.log('[v0] Order Response Data:', orderData)
-        
         const fetchedOrder = orderData.data || orderData
-        console.log('[v0] Fetched Order:', fetchedOrder)
-        console.log('[v0] Order Items:', fetchedOrder?.items)
-        
         setOrder(fetchedOrder)
-      } else {
-        console.warn('[v0] No order_id found in fetched job order')
       }
-      
-      console.log('[v0] ========== FETCH DATA END ==========')
     } catch (err) {
-      console.error('[v0] ========== FETCH DATA ERROR ==========')
-      console.error('[v0] Error:', err)
-      console.error('[v0] Error Message:', err instanceof Error ? err.message : 'Unknown error')
-      console.error('[v0] Error Stack:', err instanceof Error ? err.stack : 'N/A')
+      console.error('[v0] Error fetching data:', err)
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const toggleItemExpanded = (itemId: number) => {
+    const newExpanded = new Set(expandedItems)
+    if (newExpanded.has(itemId)) {
+      newExpanded.delete(itemId)
+    } else {
+      newExpanded.add(itemId)
+    }
+    setExpandedItems(newExpanded)
+  }
+
+  const parseJSON = (value: any) => {
+    if (!value) return null
+    if (typeof value === 'object') return value
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value)
+      } catch (e) {
+        return null
+      }
+    }
+    return null
   }
 
   const handleUpdateItemStatus = async (itemId: number, newStatus: 'pending' | 'ongoing' | 'completed') => {
@@ -174,7 +197,6 @@ export default function JobOrderDetailPage() {
         throw new Error('Failed to update item status')
       }
 
-      // Update local state
       const updatedOrder = { ...order } as Order
       if (updatedOrder.items) {
         updatedOrder.items = updatedOrder.items.map((item) =>
@@ -182,7 +204,6 @@ export default function JobOrderDetailPage() {
         )
         setOrder(updatedOrder)
 
-        // Check if all items have the same status and update parent statuses
         const allStatuses = updatedOrder.items.map(item => item.status)
         const allOngoing = allStatuses.every(s => s === 'ongoing')
         const allCompleted = allStatuses.every(s => s === 'completed')
@@ -198,7 +219,6 @@ export default function JobOrderDetailPage() {
           newOrderStatus = 'completed'
         }
 
-        // Update Job Order status if all items are completed or ongoing
         if (allCompleted || allOngoing) {
           await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
             method: 'PUT',
@@ -209,7 +229,6 @@ export default function JobOrderDetailPage() {
             body: JSON.stringify({ status: newJobOrderStatus }),
           })
 
-          // Update Order status
           if (order.id) {
             await fetch(`${apiUrl}/admin/orders/${order.id}/status`, {
               method: 'PUT',
@@ -221,7 +240,6 @@ export default function JobOrderDetailPage() {
             })
           }
 
-          // Update local state
           setJobOrder(prev => prev ? { ...prev, status: newJobOrderStatus } : null)
           setOrder(prev => prev ? { ...prev, order_status: newOrderStatus } : null)
         }
@@ -237,7 +255,6 @@ export default function JobOrderDetailPage() {
   const formatCurrency = (value: number | string | null | undefined) => {
     const num = typeof value === 'string' ? parseFloat(value) : value
     if (!num || isNaN(Number(num))) return '₱0.00'
-
     return new Intl.NumberFormat('en-PH', {
       style: 'currency',
       currency: 'PHP',
@@ -299,7 +316,6 @@ export default function JobOrderDetailPage() {
                   <ArrowLeft size={20} />
                   Back
                 </button>
-
                 <Card className="p-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
                   <div className="flex gap-3">
                     <AlertCircle className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" size={20} />
@@ -369,95 +385,273 @@ export default function JobOrderDetailPage() {
 
               {/* Order Items */}
               {order?.items && order.items.length > 0 ? (
-                <Card className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 overflow-hidden">
-                  <div className="p-6 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-700/50">
-                    <div className="flex items-center gap-3">
-                      <Zap size={24} className="text-orange-500" />
-                      <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
-                      <span className="ml-auto text-sm text-neutral-600 dark:text-neutral-400">
-                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                      </span>
-                    </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Zap size={24} className="text-orange-500" />
+                    <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
+                    <span className="ml-auto text-sm text-neutral-600 dark:text-neutral-400">
+                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                    </span>
                   </div>
-                  <div className="space-y-4 p-6">
-                    {order.items.map((item, index) => (
-                      <Card
-                        key={item.id}
-                        className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition"
-                      >
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                          {/* Item Info */}
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-3">
-                              <span className="px-3 py-1 bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-full text-xs font-semibold">
-                                Item #{index + 1}
-                              </span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
-                                {getStatusLabel(item.status)}
-                              </span>
-                            </div>
-                            {item.service && (
-                              <h4 className="font-semibold text-neutral-900 dark:text-white mb-2">
-                                {item.service.name}
-                              </h4>
-                            )}
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
-                              Quantity: <span className="font-semibold">{item.quantity}</span> | 
-                              Unit Price: <span className="font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(item.unit_price)}</span> | 
-                              Total: <span className="font-semibold text-orange-600 dark:text-orange-400">{formatCurrency(Number(item.unit_price) * item.quantity)}</span>
-                            </p>
-                          </div>
 
-                          {/* Status Buttons */}
-                          <div className="flex flex-wrap gap-2 md:flex-col">
-                            <Button
-                              onClick={() => handleUpdateItemStatus(item.id, 'pending')}
-                              disabled={updatingItemId === item.id}
-                              variant="outline"
-                              size="sm"
-                              className={`flex items-center gap-2 whitespace-nowrap ${
-                                item.status === 'pending'
-                                  ? 'border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
-                                  : 'border-neutral-300 dark:border-neutral-600 hover:border-yellow-400 dark:hover:border-yellow-600'
-                              }`}
-                            >
-                              <Clock size={16} />
-                              Pending
-                            </Button>
-                            <Button
-                              onClick={() => handleUpdateItemStatus(item.id, 'ongoing')}
-                              disabled={updatingItemId === item.id}
-                              variant="outline"
-                              size="sm"
-                              className={`flex items-center gap-2 whitespace-nowrap ${
-                                item.status === 'ongoing'
-                                  ? 'border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                  : 'border-neutral-300 dark:border-neutral-600 hover:border-blue-400 dark:hover:border-blue-600'
-                              }`}
-                            >
-                              <Zap size={16} />
-                              Ongoing
-                            </Button>
-                            <Button
-                              onClick={() => handleUpdateItemStatus(item.id, 'completed')}
-                              disabled={updatingItemId === item.id}
-                              variant="outline"
-                              size="sm"
-                              className={`flex items-center gap-2 whitespace-nowrap ${
-                                item.status === 'completed'
-                                  ? 'border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
-                                  : 'border-neutral-300 dark:border-neutral-600 hover:border-green-400 dark:hover:border-green-600'
-                              }`}
-                            >
-                              <CheckCircle size={16} />
-                              Completed
-                            </Button>
+                  {order.items.map((item) => {
+                    const teamRoster = parseJSON(item.team_roster) as TeamMember[] | null
+                    const sizeSpecs = parseJSON(item.size_specifications) as SizeSpecifications | null
+                    const itemNotes = parseJSON(item.notes) as ItemNotes | null
+                    const isExpanded = expandedItems.has(item.id)
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden hover:shadow-md transition"
+                      >
+                        {/* Item Header */}
+                        <div
+                          onClick={() => toggleItemExpanded(item.id)}
+                          className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 cursor-pointer hover:bg-opacity-80 transition"
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2 flex-wrap">
+                                <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
+                                  {item.service?.name || 'Service Item'}
+                                </h3>
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
+                                  {getStatusLabel(item.status)}
+                                </span>
+                              </div>
+                              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                Qty: <span className="font-semibold">{item.quantity}</span> × {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total || Number(item.unit_price) * item.quantity)}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                                {formatCurrency(item.line_total || Number(item.unit_price) * item.quantity)}
+                              </p>
+                              <button className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition text-lg">
+                                {isExpanded ? '▲' : '▼'}
+                              </button>
+                            </div>
                           </div>
                         </div>
-                      </Card>
-                    ))}
+
+                        {/* Expanded Details */}
+                        {isExpanded && (
+                          <div className="p-6 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 space-y-6">
+                            {/* Design Image */}
+                            {item.design_file_url && (
+                              <div className="space-y-2">
+                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Design Preview</h4>
+                                <div className="relative group">
+                                  <img
+                                    src={getApiImageUrl(item.design_file_url)}
+                                    alt="Design Preview"
+                                    className="w-full h-48 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 cursor-zoom-in bg-neutral-100 dark:bg-neutral-700"
+                                    onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || null))}
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement
+                                      target.src = '/placeholder.svg?height=192&width=400'
+                                      target.classList.add('opacity-50')
+                                    }}
+                                  />
+                                  <button
+                                    onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || null))}
+                                    className="absolute top-2 right-2 p-2 bg-white dark:bg-neutral-800 rounded-full shadow-lg hover:shadow-xl transition opacity-0 group-hover:opacity-100"
+                                  >
+                                    <ZoomIn size={18} className="text-neutral-900 dark:text-white" />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Team Roster */}
+                            {teamRoster && teamRoster.length > 0 && (
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Team Roster</h4>
+                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                                  <div className="space-y-2">
+                                    {teamRoster.map((player, idx) => (
+                                      <div key={idx} className="flex items-center justify-between py-2 border-b border-blue-200 dark:border-blue-900/50 last:border-b-0">
+                                        <div>
+                                          <p className="font-medium text-neutral-900 dark:text-white">
+                                            #{player.number} - {player.name}
+                                          </p>
+                                          {(player.sizeTop || player.sizeBottom) && (
+                                            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                                              {player.sizeTop && `Top: ${player.sizeTop}`}
+                                              {player.sizeTop && player.sizeBottom && ' • '}
+                                              {player.sizeBottom && `Bottom: ${player.sizeBottom}`}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Size Specifications */}
+                            {sizeSpecs && Object.keys(sizeSpecs).some(key => sizeSpecs[key as keyof SizeSpecifications]) && (
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Size Specifications</h4>
+                                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {sizeSpecs.top && (
+                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Top Size</p>
+                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.bottom && (
+                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Bottom Size</p>
+                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.width && (
+                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Width</p>
+                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.width}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.height && (
+                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Height</p>
+                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.height}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.totalSqft && (
+                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Total Sqft</p>
+                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.totalPrice && (
+                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
+                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Price</p>
+                                        <p className="font-bold text-green-600 dark:text-green-400">{formatCurrency(sizeSpecs.totalPrice)}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Notes */}
+                            {itemNotes && Object.values(itemNotes).some(v => v) && (
+                              <div className="space-y-3">
+                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Notes</h4>
+                                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 space-y-3">
+                                  {itemNotes.designNotes && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Design Notes</p>
+                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.designNotes}</p>
+                                    </div>
+                                  )}
+                                  {itemNotes.jerseyCustomizationNotes && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Jersey Customization</p>
+                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.jerseyCustomizationNotes}</p>
+                                    </div>
+                                  )}
+                                  {itemNotes.teamRosterNotes && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Team Roster Notes</p>
+                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.teamRosterNotes}</p>
+                                    </div>
+                                  )}
+                                  {itemNotes.sizeNotes && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Size Notes</p>
+                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.sizeNotes}</p>
+                                    </div>
+                                  )}
+                                  {itemNotes.additionalNotes && (
+                                    <div>
+                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Additional Notes</p>
+                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.additionalNotes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Status Update Buttons */}
+                            <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                              <Button
+                                onClick={() => handleUpdateItemStatus(item.id, 'pending')}
+                                disabled={updatingItemId === item.id}
+                                variant="outline"
+                                size="sm"
+                                className={`flex items-center gap-2 ${
+                                  item.status === 'pending'
+                                    ? 'border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
+                                    : 'border-neutral-300 dark:border-neutral-600 hover:border-yellow-400 dark:hover:border-yellow-600'
+                                }`}
+                              >
+                                <Clock size={16} />
+                                Pending
+                              </Button>
+                              <Button
+                                onClick={() => handleUpdateItemStatus(item.id, 'ongoing')}
+                                disabled={updatingItemId === item.id}
+                                variant="outline"
+                                size="sm"
+                                className={`flex items-center gap-2 ${
+                                  item.status === 'ongoing'
+                                    ? 'border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                                    : 'border-neutral-300 dark:border-neutral-600 hover:border-blue-400 dark:hover:border-blue-600'
+                                }`}
+                              >
+                                <Zap size={16} />
+                                Ongoing
+                              </Button>
+                              <Button
+                                onClick={() => handleUpdateItemStatus(item.id, 'completed')}
+                                disabled={updatingItemId === item.id}
+                                variant="outline"
+                                size="sm"
+                                className={`flex items-center gap-2 ${
+                                  item.status === 'completed'
+                                    ? 'border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+                                    : 'border-neutral-300 dark:border-neutral-600 hover:border-green-400 dark:hover:border-green-600'
+                                }`}
+                              >
+                                <CheckCircle size={16} />
+                                Completed
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+
+                  {/* Summary */}
+                  <div className="border-t-2 border-neutral-200 dark:border-neutral-700 pt-6 space-y-2 mt-8">
+                    <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
+                      <span>Subtotal:</span>
+                      <span>{formatCurrency(order.subtotal || 0)}</span>
+                    </div>
+                    {order.discount && order.discount > 0 && (
+                      <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
+                        <span>Discount:</span>
+                        <span className="text-red-600 dark:text-red-400">-{formatCurrency(order.discount)}</span>
+                      </div>
+                    )}
+                    {order.tax && order.tax > 0 && (
+                      <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
+                        <span>Tax:</span>
+                        <span>{formatCurrency(order.tax)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-xl font-bold bg-orange-100 dark:bg-orange-900/30 p-4 rounded-lg text-orange-900 dark:text-orange-400">
+                      <span>Grand Total</span>
+                      <span>{formatCurrency(order.total || 0)}</span>
+                    </div>
                   </div>
-                </Card>
+                </div>
               ) : (
                 <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                   <Package size={40} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
@@ -465,16 +659,31 @@ export default function JobOrderDetailPage() {
                 </Card>
               )}
 
-              {/* Info Box */}
+              {/* Pro Tip Box */}
               <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                 <p className="text-sm text-blue-900 dark:text-blue-300">
-                  <span className="font-semibold">Pro Tip:</span> When all items have the same status, the Job Order and Order statuses will automatically update. All items completed = Job Order completed. All items ongoing = Job Order in-progress.
+                  <span className="font-semibold">Pro Tip:</span> Click on any item to expand and view detailed information including design files, team roster, size specifications, and notes. Update item status using the buttons below each expanded item.
                 </p>
               </div>
             </div>
           </div>
         </main>
       </div>
+
+      {/* Image Zoom Dialog */}
+      {expandedImage && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-2xl w-full">
+            <button
+              onClick={() => setExpandedImage(null)}
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 p-2"
+            >
+              <X size={24} />
+            </button>
+            <img src={expandedImage} alt="Expanded View" className="w-full h-auto rounded-lg" />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
