@@ -198,9 +198,18 @@ export default function OrdersPage() {
       const orderData = await orderResponse.json()
       const orderId = orderData.data?.id || orderData.id
 
-      // Step 3: Create Order Items from quotation items
+      // Step 3: Create Order Items from quotation items (only unique items)
       if (formData.items && formData.items.length > 0) {
+        // Deduplicate items by service_id and quotation item id
+        const createdItemIds = new Set<number>()
+        
         for (const item of formData.items) {
+          // Skip if we've already created this item
+          if (createdItemIds.has(item.id)) {
+            console.log("[v0] Skipping duplicate item ID:", item.id)
+            continue
+          }
+          
           console.log("[v0] Creating order item from quotation item:", item)
           try {
             const orderItemPayload = {
@@ -241,6 +250,7 @@ export default function OrdersPage() {
             
             const itemResult = await orderItemResponse.json()
             console.log("[v0] Order item created successfully:", itemResult)
+            createdItemIds.add(item.id) // Mark this item as created
           } catch (itemError) {
             console.error("[v0] Error creating order item:", itemError)
             throw new Error(`Failed to create order item: ${itemError instanceof Error ? itemError.message : String(itemError)}`)

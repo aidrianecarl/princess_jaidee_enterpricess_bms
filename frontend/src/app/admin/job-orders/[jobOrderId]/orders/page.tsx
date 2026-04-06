@@ -417,40 +417,46 @@ export default function JobOrderDetailPage() {
                 </div>
               )}
 
-              {/* Order Items Table */}
+              {/* Order Items Grid */}
               {order?.items && order.items.length > 0 ? (
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-6">Order Items</h2>
 
                   {order.items.map((item) => {
                     const teamRoster = parseJSON(item.team_roster) as TeamMember[] | null
-                    const isExpanded = expandedItems.has(item.id)
+                    const sizeSpecs = parseJSON(item.size_specifications)
 
                     return (
-                      <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden">
-                        {/* Item Header */}
-                        <div
-                          onClick={() => toggleItemExpanded(item.id)}
-                          className="p-4 bg-orange-50 dark:bg-orange-900/20 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition flex items-center justify-between"
-                        >
-                          <div>
-                            <h3 className="font-semibold text-neutral-900 dark:text-white">
-                              {item.service?.name || 'Service Item'} (Qty: {item.quantity})
-                            </h3>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
-                              {getStatusLabel(item.status)}
-                            </span>
-                            <span className="text-neutral-600 dark:text-neutral-400">
-                              {isExpanded ? '▼' : '▶'}
-                            </span>
+                      <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 shadow-md hover:shadow-lg transition">
+                        {/* Item Header with Mark Complete Button */}
+                        <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-b border-neutral-200 dark:border-neutral-700">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex-1">
+                              <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+                                {item.service?.name || 'Service Item'} 
+                              </h3>
+                              <div className="flex items-center gap-3 flex-wrap">
+                                <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                                  Quantity: <span className="font-semibold text-neutral-900 dark:text-white">{item.quantity}</span>
+                                </span>
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
+                                  {getStatusLabel(item.status)}
+                                </span>
+                              </div>
+                            </div>
+                            {item.status !== 'completed' && (
+                              <button
+                                onClick={() => openCompleteDialog(item.id)}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition whitespace-nowrap"
+                              >
+                                ✓ Complete
+                              </button>
+                            )}
                           </div>
                         </div>
 
-                        {/* Expanded Content */}
-                        {isExpanded && (
-                          <div className="p-6 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 space-y-6">
+                        {/* Content */}
+                        <div className="p-6 space-y-6">
                             {/* Design Image */}
                             {item.design_file_url && (
                               <div>
@@ -478,31 +484,25 @@ export default function JobOrderDetailPage() {
 
                             {/* Team Roster Table */}
                             {teamRoster && teamRoster.length > 0 && (
-                              <div>
-                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-3">Team Roster</h4>
+                              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster</h4>
                                 <div className="overflow-x-auto">
                                   <table className="w-full text-sm">
                                     <thead>
-                                      <tr className="border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-700/50">
-                                        <th className="px-4 py-2 text-left font-semibold text-neutral-900 dark:text-white">Player Name</th>
-                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Number</th>
-                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Top Size</th>
-                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Bottom Size</th>
-                                        <th className="px-4 py-2 text-center font-semibold text-neutral-900 dark:text-white">Action</th>
+                                      <tr className="border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/50">
+                                        <th className="px-4 py-3 text-left font-semibold text-blue-900 dark:text-blue-300">Player Name</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top Size</th>
+                                        <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom Size</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {teamRoster.map((player, idx) => (
-                                        <tr key={idx} className="border-b border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition">
-                                          <td className="px-4 py-3 text-neutral-900 dark:text-white">{player.name}</td>
-                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-medium">#{player.number}</td>
+                                        <tr key={idx} className="border-b border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
+                                          <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">{player.name}</td>
+                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
                                           <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '—'}</td>
                                           <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</td>
-                                          <td className="px-4 py-3 text-center">
-                                            <Button variant="outline" size="sm" className="text-xs">
-                                              Edit
-                                            </Button>
-                                          </td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -511,15 +511,79 @@ export default function JobOrderDetailPage() {
                               </div>
                             )}
 
-                            {/* Complete Button */}
-                            {item.status !== 'completed' && (
-                              <Button
-                                onClick={() => openCompleteDialog(item.id)}
-                                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
-                              >
-                                <CheckCircle size={18} className="mr-2" />
-                                Mark as Completed
-                              </Button>
+                            {/* Size Specifications - for Tarpaulin & Uniform items */}
+                            {sizeSpecs && (typeof sizeSpecs === 'object') && Object.keys(sizeSpecs).length > 0 && (
+                              <div className={`p-4 rounded-lg border ${item.service?.name?.includes('Tarpaulin') ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' : 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800'}`}>
+                                <h4 className={`font-bold mb-4 text-lg ${item.service?.name?.includes('Tarpaulin') ? 'text-purple-900 dark:text-purple-300' : 'text-indigo-900 dark:text-indigo-300'}`}>
+                                  {item.service?.name?.includes('Tarpaulin') ? 'Tarpaulin Size Specification' : 'Uniform Size'}
+                                </h4>
+                                <div className={`grid grid-cols-2 md:grid-cols-4 gap-4`}>
+                                  {sizeSpecs.width && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
+                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.height && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
+                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.top && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
+                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.bottom && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
+                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Notes Section */}
+                            {item.notes && typeof item.notes === 'object' && Object.keys(item.notes).length > 0 && (
+                              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                <h4 className="font-bold text-amber-900 dark:text-amber-300 mb-4 text-lg">Notes</h4>
+                                <div className="space-y-3">
+                                  {item.notes.designNotes && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Design Notes</p>
+                                      <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.designNotes}</p>
+                                    </div>
+                                  )}
+                                  {item.notes.sizeNotes && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Size Notes</p>
+                                      <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.sizeNotes}</p>
+                                    </div>
+                                  )}
+                                  {item.notes.teamNotes && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Team Notes</p>
+                                      <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.teamNotes}</p>
+                                    </div>
+                                  )}
+                                  {item.notes.additionalNotes && (
+                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Additional Notes</p>
+                                      <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.additionalNotes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {item.notes && typeof item.notes === 'string' && item.notes.length > 0 && (
+                              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                                <h4 className="font-bold text-amber-900 dark:text-amber-300 mb-2">Notes</h4>
+                                <p className="text-neutral-900 dark:text-white">{item.notes}</p>
+                              </div>
                             )}
                           </div>
                         )}

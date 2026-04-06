@@ -235,7 +235,8 @@ export function AdminQuotationPricing() {
 
   const handlePlayerPriceChange = (itemId: number, playerIndex: number, price: string) => {
     const playerKey = `item-${itemId}-player-${playerIndex}`
-    setPlayerPrices(prev => ({ ...prev, [playerKey]: price }))
+    const newPlayerPrices = { ...playerPrices, [playerKey]: price }
+    setPlayerPrices(newPlayerPrices)
     
     // Auto-update the main item price if this is a team roster item (sublimation printing)
     const item = quotation?.items.find(i => i.id === itemId)
@@ -243,12 +244,12 @@ export function AdminQuotationPricing() {
       // Calculate total price by summing all player prices
       const totalPrice = item.team_roster.reduce((sum: number, _player: any, idx: number) => {
         const key = `item-${itemId}-player-${idx}`
-        const playerPrice = parseFloat(playerPrices[key] || price || "0") || 0
-        return sum + playerPrice
+        const currentPrice = idx === playerIndex ? parseFloat(price || "0") : parseFloat(newPlayerPrices[key] || "0")
+        return sum + (currentPrice || 0)
       }, 0)
       
-      // Update the main item price
-      if (totalPrice > 0) {
+      // Update the main item price only for sublimation printing
+      if (item.service?.name?.includes('Sublimation') && totalPrice > 0) {
         setEditingPrices(prev => ({
           ...prev,
           [itemId]: totalPrice.toString()
@@ -652,10 +653,11 @@ export function AdminQuotationPricing() {
                             onChange={(e) => handlePriceChange(item.id, e.target.value)}
                             placeholder="0.00"
                             step="0.01"
+                            disabled={item.service?.name?.includes('Sublimation') && Array.isArray(item.team_roster) && item.team_roster.length > 0}
                             className={`w-full px-2 py-1 md:py-2 border rounded text-right text-xs focus:outline-none ${priceErrors[item.id]
                                 ? "border-red-500 bg-red-50 focus:border-red-500"
                                 : "border-orange-400 bg-white focus:border-orange-500"
-                              }`}
+                              } ${item.service?.name?.includes('Sublimation') && Array.isArray(item.team_roster) && item.team_roster.length > 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                           />
                         </div>
                       </div>
@@ -672,7 +674,6 @@ export function AdminQuotationPricing() {
                                 {item.team_roster.map((player: any, idx: number) => {
                                   const playerKey = `item-${item.id}-player-${idx}`
                                   const pricePerPlayer = parseFloat(playerPrices[playerKey] || "0") || 0
-                                  const playerTotal = pricePerPlayer * item.quantity
                                   return (
                                     <div key={idx} className="grid grid-cols-6 gap-3 text-sm bg-white p-3 rounded">
                                       <div>
@@ -704,24 +705,13 @@ export function AdminQuotationPricing() {
                                       </div>
                                       <div>
                                         <p className="text-xs text-gray-600 font-semibold">Amount</p>
-                                        <p className="text-gray-900 font-semibold">₱{playerTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                        <p className="text-gray-900 font-semibold">₱{pricePerPlayer.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                       </div>
                                     </div>
                                   )
                                 })}
                               </div>
-                              <div className="mt-4 pt-4 border-t border-blue-300">
-                                <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Total for Team Roster</p>
-                                <p className="text-lg text-blue-900 font-bold">
-                                  ₱{(
-                                    item.team_roster.reduce((sum: number, _player: any, idx: number) => {
-                                      const playerKey = `item-${item.id}-player-${idx}`
-                                      const pricePerPlayer = parseFloat(playerPrices[playerKey] || "0") || 0
-                                      return sum + (pricePerPlayer * item.quantity)
-                                    }, 0)
-                                  ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </p>
-                              </div>
+
                               {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
                                 <div className="mt-4 pt-4 border-t border-blue-300">
                                   <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
@@ -734,7 +724,7 @@ export function AdminQuotationPricing() {
                           {/* Size Specifications */}
                           {item.size_specifications && item.size_specifications !== null && typeof item.size_specifications === "object" && (Object.keys(item.size_specifications).length > 0 || (item.notes && typeof item.notes === "object" && item.notes.sizeNotes)) && (
                             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                              <h4 className="font-semibold text-purple-900 mb-3">UNIFORM CUSTOMIZATION</h4>
+                              <h4 className="font-semibold text-purple-900 mb-3">{item.service?.name?.includes('Tarpaulin') ? 'SIZE SPECIFICATION' : 'UNIFORM CUSTOMIZATION'}</h4>
                               <div className="grid grid-cols-3 gap-3 text-sm bg-white p-3 rounded">
                                 {item.size_specifications.top && (
                                   <div>
