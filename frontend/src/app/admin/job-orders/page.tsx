@@ -65,8 +65,7 @@ export default function JobOrdersPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
-  const [expandedOrder, setExpandedOrder] = useState<number | null>(null)
-  const [savingItemId, setSavingItemId] = useState<number | null>(null)
+  const [filterType, setFilterType] = useState<"all" | "my">("all")
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
@@ -295,6 +294,30 @@ export default function JobOrdersPage() {
               </p>
             </div>
 
+            {/* Filter Buttons */}
+            <div className="mb-8 flex flex-wrap gap-3">
+              <Button
+                onClick={() => setFilterType("all")}
+                className={`text-sm font-semibold transition ${
+                  filterType === "all"
+                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                    : "bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-600"
+                }`}
+              >
+                All Jobs
+              </Button>
+              <Button
+                onClick={() => setFilterType("my")}
+                className={`text-sm font-semibold transition ${
+                  filterType === "my"
+                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                    : "bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-600"
+                }`}
+              >
+                My Jobs
+              </Button>
+            </div>
+
             {/* Error Message */}
             {error && (
               <Card className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
@@ -314,26 +337,28 @@ export default function JobOrdersPage() {
                 <Loader2 size={32} className="animate-spin text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
                 <p className="text-neutral-600 dark:text-neutral-400 font-medium">Loading job orders...</p>
               </Card>
-            ) : jobOrders.length === 0 ? (
-              <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                <Package size={32} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-                <p className="text-neutral-600 dark:text-neutral-400 font-medium">No job orders found</p>
-                <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-2">
-                  Create one from the Sales & Orders page
-                </p>
-              </Card>
-            ) : (
-              <div className="grid gap-4">
-                {jobOrders.map((jobOrder) => (
+            ) : (() => {
+              const filteredOrders = filterType === "my" 
+                ? jobOrders.filter(jo => jo.assigned_to === user?.id)
+                : jobOrders
+              
+              return filteredOrders.length === 0 ? (
+                <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                  <Package size={32} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+                  <p className="text-neutral-600 dark:text-neutral-400 font-medium">No job orders found</p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-500 mt-2">
+                    {filterType === "my" ? "You have no assigned jobs" : "Create one from the Sales & Orders page"}
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {filteredOrders.map((jobOrder) => (
                   <Card
                     key={jobOrder.id}
                     className="overflow-hidden hover:shadow-lg transition bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700"
                   >
                     {/* Job Order Header */}
-                    <div
-                      onClick={() => setExpandedOrder(expandedOrder === jobOrder.id ? null : jobOrder.id)}
-                      className="p-4 md:p-6 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition"
-                    >
+                    <div className="p-4 md:p-6 hover:bg-neutral-50 dark:hover:bg-neutral-700/50 transition">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-3 flex-wrap">
@@ -352,7 +377,7 @@ export default function JobOrdersPage() {
                             )}
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
                             <div>
                               <p className="text-neutral-600 dark:text-neutral-400 text-xs">Customer</p>
                               <p className="font-semibold text-neutral-900 dark:text-white">
@@ -370,6 +395,9 @@ export default function JobOrdersPage() {
                                 }
                               </p>
                             </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
                             <div>
                               <p className="text-neutral-600 dark:text-neutral-400 text-xs">Start Date</p>
                               <p className="font-semibold text-neutral-900 dark:text-white">
@@ -380,6 +408,18 @@ export default function JobOrdersPage() {
                               <p className="text-neutral-600 dark:text-neutral-400 text-xs">Due Date</p>
                               <p className="font-semibold text-neutral-900 dark:text-white">
                                 {formatDate(jobOrder.due_date)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs">Customer Email</p>
+                              <p className="font-semibold text-neutral-900 dark:text-white break-all text-sm">
+                                {jobOrder.customer?.bill_to_email || "N/A"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs">Customer Phone</p>
+                              <p className="font-semibold text-neutral-900 dark:text-white">
+                                {jobOrder.customer?.bill_to_phone || "N/A"}
                               </p>
                             </div>
                           </div>
@@ -405,122 +445,31 @@ export default function JobOrdersPage() {
                           )}
                         </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex items-center gap-2 mt-1">
-                          <Button
-                            onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
-                            className="bg-orange-500 hover:bg-orange-600 text-white text-xs md:text-sm"
-                            size="sm"
-                          >
-                            View Orders
-                          </Button>
-                          <button className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition">
-                            {expandedOrder === jobOrder.id ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-                          </button>
-                        </div>
+                        {/* Action Button */}
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const assignedUserId = jobOrder.assigned_to
+                            const isAssigned = assignedUserId === user?.id
+                            const isAdmin = user?.role === "admin"
+                            
+                            if (isAssigned || isAdmin) {
+                              router.push(`/admin/job-orders/${jobOrder.id}/orders`)
+                            }
+                          }}
+                          disabled={jobOrder.assigned_to !== user?.id && user?.role !== "admin"}
+                          className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs md:text-sm"
+                          size="sm"
+                        >
+                          View Orders
+                        </Button>
                       </div>
                     </div>
-
-                    {/* Expanded Details */}
-                    {expandedOrder === jobOrder.id && (
-                      <div className="p-4 md:p-6 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-700/50 space-y-6">
-                        {/* Job Order Items */}
-                        {jobOrder.items && jobOrder.items.length > 0 ? (
-                          <div className="space-y-3">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">
-                              Items ({jobOrder.items.length})
-                            </h4>
-                            <div className="space-y-2">
-                              {jobOrder.items.map((item) => (
-                                <div
-                                  key={item.id}
-                                  className="flex flex-col md:flex-row md:items-center justify-between p-3 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 gap-3"
-                                >
-                                  <div className="flex-1">
-                                    <p className="font-medium text-neutral-900 dark:text-white text-sm">{item.description}</p>
-                                    <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
-                                      Qty: {item.quantity} × {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total)}
-                                    </p>
-                                  </div>
-
-                                  {/* Item Status Selector */}
-                                  <div className="flex gap-2">
-                                    <button
-                                      onClick={() => handleUpdateItemStatus(item.id, jobOrder.id, "pending")}
-                                      disabled={savingItemId === item.id}
-                                      className={`px-3 py-1 rounded text-xs font-semibold transition ${
-                                        !item.completed
-                                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border-2 border-yellow-400 dark:border-yellow-600"
-                                          : "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-2 border-neutral-200 dark:border-neutral-600 hover:border-yellow-400 dark:hover:border-yellow-600"
-                                      }`}
-                                    >
-                                      Pending
-                                    </button>
-                                    <button
-                                      onClick={() => handleUpdateItemStatus(item.id, jobOrder.id, "ongoing")}
-                                      disabled={savingItemId === item.id}
-                                      className={`px-3 py-1 rounded text-xs font-semibold transition ${
-                                        !item.completed
-                                          ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border-2 border-blue-400 dark:border-blue-600 hover:border-blue-400 dark:hover:border-blue-600"
-                                          : "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-2 border-neutral-200 dark:border-neutral-600"
-                                      }`}
-                                    >
-                                      Ongoing
-                                    </button>
-                                    <button
-                                      onClick={() => handleUpdateItemStatus(item.id, jobOrder.id, "finished")}
-                                      disabled={savingItemId === item.id}
-                                      className={`px-3 py-1 rounded text-xs font-semibold transition flex items-center gap-1 ${
-                                        item.completed
-                                          ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 border-2 border-green-400 dark:border-green-600"
-                                          : "bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 border-2 border-neutral-200 dark:border-neutral-600 hover:border-green-400 dark:hover:border-green-600"
-                                      }`}
-                                    >
-                                      {savingItemId === item.id ? (
-                                        <Loader2 size={12} className="animate-spin" />
-                                      ) : (
-                                        <CheckCircle size={12} />
-                                      )}
-                                      Finished
-                                    </button>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ) : null}
-
-                        {/* Notes */}
-                        {jobOrder.notes && (
-                          <div>
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm mb-2">Notes</h4>
-                            <p className="text-sm text-neutral-700 dark:text-neutral-300 bg-white dark:bg-neutral-800 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                              {jobOrder.notes}
-                            </p>
-                          </div>
-                        )}
-
-                        {/* Contact Info */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="bg-white dark:bg-neutral-800 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1">Customer Email</p>
-                            <p className="text-sm font-medium text-neutral-900 dark:text-white break-all">
-                              {jobOrder.customer?.bill_to_email || "N/A"}
-                            </p>
-                          </div>
-                          <div className="bg-white dark:bg-neutral-800 p-3 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                            <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-1">Customer Phone</p>
-                            <p className="text-sm font-medium text-neutral-900 dark:text-white">
-                              {jobOrder.customer?.bill_to_phone || "N/A"}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </Card>
                 ))}
               </div>
-            )}
+              )
+            })()
           </div>
         </main>
       </div>
