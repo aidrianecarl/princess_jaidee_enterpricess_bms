@@ -15,32 +15,29 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $userId = auth()->id();
+            // For admin users - fetch all orders
+            Log::info('OrderController index - Admin fetch orders');
             
-            Log::info('OrderController index - Fetching orders for user:', ['user_id' => $userId]);
-            
-            // Fetch orders where customer_id equals the authenticated user's ID
             $query = Order::with(['customer', 'items', 'quotation']);
-            $query->where('customer_id', $userId);
 
             if ($request->has('search')) {
                 $query->where('order_number', 'like', '%' . $request->search . '%');
             }
 
             if ($request->has('status')) {
-                $query->where('payment_status', $request->status);
+                $query->where('order_status', $request->status);
             }
 
             $orders = $query->orderBy('created_at', 'desc')->get();
             
-            Log::info('Orders fetched:', ['count' => $orders->count(), 'user_id' => $userId]);
+            Log::info('Orders fetched:', ['count' => $orders->count()]);
 
             return response()->json([
                 'success' => true,
                 'data' => $orders
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error fetching orders: ' . $e->getMessage(), ['user_id' => auth()->id()]);
+            Log::error('Error fetching orders: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -51,22 +48,36 @@ class OrderController extends Controller
     public function show($id)
     {
         try {
-            $userId = auth()->id();
+            Log::info('OrderController show - Fetching order ID: ' . $id);
             
-            $order = Order::with(['customer', 'items', 'quotation'])
-                ->where('customer_id', $userId)
-                ->find($id);
+            // Load order with all relationships including items with service details
+            $order = Order::with([
+                'customer',
+                'items.service',
+                'quotation'
+            ])->find($id);
 
             if (!$order) {
+                Log::warning('Order not found: ' . $id);
                 return response()->json(['error' => 'Order not found'], 404);
             }
+
+            Log::info('Order found', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'items_count' => $order->items ? count($order->items) : 0
+            ]);
 
             return response()->json([
                 'success' => true,
                 'data' => $order
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error fetching order: ' . $e->getMessage());
+            Log::error('Error fetching order: ' . $e->getMessage(), [
+                'order_id' => $id,
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine()
+            ]);
             return response()->json([
                 'error' => 'Failed to fetch order details',
                 'message' => $e->getMessage()

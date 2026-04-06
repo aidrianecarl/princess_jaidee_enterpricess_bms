@@ -75,7 +75,14 @@ export default function JobOrderDetailPage() {
       setIsLoading(true)
       setError('')
 
+      console.log('[v0] ========== FETCH DATA START ==========')
+      console.log('[v0] API URL:', apiUrl)
+      console.log('[v0] Job Order ID:', jobOrderId)
+      console.log('[v0] Token available:', !!token)
+
       // Fetch job order
+      console.log('[v0] Fetching job order from:', `${apiUrl}/admin/job-orders/${jobOrderId}`)
+      
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -83,16 +90,28 @@ export default function JobOrderDetailPage() {
         },
       })
 
+      console.log('[v0] Job Order Response Status:', jobOrderResponse.status)
+      console.log('[v0] Job Order Response OK:', jobOrderResponse.ok)
+
       if (!jobOrderResponse.ok) {
-        throw new Error('Job order not found')
+        const errorText = await jobOrderResponse.text()
+        console.error('[v0] Job Order Error Response:', errorText)
+        throw new Error(`Job order not found (${jobOrderResponse.status})`)
       }
 
       const jobOrderData = await jobOrderResponse.json()
+      console.log('[v0] Job Order Response Data:', jobOrderData)
+      
       const fetchedJobOrder = jobOrderData.data || jobOrderData
       setJobOrder(fetchedJobOrder)
+      console.log('[v0] Fetched Job Order:', fetchedJobOrder)
 
       // Fetch order details if order_id exists
       if (fetchedJobOrder?.order_id) {
+        console.log('[v0] ========== FETCHING ORDER ==========')
+        console.log('[v0] Order ID to fetch:', fetchedJobOrder.order_id)
+        console.log('[v0] Fetching order from:', `${apiUrl}/admin/orders/${fetchedJobOrder.order_id}`)
+        
         const orderResponse = await fetch(`${apiUrl}/admin/orders/${fetchedJobOrder.order_id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -100,14 +119,35 @@ export default function JobOrderDetailPage() {
           },
         })
 
-        if (orderResponse.ok) {
-          const orderData = await orderResponse.json()
-          const fetchedOrder = orderData.data || orderData
-          setOrder(fetchedOrder)
+        console.log('[v0] Order Response Status:', orderResponse.status)
+        console.log('[v0] Order Response OK:', orderResponse.ok)
+        console.log('[v0] Order Response URL:', orderResponse.url)
+
+        if (!orderResponse.ok) {
+          const errorText = await orderResponse.text()
+          console.error('[v0] Order Error Response Status:', orderResponse.status)
+          console.error('[v0] Order Error Response Text:', errorText)
+          throw new Error(`Failed to fetch order (${orderResponse.status}): ${errorText}`)
         }
+
+        const orderData = await orderResponse.json()
+        console.log('[v0] Order Response Data:', orderData)
+        
+        const fetchedOrder = orderData.data || orderData
+        console.log('[v0] Fetched Order:', fetchedOrder)
+        console.log('[v0] Order Items:', fetchedOrder?.items)
+        
+        setOrder(fetchedOrder)
+      } else {
+        console.warn('[v0] No order_id found in fetched job order')
       }
+      
+      console.log('[v0] ========== FETCH DATA END ==========')
     } catch (err) {
-      console.error('[v0] Error fetching data:', err)
+      console.error('[v0] ========== FETCH DATA ERROR ==========')
+      console.error('[v0] Error:', err)
+      console.error('[v0] Error Message:', err instanceof Error ? err.message : 'Unknown error')
+      console.error('[v0] Error Stack:', err instanceof Error ? err.stack : 'N/A')
       setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setIsLoading(false)
