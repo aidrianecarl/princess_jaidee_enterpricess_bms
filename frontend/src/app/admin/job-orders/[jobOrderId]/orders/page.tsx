@@ -586,7 +586,6 @@ export default function JobOrderDetailPage() {
                               </div>
                             )}
                           </div>
-                        )}
                       </div>
                     )
                   })}
