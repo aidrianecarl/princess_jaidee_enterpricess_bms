@@ -1,34 +1,20 @@
-"use client"
+'use client'
 
-import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
-import { AdminHeader } from "@/components/admin/header"
-import { AdminSidebar } from "@/components/admin/sidebar"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import {
-  ArrowLeft,
-  Loader2,
-  AlertCircle,
-  Package,
-  CheckCircle,
-  Clock,
-} from "lucide-react"
+import { useState, useEffect } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import { AdminSidebar } from '@/components/admin/sidebar'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { ArrowLeft, Loader2, AlertCircle, Package, CheckCircle, Clock } from 'lucide-react'
 
 interface OrderItem {
   id: number
+  order_id: number
   description: string
   quantity: number
   unit_price: string | number
   line_total: string | number
-}
-
-interface JobOrder {
-  id: number
-  job_order_number: string
-  order_id: number
-  status: string
-  assigned_to: number
+  status?: 'pending' | 'ongoing' | 'completed'
 }
 
 interface Order {
@@ -39,129 +25,102 @@ interface Order {
   items?: OrderItem[]
 }
 
-export default function JobOrdersManagementPage() {
+interface JobOrder {
+  id: number
+  job_order_number: string
+  order_id: number
+  status: string
+}
+
+export default function JobOrderDetailPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [jobOrder, setJobOrder] = useState<JobOrder | null>(null)
   const [order, setOrder] = useState<Order | null>(null)
-  const [error, setError] = useState("")
-  const [user, setUser] = useState<any>(null)
+  const [error, setError] = useState('')
   const [updatingItemId, setUpdatingItemId] = useState<number | null>(null)
   const router = useRouter()
   const params = useParams()
   const jobOrderId = params.jobOrderId
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
-  const handleSidebarToggle = (open: boolean) => {
-    setIsSidebarOpen(open)
-  }
-
-  // Check authentication and fetch data
   useEffect(() => {
-    const token = localStorage.getItem("admin_token")
+    const token = localStorage.getItem('admin_token')
     if (!token) {
-      router.push("/admin/login")
+      router.push('/admin/login')
       return
     }
-
-    const userData = localStorage.getItem("admin_user")
-    if (userData) setUser(JSON.parse(userData))
-
-    fetchJobOrderAndOrder(token)
+    fetchData(token)
   }, [])
 
-  const fetchJobOrderAndOrder = async (token: string) => {
+  const fetchData = async (token: string) => {
     try {
       setIsLoading(true)
-      setError("")
+      setError('')
 
       // Fetch job order
       const jobOrderResponse = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
       })
 
       if (!jobOrderResponse.ok) {
-        throw new Error("Job order not found")
+        throw new Error('Job order not found')
       }
 
       const jobOrderData = await jobOrderResponse.json()
       const jobOrder = jobOrderData.data || jobOrderData
-      
-      console.log("[v0] Job order:", jobOrder)
-      
-      // Get user from localStorage to check permissions
-      const userStr = localStorage.getItem("admin_user")
-      const currentUser = userStr ? JSON.parse(userStr) : null
-      const currentUserId = currentUser?.id
-      
-      console.log("[v0] Current user ID:", currentUserId, "Assigned to:", jobOrder.assigned_to)
-      
-      // Check if current user is assigned to this job order or is admin
-      if (jobOrder.assigned_to !== currentUserId && currentUser?.role !== "admin") {
-        setError("You don't have permission to view this job order")
-        setIsLoading(false)
-        return
-      }
-      
       setJobOrder(jobOrder)
 
       // Fetch order details if order_id exists
-      if (jobOrder && jobOrder.order_id) {
+      if (jobOrder?.order_id) {
         const orderResponse = await fetch(`${apiUrl}/orders/${jobOrder.order_id}`, {
           headers: {
             Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
+            'Content-Type': 'application/json',
           },
         })
 
         if (orderResponse.ok) {
           const orderData = await orderResponse.json()
           const order = orderData.data || orderData
-          console.log("[v0] Order:", order)
           setOrder(order)
         }
       }
     } catch (err) {
-      console.error("[v0] Error fetching job order:", err)
-      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
-      setError(errorMessage)
+      console.error('[v0] Error fetching data:', err)
+      setError(err instanceof Error ? err.message : 'Failed to load data')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleUpdateItemStatus = async (
-    itemId: number,
-    newStatus: "pending" | "ongoing" | "completed"
-  ) => {
-    const token = localStorage.getItem("admin_token")
+  const handleUpdateItemStatus = async (itemId: number, newStatus: 'pending' | 'ongoing' | 'completed') => {
+    const token = localStorage.getItem('admin_token')
     if (!token) return
 
     try {
       setUpdatingItemId(itemId)
 
       const response = await fetch(`${apiUrl}/order-items/${itemId}`, {
-        method: "PUT",
+        method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          status: newStatus,
-        }),
+        body: JSON.stringify({ status: newStatus }),
       })
 
       if (!response.ok) {
-        throw new Error("Failed to update item status")
+        throw new Error('Failed to update item status')
       }
 
       // Update local state
       setOrder((prevOrder) => {
-        if (!prevOrder || !prevOrder.items) return prevOrder
+        if (!prevOrder?.items) return prevOrder
         return {
           ...prevOrder,
           items: prevOrder.items.map((item) =>
@@ -169,38 +128,44 @@ export default function JobOrdersManagementPage() {
           ),
         }
       })
-
-      console.log("[v0] Item status updated successfully")
     } catch (err) {
-      console.error("[v0] Error updating item status:", err)
-      alert("Failed to update item status")
+      console.error('[v0] Error updating item status:', err)
+      alert('Failed to update item status')
     } finally {
       setUpdatingItemId(null)
     }
   }
 
   const formatCurrency = (value: number | string | null | undefined) => {
-    const num = typeof value === "string" ? parseFloat(value) : value
-    if (!num || isNaN(Number(num))) return "₱0.00"
+    const num = typeof value === 'string' ? parseFloat(value) : value
+    if (!num || isNaN(Number(num))) return '₱0.00'
 
-    return new Intl.NumberFormat("en-PH", {
-      style: "currency",
-      currency: "PHP",
+    return new Intl.NumberFormat('en-PH', {
+      style: 'currency',
+      currency: 'PHP',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(Number(num))
   }
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return 'N/A'
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-        <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
         <div className="flex">
-          <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
-          <main className="flex-1 p-4 md:p-8 flex items-center justify-center min-h-screen">
+          <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+          <main className="flex-1 flex items-center justify-center p-4">
             <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <Loader2 size={32} className="animate-spin text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-              <p className="text-neutral-600 dark:text-neutral-400 font-medium">Loading job order...</p>
+              <p className="text-neutral-600 dark:text-neutral-400 font-medium">Loading...</p>
             </Card>
           </main>
         </div>
@@ -211,9 +176,8 @@ export default function JobOrdersManagementPage() {
   if (error) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-        <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
         <div className="flex">
-          <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
+          <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
           <main className="flex-1 p-4 md:p-8">
             <div className="max-w-4xl mx-auto">
               <button
@@ -242,17 +206,15 @@ export default function JobOrdersManagementPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
-      <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
-
       <div className="flex">
-        <AdminSidebar isOpen={isSidebarOpen} onToggle={handleSidebarToggle} />
+        <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
 
         <main className="flex-1 p-4 md:p-8">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-5xl mx-auto">
             {/* Back Button */}
             <button
               onClick={() => router.back()}
-              className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white mb-6 transition"
+              className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white mb-6 transition font-medium"
             >
               <ArrowLeft size={20} />
               Back to Job Orders
@@ -260,31 +222,31 @@ export default function JobOrdersManagementPage() {
 
             {/* Header */}
             <div className="mb-8">
-              <h1 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">
+              <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white mb-2">
                 {jobOrder?.job_order_number}
               </h1>
-              <p className="text-neutral-600 dark:text-neutral-400">
-                {order?.order_number && `Order: ${order.order_number}`}
-              </p>
+              {order && (
+                <p className="text-neutral-600 dark:text-neutral-400">
+                  Order #{order.order_number}
+                </p>
+              )}
             </div>
 
-            {/* Order Summary */}
+            {/* Order Summary Card */}
             {order && (
               <Card className="p-6 mb-8 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-1">Order Number</p>
-                    <p className="font-semibold text-neutral-900 dark:text-white text-lg">{order.order_number}</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Order Number</p>
+                    <p className="text-lg md:text-xl font-bold text-neutral-900 dark:text-white">{order.order_number}</p>
                   </div>
                   <div>
-                    <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-1">Order Date</p>
-                    <p className="font-semibold text-neutral-900 dark:text-white">
-                      {new Date(order.order_date).toLocaleDateString("en-US")}
-                    </p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Order Date</p>
+                    <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatDate(order.order_date)}</p>
                   </div>
                   <div>
-                    <p className="text-neutral-600 dark:text-neutral-400 text-sm mb-1">Total Amount</p>
-                    <p className="font-bold text-neutral-900 dark:text-white text-lg">{formatCurrency(order.total)}</p>
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Total Amount</p>
+                    <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">{formatCurrency(order.total)}</p>
                   </div>
                 </div>
               </Card>
@@ -293,58 +255,71 @@ export default function JobOrdersManagementPage() {
             {/* Order Items */}
             {order?.items && order.items.length > 0 ? (
               <Card className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 overflow-hidden">
-                <div className="p-6 border-b border-neutral-200 dark:border-neutral-700">
-                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items & Status</h2>
+                <div className="p-6 border-b border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-700/50">
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
                 </div>
                 <div className="space-y-4 p-6">
                   {order.items.map((item) => (
-                    <div
+                    <Card
                       key={item.id}
-                      className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg hover:border-neutral-300 dark:hover:border-neutral-600 transition"
+                      className="p-4 bg-neutral-50 dark:bg-neutral-700/50 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition"
                     >
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <div className="flex-1">
-                          <p className="font-semibold text-neutral-900 dark:text-white mb-1">{item.description}</p>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                            Qty: {item.quantity} × {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total)}
-                          </p>
-                        </div>
+                      {/* Item Info */}
+                      <div className="mb-4">
+                        <h4 className="font-semibold text-neutral-900 dark:text-white text-lg mb-2">
+                          {item.description}
+                        </h4>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                          Quantity: {item.quantity} | Unit Price: {formatCurrency(item.unit_price)} | Total: {formatCurrency(item.line_total)}
+                        </p>
                       </div>
 
-                      {/* Status Update Buttons */}
+                      {/* Status Buttons */}
                       <div className="flex flex-wrap gap-2">
                         <Button
-                          onClick={() => handleUpdateItemStatus(item.id, "pending")}
+                          onClick={() => handleUpdateItemStatus(item.id, 'pending')}
                           disabled={updatingItemId === item.id}
                           variant="outline"
-                          className="border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-50 dark:hover:bg-yellow-900/20"
                           size="sm"
+                          className={`flex items-center gap-2 ${
+                            item.status === 'pending'
+                              ? 'border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
+                              : 'border-neutral-300 dark:border-neutral-600 hover:border-yellow-400 dark:hover:border-yellow-600'
+                          }`}
                         >
-                          <Clock size={16} className="mr-2" />
+                          <Clock size={16} />
                           Pending
                         </Button>
                         <Button
-                          onClick={() => handleUpdateItemStatus(item.id, "ongoing")}
+                          onClick={() => handleUpdateItemStatus(item.id, 'ongoing')}
                           disabled={updatingItemId === item.id}
                           variant="outline"
-                          className="border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20"
                           size="sm"
+                          className={`flex items-center gap-2 ${
+                            item.status === 'ongoing'
+                              ? 'border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
+                              : 'border-neutral-300 dark:border-neutral-600 hover:border-blue-400 dark:hover:border-blue-600'
+                          }`}
                         >
-                          <Loader2 size={16} className="mr-2" />
+                          <Loader2 size={16} />
                           Ongoing
                         </Button>
                         <Button
-                          onClick={() => handleUpdateItemStatus(item.id, "completed")}
+                          onClick={() => handleUpdateItemStatus(item.id, 'completed')}
                           disabled={updatingItemId === item.id}
                           variant="outline"
-                          className="border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
                           size="sm"
+                          className={`flex items-center gap-2 ${
+                            item.status === 'completed'
+                              ? 'border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
+                              : 'border-neutral-300 dark:border-neutral-600 hover:border-green-400 dark:hover:border-green-600'
+                          }`}
                         >
-                          <CheckCircle size={16} className="mr-2" />
+                          <CheckCircle size={16} />
                           Completed
                         </Button>
                       </div>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               </Card>
