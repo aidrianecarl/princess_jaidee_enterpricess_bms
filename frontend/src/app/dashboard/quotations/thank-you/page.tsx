@@ -120,7 +120,7 @@ function ThankYouContent() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 
