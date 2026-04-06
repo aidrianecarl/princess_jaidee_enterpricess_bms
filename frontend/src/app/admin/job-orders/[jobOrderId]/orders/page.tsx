@@ -6,7 +6,16 @@ import { AdminHeader } from '@/components/admin/header'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, Loader2, AlertCircle, Package, CheckCircle, Clock, Zap, ZoomIn, X } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X } from 'lucide-react'
 import { getApiImageUrl } from '@/lib/api-urls'
 
 interface TeamMember {
@@ -85,9 +94,11 @@ export default function JobOrderDetailPage() {
   const [jobOrder, setJobOrder] = useState<JobOrder | null>(null)
   const [order, setOrder] = useState<Order | null>(null)
   const [error, setError] = useState('')
-  const [updatingItemId, setUpdatingItemId] = useState<number | null>(null)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  const [completeDialogOpen, setCompleteDialogOpen] = useState(false)
+  const [completingItemId, setCompletingItemId] = useState<number | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const router = useRouter()
   const params = useParams()
   const jobOrderId = params.jobOrderId
@@ -177,79 +188,48 @@ export default function JobOrderDetailPage() {
     return null
   }
 
-  const handleUpdateItemStatus = async (itemId: number, newStatus: 'pending' | 'ongoing' | 'completed') => {
+  const handleCompleteItem = async () => {
     const token = localStorage.getItem('admin_token')
-    if (!token) return
+    if (!token || !completingItemId) return
 
     try {
-      setUpdatingItemId(itemId)
+      setIsSubmitting(true)
 
-      const response = await fetch(`${apiUrl}/admin/order-items/${itemId}`, {
+      const response = await fetch(`${apiUrl}/admin/order-items/${completingItemId}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ status: 'completed' }),
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update item status')
+        throw new Error('Failed to mark item as completed')
       }
 
+      // Update local state
       const updatedOrder = { ...order } as Order
       if (updatedOrder.items) {
         updatedOrder.items = updatedOrder.items.map((item) =>
-          item.id === itemId ? { ...item, status: newStatus } : item
+          item.id === completingItemId ? { ...item, status: 'completed' } : item
         )
         setOrder(updatedOrder)
-
-        const allStatuses = updatedOrder.items.map(item => item.status)
-        const allOngoing = allStatuses.every(s => s === 'ongoing')
-        const allCompleted = allStatuses.every(s => s === 'completed')
-
-        let newJobOrderStatus = 'pending'
-        let newOrderStatus = 'pending'
-
-        if (allCompleted) {
-          newJobOrderStatus = 'completed'
-          newOrderStatus = 'completed'
-        } else if (allOngoing) {
-          newJobOrderStatus = 'in-progress'
-          newOrderStatus = 'completed'
-        }
-
-        if (allCompleted || allOngoing) {
-          await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: newJobOrderStatus }),
-          })
-
-          if (order.id) {
-            await fetch(`${apiUrl}/admin/orders/${order.id}/status`, {
-              method: 'PUT',
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ status: newOrderStatus }),
-            })
-          }
-
-          setJobOrder(prev => prev ? { ...prev, status: newJobOrderStatus } : null)
-          setOrder(prev => prev ? { ...prev, order_status: newOrderStatus } : null)
-        }
       }
+
+      setCompleteDialogOpen(false)
+      setCompletingItemId(null)
     } catch (err) {
-      console.error('[v0] Error updating item status:', err)
-      alert('Failed to update item status')
+      console.error('[v0] Error completing item:', err)
+      alert('Failed to mark item as completed')
     } finally {
-      setUpdatingItemId(null)
+      setIsSubmitting(false)
     }
+  }
+
+  const openCompleteDialog = (itemId: number) => {
+    setCompletingItemId(itemId)
+    setCompleteDialogOpen(true)
   }
 
   const formatCurrency = (value: number | string | null | undefined) => {
@@ -340,7 +320,7 @@ export default function JobOrderDetailPage() {
         <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <main className="flex-1 overflow-auto">
           <div className="p-4 md:p-8">
-            <div className="max-w-6xl mx-auto">
+            <div className="max-w-5xl mx-auto">
               {/* Back Button */}
               <button
                 onClick={() => router.back()}
@@ -386,13 +366,7 @@ export default function JobOrderDetailPage() {
               {/* Order Items */}
               {order?.items && order.items.length > 0 ? (
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3 mb-4">
-                    <Zap size={24} className="text-orange-500" />
-                    <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
-                    <span className="ml-auto text-sm text-neutral-600 dark:text-neutral-400">
-                      {order.items.length} item{order.items.length !== 1 ? 's' : ''}
-                    </span>
-                  </div>
+                  <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-4">Order Items</h2>
 
                   {order.items.map((item) => {
                     const teamRoster = parseJSON(item.team_roster) as TeamMember[] | null
@@ -401,64 +375,59 @@ export default function JobOrderDetailPage() {
                     const isExpanded = expandedItems.has(item.id)
 
                     return (
-                      <div
+                      <Card
                         key={item.id}
-                        className="border border-neutral-200 dark:border-neutral-700 rounded-lg overflow-hidden hover:shadow-md transition"
+                        className="border border-neutral-200 dark:border-neutral-700 overflow-hidden"
                       >
-                        {/* Item Header */}
+                        {/* Header - Clickable */}
                         <div
                           onClick={() => toggleItemExpanded(item.id)}
-                          className="p-4 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 cursor-pointer hover:bg-opacity-80 transition"
+                          className="p-4 bg-orange-50 dark:bg-orange-900/20 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-900/30 transition"
                         >
-                          <div className="flex items-start justify-between">
+                          <div className="flex items-center justify-between">
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
-                                  {item.service?.name || 'Service Item'}
-                                </h3>
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
-                                  {getStatusLabel(item.status)}
-                                </span>
-                              </div>
-                              <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                                Qty: <span className="font-semibold">{item.quantity}</span> × {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total || Number(item.unit_price) * item.quantity)}
+                              <h3 className="font-semibold text-neutral-900 dark:text-white">
+                                {item.service?.name || 'Service Item'}
+                              </h3>
+                              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                                {item.quantity}x @ {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total || Number(item.unit_price) * item.quantity)}
                               </p>
                             </div>
-                            <div className="text-right">
-                              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                                {formatCurrency(item.line_total || Number(item.unit_price) * item.quantity)}
-                              </p>
-                              <button className="text-neutral-500 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition text-lg">
-                                {isExpanded ? '▲' : '▼'}
-                              </button>
+                            <div className="text-right ml-4">
+                              <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
+                                {getStatusLabel(item.status)}
+                              </span>
+                              <div className="text-xl mt-2">
+                                {isExpanded ? '▼' : '▶'}
+                              </div>
                             </div>
                           </div>
                         </div>
 
-                        {/* Expanded Details */}
+                        {/* Expanded Content */}
                         {isExpanded && (
                           <div className="p-6 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 space-y-6">
                             {/* Design Image */}
                             {item.design_file_url && (
-                              <div className="space-y-2">
-                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Design Preview</h4>
-                                <div className="relative group">
+                              <div>
+                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 text-sm">Design File</h4>
+                                <div className="relative group inline-block w-full">
                                   <img
                                     src={getApiImageUrl(item.design_file_url)}
-                                    alt="Design Preview"
-                                    className="w-full h-48 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 cursor-zoom-in bg-neutral-100 dark:bg-neutral-700"
-                                    onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || null))}
+                                    alt="Design"
+                                    className="w-full h-40 object-cover rounded border border-neutral-200 dark:border-neutral-700 cursor-pointer"
+                                    onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || ''))}
                                     onError={(e) => {
                                       const target = e.target as HTMLImageElement
-                                      target.src = '/placeholder.svg?height=192&width=400'
+                                      target.src = '/placeholder.svg'
                                       target.classList.add('opacity-50')
                                     }}
                                   />
                                   <button
-                                    onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || null))}
-                                    className="absolute top-2 right-2 p-2 bg-white dark:bg-neutral-800 rounded-full shadow-lg hover:shadow-xl transition opacity-0 group-hover:opacity-100"
+                                    onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || ''))}
+                                    className="absolute top-2 right-2 p-1.5 bg-white dark:bg-neutral-800 rounded shadow opacity-0 group-hover:opacity-100 transition"
                                   >
-                                    <ZoomIn size={18} className="text-neutral-900 dark:text-white" />
+                                    <ZoomIn size={16} />
                                   </button>
                                 </div>
                               </div>
@@ -466,191 +435,109 @@ export default function JobOrderDetailPage() {
 
                             {/* Team Roster */}
                             {teamRoster && teamRoster.length > 0 && (
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Team Roster</h4>
-                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-                                  <div className="space-y-2">
-                                    {teamRoster.map((player, idx) => (
-                                      <div key={idx} className="flex items-center justify-between py-2 border-b border-blue-200 dark:border-blue-900/50 last:border-b-0">
-                                        <div>
-                                          <p className="font-medium text-neutral-900 dark:text-white">
-                                            #{player.number} - {player.name}
-                                          </p>
-                                          {(player.sizeTop || player.sizeBottom) && (
-                                            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-                                              {player.sizeTop && `Top: ${player.sizeTop}`}
-                                              {player.sizeTop && player.sizeBottom && ' • '}
-                                              {player.sizeBottom && `Bottom: ${player.sizeBottom}`}
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
+                              <div>
+                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-2 text-sm">Team Roster</h4>
+                                <div className="space-y-1 text-sm">
+                                  {teamRoster.map((player, idx) => (
+                                    <div key={idx} className="flex justify-between p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
+                                      <span className="font-medium">#{player.number} {player.name}</span>
+                                      {(player.sizeTop || player.sizeBottom) && (
+                                        <span className="text-neutral-600 dark:text-neutral-300">
+                                          {player.sizeTop && `Top: ${player.sizeTop}`}
+                                          {player.sizeTop && player.sizeBottom ? ' / ' : ''}
+                                          {player.sizeBottom && `Bottom: ${player.sizeBottom}`}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}
 
                             {/* Size Specifications */}
-                            {sizeSpecs && Object.keys(sizeSpecs).some(key => sizeSpecs[key as keyof SizeSpecifications]) && (
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Size Specifications</h4>
-                                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {sizeSpecs.top && (
-                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
-                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Top Size</p>
-                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
-                                      </div>
-                                    )}
-                                    {sizeSpecs.bottom && (
-                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
-                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Bottom Size</p>
-                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
-                                      </div>
-                                    )}
-                                    {sizeSpecs.width && (
-                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
-                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Width</p>
-                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.width}</p>
-                                      </div>
-                                    )}
-                                    {sizeSpecs.height && (
-                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
-                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Height</p>
-                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.height}</p>
-                                      </div>
-                                    )}
-                                    {sizeSpecs.totalSqft && (
-                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
-                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Total Sqft</p>
-                                        <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft}</p>
-                                      </div>
-                                    )}
-                                    {sizeSpecs.totalPrice && (
-                                      <div className="bg-white dark:bg-neutral-700 p-3 rounded">
-                                        <p className="text-xs text-neutral-600 dark:text-neutral-400">Price</p>
-                                        <p className="font-bold text-green-600 dark:text-green-400">{formatCurrency(sizeSpecs.totalPrice)}</p>
-                                      </div>
-                                    )}
-                                  </div>
+                            {sizeSpecs && Object.keys(sizeSpecs).some((key) => sizeSpecs[key as keyof SizeSpecifications]) && (
+                              <div>
+                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-2 text-sm">Specifications</h4>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                  {sizeSpecs.top && (
+                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
+                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Top</p>
+                                      <p className="font-medium">{sizeSpecs.top}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.bottom && (
+                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
+                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Bottom</p>
+                                      <p className="font-medium">{sizeSpecs.bottom}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.width && (
+                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
+                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Width</p>
+                                      <p className="font-medium">{sizeSpecs.width}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.height && (
+                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
+                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Height</p>
+                                      <p className="font-medium">{sizeSpecs.height}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.totalSqft && (
+                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
+                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Total Sqft</p>
+                                      <p className="font-medium">{sizeSpecs.totalSqft}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.totalPrice && (
+                                    <div className="p-2 bg-neutral-100 dark:bg-neutral-700 rounded">
+                                      <p className="text-xs text-neutral-600 dark:text-neutral-400">Price</p>
+                                      <p className="font-medium text-green-600 dark:text-green-400">{formatCurrency(sizeSpecs.totalPrice)}</p>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             )}
 
                             {/* Notes */}
-                            {itemNotes && Object.values(itemNotes).some(v => v) && (
-                              <div className="space-y-3">
-                                <h4 className="font-semibold text-neutral-900 dark:text-white text-sm">Notes</h4>
-                                <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 space-y-3">
+                            {itemNotes && Object.values(itemNotes).some((v) => v) && (
+                              <div>
+                                <h4 className="font-semibold text-neutral-900 dark:text-white mb-2 text-sm">Notes</h4>
+                                <div className="space-y-2 text-sm bg-neutral-100 dark:bg-neutral-700 p-3 rounded">
                                   {itemNotes.designNotes && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Design Notes</p>
-                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.designNotes}</p>
-                                    </div>
+                                    <p><span className="font-medium">Design:</span> {itemNotes.designNotes}</p>
                                   )}
                                   {itemNotes.jerseyCustomizationNotes && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Jersey Customization</p>
-                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.jerseyCustomizationNotes}</p>
-                                    </div>
+                                    <p><span className="font-medium">Jersey:</span> {itemNotes.jerseyCustomizationNotes}</p>
                                   )}
                                   {itemNotes.teamRosterNotes && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Team Roster Notes</p>
-                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.teamRosterNotes}</p>
-                                    </div>
+                                    <p><span className="font-medium">Roster:</span> {itemNotes.teamRosterNotes}</p>
                                   )}
                                   {itemNotes.sizeNotes && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Size Notes</p>
-                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.sizeNotes}</p>
-                                    </div>
+                                    <p><span className="font-medium">Sizes:</span> {itemNotes.sizeNotes}</p>
                                   )}
                                   {itemNotes.additionalNotes && (
-                                    <div>
-                                      <p className="text-xs font-semibold text-purple-900 dark:text-purple-400 mb-1">Additional Notes</p>
-                                      <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.additionalNotes}</p>
-                                    </div>
+                                    <p><span className="font-medium">Additional:</span> {itemNotes.additionalNotes}</p>
                                   )}
                                 </div>
                               </div>
                             )}
 
-                            {/* Status Update Buttons */}
-                            <div className="flex flex-wrap gap-2 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                            {/* Complete Button */}
+                            {item.status !== 'completed' && (
                               <Button
-                                onClick={() => handleUpdateItemStatus(item.id, 'pending')}
-                                disabled={updatingItemId === item.id}
-                                variant="outline"
-                                size="sm"
-                                className={`flex items-center gap-2 ${
-                                  item.status === 'pending'
-                                    ? 'border-yellow-400 dark:border-yellow-600 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
-                                    : 'border-neutral-300 dark:border-neutral-600 hover:border-yellow-400 dark:hover:border-yellow-600'
-                                }`}
+                                onClick={() => openCompleteDialog(item.id)}
+                                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold"
                               >
-                                <Clock size={16} />
-                                Pending
+                                <CheckCircle size={18} className="mr-2" />
+                                Mark as Completed
                               </Button>
-                              <Button
-                                onClick={() => handleUpdateItemStatus(item.id, 'ongoing')}
-                                disabled={updatingItemId === item.id}
-                                variant="outline"
-                                size="sm"
-                                className={`flex items-center gap-2 ${
-                                  item.status === 'ongoing'
-                                    ? 'border-blue-400 dark:border-blue-600 text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20'
-                                    : 'border-neutral-300 dark:border-neutral-600 hover:border-blue-400 dark:hover:border-blue-600'
-                                }`}
-                              >
-                                <Zap size={16} />
-                                Ongoing
-                              </Button>
-                              <Button
-                                onClick={() => handleUpdateItemStatus(item.id, 'completed')}
-                                disabled={updatingItemId === item.id}
-                                variant="outline"
-                                size="sm"
-                                className={`flex items-center gap-2 ${
-                                  item.status === 'completed'
-                                    ? 'border-green-400 dark:border-green-600 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
-                                    : 'border-neutral-300 dark:border-neutral-600 hover:border-green-400 dark:hover:border-green-600'
-                                }`}
-                              >
-                                <CheckCircle size={16} />
-                                Completed
-                              </Button>
-                            </div>
+                            )}
                           </div>
                         )}
-                      </div>
+                      </Card>
                     )
                   })}
-
-                  {/* Summary */}
-                  <div className="border-t-2 border-neutral-200 dark:border-neutral-700 pt-6 space-y-2 mt-8">
-                    <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                      <span>Subtotal:</span>
-                      <span>{formatCurrency(order.subtotal || 0)}</span>
-                    </div>
-                    {order.discount && order.discount > 0 && (
-                      <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                        <span>Discount:</span>
-                        <span className="text-red-600 dark:text-red-400">-{formatCurrency(order.discount)}</span>
-                      </div>
-                    )}
-                    {order.tax && order.tax > 0 && (
-                      <div className="flex justify-between text-neutral-600 dark:text-neutral-400">
-                        <span>Tax:</span>
-                        <span>{formatCurrency(order.tax)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-xl font-bold bg-orange-100 dark:bg-orange-900/30 p-4 rounded-lg text-orange-900 dark:text-orange-400">
-                      <span>Grand Total</span>
-                      <span>{formatCurrency(order.total || 0)}</span>
-                    </div>
-                  </div>
                 </div>
               ) : (
                 <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
@@ -659,31 +546,49 @@ export default function JobOrderDetailPage() {
                 </Card>
               )}
 
-              {/* Pro Tip Box */}
-              <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <p className="text-sm text-blue-900 dark:text-blue-300">
-                  <span className="font-semibold">Pro Tip:</span> Click on any item to expand and view detailed information including design files, team roster, size specifications, and notes. Update item status using the buttons below each expanded item.
-                </p>
-              </div>
             </div>
           </div>
         </main>
       </div>
 
-      {/* Image Zoom Dialog */}
+      {/* Image Zoom Modal */}
       {expandedImage && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="relative max-w-2xl w-full">
             <button
               onClick={() => setExpandedImage(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 p-2"
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 p-2 rounded"
             >
-              <X size={24} />
+              <X size={20} />
             </button>
-            <img src={expandedImage} alt="Expanded View" className="w-full h-auto rounded-lg" />
+            <img src={expandedImage} alt="Design" className="w-full h-auto rounded-lg" />
           </div>
         </div>
       )}
+
+      {/* Completion Confirmation Dialog */}
+      <AlertDialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
+        <AlertDialogContent className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-neutral-900 dark:text-white">Mark Item as Completed?</AlertDialogTitle>
+            <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
+              Are you sure this item is completed? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel className="border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800">
+              No, Keep it
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCompleteItem}
+              disabled={isSubmitting}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isSubmitting ? 'Marking...' : 'Yes, Mark Complete'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
