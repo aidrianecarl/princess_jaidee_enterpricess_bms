@@ -10,10 +10,9 @@ import { ArrowLeft, Loader2, AlertCircle, Package, CheckCircle, Clock } from 'lu
 interface OrderItem {
   id: number
   order_id: number
-  description: string
+  service_id?: number
   quantity: number
   unit_price: string | number
-  line_total: string | number
   status?: 'pending' | 'ongoing' | 'completed'
 }
 
@@ -262,15 +261,15 @@ export default function JobOrderDetailPage() {
                   {order.items.map((item) => (
                     <Card
                       key={item.id}
-                      className="p-4 bg-neutral-50 dark:bg-neutral-700/50 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition"
+                      className="p-4 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-neutral-300 dark:hover:border-neutral-600 transition"
                     >
                       {/* Item Info */}
                       <div className="mb-4">
                         <h4 className="font-semibold text-neutral-900 dark:text-white text-lg mb-2">
-                          {item.description}
+                          Item #{item.id}
                         </h4>
                         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                          Quantity: {item.quantity} | Unit Price: {formatCurrency(item.unit_price)} | Total: {formatCurrency(item.line_total)}
+                          Quantity: {item.quantity} | Unit Price: {formatCurrency(item.unit_price)} | Total: {formatCurrency(Number(item.unit_price) * item.quantity)}
                         </p>
                       </div>
 
