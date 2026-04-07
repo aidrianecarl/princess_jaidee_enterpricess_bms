@@ -385,6 +385,11 @@ class QuotationController extends Controller
             $customer->save();
 
             foreach ($request->items as $item) {
+                Log::info('[v0] Processing quotation item', [
+                    'item_data' => $item,
+                    'team_roster' => $item['team_roster'] ?? null,
+                ]);
+
                 $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
                 if (isset($item['design_cost'])) {
                     $lineTotal += $item['design_cost'];
@@ -412,17 +417,47 @@ class QuotationController extends Controller
                     }
                 }
 
-                QuotationItem::create([
+                // Handle team roster - always store as JSON
+                $teamRosterData = null;
+                if (!empty($item['team_roster'])) {
+                    if (is_array($item['team_roster'])) {
+                        $teamRosterData = json_encode($item['team_roster']);
+                    } else if (is_string($item['team_roster'])) {
+                        $decoded = json_decode($item['team_roster'], true);
+                        $teamRosterData = $decoded !== null ? json_encode($decoded) : $item['team_roster'];
+                    }
+                }
+
+                // Handle size specifications
+                $sizeSpecsData = null;
+                if (!empty($item['size_specifications'])) {
+                    if (is_array($item['size_specifications'])) {
+                        $sizeSpecsData = json_encode($item['size_specifications']);
+                    } else if (is_string($item['size_specifications'])) {
+                        $decoded = json_decode($item['size_specifications'], true);
+                        $sizeSpecsData = $decoded !== null ? json_encode($decoded) : $item['size_specifications'];
+                    }
+                }
+
+                $quotationItem = QuotationItem::create([
                     'quotation_id' => $quotation->id,
                     'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
-                    'description' => $item['customization'] ?? $item['description'] ?? null,
+                    'name' => $item['name'] ?? $item['customization'] ?? null,
+                    'description' => $item['description'] ?? null,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
                     'line_total' => $lineTotal,
                     'design_file_url' => $designFileUrl,
-                    'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
-                    'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
+                    'team_roster' => $teamRosterData,
+                    'size_specifications' => $sizeSpecsData,
                     'notes' => $notesData,
+                ]);
+
+                Log::info('[v0] Quotation item created successfully', [
+                    'item_id' => $quotationItem->id,
+                    'quotation_id' => $quotation->id,
+                    'team_roster_saved' => $teamRosterData,
+                    'size_specs_saved' => $sizeSpecsData,
                 ]);
             }
             
@@ -598,6 +633,11 @@ class QuotationController extends Controller
                 
                 $subtotal = 0;
                 foreach ($request->items as $item) {
+                    Log::info('[v0] Updating quotation item', [
+                        'item_data' => $item,
+                        'team_roster' => $item['team_roster'] ?? null,
+                    ]);
+
                     $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
                     if (isset($item['design_cost'])) {
                         $lineTotal += $item['design_cost'];
@@ -626,17 +666,46 @@ class QuotationController extends Controller
                         }
                     }
 
+                    // Handle team roster - always store as JSON
+                    $teamRosterData = null;
+                    if (!empty($item['team_roster'])) {
+                        if (is_array($item['team_roster'])) {
+                            $teamRosterData = json_encode($item['team_roster']);
+                        } else if (is_string($item['team_roster'])) {
+                            $decoded = json_decode($item['team_roster'], true);
+                            $teamRosterData = $decoded !== null ? json_encode($decoded) : $item['team_roster'];
+                        }
+                    }
+
+                    // Handle size specifications
+                    $sizeSpecsData = null;
+                    if (!empty($item['size_specifications'])) {
+                        if (is_array($item['size_specifications'])) {
+                            $sizeSpecsData = json_encode($item['size_specifications']);
+                        } else if (is_string($item['size_specifications'])) {
+                            $decoded = json_decode($item['size_specifications'], true);
+                            $sizeSpecsData = $decoded !== null ? json_encode($decoded) : $item['size_specifications'];
+                        }
+                    }
+
                     QuotationItem::create([
                         'quotation_id' => $quotation->id,
                         'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
-                        'description' => $item['customization'] ?? $item['description'] ?? null,
+                        'name' => $item['name'] ?? $item['customization'] ?? null,
+                        'description' => $item['description'] ?? null,
                         'quantity' => $item['quantity'],
                         'unit_price' => $item['unit_price'],
                         'line_total' => $lineTotal,
                         'design_file_url' => $designFileUrl,
-                        'team_roster' => !empty($item['team_roster']) ? json_encode($item['team_roster']) : null,
-                        'size_specifications' => !empty($item['size_specifications']) ? json_encode($item['size_specifications']) : null,
+                        'team_roster' => $teamRosterData,
+                        'size_specifications' => $sizeSpecsData,
                         'notes' => $notesData,
+                    ]);
+
+                    Log::info('[v0] Quotation item updated successfully', [
+                        'quotation_id' => $quotation->id,
+                        'team_roster_saved' => $teamRosterData,
+                        'size_specs_saved' => $sizeSpecsData,
                     ]);
                 }
                 

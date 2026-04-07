@@ -175,22 +175,17 @@ export function TeamRosterRequirement({
 
                   <div>
                     <label className="block text-xs font-medium text-neutral-600 mb-1">
-                      Length (inches)
+                      Top Length (in)
                     </label>
-                    <select
+                    <Input
+                      type="number"
+                      placeholder="Length in inches"
                       value={member.lengthTopInches || ""}
                       onChange={(e) =>
                         updateMember(member.id, "lengthTopInches", e.target.value)
                       }
-                      className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                      <option value="">Select</option>
-                      <option value="None">None</option>
-                      <option value="Standard">Standard</option>
-                      {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
-                        <option key={num} value={num.toString()}>{num}</option>
-                      ))}
-                    </select>
+                      className="h-9 text-sm"
+                    />
                   </div>
 
                   <div>
@@ -206,29 +201,38 @@ export function TeamRosterRequirement({
                     >
                       <option value="">Select</option>
                       <option value="None">None</option>
-                      {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
-                        <option key={num} value={num.toString()}>{num}</option>
-                      ))}
+                      <option value="5TS">5TS</option>
+                      <option value="4TS">4TS</option>
+                      <option value="3TS">3TS</option>
+                      <option value="2TS">2TS</option>
+                      <option value="TS">TS</option>
+                      <option value="XS">XS</option>
+                      <option value="S">S</option>
+                      <option value="M">M</option>
+                      <option value="L">L</option>
+                      <option value="XL">XL</option>
+                      <option value="2XL">2XL</option>
+                      <option value="3XL">3XL</option>
+                      <option value="4XL">4XL</option>
+                      <option value="5XL">5XL</option>
+                      <option value="6XL">6XL</option>
+                      <option value="7XL">7XL</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-neutral-600 mb-1">
-                      Length (inches)
+                      Bottom Length (in)
                     </label>
-                    <select
+                    <Input
+                      type="number"
+                      placeholder="Length in inches"
                       value={member.lengthBottomInches || ""}
                       onChange={(e) =>
                         updateMember(member.id, "lengthBottomInches", e.target.value)
                       }
-                      className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                    >
-                      <option value="">Select</option>
-                      <option value="None">None</option>
-                      {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
-                        <option key={num} value={num.toString()}>{num}</option>
-                      ))}
-                    </select>
+                      className="h-9 text-sm"
+                    />
                   </div>
                 </>
               )}
