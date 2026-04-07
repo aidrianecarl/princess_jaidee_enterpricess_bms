@@ -6,8 +6,8 @@ import { SidebarProvider } from "@/contexts/sidebar-context"
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  // Don't show sidebar on create quotation page
-  const hideSidebar = pathname.includes("/quotations/create")
+  // Don't show sidebar on create quotation and thank-you pages
+  const hideSidebar = pathname.includes("/quotations/create") || pathname.includes("/quotations/thank-you")
 
   return (
     <SidebarProvider>

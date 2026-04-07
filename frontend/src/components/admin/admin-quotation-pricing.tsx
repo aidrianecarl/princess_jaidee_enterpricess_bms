@@ -167,10 +167,15 @@ export function AdminQuotationPricing() {
       console.log("[v0] Processed Items:", processedItems)
       setQuotation({ ...quot, items: processedItems })
 
-      // Initialize editing prices with 0
+      // Initialize editing prices with 0, or auto-populate for tarpauline
       const priceMap: Record<number, string> = {}
       processedItems.forEach((item: PricingLineItem) => {
-        priceMap[item.id] = "0"
+        // Auto-populate tarpauline price from size specifications
+        if (item.service?.name?.includes('Tarpaulin') && item.size_specifications && typeof item.size_specifications === 'object' && item.size_specifications.totalPrice) {
+          priceMap[item.id] = item.size_specifications.totalPrice.toString()
+        } else {
+          priceMap[item.id] = "0"
+        }
       })
       setEditingPrices(priceMap)
 
@@ -725,24 +730,55 @@ export function AdminQuotationPricing() {
                           {item.size_specifications && item.size_specifications !== null && typeof item.size_specifications === "object" && (Object.keys(item.size_specifications).length > 0 || (item.notes && typeof item.notes === "object" && item.notes.sizeNotes)) && (
                             <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                               <h4 className="font-semibold text-purple-900 mb-3">{item.service?.name?.includes('Tarpaulin') ? 'SIZE SPECIFICATION' : 'UNIFORM CUSTOMIZATION'}</h4>
-                              <div className="grid grid-cols-3 gap-3 text-sm bg-white p-3 rounded">
-                                {item.size_specifications.top && (
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Top/Shirt Size</p>
-                                    <p className="text-gray-900">{item.size_specifications.top}</p>
-                                  </div>
-                                )}
-                                {item.size_specifications.bottom && (
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Bottom/Short Size</p>
-                                    <p className="text-gray-900">{item.size_specifications.bottom}</p>
-                                  </div>
-                                )}
-                                {item.size_specifications.top || item.size_specifications.bottom ? null : (
-                                  <div>
-                                    <p className="text-xs text-gray-600 font-semibold">Size</p>
-                                    <p className="text-gray-900">Not specified</p>
-                                  </div>
+                              <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
+                                {item.service?.name?.includes('Tarpaulin') ? (
+                                  <>
+                                    {item.size_specifications.width && (
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Width</p>
+                                        <p className="text-gray-900">{item.size_specifications.width} ft</p>
+                                      </div>
+                                    )}
+                                    {item.size_specifications.height && (
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Height</p>
+                                        <p className="text-gray-900">{item.size_specifications.height} ft</p>
+                                      </div>
+                                    )}
+                                    {item.size_specifications.totalSqft && (
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Total Sq Ft</p>
+                                        <p className="text-gray-900 font-semibold">{item.size_specifications.totalSqft} sq ft</p>
+                                      </div>
+                                    )}
+                                    {item.size_specifications.totalPrice && (
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Total Price</p>
+                                        <p className="text-gray-900 font-bold">₱{item.size_specifications.totalPrice}</p>
+                                      </div>
+                                    )}
+                                  </>
+                                ) : (
+                                  <>
+                                    {item.size_specifications.top && (
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Top/Shirt Size</p>
+                                        <p className="text-gray-900">{item.size_specifications.top}</p>
+                                      </div>
+                                    )}
+                                    {item.size_specifications.bottom && (
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Bottom/Short Size</p>
+                                        <p className="text-gray-900">{item.size_specifications.bottom}</p>
+                                      </div>
+                                    )}
+                                    {!item.size_specifications.top && !item.size_specifications.bottom && (
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Size</p>
+                                        <p className="text-gray-900">Not specified</p>
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                               </div>
                               {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (
@@ -840,14 +876,6 @@ export function AdminQuotationPricing() {
                   </div>
                 </div>
 
-                {/* Tax */}
-                <div className="border-t border-gray-300 pt-3">
-                  <div className="flex justify-between text-sm text-gray-700">
-                    <span>Tax (12% VAT):</span>
-                    <span>₱{tax.toFixed(2)}</span>
-                  </div>
-                </div>
-
                 {/* Total */}
                 <div className="border-t-2 border-gray-300 pt-3 bg-orange-50 rounded-lg p-4">
                   <div className="flex justify-between text-xl font-bold">
@@ -882,10 +910,6 @@ export function AdminQuotationPricing() {
                     <span>- ₱{discount.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-gray-700">
-                  <span>Tax (12%):</span>
-                  <span>₱{tax.toFixed(2)}</span>
-                </div>
                 <div className="border-t border-orange-200 pt-2 flex justify-between font-bold text-gray-900">
                   <span>Total:</span>
                   <span>₱{total.toFixed(2)}</span>

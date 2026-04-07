@@ -8,12 +8,23 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DashboardHeader } from "@/components/dashboard/header"
 
+interface TeamMember {
+  name: string
+  number: number
+  sizeTop?: string
+  sizeBottom?: string
+}
+
 interface QuotationItem {
   id: number
   service_id: number
   quantity: number
   unit_price: number
   description: string
+  design_file_url?: string
+  team_roster?: any
+  size_specifications?: any
+  notes?: any
   service?: { id: number; name: string }
 }
 
@@ -63,6 +74,17 @@ export default function ViewQuotationPage() {
     }
   }, [quotationId])
 
+  const parseJSON = (value: any): any => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return null
+      }
+    }
+    return value
+  }
+
   const fetchQuotation = async () => {
     try {
       setIsLoading(true)
@@ -85,7 +107,19 @@ export default function ViewQuotationPage() {
       }
 
       const data = await response.json()
-      setQuotation(data.data || data)
+      const quot = data.data || data
+      
+      // Parse JSON fields from items
+      if (quot.items && Array.isArray(quot.items)) {
+        quot.items = quot.items.map((item: QuotationItem) => ({
+          ...item,
+          team_roster: parseJSON(item.team_roster),
+          size_specifications: parseJSON(item.size_specifications),
+          notes: parseJSON(item.notes),
+        }))
+      }
+      
+      setQuotation(quot)
     } catch (err) {
       console.error("[v0] Error fetching quotation:", err)
       setError(err instanceof Error ? err.message : "Failed to load quotation")
@@ -192,32 +226,156 @@ export default function ViewQuotationPage() {
           </div>
         </Card>
 
-        {/* Items */}
-        <Card className="p-6 mb-6 border-neutral-200 dark:border-neutral-800">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Quotation Items</h2>
-          {quotation.items && quotation.items.length > 0 ? (
-            <div className="space-y-3">
-              {quotation.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-4 bg-neutral-50 dark:bg-neutral-900 rounded-lg border border-neutral-200 dark:border-neutral-800">
-                  <div className="flex-1">
-                    <p className="font-semibold text-neutral-900 dark:text-white">{item.service?.name || item.description}</p>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">{item.description}</p>
+        {/* Quotation Items */}
+        {quotation.items && quotation.items.length > 0 && (
+          <div className="space-y-6 mb-8">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Quotation Items</h2>
+            
+            {quotation.items.map((item) => {
+              const teamRoster = Array.isArray(item.team_roster) ? item.team_roster : null
+              const sizeSpecs = typeof item.size_specifications === 'object' ? item.size_specifications : null
+
+              return (
+                <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 shadow-md hover:shadow-lg transition">
+                  {/* Item Header */}
+                  <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-b border-neutral-200 dark:border-neutral-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
+                          {item.service?.name || 'Service Item'}
+                        </h3>
+                        <div className="flex items-center gap-3 flex-wrap text-sm">
+                          <span className="text-neutral-600 dark:text-neutral-400">
+                            Quantity: <span className="font-semibold text-neutral-900 dark:text-white">{item.quantity}</span>
+                          </span>
+                          <span className="text-neutral-600 dark:text-neutral-400">
+                            Unit Price: <span className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(item.unit_price)}</span>
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">Total</p>
+                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          {formatCurrency(item.quantity * item.unit_price)}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Qty: {item.quantity}</p>
-                    <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(item.unit_price)}</p>
-                    <p className="text-sm font-bold text-orange-600 dark:text-orange-400">{formatCurrency(item.quantity * item.unit_price)}</p>
+
+                  {/* Content */}
+                  <div className="p-6 space-y-6">
+                    {/* Team Roster */}
+                    {teamRoster && teamRoster.length > 0 && (
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster</h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/50">
+                                <th className="px-4 py-3 text-left font-semibold text-blue-900 dark:text-blue-300">Player Name</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top Size</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom Size</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {teamRoster.map((player: TeamMember, idx: number) => (
+                                <tr key={idx} className="border-b border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
+                                  <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">{player.name}</td>
+                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
+                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '—'}</td>
+                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Size Specifications */}
+                    {sizeSpecs && Object.keys(sizeSpecs).length > 0 && (
+                      <div className={`p-4 rounded-lg border ${item.service?.name?.includes('Tarpaulin') ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' : 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800'}`}>
+                        <h4 className={`font-bold mb-4 text-lg ${item.service?.name?.includes('Tarpaulin') ? 'text-purple-900 dark:text-purple-300' : 'text-indigo-900 dark:text-indigo-300'}`}>
+                          {item.service?.name?.includes('Tarpaulin') ? 'Tarpaulin Size Specification' : 'Uniform Size'}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {sizeSpecs.width && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width} ft</p>
+                            </div>
+                          )}
+                          {sizeSpecs.height && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height} ft</p>
+                            </div>
+                          )}
+                          {sizeSpecs.totalSqft && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft} sq ft</p>
+                            </div>
+                          )}
+                          {sizeSpecs.top && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
+                            </div>
+                          )}
+                          {sizeSpecs.bottom && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {item.notes && typeof item.notes === 'object' && Object.keys(item.notes).length > 0 && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <h4 className="font-bold text-amber-900 dark:text-amber-300 mb-4 text-lg">Notes</h4>
+                        <div className="space-y-3">
+                          {item.notes.designNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Design Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.designNotes}</p>
+                            </div>
+                          )}
+                          {item.notes.sizeNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Size Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.sizeNotes}</p>
+                            </div>
+                          )}
+                          {item.notes.teamNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Team Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.teamNotes}</p>
+                            </div>
+                          )}
+                          {item.notes.additionalNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Additional Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.additionalNotes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-neutral-600 dark:text-neutral-400 text-center py-4">No items in this quotation</p>
-          )}
-        </Card>
+              )
+            })}
+          </div>
+        )}
 
         {/* Summary */}
-        <Card className="p-6 border-neutral-200 dark:border-neutral-800">
+        <Card className="p-6 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-800 dark:to-neutral-900">
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-6">Order Summary</h2>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <p className="text-neutral-600 dark:text-neutral-400">Subtotal</p>
@@ -229,14 +387,8 @@ export default function ViewQuotationPage() {
                 <p className="font-semibold text-red-600 dark:text-red-400">-{formatCurrency(quotation.discount)}</p>
               </div>
             )}
-            {quotation.tax > 0 && (
-              <div className="flex justify-between items-center">
-                <p className="text-neutral-600 dark:text-neutral-400">Tax</p>
-                <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(quotation.tax)}</p>
-              </div>
-            )}
-            <div className="border-t border-neutral-200 dark:border-neutral-800 pt-3 flex justify-between items-center">
-              <p className="text-lg font-semibold text-neutral-900 dark:text-white">Total</p>
+            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 flex justify-between items-center bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 -mx-6 px-6">
+              <p className="text-lg font-bold text-neutral-900 dark:text-white">Total</p>
               <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{formatCurrency(quotation.total)}</p>
             </div>
           </div>
