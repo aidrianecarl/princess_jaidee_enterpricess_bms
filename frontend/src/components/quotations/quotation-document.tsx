@@ -46,7 +46,7 @@ interface LineItem {
     designFile: File | null
     designPreview: string
     designImageUrl?: string
-    teamRoster: Array<{ id: string; name: string; number: string | number; sizeTop?: string; sizeBottom?: string }>
+    teamRoster: Array<{ id: string; name: string; number: string | number; sizeTop?: string; lengthTopInches?: string; sizeBottom?: string; lengthBottomInches?: string }>
     sizeSpecifications: {
       top?: string
       bottom?: string
@@ -968,7 +968,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
             design_file_url: designFileUrl || null,
-            team_roster: item.serviceRequirements?.teamRoster || null,
+            team_roster: item.serviceRequirements?.teamRoster ? JSON.stringify(item.serviceRequirements.teamRoster) : null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
             notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
           }
@@ -1562,7 +1562,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               )}
                               <button
                                 onClick={() => {
-                                  const newPlayer = { id: Date.now().toString(), name: "", number: "", sizeTop: "", sizeBottom: "" }
+                                  const newPlayer = { id: Date.now().toString(), name: "", number: "", sizeTop: "", lengthTopInches: "", sizeBottom: "", lengthBottomInches: "" }
                                   const updated = [...(item.serviceRequirements?.teamRoster || []), newPlayer]
                                   updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
                                   setEditingRosterId(item.id)
@@ -1576,17 +1576,20 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           </div>
                           <div className="space-y-2 mb-4">
                             {/* Header Row - Hidden on mobile */}
-                            <div className="hidden md:grid grid-cols-5 gap-3 px-2 py-2 bg-gray-200 rounded-md">
-                              <p className="text-xs font-semibold text-gray-700">Name</p>
+                            <div className="hidden md:grid grid-cols-8 gap-2 px-2 py-2 bg-gray-200 rounded-md text-center">
+                              <p className="text-xs font-semibold text-gray-700 text-left">Name</p>
                               <p className="text-xs font-semibold text-gray-700">Jersey #</p>
                               <p className="text-xs font-semibold text-gray-700">Top Size</p>
+                              <p className="text-xs font-semibold text-gray-700">Length (in)</p>
                               <p className="text-xs font-semibold text-gray-700">Bottom Size</p>
-                              <p className="text-xs font-semibold text-gray-700 text-center">Price</p>
+                              <p className="text-xs font-semibold text-gray-700">Length (in)</p>
+                              <p className="text-xs font-semibold text-gray-700">Price</p>
+                              <p className="text-xs font-semibold text-gray-700">Action</p>
                             </div>
 
                             {/* Roster Items */}
                             {item.serviceRequirements.teamRoster.map((member) => (
-                              <div key={member.id} className={`flex flex-col md:grid ${editingRosterId === item.id ? 'md:grid-cols-6' : 'md:grid-cols-5'} gap-2 md:gap-3 px-2 py-2 bg-white rounded-md border border-gray-200`}>
+                              <div key={member.id} className={`flex flex-col md:grid ${editingRosterId === item.id ? 'md:grid-cols-9' : 'md:grid-cols-8'} gap-2 md:gap-2 px-2 py-2 bg-white rounded-md border border-gray-200`}>
                                 <div className="flex flex-col flex-1">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Name</span>
                                   <input
@@ -1640,6 +1643,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       }`}
                                   >
                                     <option value="">Select</option>
+                                    <option value="None">None</option>
+                                    <option value="5TS">5TS</option>
+                                    <option value="4TS">4TS</option>
+                                    <option value="3TS">3TS</option>
+                                    <option value="2TS">2TS</option>
+                                    <option value="TS">TS</option>
                                     <option value="XS">XS</option>
                                     <option value="S">S</option>
                                     <option value="M">M</option>
@@ -1648,6 +1657,33 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     <option value="2XL">2XL</option>
                                     <option value="3XL">3XL</option>
                                     <option value="4XL">4XL</option>
+                                    <option value="5XL">5XL</option>
+                                    <option value="6XL">6XL</option>
+                                    <option value="7XL">7XL</option>
+                                  </select>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-gray-500 md:hidden">Length (in)</span>
+                                  <select
+                                    value={member.lengthTopInches || ""}
+                                    disabled={editingRosterId !== item.id}
+                                    onChange={(e) => {
+                                      const updated = item.serviceRequirements?.teamRoster?.map((m) =>
+                                        m.id === member.id ? { ...m, lengthTopInches: e.target.value } : m
+                                      ) || []
+                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                    }}
+                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
+                                      ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
+                                      : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                      }`}
+                                  >
+                                    <option value="">Select</option>
+                                    <option value="None">None</option>
+                                    <option value="Standard">Standard</option>
+                                    {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
+                                      <option key={num} value={num.toString()}>{num}</option>
+                                    ))}
                                   </select>
                                 </div>
                                 <div className="flex flex-col">
@@ -1667,14 +1703,33 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       }`}
                                   >
                                     <option value="">Select</option>
-                                    <option value="XS">XS</option>
-                                    <option value="S">S</option>
-                                    <option value="M">M</option>
-                                    <option value="L">L</option>
-                                    <option value="XL">XL</option>
-                                    <option value="2XL">2XL</option>
-                                    <option value="3XL">3XL</option>
-                                    <option value="4XL">4XL</option>
+                                    <option value="None">None</option>
+                                    {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
+                                      <option key={num} value={num.toString()}>{num}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-semibold text-gray-500 md:hidden">Length (in)</span>
+                                  <select
+                                    value={member.lengthBottomInches || ""}
+                                    disabled={editingRosterId !== item.id}
+                                    onChange={(e) => {
+                                      const updated = item.serviceRequirements?.teamRoster?.map((m) =>
+                                        m.id === member.id ? { ...m, lengthBottomInches: e.target.value } : m
+                                      ) || []
+                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                    }}
+                                    className={`text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
+                                      ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
+                                      : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
+                                      }`}
+                                  >
+                                    <option value="">Select</option>
+                                    <option value="None">None</option>
+                                    {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
+                                      <option key={num} value={num.toString()}>{num}</option>
+                                    ))}
                                   </select>
                                 </div>
                                 <div className="flex flex-col">

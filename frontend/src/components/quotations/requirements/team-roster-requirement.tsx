@@ -10,7 +10,9 @@ interface TeamMember {
   name: string
   number: string | number
   sizeTop?: string
+  lengthTopInches?: string
   sizeBottom?: string
+  lengthBottomInches?: string
 }
 
 interface TeamRosterRequirementProps {
@@ -33,7 +35,7 @@ export function TeamRosterRequirement({
   const [members, setMembers] = useState<TeamMember[]>(
     initialRoster.length > 0
       ? initialRoster
-      : [{ id: Date.now().toString(), name: "", number: "", sizeTop: "", sizeBottom: "" }]
+      : [{ id: Date.now().toString(), name: "", number: "", sizeTop: "", lengthTopInches: "", sizeBottom: "", lengthBottomInches: "" }]
   )
   const [teamNotes, setTeamNotes] = useState(initialNotes)
 
@@ -43,7 +45,9 @@ export function TeamRosterRequirement({
       name: "",
       number: "",
       sizeTop: "",
+      lengthTopInches: "",
       sizeBottom: "",
+      lengthBottomInches: "",
     }
     const updated = [...members, newMember]
     setMembers(updated)
@@ -104,7 +108,7 @@ export function TeamRosterRequirement({
             key={member.id}
             className="flex flex-col gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200"
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
                   Name
@@ -122,7 +126,7 @@ export function TeamRosterRequirement({
 
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
-                  Number
+                  Jersey #
                 </label>
                 <Input
                   type="text"
@@ -149,6 +153,12 @@ export function TeamRosterRequirement({
                       className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
                       <option value="">Select</option>
+                      <option value="None">None</option>
+                      <option value="5TS">5TS</option>
+                      <option value="4TS">4TS</option>
+                      <option value="3TS">3TS</option>
+                      <option value="2TS">2TS</option>
+                      <option value="TS">TS</option>
                       <option value="XS">XS</option>
                       <option value="S">S</option>
                       <option value="M">M</option>
@@ -156,6 +166,30 @@ export function TeamRosterRequirement({
                       <option value="XL">XL</option>
                       <option value="2XL">2XL</option>
                       <option value="3XL">3XL</option>
+                      <option value="4XL">4XL</option>
+                      <option value="5XL">5XL</option>
+                      <option value="6XL">6XL</option>
+                      <option value="7XL">7XL</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1">
+                      Length (inches)
+                    </label>
+                    <select
+                      value={member.lengthTopInches || ""}
+                      onChange={(e) =>
+                        updateMember(member.id, "lengthTopInches", e.target.value)
+                      }
+                      className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">Select</option>
+                      <option value="None">None</option>
+                      <option value="Standard">Standard</option>
+                      {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
+                        <option key={num} value={num.toString()}>{num}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -171,13 +205,29 @@ export function TeamRosterRequirement({
                       className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                     >
                       <option value="">Select</option>
-                      <option value="XS">XS</option>
-                      <option value="S">S</option>
-                      <option value="M">M</option>
-                      <option value="L">L</option>
-                      <option value="XL">XL</option>
-                      <option value="2XL">2XL</option>
-                      <option value="3XL">3XL</option>
+                      <option value="None">None</option>
+                      {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
+                        <option key={num} value={num.toString()}>{num}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-neutral-600 mb-1">
+                      Length (inches)
+                    </label>
+                    <select
+                      value={member.lengthBottomInches || ""}
+                      onChange={(e) =>
+                        updateMember(member.id, "lengthBottomInches", e.target.value)
+                      }
+                      className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">Select</option>
+                      <option value="None">None</option>
+                      {Array.from({ length: 15 }, (_, i) => 18 + i).map((num) => (
+                        <option key={num} value={num.toString()}>{num}</option>
+                      ))}
                     </select>
                   </div>
                 </>
