@@ -115,7 +115,7 @@ export default function OrderDetailsPage() {
       const data = await response.json()
       let orderData = data.data || data
       
-      // Fetch order items with their status
+      // Fetch order items with their status - filter by order_id
       if (orderData.id) {
         try {
           const itemsResponse = await fetch(`${apiUrl}/order-items?order_id=${orderData.id}`, {
@@ -127,8 +127,12 @@ export default function OrderDetailsPage() {
           
           if (itemsResponse.ok) {
             const itemsData = await itemsResponse.json()
-            const items = itemsData.data || itemsData
+            let items = itemsData.data || itemsData
+            
+            // Ensure we're filtering by order_id in case API returns all items
             if (Array.isArray(items)) {
+              items = items.filter((item: OrderItem) => item.order_id === orderData.id)
+              
               orderData.items = items.map((item: OrderItem) => ({
                 ...item,
                 team_roster: parseJSON(item.team_roster),
@@ -431,13 +435,21 @@ export default function OrderDetailsPage() {
                     {item.design_file_url && (
                       <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
                         <h4 className="font-bold text-gray-900 dark:text-gray-300 mb-4 text-lg">Design Preview</h4>
-                        <div className="relative w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+                        <div className="relative w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 flex items-center justify-center">
                           <img 
                             src={item.design_file_url} 
                             alt="Design preview" 
+                            crossOrigin="anonymous"
+                            onError={(e) => {
+                              console.error("[v0] Image failed to load:", item.design_file_url)
+                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect fill='%23e5e7eb' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-size='14'%3EImage Not Found%3C/text%3E%3C/svg%3E"
+                            }}
                             className="w-full h-full object-contain p-4"
                           />
                         </div>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
+                          <span className="font-semibold">File:</span> {item.design_file_url?.split('/').pop() || 'Unknown'}
+                        </p>
                       </div>
                     )}
 
