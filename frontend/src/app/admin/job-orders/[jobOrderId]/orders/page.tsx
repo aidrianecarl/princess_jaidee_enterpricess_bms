@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X, Edit2 } from 'lucide-react'
 import { getApiImageUrl } from '@/lib/api-urls'
+import { ordersApi, jobOrdersApi } from '@/lib/api'
 
 interface TeamMember {
   id?: string
@@ -230,7 +231,7 @@ export default function JobOrderDetailPage() {
 
   const handleCompleteItem = async () => {
     const token = localStorage.getItem('admin_token')
-    if (!token || !completingItemId) return
+    if (!token || !completingItemId || !order || !jobOrder) return
 
     try {
       setIsSubmitting(true)
@@ -267,6 +268,50 @@ export default function JobOrderDetailPage() {
         )
         setOrder(updatedOrder)
         console.log('[v0] Local state updated')
+
+        // Check if at least one item is completed - update job order to in-progress
+        const hasCompletedItem = updatedOrder.items.some((item) => item.status === 'completed')
+        if (hasCompletedItem && jobOrder.status === 'pending') {
+          console.log('[v0] Updating job order status to in-progress')
+          await fetch(`${apiUrl}/admin/job-orders/${jobOrder.id}/status`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: 'in-progress' }),
+          })
+          setJobOrder({ ...jobOrder, status: 'in-progress' })
+        }
+
+        // Check if all items are completed - update to completed
+        const allCompleted = updatedOrder.items.every((item) => item.status === 'completed')
+        if (allCompleted) {
+          console.log('[v0] All items completed - updating order and job order to completed')
+          
+          // Update order status
+          await fetch(`${apiUrl}/orders/${order.id}/status`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: 'completed' }),
+          })
+          
+          // Update job order status
+          await fetch(`${apiUrl}/admin/job-orders/${jobOrder.id}/status`, {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: 'completed' }),
+          })
+          
+          setOrder({ ...updatedOrder, status: 'completed' } as Order)
+          setJobOrder({ ...jobOrder, status: 'completed' })
+        }
       }
 
       setCompleteDialogOpen(false)

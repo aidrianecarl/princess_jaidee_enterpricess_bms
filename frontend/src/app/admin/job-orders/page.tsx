@@ -16,6 +16,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { ArrowRight, Loader2, AlertCircle, Package, Eye, Calendar, Users, CheckCircle2 } from 'lucide-react'
+import { ordersApi, jobOrdersApi } from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
 
 interface JobOrder {
   id: number
@@ -39,6 +41,7 @@ interface JobOrder {
 
 export default function AdminJobOrdersPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [user, setUser] = useState(null)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -47,8 +50,6 @@ export default function AdminJobOrdersPage() {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null)
   const [isApproving, setIsApproving] = useState(false)
-
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
 
   const handleApprovalClick = (jobOrder: JobOrder) => {
     setSelectedJobOrder(jobOrder)
@@ -60,31 +61,39 @@ export default function AdminJobOrdersPage() {
     
     try {
       setIsApproving(true)
-      const token = localStorage.getItem('admin_token')
       
-      if (!token) {
-        router.push('/admin')
-        return
-      }
-
-      // Update order status to processing
-      const response = await fetch(`${apiUrl}/admin/orders/${selectedJobOrder.order_id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          order_status: 'processing'
+      // Update order status to processing using the correct API endpoint
+      const response = await ordersApi.updateStatus(selectedJobOrder.order_id, 'processing')
+      
+      if (response && response.status === 200) {
+        // Also update job order status to in-progress
+        await jobOrdersApi.updateStatus(selectedJobOrder.id, 'in-progress')
+        
+        toast({
+          title: 'Success',
+          description: 'Job order approved and marked as processing',
+          variant: 'default',
         })
-      })
-
-      if (response.ok) {
+        
         setApprovalDialogOpen(false)
-        fetchJobOrders(token)
+        const token = localStorage.getItem('admin_token')
+        if (token) {
+          fetchJobOrders(token)
+        }
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to approve job order',
+          variant: 'destructive',
+        })
       }
     } catch (err) {
       console.error('[v0] Error approving job order:', err)
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to approve job order',
+        variant: 'destructive',
+      })
     } finally {
       setIsApproving(false)
     }
