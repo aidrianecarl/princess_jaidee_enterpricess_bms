@@ -208,11 +208,18 @@ export default function OrderDetailsPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
             <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white">{order.order_number}</h1>
-            <Badge className={statusColors[order.payment_status] || statusColors.pending}>
-              {order.payment_status.toUpperCase()}
-            </Badge>
+            <div className="flex gap-2 flex-wrap">
+              <Badge className={statusColors[order.payment_status] || statusColors.pending}>
+                {order.payment_status.toUpperCase()}
+              </Badge>
+              {order.order_status === 'completed' && (
+                <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                  READY TO PICKUP
+                </Badge>
+              )}
+            </div>
           </div>
           <p className="text-neutral-600 dark:text-neutral-400 mb-6">Order placed on {formatDate(order.order_date)}</p>
 
@@ -322,7 +329,7 @@ export default function OrderDetailsPage() {
           <div className="space-y-6 mb-8">
             <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
             
-            {order.items.map((item) => {
+            {order.items.filter((item, index, arr) => arr.findIndex(t => t.id === item.id) === index).map((item) => {
               const teamRoster = Array.isArray(item.team_roster) ? item.team_roster : null
               const sizeSpecs = typeof item.size_specifications === 'object' ? item.size_specifications : null
               const statusColor = item.status === 'completed' 

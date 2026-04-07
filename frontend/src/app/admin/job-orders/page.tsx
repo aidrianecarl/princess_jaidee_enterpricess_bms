@@ -6,7 +6,16 @@ import { AdminHeader } from '@/components/admin/header'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ArrowRight, Loader2, AlertCircle, Package, Eye, Calendar, Users } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { ArrowRight, Loader2, AlertCircle, Package, Eye, Calendar, Users, CheckCircle2 } from 'lucide-react'
 
 interface JobOrder {
   id: number
@@ -35,8 +44,51 @@ export default function AdminJobOrdersPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
   const [error, setError] = useState('')
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
+  const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null)
+  const [isApproving, setIsApproving] = useState(false)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
+
+  const handleApprovalClick = (jobOrder: JobOrder) => {
+    setSelectedJobOrder(jobOrder)
+    setApprovalDialogOpen(true)
+  }
+
+  const handleApproveJobOrder = async () => {
+    if (!selectedJobOrder) return
+    
+    try {
+      setIsApproving(true)
+      const token = localStorage.getItem('admin_token')
+      
+      if (!token) {
+        router.push('/admin')
+        return
+      }
+
+      // Update order status to processing
+      const response = await fetch(`${apiUrl}/admin/orders/${selectedJobOrder.order_id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          order_status: 'processing'
+        })
+      })
+
+      if (response.ok) {
+        setApprovalDialogOpen(false)
+        fetchJobOrders(token)
+      }
+    } catch (err) {
+      console.error('[v0] Error approving job order:', err)
+    } finally {
+      setIsApproving(false)
+    }
+  }
 
   useEffect(() => {
     checkAuth()
@@ -235,14 +287,25 @@ export default function AdminJobOrdersPage() {
                             )}
                           </div>
 
-                          {/* Right Button */}
-                          <Button
-                            onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
-                            className="bg-orange-500 hover:bg-orange-600 text-white w-full md:w-auto h-10 md:h-auto md:min-w-[140px] flex items-center justify-center gap-2"
-                          >
-                            <Eye size={18} />
-                            View Details
-                          </Button>
+                          {/* Right Buttons */}
+                          <div className="flex gap-2 w-full md:w-auto flex-col md:flex-row">
+                            <Button
+                              onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
+                              className="bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[140px] flex items-center justify-center gap-2"
+                            >
+                              <Eye size={18} />
+                              View Details
+                            </Button>
+                            {jobOrder.status !== 'completed' && (
+                              <Button
+                                onClick={() => handleApprovalClick(jobOrder)}
+                                className="bg-green-600 hover:bg-green-700 text-white h-10 md:h-auto md:min-w-[140px] flex items-center justify-center gap-2"
+                              >
+                                <CheckCircle2 size={18} />
+                                Approve
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -253,6 +316,30 @@ export default function AdminJobOrdersPage() {
           </div>
         </main>
       </div>
+
+      {/* Approval Dialog */}
+      <AlertDialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
+        <AlertDialogContent className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-neutral-900 dark:text-white">Approve Job Order?</AlertDialogTitle>
+            <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
+              Are you sure you want to approve <span className="font-semibold">{selectedJobOrder?.job_order_number}</span>? This will update the order status to processing and notify the customer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3 justify-end">
+            <AlertDialogCancel className="border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleApproveJobOrder}
+              disabled={isApproving}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              {isApproving ? 'Approving...' : 'Yes, Approve'}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
