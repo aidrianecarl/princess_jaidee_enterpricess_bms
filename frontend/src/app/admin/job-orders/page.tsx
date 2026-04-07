@@ -51,6 +51,9 @@ export default function AdminJobOrdersPage() {
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null)
   const [isApproving, setIsApproving] = useState(false)
 
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
+  
   const handleApprovalClick = (jobOrder: JobOrder) => {
     setSelectedJobOrder(jobOrder)
     setApprovalDialogOpen(true)
