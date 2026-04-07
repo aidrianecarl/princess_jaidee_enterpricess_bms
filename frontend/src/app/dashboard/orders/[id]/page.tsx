@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft, DollarSign, Package, Loader, Calendar, FileText, Check, Clock, Zap, CheckCircle2 } from "lucide-react"
+import { getApiImageUrl } from "@/lib/api-urls"
 
 interface OrderItem {
   id: number
@@ -437,7 +438,7 @@ export default function OrderDetailsPage() {
                         <h4 className="font-bold text-gray-900 dark:text-gray-300 mb-4 text-lg">Design Preview</h4>
                         <div className="relative w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 flex items-center justify-center">
                           <img 
-                            src={item.design_file_url} 
+                            src={getApiImageUrl(item.design_file_url)} 
                             alt="Design preview" 
                             crossOrigin="anonymous"
                             onError={(e) => {
