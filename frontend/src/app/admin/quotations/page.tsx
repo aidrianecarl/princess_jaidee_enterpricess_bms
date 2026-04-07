@@ -31,12 +31,31 @@ export default function AdminQuotationsPage() {
   const [quotations, setQuotations] = useState<any[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState("pending")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [filteredQuotations, setFilteredQuotations] = useState<any[]>([])
+  const itemsPerPage = 10
   const { toast } = useToast()
   const router = useRouter()
 
   useEffect(() => {
     fetchQuotations()
   }, [statusFilter])
+
+  useEffect(() => {
+    // Filter quotations based on search query
+    const filtered = quotations.filter((q) => {
+      const quotationNumber = q.quotation_number?.toLowerCase() || ""
+      const customerName = (q.customer?.bill_to_name || q.bill_to_name || "").toLowerCase()
+      const customerEmail = (q.customer?.bill_to_email || q.bill_to_email || "").toLowerCase()
+      const query = searchQuery.toLowerCase()
+      
+      return quotationNumber.includes(query) || customerName.includes(query) || customerEmail.includes(query)
+    })
+    
+    setFilteredQuotations(filtered)
+    setCurrentPage(1)
+  }, [searchQuery, quotations])
 
   const fetchQuotations = async () => {
     try {
@@ -87,6 +106,22 @@ export default function AdminQuotationsPage() {
           <p className="text-neutral-600 dark:text-neutral-400">Review and approve pending client quotations</p>
         </div>
 
+        {/* Search Bar */}
+        <div className="animate-slide-up">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search by Quotation #, Customer, or Email..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 pl-10 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
+            <svg className="absolute left-3 top-3.5 w-5 h-5 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+
         {/* Filters */}
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
@@ -116,39 +151,42 @@ export default function AdminQuotationsPage() {
                 <div className="w-12 h-12 border-4 border-red-600 border-t-transparent rounded-full" />
               </div>
             </div>
-          ) : quotations.length === 0 ? (
+          ) : filteredQuotations.length === 0 ? (
             <div className="flex items-center justify-center p-12 text-neutral-500 dark:text-neutral-400">
-              <p>No quotations found</p>
+              <p>{searchQuery ? "No quotations match your search" : "No quotations found"}</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Quotation #
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Customer
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Email
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Amount
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                      Created
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {isLoading
-                    ? Array.from({ length: 5 }).map((_, i) => <QuotationSkeleton key={i} />)
-                    : quotations.map((quotation, idx) => {
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-neutral-50 dark:bg-neutral-800 border-b border-neutral-200 dark:border-neutral-700">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                        Quotation #
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                        Customer
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                        Email
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                        Amount
+                      </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                        Created
+                      </th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold text-neutral-900 dark:text-white">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading
+                      ? Array.from({ length: 5 }).map((_, i) => <QuotationSkeleton key={i} />)
+                      : filteredQuotations
+                          .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                          .map((quotation, idx) => {
                         // Get customer data from relationship
                         const customerName = quotation.customer?.bill_to_name || quotation.bill_to_name || "Unknown Customer"
                         const customerEmail = quotation.customer?.bill_to_email || quotation.bill_to_email || "-"
@@ -189,9 +227,48 @@ export default function AdminQuotationsPage() {
                           </tr>
                         )
                       })}
-                </tbody>
-              </table>
-            </div>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              {filteredQuotations.length > itemsPerPage && (
+                <div className="p-6 border-t border-neutral-200 dark:border-neutral-700 flex items-center justify-between">
+                  <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredQuotations.length)} of {filteredQuotations.length} quotations
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: Math.ceil(filteredQuotations.length / itemsPerPage) }).map((_, i) => (
+                      <button
+                        key={i + 1}
+                        onClick={() => setCurrentPage(i + 1)}
+                        className={`px-3 py-2 rounded-lg font-medium transition ${
+                          currentPage === i + 1
+                            ? "bg-orange-600 text-white"
+                            : "border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredQuotations.length / itemsPerPage)))}
+                      disabled={currentPage === Math.ceil(filteredQuotations.length / itemsPerPage)}
+                      className="px-4 py-2 rounded-lg border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-50 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

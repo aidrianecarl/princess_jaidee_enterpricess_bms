@@ -334,6 +334,20 @@ export default function ViewQuotationPage() {
                       </div>
                     )}
 
+                    {/* Design Preview */}
+                    {item.design_file_url && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
+                        <h4 className="font-bold text-gray-900 dark:text-gray-300 mb-4 text-lg">Design Preview</h4>
+                        <div className="relative w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+                          <img 
+                            src={item.design_file_url} 
+                            alt="Design preview" 
+                            className="w-full h-full object-contain p-4"
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     {/* Notes */}
                     {item.notes && typeof item.notes === 'object' && Object.keys(item.notes).length > 0 && (
                       <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">

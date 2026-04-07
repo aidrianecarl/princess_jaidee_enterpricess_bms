@@ -230,8 +230,10 @@ export default function MyOrdersPage() {
                       <p className="font-semibold text-neutral-900 dark:text-white">{order.items?.length || 0}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Tax</p>
-                      <p className="font-semibold text-neutral-900 dark:text-white">₱{order.tax.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Payment Status</p>
+                      <Badge className={statusColors[order.payment_status]?.badge || statusColors.unpaid.badge}>
+                        {order.payment_status.toUpperCase()}
+                      </Badge>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg">
                       <p className="text-xs text-orange-700 dark:text-orange-400 font-medium">Total</p>

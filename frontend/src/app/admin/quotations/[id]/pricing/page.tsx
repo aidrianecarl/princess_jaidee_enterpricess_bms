@@ -5,8 +5,10 @@ import { AdminLayout } from "@/components/admin/admin-layout"
 
 export default function AdminQuotationPricingPage() {
   return (
-    <AdminLayout>
-      <AdminQuotationPricing />
-    </AdminLayout>
+    <div className="min-h-screen bg-white dark:bg-neutral-950">
+      <AdminLayout>
+        <AdminQuotationPricing />
+      </AdminLayout>
+    </div>
   )
 }

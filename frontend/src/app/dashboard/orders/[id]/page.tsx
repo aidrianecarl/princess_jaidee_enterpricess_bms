@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, DollarSign, Package, Loader, Calendar, FileText } from "lucide-react"
+import { ArrowLeft, DollarSign, Package, Loader, Calendar, FileText, Check, Clock, Zap, CheckCircle2 } from "lucide-react"
 
 interface OrderItem {
   id: number
@@ -15,6 +15,11 @@ interface OrderItem {
   service_id: number | null
   quantity: number
   unit_price: number
+  status?: string
+  design_file_url?: string
+  team_roster?: any
+  size_specifications?: any
+  notes?: any
   service?: { id: number; name: string }
 }
 
@@ -42,6 +47,17 @@ const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200",
 }
 
+const orderStatusSteps = [
+  { key: "pending", label: "Pending", icon: Clock },
+  { key: "processing", label: "Processing", icon: Zap },
+  { key: "InProduction", label: "In Production", icon: Package },
+  { key: "completed", label: "Completed", icon: CheckCircle2 },
+]
+
+const getOrderStatusIndex = (status: string): number => {
+  return orderStatusSteps.findIndex(step => step.key === status)
+}
+
 export default function OrderDetailsPage() {
   const router = useRouter()
   const params = useParams()
@@ -62,6 +78,17 @@ export default function OrderDetailsPage() {
       fetchOrderDetails()
     }
   }, [user, params.id])
+
+  const parseJSON = (value: any): any => {
+    if (typeof value === 'string') {
+      try {
+        return JSON.parse(value)
+      } catch {
+        return null
+      }
+    }
+    return value
+  }
 
   const fetchOrderDetails = async () => {
     try {
@@ -86,7 +113,35 @@ export default function OrderDetailsPage() {
       }
 
       const data = await response.json()
-      const orderData = data.data || data
+      let orderData = data.data || data
+      
+      // Fetch order items with their status
+      if (orderData.id) {
+        try {
+          const itemsResponse = await fetch(`${apiUrl}/order-items?order_id=${orderData.id}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          })
+          
+          if (itemsResponse.ok) {
+            const itemsData = await itemsResponse.json()
+            const items = itemsData.data || itemsData
+            if (Array.isArray(items)) {
+              orderData.items = items.map((item: OrderItem) => ({
+                ...item,
+                team_roster: parseJSON(item.team_roster),
+                size_specifications: parseJSON(item.size_specifications),
+                notes: parseJSON(item.notes),
+              }))
+            }
+          }
+        } catch (itemErr) {
+          console.error("[v0] Error fetching order items:", itemErr)
+        }
+      }
+      
       setOrder(orderData)
     } catch (err) {
       console.error("[v0] Error fetching order:", err)
@@ -148,13 +203,62 @@ export default function OrderDetailsPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white">{order.order_number}</h1>
             <Badge className={statusColors[order.payment_status] || statusColors.pending}>
               {order.payment_status.toUpperCase()}
             </Badge>
           </div>
-          <p className="text-neutral-600 dark:text-neutral-400">Order placed on {formatDate(order.order_date)}</p>
+          <p className="text-neutral-600 dark:text-neutral-400 mb-6">Order placed on {formatDate(order.order_date)}</p>
+
+          {/* Order Status Timeline */}
+          <Card className="p-6 border-neutral-200 dark:border-neutral-800 bg-gradient-to-r from-neutral-50 to-white dark:from-neutral-800 dark:to-neutral-900">
+            <h3 className="text-lg font-bold text-neutral-900 dark:text-white mb-6">Order Status</h3>
+            <div className="flex items-center justify-between">
+              {orderStatusSteps.map((step, index) => {
+                const currentIndex = getOrderStatusIndex(order.order_status || "pending")
+                const isActive = index <= currentIndex
+                const isCurrent = index === currentIndex
+                const Icon = step.icon
+
+                return (
+                  <div key={step.key} className="flex flex-col items-center flex-1">
+                    <div className="flex items-center w-full">
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all duration-500 ${
+                          isActive
+                            ? isCurrent
+                              ? "bg-orange-500 text-white scale-110 animate-pulse"
+                              : "bg-green-500 text-white"
+                            : "bg-neutral-200 dark:bg-neutral-700 text-neutral-500 dark:text-neutral-400"
+                        }`}
+                      >
+                        {isActive && !isCurrent ? <Check size={24} /> : <Icon size={24} />}
+                      </div>
+                      {index < orderStatusSteps.length - 1 && (
+                        <div
+                          className={`flex-1 h-1 mx-2 transition-all duration-500 ${
+                            index < currentIndex
+                              ? "bg-green-500"
+                              : "bg-neutral-200 dark:bg-neutral-700"
+                          }`}
+                        />
+                      )}
+                    </div>
+                    <p className={`text-sm font-medium mt-2 text-center ${
+                      isActive
+                        ? isCurrent
+                          ? "text-orange-600 dark:text-orange-400"
+                          : "text-green-600 dark:text-green-400"
+                        : "text-neutral-500 dark:text-neutral-400"
+                    }`}>
+                      {step.label}
+                    </p>
+                  </div>
+                )
+              })}
+            </div>
+          </Card>
         </div>
 
         {/* Summary Cards */}
@@ -209,44 +313,172 @@ export default function OrderDetailsPage() {
         </div>
 
         {/* Order Items */}
-        <Card className="border-neutral-200 dark:border-neutral-800 mb-8">
-          <div className="p-6 border-b border-neutral-200 dark:border-neutral-800">
-            <h2 className="text-xl font-bold text-neutral-900 dark:text-white flex items-center gap-2">
-              <Package size={24} className="text-orange-500" />
-              Order Items
-            </h2>
-          </div>
-          <div className="divide-y divide-neutral-200 dark:divide-neutral-800">
-            {order.items && order.items.length > 0 ? (
-              order.items.map((item) => (
-                <div key={item.id} className="p-6 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <p className="font-semibold text-neutral-900 dark:text-white">
-                        {item.service?.name || `Item #${item.id}`}
-                      </p>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                        Quantity: {item.quantity}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-neutral-900 dark:text-white">
-                        ₱{(item.unit_price * item.quantity).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                        ₱{item.unit_price.toLocaleString("en-PH", { minimumFractionDigits: 2 })} each
-                      </p>
+        {order.items && order.items.length > 0 && (
+          <div className="space-y-6 mb-8">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Order Items</h2>
+            
+            {order.items.map((item) => {
+              const teamRoster = Array.isArray(item.team_roster) ? item.team_roster : null
+              const sizeSpecs = typeof item.size_specifications === 'object' ? item.size_specifications : null
+              const statusColor = item.status === 'completed' 
+                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200'
+                : item.status === 'InProduction'
+                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                : item.status === 'processing'
+                ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+                : 'bg-gray-100 dark:bg-gray-900/30 text-gray-800 dark:text-gray-200'
+
+              return (
+                <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 shadow-md hover:shadow-lg transition">
+                  {/* Item Header */}
+                  <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-b border-neutral-200 dark:border-neutral-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
+                          {item.service?.name || `Item #${item.id}`}
+                        </h3>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                            Quantity: <span className="font-semibold text-neutral-900 dark:text-white">{item.quantity}</span>
+                          </span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
+                            {(item.status || 'pending').toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">Total</p>
+                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                          ₱{(item.quantity * item.unit_price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
                     </div>
                   </div>
+
+                  {/* Content */}
+                  <div className="p-6 space-y-6">
+                    {/* Team Roster */}
+                    {teamRoster && teamRoster.length > 0 && (
+                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster</h4>
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/50">
+                                <th className="px-4 py-3 text-left font-semibold text-blue-900 dark:text-blue-300">Player Name</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top Size</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom Size</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {teamRoster.map((player: any, idx: number) => (
+                                <tr key={idx} className="border-b border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
+                                  <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">{player.name}</td>
+                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
+                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '—'}</td>
+                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Size Specifications */}
+                    {sizeSpecs && Object.keys(sizeSpecs).length > 0 && (
+                      <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <h4 className="font-bold text-purple-900 dark:text-purple-300 mb-4 text-lg">
+                          {item.service?.name?.includes('Tarpaulin') ? 'Tarpaulin Size Specification' : 'Uniform Size'}
+                        </h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          {sizeSpecs.width && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width} ft</p>
+                            </div>
+                          )}
+                          {sizeSpecs.height && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height} ft</p>
+                            </div>
+                          )}
+                          {sizeSpecs.totalSqft && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft} sq ft</p>
+                            </div>
+                          )}
+                          {sizeSpecs.top && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
+                            </div>
+                          )}
+                          {sizeSpecs.bottom && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
+                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Design Preview */}
+                    {item.design_file_url && (
+                      <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
+                        <h4 className="font-bold text-gray-900 dark:text-gray-300 mb-4 text-lg">Design Preview</h4>
+                        <div className="relative w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700">
+                          <img 
+                            src={item.design_file_url} 
+                            alt="Design preview" 
+                            className="w-full h-full object-contain p-4"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {item.notes && typeof item.notes === 'object' && Object.keys(item.notes).length > 0 && (
+                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <h4 className="font-bold text-amber-900 dark:text-amber-300 mb-4 text-lg">Notes</h4>
+                        <div className="space-y-3">
+                          {item.notes.designNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Design Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.designNotes}</p>
+                            </div>
+                          )}
+                          {item.notes.sizeNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Size Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.sizeNotes}</p>
+                            </div>
+                          )}
+                          {item.notes.teamNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Team Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.teamNotes}</p>
+                            </div>
+                          )}
+                          {item.notes.additionalNotes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Additional Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.additionalNotes}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ))
-            ) : (
-              <div className="p-6 text-center text-neutral-600 dark:text-neutral-400">
-                No items in this order
-              </div>
-            )}
+              )
+            })}
           </div>
-        </Card>
+        )}
 
         {/* Order Details */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
