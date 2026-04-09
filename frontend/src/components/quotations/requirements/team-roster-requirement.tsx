@@ -90,16 +90,7 @@ export function TeamRosterRequirement({
             Team Roster {isRequired && <span className="text-red-500">*</span>}
           </h3>
         </div>
-        <Button
-          type="button"
-          onClick={addMember}
-          variant="outline"
-          size="sm"
-          className="gap-1 bg-transparent"
-        >
-          <Plus size={16} />
-          Add Player
-        </Button>
+        
       </div>
 
       {/* Sizing Guide Tables */}
@@ -339,6 +330,16 @@ export function TeamRosterRequirement({
                 </>
               )}
             </div>
+            <Button
+            type="button"
+            onClick={addMember}
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-transparent"
+          >
+            <Plus size={16} />
+            Add Player
+          </Button>
 
             {members.length > 1 && (
               <div className="flex justify-end">
