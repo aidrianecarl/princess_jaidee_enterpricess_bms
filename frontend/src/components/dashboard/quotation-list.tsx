@@ -1,18 +1,10 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Eye, FileText, Download, Printer, Send, Edit, Package } from "lucide-react"
+import { FileText, Send, Edit, Package, Loader2 } from "lucide-react"
 import { QuotationSkeleton } from "./quotation-skeleton"
 import { QuotationViewModal } from "./quotation-view-modal"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
 
 interface Quotation {
@@ -40,6 +32,9 @@ export function QuotationList() {
   const [showSendDialog, setShowSendDialog] = useState(false)
   const [quotationToSend, setQuotationToSend] = useState<Quotation | null>(null)
   const [isSending, setIsSending] = useState(false)
+  const [branches, setBranches] = useState<any[]>([])
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -126,9 +121,41 @@ export function QuotationList() {
     setIsModalOpen(true)
   }
 
+  const fetchBranches = async () => {
+    setIsLoadingBranches(true)
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) return
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/branches`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const branchList = Array.isArray(data) ? data : data.branches || data.data || []
+        setBranches(branchList)
+        // Auto-select main branch if available
+        const mainBranch = branchList?.find((b: any) => b.is_main_branch)
+        if (mainBranch) {
+          setSelectedBranchId(mainBranch.id)
+        } else if (branchList?.length > 0) {
+          setSelectedBranchId(branchList[0].id)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching branches:", error)
+    } finally {
+      setIsLoadingBranches(false)
+    }
+  }
+
   const handleSendForApproval = (quotation: Quotation) => {
     setQuotationToSend(quotation)
     setShowSendDialog(true)
+    fetchBranches()
   }
 
   const confirmSendForApproval = async () => {
@@ -144,7 +171,7 @@ export function QuotationList() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({ status: "pending" }),
+          body: JSON.stringify({ status: "pending", branch_id: selectedBranchId }),
         }
       )
 
@@ -160,9 +187,10 @@ export function QuotationList() {
           )
         )
       } else {
+        const errorData = await response.json()
         toast({
           title: "Error",
-          description: "Failed to send quotation for approval",
+          description: errorData.message || "Failed to send quotation for approval",
           variant: "destructive",
         })
       }
@@ -177,6 +205,7 @@ export function QuotationList() {
       setIsSending(false)
       setShowSendDialog(false)
       setQuotationToSend(null)
+      setSelectedBranchId(null)
     }
   }
 
@@ -276,7 +305,7 @@ export function QuotationList() {
                     className="p-2 hover:bg-red-100 text-gray-600 hover:text-red-600 rounded-lg transition"
                     title="View Quotation"
                   >
-                    <Eye size={18} />
+                    <FileText size={18} />
                   </button>
 
                   {quotation.status === "draft" && (
@@ -298,19 +327,6 @@ export function QuotationList() {
                       <Send size={18} />
                     </button>
                   )}
-
-                  <button
-                    className="p-2 hover:bg-orange-100 text-gray-600 hover:text-orange-600 rounded-lg transition"
-                    title="Download PDF"
-                  >
-                    <Download size={18} />
-                  </button>
-                  <button
-                    className="p-2 hover:bg-purple-100 text-gray-600 hover:text-purple-600 rounded-lg transition"
-                    title="Print"
-                  >
-                    <Printer size={18} />
-                  </button>
                 </div>
               </div>
             ))}
@@ -320,31 +336,78 @@ export function QuotationList() {
 
       <QuotationViewModal quotation={selectedQuotation} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
 
-      <AlertDialog open={showSendDialog} onOpenChange={setShowSendDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Send Quotation for Approval?</AlertDialogTitle>
-            <AlertDialogDescription>
+      {/* Send for Approval Modal */}
+      {showSendDialog && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-neutral-200 dark:border-neutral-800">
+            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">
+              Send Quotation for Admin Review
+            </h2>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
               Are you sure you want to send quotation{" "}
-              <span className="font-bold text-gray-900">{quotationToSend?.quotation_number}</span> to admin for approval
-              and scheduling?
+              <span className="font-bold text-gray-900 dark:text-white">{quotationToSend?.quotation_number}</span> to admin
+              for review and scheduling?
               <br />
               <br />
-              Once sent, you won't be able to edit this quotation until it's reviewed.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-3 justify-end">
-            <AlertDialogCancel disabled={isSending}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmSendForApproval}
-              disabled={isSending}
-              className="bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600"
-            >
-              {isSending ? "Sending..." : "Send for Approval"}
-            </AlertDialogAction>
+              Once sent, you won&apos;t be able to edit this quotation until it&apos;s reviewed.
+            </p>
+
+            {isLoadingBranches ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-orange-500" />
+                <span className="ml-2 text-neutral-600 dark:text-neutral-400">Loading branches...</span>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
+                  Select Branch
+                </label>
+                <select
+                  value={selectedBranchId || ""}
+                  onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-orange-500"
+                >
+                  <option value="">-- Select a branch --</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name} {branch.is_main_branch ? "(Main)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  setShowSendDialog(false)
+                  setQuotationToSend(null)
+                  setSelectedBranchId(null)
+                }}
+                variant="outline"
+                className="flex-1"
+                disabled={isSending}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={confirmSendForApproval}
+                disabled={isSending || !selectedBranchId || isLoadingBranches}
+                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-2" />
+                    Sending...
+                  </>
+                ) : (
+                  "Send for Review"
+                )}
+              </Button>
+            </div>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
     </>
   )
 }

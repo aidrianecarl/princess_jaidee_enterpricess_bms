@@ -229,14 +229,14 @@ class QuotationController extends Controller
             'customer_city' => 'nullable|string',
             'customer_province' => 'nullable|string',
             'customer_zip_code' => 'nullable|string',
-            'bill_to_name' => 'required|string',
+            'bill_to_name' => 'nullable|string',
             'bill_to_street' => 'nullable|string',
             'bill_to_city' => 'nullable|string',
             'bill_to_state' => 'nullable|string',
             'bill_to_postal' => 'nullable|string',
             'bill_to_phone' => 'nullable|string',
             'bill_to_email' => 'nullable|email',
-            'business_name' => 'required|string',
+            'business_name' => 'nullable|string',
             'business_address' => 'nullable|string',
             'business_city' => 'nullable|string',
             'business_state' => 'nullable|string',
@@ -348,7 +348,7 @@ class QuotationController extends Controller
 
             // Create customer record FIRST with bill-to information
             $customer = Customer::create([
-                'bill_to_name' => $request->bill_to_name,
+                'bill_to_name' => $request->bill_to_name ?? 'Customer',
                 'bill_to_street' => $request->bill_to_street,
                 'bill_to_city' => $request->bill_to_city,
                 'bill_to_state' => $request->bill_to_state,
