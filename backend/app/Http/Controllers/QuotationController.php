@@ -229,7 +229,7 @@ class QuotationController extends Controller
             'customer_city' => 'nullable|string',
             'customer_province' => 'nullable|string',
             'customer_zip_code' => 'nullable|string',
-            'bill_to_name' => 'nullable|string',
+            'bill_to_name' => 'required|string',
             'bill_to_street' => 'nullable|string',
             'bill_to_city' => 'nullable|string',
             'bill_to_state' => 'nullable|string',
@@ -257,6 +257,7 @@ class QuotationController extends Controller
             'notes' => 'nullable|string',
             'valid_until' => 'nullable|date',
             'status' => 'nullable|in:draft,pending',
+            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         if ($validator->fails()) {
@@ -361,6 +362,7 @@ class QuotationController extends Controller
                 'quotation_number' => $quotationNumber,
                 'customer_id' => $customer->id,
                 'created_by' => $userId,
+                'branch_id' => $request->branch_id ?? null,
                 'logo_url' => $logoUrl,
                 'business_name' => $request->business_name,
                 'business_address' => $request->business_address,
@@ -1123,7 +1125,7 @@ class QuotationController extends Controller
         }
     }
 
-    // Send quotation to specific branch
+    // Send quotation to specific branch (update branch_id and mark as sent)
     public function sendQuotationToBranch(Request $request, $id)
     {
         try {
@@ -1135,7 +1137,6 @@ class QuotationController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'branch_id' => 'required|exists:branches,id',
-                'send_via' => 'nullable|in:email,system,both',
             ]);
 
             if ($validator->fails()) {
@@ -1148,13 +1149,10 @@ class QuotationController extends Controller
                 return response()->json(['error' => 'Branch not found'], 404);
             }
 
-            // Update quotation with send information
+            // Update quotation with branch_id only
             $quotation->update([
-                'sent_to_branch_id' => $branch->id,
-                'sent_to_branch_name' => $branch->name,
-                'sent_via' => $request->send_via ?? 'system',
-                'sent_at' => Carbon::now(),
-                'status' => 'sent',
+                'branch_id' => $branch->id,
+                'status' => 'pending',
             ]);
 
             Log::info('Quotation sent to branch', [
@@ -1162,20 +1160,16 @@ class QuotationController extends Controller
                 'branch_id' => $branch->id,
                 'branch_name' => $branch->name,
                 'sent_by_user' => auth()->id(),
-                'sent_via' => $request->send_via ?? 'system',
-                'customer_email' => $quotation->customer?->bill_to_email,
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => "Quotation sent successfully to {$branch->name} branch",
+                'message' => "Quotation sent successfully to {$branch->name}",
                 'data' => [
                     'quotation_id' => $quotation->id,
                     'quotation_number' => $quotation->quotation_number,
                     'branch_id' => $branch->id,
                     'branch_name' => $branch->name,
-                    'sent_at' => $quotation->sent_at,
-                    'sent_via' => $quotation->sent_via,
                 ],
             ], 200);
 

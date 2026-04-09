@@ -930,6 +930,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "pending")
 
+      // This will be updated by the modal when branch is selected
+      // formDataToSend.append("branch_id", selectedBranchId || "")
+
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(
         lineItems.map(async (item, index) => {
@@ -1262,10 +1265,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="font-semibold text-gray-900">{branch.name}</p>
-                        {branch.is_main_branch && (
+                        {branch.is_main_branch === 1 ? (
                           <span className="inline-block mt-1 text-xs font-bold bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded-full">
                             Main Branch
                           </span>
+                        ) : (
+                          <span className="inline-block mt-1 text-xs font-medium text-gray-500">Branch</span>
                         )}
                       </div>
                       <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
