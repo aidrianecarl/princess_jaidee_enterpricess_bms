@@ -173,7 +173,16 @@ class OrderController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $order->update($request->only(['status', 'payment_status']));
+        // Update order_status and payment_status
+        $updateData = [];
+        if ($request->has('status')) {
+            $updateData['order_status'] = $request->status;
+        }
+        if ($request->has('payment_status')) {
+            $updateData['payment_status'] = $request->payment_status;
+        }
+
+        $order->update($updateData);
 
         return response()->json([
             'message' => 'Order updated successfully',

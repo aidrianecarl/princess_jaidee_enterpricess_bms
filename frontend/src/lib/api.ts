@@ -111,42 +111,42 @@ export const quotationsApi = {
 
 export const ordersApi = {
   getAll: (page = 1, status = '', search = '') =>
-    apiClient.admin().get('/orders', { params: { page, status, search } }),
+    apiClient.admin().get('/admin/orders', { params: { page, status, search } }),
 
   getById: (id: number) =>
-    apiClient.admin().get(`/orders/${id}`),
+    apiClient.admin().get(`/admin/orders/${id}`),
 
   create: (data: any) =>
-    apiClient.admin().post('/orders', data),
+    apiClient.admin().post('/admin/orders', data),
 
   update: (id: number, data: any) =>
-    apiClient.admin().put(`/orders/${id}`, data),
+    apiClient.admin().put(`/admin/orders/${id}`, data),
 
   updateStatus: (id: number, status: string) =>
-    apiClient.admin().put(`/orders/${id}/status`, { status }),
+    apiClient.admin().put(`/admin/orders/${id}/status`, { status }),
 
   delete: (id: number) =>
-    apiClient.admin().delete(`/orders/${id}`),
+    apiClient.admin().delete(`/admin/orders/${id}`),
 }
 
 export const jobOrdersApi = {
   getAll: (page = 1, status = '', search = '') =>
-    apiClient.admin().get('/job-orders', { params: { page, status, search } }),
+    apiClient.admin().get('/admin/job-orders', { params: { page, status, search } }),
 
   getById: (id: number) =>
-    apiClient.admin().get(`/job-orders/${id}`),
+    apiClient.admin().get(`/admin/job-orders/${id}`),
 
   create: (data: any) =>
-    apiClient.admin().post('/job-orders', data),
+    apiClient.admin().post('/admin/job-orders', data),
 
   update: (id: number, data: any) =>
-    apiClient.admin().put(`/job-orders/${id}`, data),
+    apiClient.admin().put(`/admin/job-orders/${id}`, data),
 
   updateStatus: (id: number, status: string) =>
-    apiClient.admin().put(`/job-orders/${id}/status`, { status }),
+    apiClient.admin().put(`/admin/job-orders/${id}/status`, { status }),
 
   assignDesigner: (id: number, designerId: number) =>
-    apiClient.admin().post(`/job-orders/${id}/assign`, { designer_id: designerId }),
+    apiClient.admin().post(`/admin/job-orders/${id}/assign`, { designer_id: designerId }),
 }
 
 export const dashboardApi = {
