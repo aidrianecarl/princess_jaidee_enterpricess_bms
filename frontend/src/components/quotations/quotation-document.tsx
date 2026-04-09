@@ -827,9 +827,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       })
 
       const data = await response.json()
+      console.log("[v0] Save quotation response status:", response.status)
+      console.log("[v0] Save quotation response data:", data)
 
       if (!response.ok) {
-        console.log("Backend validation errors:", data.errors || data.message || data)
+        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
         const errorMessages = data.errors
           ? Object.entries(data.errors)
             .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
@@ -845,201 +847,36 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         return
       }
 
-      // Store the quotation ID for sending to branch
+      // Store the quotation ID for sending to admin
       if (data.data && data.data.id) {
+        console.log("[v0] Quotation saved with ID:", data.data.id)
         setSavedQuotationId(data.data.id)
-      }
-
-      toast({
-        title: "Success",
-        description: isEditMode ? "Quotation updated successfully" : "Quotation saved as draft successfully",
-      })
-
-      sessionStorage.removeItem("quotationDraft")
-      sessionStorage.removeItem("quotationPreviewData")
-      setFormData(getInitialFormData())
-      setLineItems([])
-      setLogoPreview("")
-      await new Promise((resolve) => setTimeout(resolve, 500))
-
-      router.push("/dashboard")
-    } catch (error: any) {
-      console.log("Save error:", error.message)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to save quotation",
-        variant: "destructive",
-      })
-    } finally {
-      setIsSaving(false)
-      setShowConfirmDialog(false)
-    }
-  }
-
-  const confirmSendForApproval = async () => {
-    setIsSending(true)
-    try {
-      const token = localStorage.getItem("auth_token")
-      if (!token) {
+        
         toast({
-          title: "Authentication Error",
-          description: "Please log in to send quotations",
-          variant: "destructive",
+          title: "Success",
+          description: isEditMode ? "Quotation updated successfully" : "Quotation saved successfully",
         })
-        return
-      }
 
-      // First save the quotation as draft if it's new
-      const formDataToSend = new FormData()
-
-      // Add customer fields
-      formDataToSend.append("customer_name", formData.clientName || "")
-      formDataToSend.append("customer_email", formData.clientEmail || "")
-      formDataToSend.append("customer_phone", formData.clientPhone || "")
-      formDataToSend.append("customer_address", formData.clientAddress || "")
-      formDataToSend.append("customer_city", formData.clientCity || "")
-      formDataToSend.append("customer_province", formData.clientState || "")
-      formDataToSend.append("customer_zip_code", formData.clientPostal || "")
-
-      // Add bill_to fields (map from client fields for database customers table)
-      formDataToSend.append("bill_to_name", formData.clientName || "")
-      formDataToSend.append("bill_to_email", formData.clientEmail || "")
-      formDataToSend.append("bill_to_phone", formData.clientPhone || "")
-      formDataToSend.append("bill_to_street", formData.clientAddress || "")
-      formDataToSend.append("bill_to_city", formData.clientCity || "")
-      formDataToSend.append("bill_to_state", formData.clientState || "")
-      formDataToSend.append("bill_to_postal", formData.clientPostal || "")
-
-      // Add business fields
-      formDataToSend.append("business_name", formData.businessName || "")
-      formDataToSend.append("business_address", formData.businessAddress || "")
-      formDataToSend.append("business_city", formData.businessCity || "")
-      formDataToSend.append("business_state", formData.businessState || "")
-      formDataToSend.append("business_postal", formData.businessPostal || "")
-      formDataToSend.append("business_phone", formData.businessPhone || "")
-      formDataToSend.append("business_email", formData.businessEmail || "")
-
-      if (formData.logo && formData.logo instanceof File) {
-        console.log("Appending logo file to FormData for send")
-        formDataToSend.append("logo", formData.logo)
-      } else if (formData.logoUrl) {
-        console.log("Logo URL already exists, skipping re-upload:", formData.logoUrl)
-      }
-
-      formDataToSend.append("notes", formData.notes || "")
-      formDataToSend.append("valid_until", formData.validUntil || "")
-      formDataToSend.append("status", "pending")
-
-      // This will be updated by the modal when branch is selected
-      // formDataToSend.append("branch_id", selectedBranchId || "")
-
-      // Upload design files and get URLs
-      const itemsPayload = await Promise.all(
-        lineItems.map(async (item, index) => {
-          let designFileUrl = null
-          
-          // If there's a design file, upload it
-          if (item.serviceRequirements?.designFile instanceof File) {
-            try {
-              const designFormData = new FormData()
-              designFormData.append("design_file", item.serviceRequirements.designFile)
-              
-              const uploadResponse = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
-                {
-                  method: "POST",
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                  body: designFormData,
-                }
-              )
-              
-              if (uploadResponse.ok) {
-                const uploadData = await uploadResponse.json()
-                designFileUrl = uploadData.design_file_url
-                console.log("[v0] Design file uploaded:", designFileUrl)
-              } else {
-                console.error("[v0] Design file upload failed")
-              }
-            } catch (error) {
-              console.error("[v0] Error uploading design file:", error)
-            }
-          }
-          
-          return {
-            product_id: item.productId || null,
-            service_id: item.serviceId || null,
-            customization: item.description || "",
-            quantity: Number(item.quantity) || 1,
-            unit_price: Number(item.unitPrice) || 0,
-            design_cost: Number(item.designCost) || 0,
-            sort_order: index,
-            design_file_url: designFileUrl || null,
-            team_roster: item.serviceRequirements?.teamRoster ? JSON.stringify(item.serviceRequirements.teamRoster) : null,
-            size_specifications: item.serviceRequirements?.sizeSpecifications || null,
-            notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
-          }
-        })
-      )
-      
-      formDataToSend.append("items", JSON.stringify(itemsPayload))
-
-      const url = isEditMode
-        ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
-        : `${process.env.NEXT_PUBLIC_API_URL}/quotations`
-
-      const method = isEditMode ? "PUT" : "POST"
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: (() => {
-          if (method === "PUT") {
-            formDataToSend.append("_method", "PUT")
-          }
-          return formDataToSend
-        })(),
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        console.log("Backend validation errors:", data.errors || data.message || data)
-        const errorMessages = data.errors
-          ? Object.entries(data.errors)
-            .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
-            .join("\n")
-          : data.message || "Failed to send quotation"
-
-        toast({
-          title: "Validation Error",
-          description: errorMessages,
-          variant: "destructive",
-        })
-        setIsSending(false)
-        return
-      }
-
-      // Store the quotation ID and open the send to admin modal
-      if (data.data && data.data.id) {
-        setSavedQuotationId(data.data.id)
+        sessionStorage.removeItem("quotationDraft")
+        sessionStorage.removeItem("quotationPreviewData")
+        setFormData(getInitialFormData())
+        setLineItems([])
+        setLogoPreview("")
+        
+        console.log("[v0] About to open send modal with quotationId:", data.data.id)
         await new Promise((resolve) => setTimeout(resolve, 300))
         setShowSendModal(true)
+        console.log("[v0] Send modal opened with quotationId:", data.data.id)
       } else {
+        console.error("[v0] ERROR: No quotation ID in response:", data)
         toast({
           title: "Error",
           description: "Quotation saved but could not retrieve ID for sending",
           variant: "destructive",
         })
-        await new Promise((resolve) => setTimeout(resolve, 500))
-        router.push("/dashboard")
       }
     } catch (error: any) {
-      console.log("Send error:", error.message)
+      console.log("[v0] Send error:", error.message)
       toast({
         title: "Error",
         description: error.message || "Failed to send quotation",
@@ -1126,8 +963,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     const [showConfirmation, setShowConfirmation] = useState(false)
 
     useEffect(() => {
+      console.log("[v0] SendQuotationModalContent received quotationId prop:", quotationId)
       fetchBranches()
-    }, [])
+    }, [quotationId])
 
     const fetchBranches = async () => {
       try {
@@ -1187,9 +1025,14 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         const token = localStorage.getItem("auth_token")
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://www.princessjaideeenterprises.com/api"
         
-        console.log("[v0] Sending quotation to branch:", quotationId, selectedBranch.id)
+        const sendUrl = `${apiUrl}/quotations/${quotationId}/send-to-branch`
+        console.log("[v0] Sending quotation to branch:")
+        console.log("[v0] - quotationId:", quotationId)
+        console.log("[v0] - selectedBranch.id:", selectedBranch.id)
+        console.log("[v0] - Full URL:", sendUrl)
+        console.log("[v0] - Token exists:", !!token)
         
-        const response = await fetch(`${apiUrl}/quotations/${quotationId}/send-to-branch`, {
+        const response = await fetch(sendUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -1203,12 +1046,16 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
         if (!response.ok) {
           const errorData = await response.json()
-          console.error("[v0] Send error response:", errorData)
+          console.error("[v0] Send failed!")
+          console.error("[v0] - Response status:", response.status)
+          console.error("[v0] - Error data:", errorData)
           throw new Error(errorData.message || `Failed to send quotation: ${response.status}`)
         }
 
         const data = await response.json()
-        console.log("[v0] Send success:", data)
+        console.log("[v0] Send success!")
+        console.log("[v0] - Response status:", response.status)
+        console.log("[v0] - Response data:", data)
         
         if (onSendSuccess) {
           onSendSuccess(data)
