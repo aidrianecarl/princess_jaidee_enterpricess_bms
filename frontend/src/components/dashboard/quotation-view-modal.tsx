@@ -1,7 +1,8 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { X, Download, Printer, Loader2, ChevronDown, ChevronUp, ZoomIn } from "lucide-react"
+import { useState } from "react"
+import { X, ChevronDown, ZoomIn } from "lucide-react"
+import { getApiImageUrl } from "@/lib/api-urls"
 
 interface PricingLineItem {
   id: number
@@ -27,7 +28,7 @@ interface Quotation {
   id: number
   quotation_number: string
   customer: any
-  items: any[]
+  items: PricingLineItem[]
   subtotal: number
   discount: number
   tax: number
@@ -35,7 +36,15 @@ interface Quotation {
   status: string
   created_at: string
   notes: string
-  logo?: string
+  logo_url?: string
+  business_name?: string
+  business_address?: string
+  business_city?: string
+  business_state?: string
+  business_postal?: string
+  business_phone?: string
+  business_email?: string
+  valid_until?: string
 }
 
 interface QuotationViewModalProps {
@@ -45,11 +54,8 @@ interface QuotationViewModalProps {
 }
 
 export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationViewModalProps) {
-  const [isPrinting, setIsPrinting] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
-  const printRef = useRef<HTMLDivElement>(null)
 
   if (!isOpen || !quotation) return null
 
@@ -63,335 +69,413 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
     setExpandedItems(newSet)
   }
 
-  const handlePrint = () => {
-    setIsPrinting(true)
-    setTimeout(() => {
-      window.print()
-      setIsPrinting(false)
-    }, 500)
-  }
-
-  const handleDownloadPDF = async () => {
-    setIsDownloading(true)
-    try {
-      const html2canvas = (await import("html2canvas")).default
-      const jsPDF = (await import("jspdf")).default
-
-      const element = printRef.current
-      if (!element) return
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      })
-
-      const imgData = canvas.toDataURL("image/png")
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      })
-
-      const pdfWidth = pdf.internal.pageSize.getWidth()
-      const pdfHeight = pdf.internal.pageSize.getHeight()
-      const imgWidth = canvas.width
-      const imgHeight = canvas.height
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight)
-      const imgX = (pdfWidth - imgWidth * ratio) / 2
-      const imgY = 10
-
-      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio)
-      pdf.save(`${quotation.quotation_number}.pdf`)
-    } catch (error) {
-      console.error("Failed to generate PDF:", error)
-    } finally {
-      setIsDownloading(false)
-    }
-  }
-
-  const renderJsonValue = (value: any): string => {
-    if (typeof value === "string") return value
-    if (typeof value === "number") return value.toString()
-    if (typeof value === "boolean") return value ? "Yes" : "No"
-    if (Array.isArray(value)) return `Array with ${value.length} items`
-    if (typeof value === "object" && value !== null) {
-      return JSON.stringify(value, null, 2)
-    }
-    return String(value)
-  }
-
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden flex flex-col my-auto">
-        {/* Header - Sticky */}
-        <div className="bg-gradient-to-r from-red-600 to-orange-500 text-white p-6 flex justify-between items-center sticky top-0 z-10 flex-shrink-0">
-          <h2 className="text-2xl font-bold">{quotation.quotation_number}</h2>
-          <button onClick={onClose} className="p-2 hover:bg-red-700 rounded-lg transition">
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Action Buttons - Sticky below header */}
-        <div className="bg-white border-b border-gray-200 p-4 flex gap-2 sticky top-[70px] z-10 flex-shrink-0 print:hidden flex-wrap sm:flex-nowrap">
-          <button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          >
-            {isDownloading ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Download size={18} />
-                Download PDF
-              </>
-            )}
-          </button>
-          <button
-            onClick={handlePrint}
-            disabled={isPrinting}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          >
-            {isPrinting ? (
-              <>
-                <Loader2 size={18} className="animate-spin" />
-                Printing...
-              </>
-            ) : (
-              <>
-                <Printer size={18} />
-                Print
-              </>
-            )}
-          </button>
-        </div>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[95vh] overflow-hidden flex flex-col my-auto">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 p-2 hover:bg-gray-100 rounded-lg transition"
+        >
+          <X size={24} />
+        </button>
 
         {/* Content - Scrollable */}
         <div className="flex-1 overflow-y-auto">
-          <div
-            id={`quotation-${quotation.id}`}
-            ref={printRef}
-            className="p-6 sm:p-8 print:p-0 space-y-6"
-          >
-            {/* Header Section */}
-            <div className="flex justify-between items-start mb-8 print:mb-6">
-              <div>
-                {quotation.logo && (
-                  <img
-                    src={quotation.logo || "/placeholder.svg"}
-                    alt="Company Logo"
-                    className="w-20 h-20 sm:w-24 sm:h-24 object-contain mb-4"
-                    onError={(e) => {
-                      const img = e.target as HTMLImageElement
-                      img.style.display = "none"
-                    }}
-                  />
-                )}
-                <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Quotation</h3>
-                <p className="text-lg sm:text-xl text-gray-600">{quotation.quotation_number}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-semibold">Date:</span>{" "}
-                  {new Date(quotation.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })}
-                </p>
+          <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+            {/* Header with Logo */}
+            <div className="p-8 border-b-4 border-orange-100">
+              <div className="space-y-8">
+                {/* Top: Logo and Quote Title */}
+                <div className="flex gap-8">
+                  {quotation.logo_url && (
+                    <div className="flex justify-start">
+                      <img
+                        src={getApiImageUrl(quotation.logo_url)}
+                        alt="Logo"
+                        className="max-w-32 h-auto rounded-lg bg-gray-100"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none"
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-4 flex-1">
+                    <h1 className="text-4xl font-bold text-red-600">Quote</h1>
+                    <div className="grid grid-cols-2 gap-8 text-sm">
+                      <div>
+                        <p className="text-gray-600">QUOTE NO.</p>
+                        <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600">DATE</p>
+                        <p className="font-semibold text-gray-900">
+                          {new Date(quotation.created_at).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* FROM SECTION */}
+                <div className="text-right">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">From</h3>
+                  <div className="space-y-1 text-sm text-gray-900">
+                    <p className="font-semibold">{quotation.business_name || "Princess Jaidee Enterprises"}</p>
+                    <p>{quotation.business_address || ""}</p>
+                    <p>
+                      {quotation.business_city || ""} {quotation.business_state || ""} {quotation.business_postal || ""}
+                    </p>
+                    <p>{quotation.business_phone || ""}</p>
+                    <p>{quotation.business_email || ""}</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Customer/Company Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-8 mb-8 pb-8 border-b-2 border-gray-200">
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Bill To</h4>
-                <p className="text-gray-700 font-medium">{quotation.customer?.name}</p>
-                {quotation.customer?.address && <p className="text-gray-600 text-sm">{quotation.customer.address}</p>}
-                {quotation.customer?.email && <p className="text-gray-600 text-sm">{quotation.customer.email}</p>}
-                {quotation.customer?.phone && <p className="text-gray-600 text-sm">{quotation.customer.phone}</p>}
+            {/* Bill To Section */}
+            <div className="p-8 border-b-2 border-gray-200 bg-orange-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">Bill To</h3>
+                  <div className="space-y-1 text-gray-900 text-sm">
+                    <p className="font-semibold">{quotation.customer?.bill_to_name || quotation.customer?.name || "-"}</p>
+                    <p>{quotation.customer?.bill_to_street || quotation.customer?.address || "-"}</p>
+                    <p>
+                      {quotation.customer?.bill_to_city || quotation.customer?.city || ""}{" "}
+                      {quotation.customer?.bill_to_state || quotation.customer?.state || ""}{" "}
+                      {quotation.customer?.bill_to_postal || quotation.customer?.postal || ""}
+                    </p>
+                    <p>{quotation.customer?.bill_to_phone || quotation.customer?.phone || "-"}</p>
+                    <p>{quotation.customer?.bill_to_email || quotation.customer?.email || "-"}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">Due Date</h3>
+                  <div className="space-y-4">
+                    <p className="text-gray-900 font-semibold">
+                      {quotation.valid_until
+                        ? new Date(quotation.valid_until).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Items with Expandable Details */}
-            <div className="mb-8">
-              <h4 className="font-semibold text-gray-900 mb-4">Items</h4>
-              <div className="space-y-4">
-                {quotation.items.map((item: PricingLineItem, index: number) => {
-                  const isExpanded = expandedItems.has(item.id)
-                  return (
-                    <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
-                      <button
-                        onClick={() => toggleItemExpanded(item.id)}
-                        className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition"
-                      >
-                        <div className="flex-1 text-left">
-                          <p className="font-semibold text-gray-900">{item.description}</p>
-                          <p className="text-sm text-gray-600">
-                            {item.quantity} × ₱{Number(item.unit_price).toLocaleString()} = ₱
-                            {Number(item.line_total).toLocaleString()}
-                          </p>
+            {/* Line Items Table */}
+            <div className="p-3 md:p-8">
+              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
+                Items
+                <span className="text-sm font-normal text-gray-500">
+                  ({quotation.items.length} {quotation.items.length === 1 ? "item" : "items"})
+                </span>
+              </h2>
+
+              <div className="mb-6">
+                {/* Table Header */}
+                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
+                  <div className="flex-1 text-sm md:text-base">Name</div>
+                  <div className="w-16 md:w-20 text-center text-sm md:text-base">Qty</div>
+                  <div className="w-24 text-right text-sm md:text-base">Amount</div>
+                </div>
+
+                {/* Table Body */}
+                {quotation.items.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <p className="text-lg mb-2">No items added</p>
+                  </div>
+                ) : (
+                  quotation.items.map((item: PricingLineItem) => (
+                    <div key={item.id} className="mb-4 pb-4 border-b border-gray-200">
+                      {/* Main Row - Collapsible */}
+                      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
+                        {/* Expand Button - Show if there's any expandable content */}
+                        {(Array.isArray(item.team_roster) && item.team_roster.length > 0) ||
+                        (item.size_specifications &&
+                          typeof item.size_specifications === "object" &&
+                          Object.keys(item.size_specifications).length > 0) ||
+                        item.design_file_url ||
+                        item.notes ? (
+                          <button
+                            onClick={() => toggleItemExpanded(item.id)}
+                            className="p-1 hover:bg-gray-200 rounded transition self-start md:self-center"
+                          >
+                            <ChevronDown
+                              size={18}
+                              className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
+                            />
+                          </button>
+                        ) : null}
+
+                        {/* Image & Name Column */}
+                        <div className="flex-1 flex gap-2 min-w-0">
+                          {item.design_file_url ? (
+                            <img
+                              src={getApiImageUrl(item.design_file_url)}
+                              alt={item.service?.name || "Design"}
+                              className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none"
+                              }}
+                            />
+                          ) : item.service?.image_url ? (
+                            <img
+                              src={getApiImageUrl(item.service.image_url)}
+                              alt={item.service.name}
+                              className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none"
+                              }}
+                            />
+                          ) : null}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-gray-900 text-sm md:text-base truncate">
+                              {item.service?.name || "Custom Item"}
+                            </p>
+                          </div>
                         </div>
-                        {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                      </button>
 
-                      {isExpanded && (
-                        <div className="p-4 bg-white border-t border-gray-200 space-y-4">
-                          {/* Service Image */}
-                          {item.service?.image_url && (
-                            <div>
-                              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-2">Service Image</p>
-                              <div className="relative max-w-sm">
-                                <img
-                                  src={item.service.image_url}
-                                  alt={item.service.name}
-                                  className="w-full h-auto rounded-lg border border-gray-200 object-cover max-h-48 cursor-pointer hover:opacity-90"
-                                  onClick={() =>
-                                    setExpandedImage(expandedImage === item.service?.image_url ? null : item.service?.image_url || null)
-                                  }
-                                  onError={(e) => {
-                                    const img = e.target as HTMLImageElement
-                                    img.style.display = "none"
-                                  }}
-                                />
-                                <button
-                                  onClick={() =>
-                                    setExpandedImage(expandedImage === item.service?.image_url ? null : item.service?.image_url || null)
-                                  }
-                                  className="absolute top-2 right-2 p-2 bg-white rounded-lg shadow hover:shadow-lg transition"
-                                >
-                                  <ZoomIn size={18} />
-                                </button>
-                              </div>
-                            </div>
-                          )}
+                        {/* Quantity Column */}
+                        <div className="w-16 md:w-20 flex items-center justify-center">
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            disabled
+                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm bg-gray-100 cursor-not-allowed"
+                          />
+                        </div>
 
-                          {/* Design File */}
-                          {item.design_file_url && (
-                            <div>
-                              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-2">Design File</p>
-                              <img
-                                src={item.design_file_url}
-                                alt="Design"
-                                className="w-full h-auto rounded-lg border border-gray-200 object-cover max-h-48"
-                                onError={(e) => {
-                                  const img = e.target as HTMLImageElement
-                                  img.style.display = "none"
-                                }}
-                              />
-                            </div>
-                          )}
+                        {/* Amount Column - Read Only */}
+                        <div className="w-24 flex items-center justify-end">
+                          <input
+                            type="number"
+                            value={item.unit_price || ""}
+                            disabled
+                            placeholder="0.00"
+                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right text-xs bg-gray-100 cursor-not-allowed"
+                          />
+                        </div>
+                      </div>
 
-                          {/* Notes */}
-                          {item.notes && (
-                            <div>
-                              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-2">Notes</p>
-                              <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                {typeof item.notes === "string" ? item.notes : JSON.stringify(item.notes, null, 2)}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Team Roster */}
-                          {item.team_roster && (
-                            <div>
-                              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-2">Team Roster</p>
-                              {Array.isArray(item.team_roster) ? (
-                                <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                                  {item.team_roster.map((player: any, idx: number) => (
-                                    <div key={idx} className="py-2 border-b border-gray-200 last:border-b-0">
-                                      <p className="text-sm font-semibold text-gray-900">{player.name || `Player ${idx + 1}`}</p>
-                                      {player.number && <p className="text-sm text-gray-600">Number: {player.number}</p>}
-                                      {player.position && <p className="text-sm text-gray-600">Position: {player.position}</p>}
+                      {/* Collapsible Details */}
+                      {expandedItems.has(item.id) && (
+                        <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
+                          {/* Team Roster Details */}
+                          {item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
+                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                              <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
+                              <div className="space-y-3">
+                                {item.team_roster.map((player: any, idx: number) => (
+                                  <div key={idx} className="grid grid-cols-5 gap-3 text-sm bg-white p-3 rounded">
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Name</p>
+                                      <p className="text-gray-900">{player.name}</p>
                                     </div>
-                                  ))}
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
+                                      <p className="text-gray-900">{player.number || "-"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Top Size</p>
+                                      <p className="text-gray-900">{player.sizeTop || "-"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
+                                      <p className="text-gray-900">{player.sizeBottom || "-"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-xs text-gray-600 font-semibold">Position</p>
+                                      <p className="text-gray-900">{player.position || "-"}</p>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
+                                <div className="mt-4 pt-4 border-t border-blue-300">
+                                  <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
+                                  <p className="text-sm text-blue-900">{item.notes.teamNotes}</p>
                                 </div>
-                              ) : (
-                                <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 whitespace-pre-wrap">
-                                  {JSON.stringify(item.team_roster, null, 2)}
-                                </p>
                               )}
                             </div>
                           )}
 
                           {/* Size Specifications */}
-                          {item.size_specifications && (
-                            <div>
-                              <p className="text-xs text-gray-600 font-semibold uppercase tracking-wide mb-2">Size Specifications</p>
-                              <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 whitespace-pre-wrap font-mono text-xs">
-                                {JSON.stringify(item.size_specifications, null, 2)}
-                              </p>
+                          {item.size_specifications &&
+                            item.size_specifications !== null &&
+                            typeof item.size_specifications === "object" &&
+                            (Object.keys(item.size_specifications).length > 0 ||
+                              (item.notes &&
+                                typeof item.notes === "object" &&
+                                item.notes.sizeNotes)) && (
+                              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                <h4 className="font-semibold text-purple-900 mb-3">
+                                  {item.service?.name?.includes("Tarpaulin") ? "SIZE SPECIFICATION" : "UNIFORM CUSTOMIZATION"}
+                                </h4>
+                                <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
+                                  {item.service?.name?.includes("Tarpaulin") ? (
+                                    <>
+                                      {item.size_specifications.width && (
+                                        <div>
+                                          <p className="text-xs text-gray-600 font-semibold">Width</p>
+                                          <p className="text-gray-900">{item.size_specifications.width} ft</p>
+                                        </div>
+                                      )}
+                                      {item.size_specifications.height && (
+                                        <div>
+                                          <p className="text-xs text-gray-600 font-semibold">Height</p>
+                                          <p className="text-gray-900">{item.size_specifications.height} ft</p>
+                                        </div>
+                                      )}
+                                      {item.size_specifications.totalSqft && (
+                                        <div>
+                                          <p className="text-xs text-gray-600 font-semibold">Total Sq Ft</p>
+                                          <p className="text-gray-900 font-semibold">{item.size_specifications.totalSqft} sq ft</p>
+                                        </div>
+                                      )}
+                                      {item.size_specifications.totalPrice && (
+                                        <div>
+                                          <p className="text-xs text-gray-600 font-semibold">Total Price</p>
+                                          <p className="text-gray-900 font-bold">₱{item.size_specifications.totalPrice}</p>
+                                        </div>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      {item.size_specifications.top && (
+                                        <div>
+                                          <p className="text-xs text-gray-600 font-semibold">Top/Shirt Size</p>
+                                          <p className="text-gray-900">{item.size_specifications.top}</p>
+                                        </div>
+                                      )}
+                                      {item.size_specifications.bottom && (
+                                        <div>
+                                          <p className="text-xs text-gray-600 font-semibold">Bottom/Short Size</p>
+                                          <p className="text-gray-900">{item.size_specifications.bottom}</p>
+                                        </div>
+                                      )}
+                                      {!item.size_specifications.top && !item.size_specifications.bottom && (
+                                        <div>
+                                          <p className="text-xs text-gray-600 font-semibold">Size</p>
+                                          <p className="text-gray-900">Not specified</p>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                                {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (
+                                  <div className="mt-4 pt-4 border-t border-purple-300">
+                                    <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes</p>
+                                    <p className="text-sm text-purple-900">{item.notes.sizeNotes}</p>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                          {/* Design File Preview */}
+                          {item.design_file_url && (
+                            <div className="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                              <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                                DESIGN PREVIEW
+                                <span className="text-xs text-indigo-700 font-normal">(Click to expand)</span>
+                              </h4>
+                              <div
+                                className="relative inline-block cursor-pointer group"
+                                onClick={() => {
+                                  if (item.design_file_url) {
+                                    setExpandedImage(getApiImageUrl(item.design_file_url))
+                                  }
+                                }}
+                              >
+                                <img
+                                  src={getApiImageUrl(item.design_file_url)}
+                                  alt="Design"
+                                  className="max-w-md max-h-64 rounded bg-white hover:opacity-90 transition-opacity"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = "none"
+                                  }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-20">
+                                  <ZoomIn className="w-8 h-8 text-white" />
+                                </div>
+                              </div>
+                              {item.notes && typeof item.notes === "object" && item.notes.designNotes && (
+                                <div className="mt-4 pt-4 border-t border-indigo-300">
+                                  <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
+                                  <p className="text-sm text-indigo-900">{item.notes.designNotes}</p>
+                                </div>
+                              )}
+                              {item.notes && typeof item.notes === "string" && item.notes.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-indigo-300">
+                                  <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
+                                  <p className="text-sm text-indigo-900">{item.notes}</p>
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
                       )}
                     </div>
-                  )
-                })}
+                  ))
+                )}
               </div>
             </div>
 
-            {/* Totals Section */}
-            <div className="flex justify-end">
-              <div className="w-full sm:w-80 space-y-2 border-t-2 border-gray-300 pt-4">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-900 font-semibold">₱{Number(quotation.subtotal).toLocaleString()}</span>
+            {/* Totals Section - Bottom Right */}
+            <div className="p-8 border-t-2 border-gray-200 bg-gradient-to-br from-gray-50 via-white to-gray-50">
+              <div className="max-w-md ml-auto space-y-3">
+                {/* Subtotal */}
+                <div className="flex justify-between text-base">
+                  <span className="font-semibold text-gray-700">Subtotal:</span>
+                  <span className="text-gray-900 font-semibold">₱{Number(quotation.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
+
+                {/* Discount */}
                 {quotation.discount > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Discount</span>
-                    <span className="text-gray-900 font-semibold">-₱{Number(quotation.discount).toLocaleString()}</span>
+                  <div className="border-t border-gray-300 pt-3">
+                    <div className="flex justify-between text-base">
+                      <span className="text-gray-700">Discount:</span>
+                      <span className="text-gray-900">- ₱{Number(quotation.discount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
                   </div>
                 )}
+
+                {/* Tax */}
                 {quotation.tax > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Tax</span>
-                    <span className="text-gray-900 font-semibold">₱{Number(quotation.tax).toLocaleString()}</span>
+                  <div className="flex justify-between text-base">
+                    <span className="text-gray-700">Tax (12%):</span>
+                    <span className="text-gray-900">₱{Number(quotation.tax).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-lg font-bold border-t-2 border-gray-300 pt-2">
-                  <span className="text-gray-900">Total Due</span>
-                  <span className="bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
-                    ₱{Number(quotation.total).toLocaleString()}
-                  </span>
+
+                {/* Total */}
+                <div className="border-t-2 border-gray-300 pt-3 bg-orange-50 rounded-lg p-4">
+                  <div className="flex justify-between text-xl font-bold">
+                    <span className="text-gray-900">Total:</span>
+                    <span className="text-orange-600">₱{Number(quotation.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Notes */}
+            {/* Notes Section */}
             {quotation.notes && (
-              <div className="mt-8 pt-8 border-t border-gray-200">
-                <h4 className="font-semibold text-gray-900 mb-2">Notes</h4>
-                <p className="text-gray-600 text-sm whitespace-pre-line">{quotation.notes}</p>
+              <div className="p-8 border-t-2 border-gray-200 bg-white">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Notes</h3>
+                <p className="text-sm text-gray-900 whitespace-pre-line">{quotation.notes}</p>
               </div>
             )}
-
-            {/* Status Badge */}
-            <div className="mt-8 pt-8 border-t border-gray-200 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Status</p>
-                <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${
-                    quotation.status === "approved"
-                      ? "bg-green-100 text-green-700"
-                      : quotation.status === "pending"
-                        ? "bg-yellow-100 text-yellow-700"
-                        : quotation.status === "rejected"
-                          ? "bg-red-100 text-red-700"
-                          : quotation.status === "draft"
-                            ? "bg-blue-100 text-blue-700"
-                            : "bg-gray-100 text-gray-700"
-                  }`}
-                >
-                  {quotation.status.charAt(0).toUpperCase() + quotation.status.slice(1)}
-                </span>
-              </div>
-            </div>
           </div>
         </div>
       </div>
