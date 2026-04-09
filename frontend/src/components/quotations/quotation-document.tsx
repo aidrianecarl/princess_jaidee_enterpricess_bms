@@ -1090,11 +1090,18 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   }
 
   const addLineItem = (item: Omit<LineItem, "id" | "amount">) => {
-    const amount = (item.quantity || 1) * (item.unitPrice || 0)
+    // Auto-calculate quantity for Sublimation Service based on team roster count
+    let finalQuantity = item.quantity || 1
+    if (item.name?.includes("Sublimation") && item.serviceRequirements?.teamRoster?.length > 0) {
+      finalQuantity = item.serviceRequirements.teamRoster.length
+    }
+
+    const amount = (finalQuantity || 1) * (item.unitPrice || 0)
     setLineItems([
       ...lineItems,
       {
         ...item,
+        quantity: finalQuantity,
         id: Date.now().toString(),
         amount,
       },
@@ -1137,14 +1144,20 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
   const updateLineItem = (id: string, updates: Partial<LineItem>) => {
     setLineItems(
-      lineItems.map((item) =>
-        item.id === id
-          ? {
-            ...item,
-            ...updates,
+      lineItems.map((item) => {
+        if (item.id === id) {
+          const updated = { ...item, ...updates }
+          
+          // Auto-update quantity for Sublimation if team roster changes
+          if (item.name?.includes("Sublimation") && updated.serviceRequirements?.teamRoster) {
+            updated.quantity = updated.serviceRequirements.teamRoster.length
+            updated.amount = updated.quantity * (updated.unitPrice || 0)
           }
-          : item,
-      ),
+          
+          return updated
+        }
+        return item
+      }),
     )
   }
 
@@ -1517,7 +1530,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         </div>
                       </div>
 
-                      {/* Quantity Column - Editable */}
+                      {/* Quantity Column - Editable or Auto from Team Roster */}
                       <div className="w-16 md:w-20 flex items-center justify-center">
                         <input
                           type="number"
@@ -1526,7 +1539,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           onChange={(e) =>
                             updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
                           }
-                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900"
+                          disabled={item.name?.includes("Sublimation")}
+                          title={item.name?.includes("Sublimation") ? "Auto-calculated from Team Roster" : "Edit quantity"}
+                          className={`w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900 ${
+                            item.name?.includes("Sublimation") ? "bg-gray-100 cursor-not-allowed" : ""
+                          }`}
                         />
                       </div>
 

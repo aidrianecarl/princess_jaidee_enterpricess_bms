@@ -573,10 +573,11 @@ export function AdminQuotationPricing() {
 
               <div className="mb-6">
                 {/* Table Header */}
-                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
-                  <div className="flex-1 text-sm md:text-base">Name</div>
-                  <div className="w-16 md:w-20 text-center text-sm md:text-base">Qty</div>
-                  <div className="w-24 text-right text-sm md:text-base">Amount</div>
+                <div className="hidden md:flex items-center gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
+                  <div className="flex-1 text-base">Name</div>
+                  <div className="w-20 text-center text-base">Qty</div>
+                  <div className="w-24 text-right text-base">Base Price</div>
+                  <div className="w-24 text-right text-base">Amount</div>
                 </div>
 
                 {/* Table Body */}
@@ -640,18 +641,28 @@ export function AdminQuotationPricing() {
                         </div>
 
                         {/* Quantity Column */}
-                        <div className="w-16 md:w-20 flex items-center justify-center">
+                        <div className="hidden md:flex w-20 items-center justify-center">
                           <input
                             type="number"
                             min="1"
                             value={item.quantity}
                             disabled
-                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm focus:border-red-600 outline-none bg-gray-100 cursor-not-allowed"
+                            className="w-full px-2 py-2 border border-gray-300 rounded text-center text-sm focus:border-red-600 outline-none bg-gray-100 cursor-not-allowed"
+                          />
+                        </div>
+
+                        {/* Base Price Column - Show service base price */}
+                        <div className="hidden md:flex w-24 items-center justify-end">
+                          <input
+                            type="text"
+                            value={`₱${(item.unit_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            disabled
+                            className="w-full px-2 py-2 border border-gray-300 rounded text-right bg-gray-100 text-sm focus:border-red-600 outline-none cursor-not-allowed"
                           />
                         </div>
 
                         {/* Amount Column - Editable */}
-                        <div className="w-24 flex items-center justify-end">
+                        <div className="hidden md:flex w-24 items-center justify-end">
                           <input
                             type="number"
                             value={editingPrices[item.id] || ""}
@@ -659,11 +670,40 @@ export function AdminQuotationPricing() {
                             placeholder="0.00"
                             step="0.01"
                             disabled={item.service?.name?.includes('Sublimation') && Array.isArray(item.team_roster) && item.team_roster.length > 0}
-                            className={`w-full px-2 py-1 md:py-2 border rounded text-right text-xs focus:outline-none ${priceErrors[item.id]
+                            className={`w-full px-2 py-2 border rounded text-right text-sm focus:outline-none ${priceErrors[item.id]
                                 ? "border-red-500 bg-red-50 focus:border-red-500"
                                 : "border-orange-400 bg-white focus:border-orange-500"
                               } ${item.service?.name?.includes('Sublimation') && Array.isArray(item.team_roster) && item.team_roster.length > 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
                           />
+                        </div>
+
+                        {/* Mobile View - Qty, Price, Amount */}
+                        <div className="md:hidden flex items-center gap-2">
+                          <div className="flex-1 flex flex-col">
+                            <input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              disabled
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-center text-xs bg-gray-100 cursor-not-allowed"
+                            />
+                            <span className="text-xs text-gray-500 mt-1">Qty</span>
+                          </div>
+                          <div className="flex-1 flex flex-col">
+                            <input
+                              type="number"
+                              value={editingPrices[item.id] || ""}
+                              onChange={(e) => handlePriceChange(item.id, e.target.value)}
+                              placeholder="0.00"
+                              step="0.01"
+                              disabled={item.service?.name?.includes('Sublimation') && Array.isArray(item.team_roster) && item.team_roster.length > 0}
+                              className={`w-full px-2 py-1 border rounded text-right text-xs focus:outline-none ${priceErrors[item.id]
+                                  ? "border-red-500 bg-red-50 focus:border-red-500"
+                                  : "border-orange-400 bg-white focus:border-orange-500"
+                                } ${item.service?.name?.includes('Sublimation') && Array.isArray(item.team_roster) && item.team_roster.length > 0 ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                            />
+                            <span className="text-xs text-gray-500 mt-1">Price</span>
+                          </div>
                         </div>
                       </div>
 
