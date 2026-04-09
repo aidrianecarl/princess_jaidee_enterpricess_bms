@@ -275,7 +275,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const printRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const [isSending, setIsSending] = useState(false) // Added state for sending
-  const [showSendApprovalModal, setShowSendApprovalModal] = useState(false) // Added state for approval modal
   const [isNavigating, setIsNavigating] = useState(false) // Added state for navigation
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
@@ -2420,42 +2419,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           })
         }}
       />
-
-      <Dialog open={showSendApprovalModal} onOpenChange={setShowSendApprovalModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Send for Approval</DialogTitle>
-            <DialogDescription>
-              Do you want to send quotation <span className="font-bold text-gray-900">{formData.quoteNumber}</span> to
-              admin for approval?
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
-            <button
-              onClick={() => setShowSendApprovalModal(false)}
-              disabled={isSending}
-              className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
-            >
-              No, Cancel
-            </button>
-            <button
-              onClick={confirmSendForApproval}
-              disabled={isSending}
-              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {isSending ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  Sending...
-                </>
-              ) : (
-                "Yes, Send for Approval"
-              )}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Save Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
