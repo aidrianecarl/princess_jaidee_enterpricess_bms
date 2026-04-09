@@ -5,7 +5,6 @@ import { useState, useEffect, useRef } from "react"
 import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown, Check } from "lucide-react"
 import { ProductSelectorModal } from "./product-selector-modal"
 import { ServiceSelectorModal } from "./service-selector-modal"
-import { SendQuotationModal } from "./send-quotation-modal"
 import { quotationFormSchema } from "@/lib/validations/quotation"
 import {
   AlertDialog,
@@ -275,7 +274,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [isSending, setIsSending] = useState(false) // Added state for sending
   const [showSendApprovalModal, setShowSendApprovalModal] = useState(false) // Added state for approval modal
   const [isNavigating, setIsNavigating] = useState(false) // Added state for navigation
-  const [savedQuotationId, setSavedQuotationId] = useState<number | null>(null) // Store quotation ID for sending
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingRosterId, setEditingRosterId] = useState<string | null>(null)
@@ -1000,15 +998,14 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       })
 
       const data = await response.json()
-      console.log("[v0] Save quotation response:", { status: response.status, data })
 
       if (!response.ok) {
-        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
+        console.log("Backend validation errors:", data.errors || data.message || data)
         const errorMessages = data.errors
           ? Object.entries(data.errors)
             .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
             .join("\n")
-          : data.message || "Failed to save quotation"
+          : data.message || "Failed to send quotation"
 
         toast({
           title: "Validation Error",
@@ -1019,33 +1016,20 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         return
       }
 
-      // Capture the quotation ID from response
-      if (data.data && data.data.id) {
-        console.log("[v0] Quotation saved with ID:", data.data.id)
-        setSavedQuotationId(data.data.id)
+      toast({
+        title: "Success",
+        description: "Quotation sent to admin for approval successfully",
+      })
 
-        toast({
-          title: "Success",
-          description: "Quotation saved successfully",
-        })
+      sessionStorage.removeItem("quotationDraft")
+      sessionStorage.removeItem("quotationPreviewData")
+      setFormData(getInitialFormData())
+      setLineItems([])
+      setLogoPreview("")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      setShowSendModal(false)
 
-        sessionStorage.removeItem("quotationDraft")
-        sessionStorage.removeItem("quotationPreviewData")
-        setFormData(getInitialFormData())
-        setLineItems([])
-        setLogoPreview("")
-        
-        console.log("[v0] Opening send modal with quotationId:", data.data.id)
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        setShowSendModal(true)
-      } else {
-        console.error("[v0] ERROR: No quotation ID in response:", data)
-        toast({
-          title: "Error",
-          description: "Quotation saved but could not retrieve ID for sending",
-          variant: "destructive",
-        })
-      }
+      router.push("/dashboard")
     } catch (error: any) {
       console.log("Send error:", error.message)
       toast({
@@ -1159,11 +1143,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             {/* Right side buttons */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
-                onClick={confirmSendForApproval}
-                disabled={isSending || lineItems.length === 0}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
+                onClick={handleSend}
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
               >
-                {isSending ? <Loader2 size={16} className="animate-spin sm:w-5 sm:h-5" /> : <Mail size={16} className="sm:w-5 sm:h-5" />}
+                <Mail size={16} className="sm:w-5 sm:h-5" />
                 <span className="hidden sm:inline">Send</span>
                 <span className="inline sm:hidden">Snd</span>
               </button>
@@ -2341,23 +2324,78 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         </DialogContent>
       </Dialog>
 
-      {/* Send to Admin Modal */}
-      {showSendModal && savedQuotationId && (
-        <SendQuotationModal 
-          quotationId={savedQuotationId}
-          onClose={() => {
-            setShowSendModal(false)
-            setSavedQuotationId(null)
-          }}
-          onSuccess={() => {
-            setShowSendModal(false)
-            setSavedQuotationId(null)
-            router.push("/dashboard")
-          }}
-        />
-      )}
+      {/* Send Modal - Enhanced */}
+      <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Send Quotation</DialogTitle>
+            <DialogDescription>Choose how to send your quotation to the client</DialogDescription>
+          </DialogHeader>
 
-      {/* Send for Approval Dialog - Legacy Modal (kept for backwards compatibility) */}
+          <div className="space-y-3 mt-4">
+            <button
+              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-red-600 hover:bg-red-50 transition group"
+              onClick={() => {
+                toast({
+                  title: "Save First",
+                  description: "Please save the quotation as draft first, then send it from the dashboard",
+                })
+                setShowSendModal(false)
+              }}
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-red-100 group-hover:bg-red-200 transition">
+                <Mail size={24} className="text-red-600" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-semibold text-gray-900">Send via Email</p>
+                <p className="text-sm text-gray-600">Email quotation to client</p>
+              </div>
+            </button>
+
+            <button
+              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition group"
+              onClick={() => {
+                handleDownloadPDF()
+                setShowSendModal(false)
+              }}
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition">
+                <Download size={24} className="text-blue-600" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-semibold text-gray-900">Download PDF</p>
+                <p className="text-sm text-gray-600">Download and share manually</p>
+              </div>
+            </button>
+
+            <button
+              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-green-600 hover:bg-green-50 transition group"
+              onClick={() => {
+                handlePrint()
+                setShowSendModal(false)
+              }}
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 group-hover:bg-green-200 transition">
+                <Printer size={24} className="text-green-600" />
+              </div>
+              <div className="text-left flex-1">
+                <p className="font-semibold text-gray-900">Print Document</p>
+                <p className="text-sm text-gray-600">Print physical copy</p>
+              </div>
+            </button>
+          </div>
+
+          <div className="flex justify-end mt-6 pt-4 border-t">
+            <button
+              onClick={() => setShowSendModal(false)}
+              className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition"
+            >
+              Cancel
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showSendApprovalModal} onOpenChange={setShowSendApprovalModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
