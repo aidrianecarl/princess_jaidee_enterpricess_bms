@@ -182,11 +182,11 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
               </h2>
 
               <div className="mb-6">
-                {/* Table Header */}
-                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
-                  <div className="flex-1 text-sm md:text-base">Name</div>
-                  <div className="w-16 md:w-20 text-center text-sm md:text-base">Qty</div>
-                  <div className="w-24 text-right text-sm md:text-base">Amount</div>
+                {/* Table Header - Responsive */}
+                <div className="hidden md:flex items-center gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
+                  <div className="flex-1 text-base">Name</div>
+                  <div className="w-20 text-center text-base">Qty</div>
+                  <div className="w-24 text-right text-base">Amount</div>
                 </div>
 
                 {/* Table Body */}
@@ -272,34 +272,40 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                       {expandedItems.has(item.id) && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
                           {/* Team Roster Details */}
-                          {item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
+                          {item.team_roster && (
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
                               <div className="space-y-3">
-                                {item.team_roster.map((player: any, idx: number) => (
-                                  <div key={idx} className="grid grid-cols-5 gap-3 text-sm bg-white p-3 rounded">
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Name</p>
-                                      <p className="text-gray-900">{player.name}</p>
+                                {Array.isArray(item.team_roster) && item.team_roster.length > 0 ? (
+                                  item.team_roster.map((player: any, idx: number) => (
+                                    <div key={idx} className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm bg-white p-3 rounded">
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Name</p>
+                                        <p className="text-gray-900">{player.name}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
+                                        <p className="text-gray-900">{player.number || "-"}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Top Size</p>
+                                        <p className="text-gray-900">{player.sizeTop || "-"}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
+                                        <p className="text-gray-900">{player.sizeBottom || "-"}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Position</p>
+                                        <p className="text-gray-900">{player.position || "-"}</p>
+                                      </div>
                                     </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
-                                      <p className="text-gray-900">{player.number || "-"}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Top Size</p>
-                                      <p className="text-gray-900">{player.sizeTop || "-"}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
-                                      <p className="text-gray-900">{player.sizeBottom || "-"}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-gray-600 font-semibold">Position</p>
-                                      <p className="text-gray-900">{player.position || "-"}</p>
-                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="bg-white p-3 rounded text-sm text-gray-500">
+                                    <p>No team roster data available</p>
                                   </div>
-                                ))}
+                                )}
                               </div>
 
                               {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
@@ -323,7 +329,7 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                 <h4 className="font-semibold text-purple-900 mb-3">
                                   {item.service?.name?.includes("Tarpaulin") ? "SIZE SPECIFICATION" : "UNIFORM CUSTOMIZATION"}
                                 </h4>
-                                <div className="grid grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
                                   {item.service?.name?.includes("Tarpaulin") ? (
                                     <>
                                       {item.size_specifications.width && (
@@ -410,16 +416,18 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                   <ZoomIn className="w-8 h-8 text-white" />
                                 </div>
                               </div>
-                              {item.notes && typeof item.notes === "object" && item.notes.designNotes && (
+                              {item.notes && (
                                 <div className="mt-4 pt-4 border-t border-indigo-300">
                                   <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
-                                  <p className="text-sm text-indigo-900">{item.notes.designNotes}</p>
-                                </div>
-                              )}
-                              {item.notes && typeof item.notes === "string" && item.notes.length > 0 && (
-                                <div className="mt-4 pt-4 border-t border-indigo-300">
-                                  <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
-                                  <p className="text-sm text-indigo-900">{item.notes}</p>
+                                  <p className="text-sm text-indigo-900">
+                                    {typeof item.notes === "string" 
+                                      ? item.notes 
+                                      : typeof item.notes === "object" && item.notes.designNotes
+                                        ? item.notes.designNotes
+                                        : typeof item.notes === "object"
+                                          ? Object.values(item.notes).filter(v => v && typeof v === "string").join(", ")
+                                          : ""}
+                                  </p>
                                 </div>
                               )}
                             </div>

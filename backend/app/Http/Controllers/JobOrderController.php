@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobOrder;
+use App\Models\JobOrderItem;
 use App\Models\Quotation;
 use App\Models\Product;
 use Illuminate\Http\Request;
@@ -124,21 +125,21 @@ class JobOrderController extends Controller
 
     public function updateStatus(Request $request, $id)
     {
-        $jobOrder = JobOrder::find($id);
-
-        if (!$jobOrder) {
-            return response()->json(['error' => 'Job Order not found'], 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'status' => 'required|in:pending,in_progress,in-progress,on_hold,completed,cancelled',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
         try {
+            $jobOrder = JobOrder::find($id);
+
+            if (!$jobOrder) {
+                return response()->json(['error' => 'Job Order not found'], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'status' => 'required|in:pending,in_progress,in-progress,on_hold,completed,cancelled',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
             $status = $request->status === 'in_progress' ? 'in-progress' : $request->status;
 
             if ($status === 'completed') {
@@ -167,6 +168,14 @@ class JobOrderController extends Controller
                 ]);
             } else {
                 $jobOrder->update(['status' => $status]);
+                
+                // Also update the related order status when job order status changes
+                if ($jobOrder->order_id && $status === 'in-progress') {
+                    $order = \App\Models\Order::find($jobOrder->order_id);
+                    if ($order) {
+                        $order->update(['order_status' => 'processing']);
+                    }
+                }
             }
 
             $jobOrder->load(['assignedTo', 'customer', 'items.product', 'items.service']);
@@ -178,7 +187,7 @@ class JobOrderController extends Controller
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error updating job order status: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json(['error' => $e->getMessage(), 'debug' => $e->getLine()], 500);
         }
     }
 

@@ -65,13 +65,10 @@ export default function AdminJobOrdersPage() {
     try {
       setIsApproving(true)
       
-      // Update order status to processing using the correct API endpoint
-      const response = await ordersApi.updateStatus(selectedJobOrder.order_id, 'processing')
+      // Update job order status to in-progress (backend will also update related order status)
+      const response = await jobOrdersApi.updateStatus(selectedJobOrder.id, 'in-progress')
       
       if (response && response.status === 200) {
-        // Also update job order status to in-progress
-        await jobOrdersApi.updateStatus(selectedJobOrder.id, 'in-progress')
-        
         toast({
           title: 'Success',
           description: 'Job order approved and marked as processing',
