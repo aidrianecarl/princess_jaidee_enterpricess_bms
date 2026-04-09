@@ -2,10 +2,9 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown, Check } from "lucide-react"
+import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown, Check, MapPin, Phone, CheckCircle2 } from "lucide-react"
 import { ProductSelectorModal } from "./product-selector-modal"
 import { ServiceSelectorModal } from "./service-selector-modal"
-import { SendQuotationModal } from "./send-quotation-modal"
 import { quotationFormSchema } from "@/lib/validations/quotation"
 import {
   AlertDialog,
@@ -267,7 +266,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showSendModal, setShowSendModal] = useState(false)
-  const [showSendQuotationModal, setShowSendQuotationModal] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [savedQuotationId, setSavedQuotationId] = useState<number | null>(null)
@@ -1105,6 +1103,250 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           }
           : item,
       ),
+    )
+  }
+
+  // Send Quotation Modal Content Component
+  const SendQuotationModalContent = ({
+    quotationId,
+    onSendSuccess,
+    onClose,
+  }: {
+    quotationId: number
+    onSendSuccess?: (data: any) => void
+    onClose?: () => void
+  }) => {
+    const [branches, setBranches] = useState<any[]>([])
+    const [selectedBranch, setSelectedBranch] = useState<any>(null)
+    const [loading, setLoading] = useState(true)
+    const [isSending, setIsSending] = useState(false)
+    const [showConfirmation, setShowConfirmation] = useState(false)
+
+    useEffect(() => {
+      fetchBranches()
+    }, [])
+
+    const fetchBranches = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch("/api/quotations/active-branches", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch branches")
+        }
+
+        const data = await response.json()
+        setBranches(data.branches || [])
+
+        const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
+        if (mainBranch) {
+          setSelectedBranch(mainBranch)
+        } else if (data.branches && data.branches.length > 0) {
+          setSelectedBranch(data.branches[0])
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching branches:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load branches. Please try again.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    const handleSend = async () => {
+      if (!selectedBranch) {
+        toast({
+          title: "Error",
+          description: "Please select a branch",
+          variant: "destructive",
+        })
+        return
+      }
+
+      try {
+        setIsSending(true)
+        const response = await fetch(`/api/quotations/${quotationId}/send-to-branch`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+          },
+          body: JSON.stringify({
+            branch_id: selectedBranch.id,
+            send_via: "both",
+          }),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.message || "Failed to send quotation")
+        }
+
+        const data = await response.json()
+        toast({
+          title: "Success!",
+          description: `Quotation sent to ${selectedBranch.name}`,
+        })
+
+        if (onSendSuccess) {
+          onSendSuccess(data)
+        }
+
+        setShowConfirmation(false)
+        if (onClose) {
+          onClose()
+        }
+      } catch (error) {
+        console.error("[v0] Error sending quotation:", error)
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "Failed to send quotation",
+          variant: "destructive",
+        })
+      } finally {
+        setIsSending(false)
+      }
+    }
+
+    return (
+      <>
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+          </div>
+        ) : branches.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-gray-600">No branches available</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <label className="block text-sm font-semibold text-gray-900">
+              Select Princess Jaidee Branch:
+            </label>
+            <select
+              value={selectedBranch?.id || ""}
+              onChange={(e) => {
+                const branch = branches.find((b) => b.id === Number(e.target.value))
+                setSelectedBranch(branch || null)
+              }}
+              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-orange-600 focus:outline-none font-medium text-gray-900"
+            >
+              <option value="">-- Select a branch --</option>
+              {branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>
+                  {branch.name}
+                  {branch.is_main_branch ? " (Main)" : ""}
+                </option>
+              ))}
+            </select>
+
+            {selectedBranch && (
+              <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-4 border-2 border-orange-200 space-y-2">
+                <p className="font-bold text-orange-900">Branch Details:</p>
+                <p className="text-sm text-gray-700">
+                  <span className="font-semibold">{selectedBranch.name}</span>
+                  {selectedBranch.is_main_branch && (
+                    <span className="ml-2 text-xs bg-orange-600 text-white px-2 py-1 rounded">Main Branch</span>
+                  )}
+                </p>
+                {selectedBranch.location && (
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <MapPin size={16} className="text-orange-600" />
+                    {selectedBranch.location}
+                  </p>
+                )}
+                {selectedBranch.address && (
+                  <p className="text-sm text-gray-600">{selectedBranch.address}</p>
+                )}
+                {selectedBranch.phone_number && (
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <Phone size={16} className="text-orange-600" />
+                    {selectedBranch.phone_number}
+                  </p>
+                )}
+                {selectedBranch.email && (
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <Mail size={16} className="text-orange-600" />
+                    {selectedBranch.email}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowConfirmation(true)}
+              disabled={!selectedBranch || isSending}
+              className="w-full px-4 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Quotation"
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Confirmation Dialog */}
+        <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+          <AlertDialogContent className="bg-white">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <AlertDialogTitle className="text-xl">Confirm Send</AlertDialogTitle>
+                  <AlertDialogDescription className="text-gray-700 mt-2 font-medium">
+                    Are you sure you want to send quotation <span className="text-orange-600 font-bold">#{quotationId}</span> to <span className="text-orange-600 font-bold">{selectedBranch?.name}</span> of Princess Jaidee Enterprises?
+                  </AlertDialogDescription>
+                </div>
+              </div>
+            </AlertDialogHeader>
+
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 my-4 border border-orange-200">
+              <p className="text-sm text-gray-700 mb-2">
+                <span className="font-semibold block mb-1">Branch Details:</span>
+                <span className="text-orange-700 font-bold">{selectedBranch?.name}</span>
+                {selectedBranch?.location && <span className="text-gray-600 text-xs block mt-1">📍 {selectedBranch.location}</span>}
+                {selectedBranch?.address && <span className="text-gray-600 text-xs block">🏢 {selectedBranch.address}</span>}
+              </p>
+            </div>
+
+            <div className="flex gap-3 justify-end">
+              <AlertDialogCancel disabled={isSending} className="px-6">
+                No, Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleSend}
+                disabled={isSending}
+                className="px-6 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white"
+              >
+                {isSending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
+                    Sending...
+                  </>
+                ) : (
+                  "Yes, Send Now"
+                )}
+              </AlertDialogAction>
+            </div>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     )
   }
 
@@ -2331,94 +2573,28 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         </DialogContent>
       </Dialog>
 
-      {/* Send Modal - Enhanced */}
+      {/* Send Modal - Branch Selection */}
       <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Send Quotation</DialogTitle>
-            <DialogDescription>Choose how to send your quotation to the client</DialogDescription>
+            <DialogTitle className="text-2xl font-bold">Send Quotation to Branch</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-3 mt-4">
-            <button
-              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-orange-600 hover:bg-orange-50 transition group"
-              onClick={() => {
-                if (savedQuotationId) {
-                  setShowSendQuotationModal(true)
-                  setShowSendModal(false)
-                } else {
-                  toast({
-                    title: "Save First",
-                    description: "Please save the quotation as draft first, then send it",
-                  })
-                }
-              }}
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-orange-100 group-hover:bg-orange-200 transition">
-                <Mail size={24} className="text-orange-600" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900">Send to Branch</p>
-                <p className="text-sm text-gray-600">Send to Princess Jaidee branch</p>
-              </div>
-            </button>
-
-            <button
-              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition group"
-              onClick={() => {
-                handleDownloadPDF()
+          {showSendModal && (
+            <SendQuotationModalContent 
+              quotationId={savedQuotationId || 0}
+              onSendSuccess={(data) => {
+                toast({
+                  title: "Success!",
+                  description: `Quotation sent to ${data.data.branch_name}`,
+                })
                 setShowSendModal(false)
               }}
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition">
-                <Download size={24} className="text-blue-600" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900">Download PDF</p>
-                <p className="text-sm text-gray-600">Download and share manually</p>
-              </div>
-            </button>
-
-            <button
-              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-green-600 hover:bg-green-50 transition group"
-              onClick={() => {
-                handlePrint()
-                setShowSendModal(false)
-              }}
-            >
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 group-hover:bg-green-200 transition">
-                <Printer size={24} className="text-green-600" />
-              </div>
-              <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900">Print Document</p>
-                <p className="text-sm text-gray-600">Print physical copy</p>
-              </div>
-            </button>
-          </div>
-
-          <div className="flex justify-end mt-6 pt-4 border-t">
-            <button
-              onClick={() => setShowSendModal(false)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition"
-            >
-              Cancel
-            </button>
-          </div>
+              onClose={() => setShowSendModal(false)}
+            />
+          )}
         </DialogContent>
       </Dialog>
-
-      {/* Send Quotation to Branch Modal */}
-      <SendQuotationModal
-        isOpen={showSendQuotationModal}
-        onClose={() => setShowSendQuotationModal(false)}
-        quotationId={savedQuotationId || 0}
-        onSendSuccess={(data) => {
-          toast({
-            title: "Success!",
-            description: `Quotation sent to ${data.data.branch_name}`,
-          })
-        }}
-      />
 
       {/* Save Confirmation Dialog */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
