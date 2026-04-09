@@ -42,7 +42,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/quotations/upload-logo', [QuotationController::class, 'uploadLogo']);
     Route::post('/quotations/upload-design', [QuotationController::class, 'uploadDesignFile']);
     Route::get('/quotations/active-branches', [QuotationController::class, 'getActiveBranches']);
-    Route::post('/quotations/{id}/send-to-branch', [QuotationController::class, 'sendQuotationToBranch']);
     
     Route::get('/quotations', [QuotationController::class, 'index']);
     Route::post('/quotations', [QuotationController::class, 'store']);

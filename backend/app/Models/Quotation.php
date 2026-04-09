@@ -37,9 +37,6 @@ class Quotation extends Model
         'scheduled_send_date',
         'sent_at',
         'has_price',
-        'sent_to_branch_id',
-        'sent_to_branch_name',
-        'sent_via',
     ];
 
     protected $casts = [
@@ -70,6 +67,6 @@ class Quotation extends Model
 
     public function branch(): BelongsTo
     {
-        return $this->belongsTo(Branch::class, 'sent_to_branch_id');
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 }

@@ -1125,68 +1125,6 @@ class QuotationController extends Controller
         }
     }
 
-    // Send quotation to specific branch (update branch_id and mark as sent)
-    public function sendQuotationToBranch(Request $request, $id)
-    {
-        try {
-            $quotation = Quotation::with(['customer', 'items', 'branch'])->find($id);
-
-            if (!$quotation) {
-                return response()->json(['error' => 'Quotation not found'], 404);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'branch_id' => 'required|exists:branches,id',
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-
-            $branch = \App\Models\Branch::find($request->branch_id);
-
-            if (!$branch) {
-                return response()->json(['error' => 'Branch not found'], 404);
-            }
-
-            // Update quotation with branch_id only
-            $quotation->update([
-                'branch_id' => $branch->id,
-                'status' => 'pending',
-            ]);
-
-            Log::info('Quotation sent to branch', [
-                'quotation_id' => $id,
-                'branch_id' => $branch->id,
-                'branch_name' => $branch->name,
-                'sent_by_user' => auth()->id(),
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => "Quotation sent successfully to {$branch->name}",
-                'data' => [
-                    'quotation_id' => $quotation->id,
-                    'quotation_number' => $quotation->quotation_number,
-                    'branch_id' => $branch->id,
-                    'branch_name' => $branch->name,
-                ],
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Send quotation to branch error', [
-                'quotation_id' => $id,
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'error' => 'Failed to send quotation',
-                'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
     // Get all active branches for sending quotations
     public function getActiveBranches()
     {

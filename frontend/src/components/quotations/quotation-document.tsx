@@ -274,6 +274,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [isSending, setIsSending] = useState(false) // Added state for sending
   const [showSendApprovalModal, setShowSendApprovalModal] = useState(false) // Added state for approval modal
   const [isNavigating, setIsNavigating] = useState(false) // Added state for navigation
+  const [branches, setBranches] = useState<Array<{ id: number; name: string; location: string; is_main_branch: boolean }>>([])
+  const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
+  const [isLoadingBranches, setIsLoadingBranches] = useState(false)
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingRosterId, setEditingRosterId] = useState<string | null>(null)
@@ -679,6 +682,36 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     }
   }
 
+  const fetchBranches = async () => {
+    setIsLoadingBranches(true)
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) return
+
+      const response = await fetch(`${apiUrl}/quotations/active-branches`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setBranches(data.branches || [])
+        // Auto-select main branch if available
+        const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
+        if (mainBranch) {
+          setSelectedBranchId(mainBranch.id)
+        } else if (data.branches?.length > 0) {
+          setSelectedBranchId(data.branches[0].id)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching branches:", error)
+    } finally {
+      setIsLoadingBranches(false)
+    }
+  }
+
   const handleSend = () => {
     if (lineItems.length === 0) {
       toast({
@@ -688,6 +721,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       })
       return
     }
+    fetchBranches()
     setShowSendApprovalModal(true)
   }
 
@@ -872,6 +906,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   }
 
   const confirmSendForApproval = async () => {
+    if (!selectedBranchId) {
+      toast({
+        title: "Branch Required",
+        description: "Please select a branch to send the quotation to",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSending(true)
     try {
       const token = localStorage.getItem("auth_token")
@@ -924,6 +967,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("notes", formData.notes || "")
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "pending")
+      formDataToSend.append("branch_id", selectedBranchId?.toString() || "")
 
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(
@@ -1016,9 +1060,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         return
       }
 
+      const selectedBranch = branches.find(b => b.id === selectedBranchId)
       toast({
         title: "Success",
-        description: "Quotation sent to admin for approval successfully",
+        description: `Quotation sent to ${selectedBranch?.name || "admin"} for approval successfully`,
       })
 
       sessionStorage.removeItem("quotationDraft")
@@ -1026,10 +1071,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       setFormData(getInitialFormData())
       setLineItems([])
       setLogoPreview("")
+      setSelectedBranchId(null)
+      setBranches([])
       await new Promise((resolve) => setTimeout(resolve, 500))
-      setShowSendModal(false)
+      setShowSendApprovalModal(false)
 
-      router.push("/dashboard")
+      router.push("/dashboard/quotations/thank-you")
     } catch (error: any) {
       console.log("Send error:", error.message)
       toast({
@@ -2399,25 +2446,61 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       <Dialog open={showSendApprovalModal} onOpenChange={setShowSendApprovalModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Send for Approval</DialogTitle>
+            <DialogTitle className="text-2xl font-bold">Send Quotation to Admin</DialogTitle>
             <DialogDescription>
-              Do you want to send quotation <span className="font-bold text-gray-900">{formData.quoteNumber}</span> to
-              admin for approval?
+              Send quotation <span className="font-bold text-gray-900">{formData.quoteNumber}</span> to a branch for admin approval and pricing.
             </DialogDescription>
           </DialogHeader>
 
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Select Branch <span className="text-red-500">*</span>
+              </label>
+              {isLoadingBranches ? (
+                <div className="flex items-center gap-2 py-3 text-gray-500">
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>Loading branches...</span>
+                </div>
+              ) : branches.length === 0 ? (
+                <div className="py-3 text-gray-500 text-sm">
+                  No branches available. Please contact administrator.
+                </div>
+              ) : (
+                <select
+                  value={selectedBranchId || ""}
+                  onChange={(e) => setSelectedBranchId(Number(e.target.value))}
+                  className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 outline-none transition"
+                >
+                  <option value="" disabled>Select a branch</option>
+                  {branches.map((branch) => (
+                    <option key={branch.id} value={branch.id}>
+                      {branch.name} {branch.is_main_branch ? "(Main Branch)" : ""} - {branch.location}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="text-xs text-gray-500 mt-1">
+                Your quotation will be sent to this branch for pricing review.
+              </p>
+            </div>
+          </div>
+
           <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
             <button
-              onClick={() => setShowSendApprovalModal(false)}
+              onClick={() => {
+                setShowSendApprovalModal(false)
+                setSelectedBranchId(null)
+              }}
               disabled={isSending}
               className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
             >
-              No, Cancel
+              Cancel
             </button>
             <button
               onClick={confirmSendForApproval}
-              disabled={isSending}
-              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+              disabled={isSending || !selectedBranchId || isLoadingBranches}
+              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isSending ? (
                 <>
@@ -2425,7 +2508,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                   Sending...
                 </>
               ) : (
-                "Yes, Send for Approval"
+                "Send to Admin"
               )}
             </button>
           </div>
