@@ -1129,19 +1129,26 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     const fetchBranches = async () => {
       try {
         setLoading(true)
-        const response = await fetch("/api/quotations/active-branches", {
+        const token = localStorage.getItem("auth_token")
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://www.princessjaideeenterprises.com/api"
+        
+        console.log("[v0] Fetching branches from:", `${apiUrl}/quotations/active-branches`)
+        
+        const response = await fetch(`${apiUrl}/quotations/active-branches`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            Authorization: `Bearer ${token}`,
           },
         })
 
         if (!response.ok) {
-          throw new Error("Failed to fetch branches")
+          const errorData = await response.json()
+          throw new Error(errorData.message || `Failed to fetch branches: ${response.status}`)
         }
 
         const data = await response.json()
+        console.log("[v0] Branches fetched successfully:", data)
         setBranches(data.branches || [])
 
         const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
@@ -1154,7 +1161,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         console.error("[v0] Error fetching branches:", error)
         toast({
           title: "Error",
-          description: "Failed to load branches. Please try again.",
+          description: error instanceof Error ? error.message : "Failed to load branches. Please try again.",
           variant: "destructive",
         })
       } finally {
@@ -1174,11 +1181,16 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       try {
         setIsSending(true)
-        const response = await fetch(`/api/quotations/${quotationId}/send-to-branch`, {
+        const token = localStorage.getItem("auth_token")
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://www.princessjaideeenterprises.com/api"
+        
+        console.log("[v0] Sending quotation to branch:", quotationId, selectedBranch.id)
+        
+        const response = await fetch(`${apiUrl}/quotations/${quotationId}/send-to-branch`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`,
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
             branch_id: selectedBranch.id,
@@ -1188,10 +1200,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
         if (!response.ok) {
           const errorData = await response.json()
-          throw new Error(errorData.message || "Failed to send quotation")
+          console.error("[v0] Send error response:", errorData)
+          throw new Error(errorData.message || `Failed to send quotation: ${response.status}`)
         }
 
         const data = await response.json()
+        console.log("[v0] Send success:", data)
+        
         toast({
           title: "Success!",
           description: `Quotation sent to ${selectedBranch.name}`,
@@ -1220,119 +1235,162 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     return (
       <>
         {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-orange-600" />
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+            <p className="text-gray-600 font-medium">Loading branches...</p>
           </div>
         ) : branches.length === 0 ? (
-          <div className="text-center py-6">
-            <p className="text-gray-600">No branches available</p>
+          <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-dashed border-gray-300">
+            <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-600 font-medium mb-1">No branches available</p>
+            <p className="text-sm text-gray-500">Please contact support if this is an error</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            <label className="block text-sm font-semibold text-gray-900">
-              Select Princess Jaidee Branch:
-            </label>
-            <select
-              value={selectedBranch?.id || ""}
-              onChange={(e) => {
-                const branch = branches.find((b) => b.id === Number(e.target.value))
-                setSelectedBranch(branch || null)
-              }}
-              className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-orange-600 focus:outline-none font-medium text-gray-900"
-            >
-              <option value="">-- Select a branch --</option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                  {branch.is_main_branch ? " (Main)" : ""}
-                </option>
-              ))}
-            </select>
+          <div className="space-y-6">
+            {/* Branch Selection */}
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-orange-600" />
+                Select Princess Jaidee Branch
+              </label>
+              <div className="grid gap-3">
+                {branches.map((branch) => (
+                  <button
+                    key={branch.id}
+                    onClick={() => setSelectedBranch(branch)}
+                    className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 ${
+                      selectedBranch?.id === branch.id
+                        ? "border-orange-500 bg-orange-50"
+                        : "border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/50"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900">{branch.name}</p>
+                        {branch.is_main_branch && (
+                          <span className="inline-block mt-1 text-xs font-bold bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded-full">
+                            Main Branch
+                          </span>
+                        )}
+                      </div>
+                      <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
+                        selectedBranch?.id === branch.id
+                          ? "border-orange-600 bg-orange-600"
+                          : "border-gray-300"
+                      }`}>
+                        {selectedBranch?.id === branch.id && (
+                          <Check className="h-3 w-3 text-white" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-3 space-y-1 text-sm">
+                      {branch.location && (
+                        <p className="text-gray-600 flex items-center gap-2">
+                          <MapPin size={14} className="text-orange-500 flex-shrink-0" />
+                          <span>{branch.location}</span>
+                        </p>
+                      )}
+                      {branch.phone_number && (
+                        <p className="text-gray-600 flex items-center gap-2">
+                          <Phone size={14} className="text-orange-500 flex-shrink-0" />
+                          <span>{branch.phone_number}</span>
+                        </p>
+                      )}
+                      {branch.email && (
+                        <p className="text-gray-600 flex items-center gap-2">
+                          <Mail size={14} className="text-orange-500 flex-shrink-0" />
+                          <span className="truncate">{branch.email}</span>
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
 
+            {/* Selected Branch Summary */}
             {selectedBranch && (
-              <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-lg p-4 border-2 border-orange-200 space-y-2">
-                <p className="font-bold text-orange-900">Branch Details:</p>
-                <p className="text-sm text-gray-700">
-                  <span className="font-semibold">{selectedBranch.name}</span>
-                  {selectedBranch.is_main_branch && (
-                    <span className="ml-2 text-xs bg-orange-600 text-white px-2 py-1 rounded">Main Branch</span>
+              <div className="bg-gradient-to-br from-orange-50 via-red-50 to-orange-50 rounded-xl p-5 border-2 border-orange-200 shadow-sm">
+                <p className="text-xs font-bold text-orange-900 mb-3 uppercase tracking-wide">Selected Branch</p>
+                <div className="space-y-2">
+                  <p className="font-bold text-gray-900 text-lg">{selectedBranch.name}</p>
+                  {selectedBranch.address && (
+                    <p className="text-sm text-gray-700 line-clamp-2">{selectedBranch.address}</p>
                   )}
-                </p>
-                {selectedBranch.location && (
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
-                    <MapPin size={16} className="text-orange-600" />
-                    {selectedBranch.location}
-                  </p>
-                )}
-                {selectedBranch.address && (
-                  <p className="text-sm text-gray-600">{selectedBranch.address}</p>
-                )}
-                {selectedBranch.phone_number && (
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
-                    <Phone size={16} className="text-orange-600" />
-                    {selectedBranch.phone_number}
-                  </p>
-                )}
-                {selectedBranch.email && (
-                  <p className="text-sm text-gray-600 flex items-center gap-2">
-                    <Mail size={16} className="text-orange-600" />
-                    {selectedBranch.email}
-                  </p>
-                )}
+                </div>
               </div>
             )}
 
+            {/* Send Button */}
             <button
               onClick={() => setShowConfirmation(true)}
               disabled={!selectedBranch || isSending}
-              className="w-full px-4 py-3 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full px-6 py-3 bg-gradient-to-r from-red-500 via-red-500 to-orange-500 hover:from-red-600 hover:via-red-600 hover:to-orange-600 text-white font-bold rounded-xl transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
             >
               {isSending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Sending...
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Sending...</span>
                 </>
               ) : (
-                "Send Quotation"
+                <>
+                  <Mail className="h-5 w-5" />
+                  <span>Send Quotation to Branch</span>
+                </>
               )}
             </button>
           </div>
         )}
 
-        {/* Confirmation Dialog */}
+        {/* Confirmation Dialog - Modern Design */}
         <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-          <AlertDialogContent className="bg-white">
-            <AlertDialogHeader>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-orange-600" />
+          <AlertDialogContent className="bg-white max-w-md rounded-2xl shadow-2xl">
+            <AlertDialogHeader className="space-y-4">
+              <div className="flex items-start gap-4">
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="h-7 w-7 text-orange-600" />
                 </div>
                 <div>
-                  <AlertDialogTitle className="text-xl">Confirm Send</AlertDialogTitle>
-                  <AlertDialogDescription className="text-gray-700 mt-2 font-medium">
-                    Are you sure you want to send quotation <span className="text-orange-600 font-bold">#{quotationId}</span> to <span className="text-orange-600 font-bold">{selectedBranch?.name}</span> of Princess Jaidee Enterprises?
+                  <AlertDialogTitle className="text-2xl font-bold text-gray-900">
+                    Confirm Send
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-gray-600 mt-2 font-medium">
+                    Ready to send quotation <span className="text-orange-600 font-bold">#{quotationId}</span> to <span className="text-orange-600 font-bold">{selectedBranch?.name}</span>?
                   </AlertDialogDescription>
                 </div>
               </div>
             </AlertDialogHeader>
 
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-4 my-4 border border-orange-200">
-              <p className="text-sm text-gray-700 mb-2">
-                <span className="font-semibold block mb-1">Branch Details:</span>
-                <span className="text-orange-700 font-bold">{selectedBranch?.name}</span>
-                {selectedBranch?.location && <span className="text-gray-600 text-xs block mt-1">📍 {selectedBranch.location}</span>}
-                {selectedBranch?.address && <span className="text-gray-600 text-xs block">🏢 {selectedBranch.address}</span>}
-              </p>
+            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 border-2 border-orange-200 space-y-3">
+              <p className="text-xs font-bold text-orange-900 uppercase tracking-wide">Branch Information</p>
+              <div className="space-y-2">
+                <p className="text-gray-900 font-bold text-lg">{selectedBranch?.name}</p>
+                {selectedBranch?.address && (
+                  <p className="text-sm text-gray-700 flex items-start gap-2">
+                    <MapPin className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <span>{selectedBranch.address}</span>
+                  </p>
+                )}
+                {selectedBranch?.phone_number && (
+                  <p className="text-sm text-gray-700 flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-orange-600 flex-shrink-0" />
+                    <span>{selectedBranch.phone_number}</span>
+                  </p>
+                )}
+              </div>
             </div>
 
-            <div className="flex gap-3 justify-end">
-              <AlertDialogCancel disabled={isSending} className="px-6">
-                No, Cancel
+            <div className="flex gap-3 justify-end pt-2">
+              <AlertDialogCancel 
+                disabled={isSending} 
+                className="px-6 py-2 rounded-lg border-2 border-gray-300 hover:bg-gray-50 font-semibold text-gray-900"
+              >
+                Cancel
               </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleSend}
                 disabled={isSending}
-                className="px-6 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white"
+                className="px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-lg transition duration-200 disabled:opacity-50"
               >
                 {isSending ? (
                   <>
@@ -1340,7 +1398,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     Sending...
                   </>
                 ) : (
-                  "Yes, Send Now"
+                  <>
+                    <Mail className="mr-2 h-4 w-4 inline" />
+                    Send Now
+                  </>
                 )}
               </AlertDialogAction>
             </div>
@@ -2575,9 +2636,14 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
       {/* Send Modal - Branch Selection */}
       <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Send Quotation to Branch</DialogTitle>
+        <DialogContent className="max-w-xl w-full sm:max-w-2xl rounded-2xl shadow-2xl bg-white">
+          <DialogHeader className="space-y-2">
+            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
+              Send Quotation to Branch
+            </DialogTitle>
+            <DialogDescription className="text-base text-gray-600">
+              Select a Princess Jaidee Enterprises branch to send this quotation
+            </DialogDescription>
           </DialogHeader>
 
           {showSendModal && (
