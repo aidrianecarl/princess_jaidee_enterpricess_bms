@@ -1150,7 +1150,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             {/* Right side buttons */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
-                onClick={handleSend}
+                onClick={() => setShowSendModal(true)}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
               >
                 <Mail size={16} className="sm:w-5 sm:h-5" />
