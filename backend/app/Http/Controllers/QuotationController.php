@@ -1122,4 +1122,102 @@ class QuotationController extends Controller
             ], 500);
         }
     }
+
+    // Send quotation to specific branch
+    public function sendQuotationToBranch(Request $request, $id)
+    {
+        try {
+            $quotation = Quotation::with(['customer', 'items', 'branch'])->find($id);
+
+            if (!$quotation) {
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'branch_id' => 'required|exists:branches,id',
+                'send_via' => 'nullable|in:email,system,both',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $branch = \App\Models\Branch::find($request->branch_id);
+
+            if (!$branch) {
+                return response()->json(['error' => 'Branch not found'], 404);
+            }
+
+            // Update quotation with send information
+            $quotation->update([
+                'sent_to_branch_id' => $branch->id,
+                'sent_to_branch_name' => $branch->name,
+                'sent_via' => $request->send_via ?? 'system',
+                'sent_at' => Carbon::now(),
+                'status' => 'sent',
+            ]);
+
+            Log::info('Quotation sent to branch', [
+                'quotation_id' => $id,
+                'branch_id' => $branch->id,
+                'branch_name' => $branch->name,
+                'sent_by_user' => auth()->id(),
+                'sent_via' => $request->send_via ?? 'system',
+                'customer_email' => $quotation->customer?->bill_to_email,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Quotation sent successfully to {$branch->name} branch",
+                'data' => [
+                    'quotation_id' => $quotation->id,
+                    'quotation_number' => $quotation->quotation_number,
+                    'branch_id' => $branch->id,
+                    'branch_name' => $branch->name,
+                    'sent_at' => $quotation->sent_at,
+                    'sent_via' => $quotation->sent_via,
+                ],
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Send quotation to branch error', [
+                'quotation_id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to send quotation',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Get all active branches for sending quotations
+    public function getActiveBranches()
+    {
+        try {
+            $branches = \App\Models\Branch::where('status', 'active')
+                ->select('id', 'name', 'location', 'address', 'phone_number', 'email', 'is_main_branch')
+                ->orderBy('is_main_branch', 'desc')
+                ->orderBy('name', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'branches' => $branches,
+                'count' => $branches->count(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Get active branches error', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to fetch branches',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

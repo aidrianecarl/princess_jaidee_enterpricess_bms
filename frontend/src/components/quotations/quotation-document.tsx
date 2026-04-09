@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react"
 import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown, Check } from "lucide-react"
 import { ProductSelectorModal } from "./product-selector-modal"
 import { ServiceSelectorModal } from "./service-selector-modal"
+import { SendQuotationModal } from "./send-quotation-modal"
 import { quotationFormSchema } from "@/lib/validations/quotation"
 import {
   AlertDialog,
@@ -266,8 +267,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [showSendModal, setShowSendModal] = useState(false)
+  const [showSendQuotationModal, setShowSendQuotationModal] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [savedQuotationId, setSavedQuotationId] = useState<number | null>(null)
   const isEditMode = !!existingQuotation // Determine edit mode based on existingQuotation
   const printRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
@@ -843,6 +846,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         })
         setIsSaving(false)
         return
+      }
+
+      // Store the quotation ID for sending to branch
+      if (data.data && data.data.id) {
+        setSavedQuotationId(data.data.id)
       }
 
       toast({
@@ -2334,21 +2342,25 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
           <div className="space-y-3 mt-4">
             <button
-              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-red-600 hover:bg-red-50 transition group"
+              className="w-full flex items-center gap-4 p-4 border-2 border-gray-300 rounded-lg hover:border-orange-600 hover:bg-orange-50 transition group"
               onClick={() => {
-                toast({
-                  title: "Save First",
-                  description: "Please save the quotation as draft first, then send it from the dashboard",
-                })
-                setShowSendModal(false)
+                if (savedQuotationId) {
+                  setShowSendQuotationModal(true)
+                  setShowSendModal(false)
+                } else {
+                  toast({
+                    title: "Save First",
+                    description: "Please save the quotation as draft first, then send it",
+                  })
+                }
               }}
             >
-              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-red-100 group-hover:bg-red-200 transition">
-                <Mail size={24} className="text-red-600" />
+              <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-orange-100 group-hover:bg-orange-200 transition">
+                <Mail size={24} className="text-orange-600" />
               </div>
               <div className="text-left flex-1">
-                <p className="font-semibold text-gray-900">Send via Email</p>
-                <p className="text-sm text-gray-600">Email quotation to client</p>
+                <p className="font-semibold text-gray-900">Send to Branch</p>
+                <p className="text-sm text-gray-600">Send to Princess Jaidee branch</p>
               </div>
             </button>
 
@@ -2395,6 +2407,19 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Send Quotation to Branch Modal */}
+      <SendQuotationModal
+        isOpen={showSendQuotationModal}
+        onClose={() => setShowSendQuotationModal(false)}
+        quotationId={savedQuotationId || 0}
+        onSendSuccess={(data) => {
+          toast({
+            title: "Success!",
+            description: `Quotation sent to ${data.data.branch_name}`,
+          })
+        }}
+      />
 
       <Dialog open={showSendApprovalModal} onOpenChange={setShowSendApprovalModal}>
         <DialogContent className="max-w-md">
