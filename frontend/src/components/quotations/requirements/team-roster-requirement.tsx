@@ -194,6 +194,16 @@ export function TeamRosterRequirement({
           </p>
         </div>
       )}
+      <Button
+          type="button"
+          onClick={addMember}
+          variant="outline"
+          size="sm"
+          className="gap-1 bg-transparent"
+        >
+          <Plus size={16} />
+          Add Player
+        </Button>
 
       <div className="space-y-3 max-h-96 overflow-y-auto p-2">
         {members.map((member, index) => (
@@ -330,16 +340,6 @@ export function TeamRosterRequirement({
                 </>
               )}
             </div>
-            <Button
-            type="button"
-            onClick={addMember}
-            variant="outline"
-            size="sm"
-            className="gap-1 bg-transparent"
-          >
-            <Plus size={16} />
-            Add Player
-          </Button>
 
             {members.length > 1 && (
               <div className="flex justify-end">
