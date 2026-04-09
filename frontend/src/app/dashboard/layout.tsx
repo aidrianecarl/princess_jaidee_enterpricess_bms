@@ -12,9 +12,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <SidebarProvider>
       <div className="flex flex-col min-h-screen">
-        <div className="flex flex-1 flex-row relative">
+        <div className="flex flex-1 flex-row relative w-full">
           {!hideSidebar && <DashboardSidebar />}
-          <main className="flex-1 w-full overflow-auto">
+          <main className="flex-1 w-full overflow-auto bg-gradient-to-b from-white to-red-50/20">
             {children}
           </main>
         </div>

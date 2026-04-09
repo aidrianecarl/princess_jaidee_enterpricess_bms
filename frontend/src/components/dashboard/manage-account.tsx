@@ -81,9 +81,9 @@ export function ManageAccountContent({ user }: ManageAccountContentProps) {
   }
 
   return (
-    <main className="max-w-4xl mx-auto px-4 py-12">
+    <main className="w-full px-3 sm:px-4 lg:px-6 py-6 sm:py-8 lg:py-12">
       {/* Header */}
-      <div className="mb-8 flex items-center gap-4">
+      <div className="mb-8 flex items-center gap-4 max-w-6xl mx-auto">
         <button onClick={() => router.back()} className="p-2 hover:bg-red-50 rounded-lg transition">
           <ArrowLeft size={20} className="text-neutral-600" />
         </button>
@@ -93,7 +93,7 @@ export function ManageAccountContent({ user }: ManageAccountContentProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Profile Card */}

@@ -1156,8 +1156,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
       <div className="w-full fixed top-14 sm:top-16 z-40 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg print:hidden">
         <div className="w-full px-1 sm:px-3 lg:px-6">
-          <div className="flex items-center justify-between gap-1 sm:gap-2 py-2 md:py-3 overflow-x-auto">
-            {/* Left side buttons */}
+          <div className="flex items-center justify-end gap-1 sm:gap-2 py-2 md:py-3 overflow-x-auto">
+            {/* Right side buttons - Save Draft and Send to Admin */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
                 onClick={handleSaveDraft}
@@ -1169,33 +1169,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                 <span className="inline sm:hidden">Save</span>
               </button>
               <button
-                onClick={handlePreview}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
-              >
-                <Eye size={16} className="sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Preview</span>
-                <span className="inline sm:hidden">View</span>
-              </button>
-              <button
-                onClick={handlePrint}
-                disabled={isPrinting}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
-              >
-                {isPrinting ? <Loader2 size={16} className="animate-spin sm:w-5 sm:h-5" /> : <Printer size={16} className="sm:w-5 sm:h-5" />}
-                <span className="hidden sm:inline">Print</span>
-                <span className="inline sm:hidden">Prt</span>
-              </button>
-            </div>
-
-            {/* Right side buttons */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <button
                 onClick={handleSend}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
               >
                 <Mail size={16} className="sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Send</span>
-                <span className="inline sm:hidden">Snd</span>
+                <span className="hidden sm:inline">Send to Admin</span>
+                <span className="inline sm:hidden">Send</span>
               </button>
             </div>
           </div>
@@ -1203,7 +1182,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       </div>
 
       {/* Main Content */}
-      <div className="w-screen md:w-full px-1 sm:px-2 md:px-6 lg:px-8 pt-16 md:pt-20 pb-2 md:pb-6">
+      <div className="w-full max-w-7xl mx-auto px-1 sm:px-2 md:px-6 lg:px-8 pt-16 md:pt-20 pb-2 md:pb-6">
         {/* Document Viewer - Responsive Container */}
         <div
           ref={printRef}

@@ -42,7 +42,9 @@ export default function ManageAccountPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20">
       <DashboardHeader user={user} />
-      <ManageAccountContent user={user} />
+      <div className="flex-1 w-full">
+        <ManageAccountContent user={user} />
+      </div>
       <Toaster />
     </div>
   )
