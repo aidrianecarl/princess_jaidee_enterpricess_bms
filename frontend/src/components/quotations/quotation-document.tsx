@@ -1021,20 +1021,20 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         return
       }
 
-      toast({
-        title: "Success",
-        description: "Quotation sent to admin for approval successfully",
-      })
-
-      sessionStorage.removeItem("quotationDraft")
-      sessionStorage.removeItem("quotationPreviewData")
-      setFormData(getInitialFormData())
-      setLineItems([])
-      setLogoPreview("")
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      setShowSendModal(false)
-
-      router.push("/dashboard")
+      // Store the quotation ID and open the send to admin modal
+      if (data.data && data.data.id) {
+        setSavedQuotationId(data.data.id)
+        await new Promise((resolve) => setTimeout(resolve, 300))
+        setShowSendModal(true)
+      } else {
+        toast({
+          title: "Error",
+          description: "Quotation saved but could not retrieve ID for sending",
+          variant: "destructive",
+        })
+        await new Promise((resolve) => setTimeout(resolve, 500))
+        router.push("/dashboard")
+      }
     } catch (error: any) {
       console.log("Send error:", error.message)
       toast({
@@ -1154,7 +1154,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
         if (mainBranch) {
           setSelectedBranch(mainBranch)
-        } else if (data.branches && data.branches.length > "") {
+        } else if (data.branches && data.branches.length > 0) {
           setSelectedBranch(data.branches[0])
         }
       } catch (error) {
@@ -1207,11 +1207,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         const data = await response.json()
         console.log("[v0] Send success:", data)
         
-        toast({
-          title: "Success!",
-          description: `Quotation sent to ${selectedBranch.name}`,
-        })
-
         if (onSendSuccess) {
           onSendSuccess(data)
         }
@@ -1265,7 +1260,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     }`}
                   >
                     <div className="flex items-start justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="font-semibold text-gray-900">{branch.name}</p>
                         {branch.is_main_branch && (
                           <span className="inline-block mt-1 text-xs font-bold bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded-full">
@@ -1335,7 +1330,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               ) : (
                 <>
                   <Mail className="h-5 w-5" />
-                  <span>Send Quotation to Branch</span>
+                  <span>Send to Admin</span>
                 </>
               )}
             </button>
@@ -1352,10 +1347,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                 </div>
                 <div>
                   <AlertDialogTitle className="text-2xl font-bold text-gray-900">
-                    Confirm Send
+                    Confirm Send to Admin
                   </AlertDialogTitle>
                   <AlertDialogDescription className="text-gray-600 mt-2 font-medium">
-                    Ready to send quotation <span className="text-orange-600 font-bold">#{quotationId}</span> to <span className="text-orange-600 font-bold">{selectedBranch?.name}</span>?
+                    Ready to send quotation <span className="text-orange-600 font-bold">{quotationId ? `#${quotationId}` : "this"}</span> to <span className="text-orange-600 font-bold">{selectedBranch?.name}</span> for admin approval?
                   </AlertDialogDescription>
                 </div>
               </div>
@@ -2634,15 +2629,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         </DialogContent>
       </Dialog>
 
-      {/* Send Modal - Branch Selection */}
+      {/* Send Modal - Admin Selection */}
       <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
-        <DialogContent className="max-w-xl w-full sm:max-w-2xl rounded-2xl shadow-2xl bg-white">
+        <DialogContent className="max-w-md sm:max-w-lg w-full rounded-2xl shadow-2xl bg-white max-h-[90vh] overflow-y-auto">
           <DialogHeader className="space-y-2">
-            <DialogTitle className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
-              Send Quotation to Branch
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
+              Send Quotation to Admin
             </DialogTitle>
-            <DialogDescription className="text-base text-gray-600">
-              Select a Princess Jaidee Enterprises branch to send this quotation
+            <DialogDescription className="text-sm text-gray-600">
+              Select which Princess Jaidee Enterprises admin branch to send this quotation to for approval
             </DialogDescription>
           </DialogHeader>
 
@@ -2652,9 +2647,19 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               onSendSuccess={(data) => {
                 toast({
                   title: "Success!",
-                  description: `Quotation sent to ${data.data.branch_name}`,
+                  description: `Quotation sent to admin for approval`,
                 })
                 setShowSendModal(false)
+                // Clear the form and redirect after success
+                sessionStorage.removeItem("quotationDraft")
+                sessionStorage.removeItem("quotationPreviewData")
+                setFormData(getInitialFormData())
+                setLineItems([])
+                setLogoPreview("")
+                setSavedQuotationId(null)
+                setTimeout(() => {
+                  router.push("/dashboard")
+                }, 500)
               }}
               onClose={() => setShowSendModal(false)}
             />
