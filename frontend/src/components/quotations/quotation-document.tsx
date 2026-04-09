@@ -1154,7 +1154,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
         if (mainBranch) {
           setSelectedBranch(mainBranch)
-        } else if (data.branches && data.branches.length > 0) {
+        } else if (data.branches && data.branches.length > "") {
           setSelectedBranch(data.branches[0])
         }
       } catch (error) {
