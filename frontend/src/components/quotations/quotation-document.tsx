@@ -2,9 +2,10 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
-import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown, Check, MapPin, Phone, CheckCircle2 } from "lucide-react"
+import { Plus, Trash2, Download, Save, Eye, Settings, Upload, X, Loader2, Printer, Mail, Edit2, ChevronDown, Check } from "lucide-react"
 import { ProductSelectorModal } from "./product-selector-modal"
 import { ServiceSelectorModal } from "./service-selector-modal"
+import { SendQuotationModal } from "./send-quotation-modal"
 import { quotationFormSchema } from "@/lib/validations/quotation"
 import {
   AlertDialog,
@@ -268,12 +269,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [showSendModal, setShowSendModal] = useState(false)
   const [isPrinting, setIsPrinting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
-  const [savedQuotationId, setSavedQuotationId] = useState<number | null>(null)
   const isEditMode = !!existingQuotation // Determine edit mode based on existingQuotation
   const printRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const [isSending, setIsSending] = useState(false) // Added state for sending
+  const [showSendApprovalModal, setShowSendApprovalModal] = useState(false) // Added state for approval modal
   const [isNavigating, setIsNavigating] = useState(false) // Added state for navigation
+  const [savedQuotationId, setSavedQuotationId] = useState<number | null>(null) // Store quotation ID for sending
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editingRosterId, setEditingRosterId] = useState<string | null>(null)
@@ -827,11 +829,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       })
 
       const data = await response.json()
-      console.log("[v0] Save quotation response status:", response.status)
-      console.log("[v0] Save quotation response data:", data)
 
       if (!response.ok) {
-        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
+        console.log("Backend validation errors:", data.errors || data.message || data)
         const errorMessages = data.errors
           ? Object.entries(data.errors)
             .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
@@ -847,14 +847,186 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         return
       }
 
-      // Store the quotation ID for sending to admin
+      toast({
+        title: "Success",
+        description: isEditMode ? "Quotation updated successfully" : "Quotation saved as draft successfully",
+      })
+
+      sessionStorage.removeItem("quotationDraft")
+      sessionStorage.removeItem("quotationPreviewData")
+      setFormData(getInitialFormData())
+      setLineItems([])
+      setLogoPreview("")
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      router.push("/dashboard")
+    } catch (error: any) {
+      console.log("Save error:", error.message)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save quotation",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+      setShowConfirmDialog(false)
+    }
+  }
+
+  const confirmSendForApproval = async () => {
+    setIsSending(true)
+    try {
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to send quotations",
+          variant: "destructive",
+        })
+        return
+      }
+
+      // First save the quotation as draft if it's new
+      const formDataToSend = new FormData()
+
+      // Add customer fields
+      formDataToSend.append("customer_name", formData.clientName || "")
+      formDataToSend.append("customer_email", formData.clientEmail || "")
+      formDataToSend.append("customer_phone", formData.clientPhone || "")
+      formDataToSend.append("customer_address", formData.clientAddress || "")
+      formDataToSend.append("customer_city", formData.clientCity || "")
+      formDataToSend.append("customer_province", formData.clientState || "")
+      formDataToSend.append("customer_zip_code", formData.clientPostal || "")
+
+      // Add bill_to fields (map from client fields for database customers table)
+      formDataToSend.append("bill_to_name", formData.clientName || "")
+      formDataToSend.append("bill_to_email", formData.clientEmail || "")
+      formDataToSend.append("bill_to_phone", formData.clientPhone || "")
+      formDataToSend.append("bill_to_street", formData.clientAddress || "")
+      formDataToSend.append("bill_to_city", formData.clientCity || "")
+      formDataToSend.append("bill_to_state", formData.clientState || "")
+      formDataToSend.append("bill_to_postal", formData.clientPostal || "")
+
+      // Add business fields
+      formDataToSend.append("business_name", formData.businessName || "")
+      formDataToSend.append("business_address", formData.businessAddress || "")
+      formDataToSend.append("business_city", formData.businessCity || "")
+      formDataToSend.append("business_state", formData.businessState || "")
+      formDataToSend.append("business_postal", formData.businessPostal || "")
+      formDataToSend.append("business_phone", formData.businessPhone || "")
+      formDataToSend.append("business_email", formData.businessEmail || "")
+
+      if (formData.logo && formData.logo instanceof File) {
+        console.log("Appending logo file to FormData for send")
+        formDataToSend.append("logo", formData.logo)
+      } else if (formData.logoUrl) {
+        console.log("Logo URL already exists, skipping re-upload:", formData.logoUrl)
+      }
+
+      formDataToSend.append("notes", formData.notes || "")
+      formDataToSend.append("valid_until", formData.validUntil || "")
+      formDataToSend.append("status", "pending")
+
+      // Upload design files and get URLs
+      const itemsPayload = await Promise.all(
+        lineItems.map(async (item, index) => {
+          let designFileUrl = null
+          
+          // If there's a design file, upload it
+          if (item.serviceRequirements?.designFile instanceof File) {
+            try {
+              const designFormData = new FormData()
+              designFormData.append("design_file", item.serviceRequirements.designFile)
+              
+              const uploadResponse = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
+                {
+                  method: "POST",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                  },
+                  body: designFormData,
+                }
+              )
+              
+              if (uploadResponse.ok) {
+                const uploadData = await uploadResponse.json()
+                designFileUrl = uploadData.design_file_url
+                console.log("[v0] Design file uploaded:", designFileUrl)
+              } else {
+                console.error("[v0] Design file upload failed")
+              }
+            } catch (error) {
+              console.error("[v0] Error uploading design file:", error)
+            }
+          }
+          
+          return {
+            product_id: item.productId || null,
+            service_id: item.serviceId || null,
+            customization: item.description || "",
+            quantity: Number(item.quantity) || 1,
+            unit_price: Number(item.unitPrice) || 0,
+            design_cost: Number(item.designCost) || 0,
+            sort_order: index,
+            design_file_url: designFileUrl || null,
+            team_roster: item.serviceRequirements?.teamRoster ? JSON.stringify(item.serviceRequirements.teamRoster) : null,
+            size_specifications: item.serviceRequirements?.sizeSpecifications || null,
+            notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
+          }
+        })
+      )
+      
+      formDataToSend.append("items", JSON.stringify(itemsPayload))
+
+      const url = isEditMode
+        ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
+        : `${process.env.NEXT_PUBLIC_API_URL}/quotations`
+
+      const method = isEditMode ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: (() => {
+          if (method === "PUT") {
+            formDataToSend.append("_method", "PUT")
+          }
+          return formDataToSend
+        })(),
+      })
+
+      const data = await response.json()
+      console.log("[v0] Save quotation response:", { status: response.status, data })
+
+      if (!response.ok) {
+        console.log("[v0] Backend validation errors:", data.errors || data.message || data)
+        const errorMessages = data.errors
+          ? Object.entries(data.errors)
+            .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join("\n")
+          : data.message || "Failed to save quotation"
+
+        toast({
+          title: "Validation Error",
+          description: errorMessages,
+          variant: "destructive",
+        })
+        setIsSending(false)
+        return
+      }
+
+      // Capture the quotation ID from response
       if (data.data && data.data.id) {
         console.log("[v0] Quotation saved with ID:", data.data.id)
         setSavedQuotationId(data.data.id)
-        
+
         toast({
           title: "Success",
-          description: isEditMode ? "Quotation updated successfully" : "Quotation saved successfully",
+          description: "Quotation saved successfully",
         })
 
         sessionStorage.removeItem("quotationDraft")
@@ -863,10 +1035,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         setLineItems([])
         setLogoPreview("")
         
-        console.log("[v0] About to open send modal with quotationId:", data.data.id)
+        console.log("[v0] Opening send modal with quotationId:", data.data.id)
         await new Promise((resolve) => setTimeout(resolve, 300))
         setShowSendModal(true)
-        console.log("[v0] Send modal opened with quotationId:", data.data.id)
       } else {
         console.error("[v0] ERROR: No quotation ID in response:", data)
         toast({
@@ -876,7 +1047,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         })
       }
     } catch (error: any) {
-      console.log("[v0] Send error:", error.message)
+      console.log("Send error:", error.message)
       toast({
         title: "Error",
         description: error.message || "Failed to send quotation",
@@ -946,318 +1117,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     )
   }
 
-  // Send Quotation Modal Content Component
-  const SendQuotationModalContent = ({
-    quotationId,
-    onSendSuccess,
-    onClose,
-  }: {
-    quotationId: number
-    onSendSuccess?: (data: any) => void
-    onClose?: () => void
-  }) => {
-    const [branches, setBranches] = useState<any[]>([])
-    const [selectedBranch, setSelectedBranch] = useState<any>(null)
-    const [loading, setLoading] = useState(true)
-    const [isSending, setIsSending] = useState(false)
-    const [showConfirmation, setShowConfirmation] = useState(false)
-
-    useEffect(() => {
-      console.log("[v0] SendQuotationModalContent received quotationId prop:", quotationId)
-      fetchBranches()
-    }, [quotationId])
-
-    const fetchBranches = async () => {
-      try {
-        setLoading(true)
-        const token = localStorage.getItem("auth_token")
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://www.princessjaideeenterprises.com/api"
-        
-        console.log("[v0] Fetching branches from:", `${apiUrl}/quotations/active-branches`)
-        
-        const response = await fetch(`${apiUrl}/quotations/active-branches`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || `Failed to fetch branches: ${response.status}`)
-        }
-
-        const data = await response.json()
-        console.log("[v0] Branches fetched successfully:", data)
-        setBranches(data.branches || [])
-
-        const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
-        if (mainBranch) {
-          setSelectedBranch(mainBranch)
-        } else if (data.branches && data.branches.length > 0) {
-          setSelectedBranch(data.branches[0])
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching branches:", error)
-        toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to load branches. Please try again.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    const handleSend = async () => {
-      if (!selectedBranch) {
-        toast({
-          title: "Error",
-          description: "Please select a branch",
-          variant: "destructive",
-        })
-        return
-      }
-
-      try {
-        setIsSending(true)
-        const token = localStorage.getItem("auth_token")
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://www.princessjaideeenterprises.com/api"
-        
-        const sendUrl = `${apiUrl}/quotations/${quotationId}/send-to-branch`
-        console.log("[v0] Sending quotation to branch:")
-        console.log("[v0] - quotationId:", quotationId)
-        console.log("[v0] - selectedBranch.id:", selectedBranch.id)
-        console.log("[v0] - Full URL:", sendUrl)
-        console.log("[v0] - Token exists:", !!token)
-        
-        const response = await fetch(sendUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            branch_id: selectedBranch.id,
-            send_via: "both",
-          }),
-        })
-
-        if (!response.ok) {
-          const errorData = await response.json()
-          console.error("[v0] Send failed!")
-          console.error("[v0] - Response status:", response.status)
-          console.error("[v0] - Error data:", errorData)
-          throw new Error(errorData.message || `Failed to send quotation: ${response.status}`)
-        }
-
-        const data = await response.json()
-        console.log("[v0] Send success!")
-        console.log("[v0] - Response status:", response.status)
-        console.log("[v0] - Response data:", data)
-        
-        if (onSendSuccess) {
-          onSendSuccess(data)
-        }
-
-        setShowConfirmation(false)
-        if (onClose) {
-          onClose()
-        }
-      } catch (error) {
-        console.error("[v0] Error sending quotation:", error)
-        toast({
-          title: "Error",
-          description: error instanceof Error ? error.message : "Failed to send quotation",
-          variant: "destructive",
-        })
-      } finally {
-        setIsSending(false)
-      }
-    }
-
-    return (
-      <>
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-12 gap-4">
-            <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
-            <p className="text-gray-600 font-medium">Loading branches...</p>
-          </div>
-        ) : branches.length === 0 ? (
-          <div className="text-center py-12 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border-2 border-dashed border-gray-300">
-            <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-            <p className="text-gray-600 font-medium mb-1">No branches available</p>
-            <p className="text-sm text-gray-500">Please contact support if this is an error</p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Branch Selection */}
-            <div>
-              <label className="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-orange-600" />
-                Select Princess Jaidee Branch
-              </label>
-              <div className="grid gap-3">
-                {branches.map((branch) => (
-                  <button
-                    key={branch.id}
-                    onClick={() => setSelectedBranch(branch)}
-                    className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200 ${
-                      selectedBranch?.id === branch.id
-                        ? "border-orange-500 bg-orange-50"
-                        : "border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50/50"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-semibold text-gray-900">{branch.name}</p>
-                        {branch.is_main_branch === 1 ? (
-                          <span className="inline-block mt-1 text-xs font-bold bg-gradient-to-r from-red-500 to-orange-500 text-white px-2 py-1 rounded-full">
-                            Main Branch
-                          </span>
-                        ) : (
-                          <span className="inline-block mt-1 text-xs font-medium text-gray-500">Branch</span>
-                        )}
-                      </div>
-                      <div className={`h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                        selectedBranch?.id === branch.id
-                          ? "border-orange-600 bg-orange-600"
-                          : "border-gray-300"
-                      }`}>
-                        {selectedBranch?.id === branch.id && (
-                          <Check className="h-3 w-3 text-white" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="mt-3 space-y-1 text-sm">
-                      {branch.location && (
-                        <p className="text-gray-600 flex items-center gap-2">
-                          <MapPin size={14} className="text-orange-500 flex-shrink-0" />
-                          <span>{branch.location}</span>
-                        </p>
-                      )}
-                      {branch.phone_number && (
-                        <p className="text-gray-600 flex items-center gap-2">
-                          <Phone size={14} className="text-orange-500 flex-shrink-0" />
-                          <span>{branch.phone_number}</span>
-                        </p>
-                      )}
-                      {branch.email && (
-                        <p className="text-gray-600 flex items-center gap-2">
-                          <Mail size={14} className="text-orange-500 flex-shrink-0" />
-                          <span className="truncate">{branch.email}</span>
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Selected Branch Summary */}
-            {selectedBranch && (
-              <div className="bg-gradient-to-br from-orange-50 via-red-50 to-orange-50 rounded-xl p-5 border-2 border-orange-200 shadow-sm">
-                <p className="text-xs font-bold text-orange-900 mb-3 uppercase tracking-wide">Selected Branch</p>
-                <div className="space-y-2">
-                  <p className="font-bold text-gray-900 text-lg">{selectedBranch.name}</p>
-                  {selectedBranch.address && (
-                    <p className="text-sm text-gray-700 line-clamp-2">{selectedBranch.address}</p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Send Button */}
-            <button
-              onClick={() => setShowConfirmation(true)}
-              disabled={!selectedBranch || isSending}
-              className="w-full px-6 py-3 bg-gradient-to-r from-red-500 via-red-500 to-orange-500 hover:from-red-600 hover:via-red-600 hover:to-orange-600 text-white font-bold rounded-xl transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-            >
-              {isSending ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Sending...</span>
-                </>
-              ) : (
-                <>
-                  <Mail className="h-5 w-5" />
-                  <span>Send to Admin</span>
-                </>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Confirmation Dialog - Modern Design */}
-        <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-          <AlertDialogContent className="bg-white max-w-md rounded-2xl shadow-2xl">
-            <AlertDialogHeader className="space-y-4">
-              <div className="flex items-start gap-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-orange-100 to-red-100 flex items-center justify-center flex-shrink-0">
-                  <CheckCircle2 className="h-7 w-7 text-orange-600" />
-                </div>
-                <div>
-                  <AlertDialogTitle className="text-2xl font-bold text-gray-900">
-                    Confirm Send to Admin
-                  </AlertDialogTitle>
-                  <AlertDialogDescription className="text-gray-600 mt-2 font-medium">
-                    Ready to send quotation <span className="text-orange-600 font-bold">{quotationId ? `#${quotationId}` : "this"}</span> to <span className="text-orange-600 font-bold">{selectedBranch?.name}</span> for admin approval?
-                  </AlertDialogDescription>
-                </div>
-              </div>
-            </AlertDialogHeader>
-
-            <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl p-4 border-2 border-orange-200 space-y-3">
-              <p className="text-xs font-bold text-orange-900 uppercase tracking-wide">Branch Information</p>
-              <div className="space-y-2">
-                <p className="text-gray-900 font-bold text-lg">{selectedBranch?.name}</p>
-                {selectedBranch?.address && (
-                  <p className="text-sm text-gray-700 flex items-start gap-2">
-                    <MapPin className="h-4 w-4 text-orange-600 flex-shrink-0 mt-0.5" />
-                    <span>{selectedBranch.address}</span>
-                  </p>
-                )}
-                {selectedBranch?.phone_number && (
-                  <p className="text-sm text-gray-700 flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-orange-600 flex-shrink-0" />
-                    <span>{selectedBranch.phone_number}</span>
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-3 justify-end pt-2">
-              <AlertDialogCancel 
-                disabled={isSending} 
-                className="px-6 py-2 rounded-lg border-2 border-gray-300 hover:bg-gray-50 font-semibold text-gray-900"
-              >
-                Cancel
-              </AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleSend}
-                disabled={isSending}
-                className="px-6 py-2 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white font-bold rounded-lg transition duration-200 disabled:opacity-50"
-              >
-                {isSending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin inline" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="mr-2 h-4 w-4 inline" />
-                    Send Now
-                  </>
-                )}
-              </AlertDialogAction>
-            </div>
-          </AlertDialogContent>
-        </AlertDialog>
-      </>
-    )
-  }
-
   if (isPageLoading) {
     return <QuotationDocumentSkeleton />
   }
@@ -1300,10 +1159,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             {/* Right side buttons */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
-                onClick={() => setShowSendModal(true)}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
+                onClick={confirmSendForApproval}
+                disabled={isSending || lineItems.length === 0}
+                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
               >
-                <Mail size={16} className="sm:w-5 sm:h-5" />
+                {isSending ? <Loader2 size={16} className="animate-spin sm:w-5 sm:h-5" /> : <Mail size={16} className="sm:w-5 sm:h-5" />}
                 <span className="hidden sm:inline">Send</span>
                 <span className="inline sm:hidden">Snd</span>
               </button>
@@ -2481,41 +2341,56 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         </DialogContent>
       </Dialog>
 
-      {/* Send Modal - Admin Selection */}
-      <Dialog open={showSendModal} onOpenChange={setShowSendModal}>
-        <DialogContent className="max-w-md sm:max-w-lg w-full rounded-2xl shadow-2xl bg-white max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
-              Send Quotation to Admin
-            </DialogTitle>
-            <DialogDescription className="text-sm text-gray-600">
-              Select which Princess Jaidee Enterprises admin branch to send this quotation to for approval
+      {/* Send to Admin Modal */}
+      {showSendModal && savedQuotationId && (
+        <SendQuotationModal 
+          quotationId={savedQuotationId}
+          onClose={() => {
+            setShowSendModal(false)
+            setSavedQuotationId(null)
+          }}
+          onSuccess={() => {
+            setShowSendModal(false)
+            setSavedQuotationId(null)
+            router.push("/dashboard")
+          }}
+        />
+      )}
+
+      {/* Send for Approval Dialog - Legacy Modal (kept for backwards compatibility) */}
+      <Dialog open={showSendApprovalModal} onOpenChange={setShowSendApprovalModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Send for Approval</DialogTitle>
+            <DialogDescription>
+              Do you want to send quotation <span className="font-bold text-gray-900">{formData.quoteNumber}</span> to
+              admin for approval?
             </DialogDescription>
           </DialogHeader>
 
-          {showSendModal && (
-            <SendQuotationModalContent 
-              quotationId={savedQuotationId || 0}
-              onSendSuccess={(data) => {
-                toast({
-                  title: "Success!",
-                  description: `Quotation sent to admin for approval`,
-                })
-                setShowSendModal(false)
-                // Clear the form and redirect after success
-                sessionStorage.removeItem("quotationDraft")
-                sessionStorage.removeItem("quotationPreviewData")
-                setFormData(getInitialFormData())
-                setLineItems([])
-                setLogoPreview("")
-                setSavedQuotationId(null)
-                setTimeout(() => {
-                  router.push("/dashboard")
-                }, 500)
-              }}
-              onClose={() => setShowSendModal(false)}
-            />
-          )}
+          <div className="flex gap-3 justify-end mt-6 pt-4 border-t">
+            <button
+              onClick={() => setShowSendApprovalModal(false)}
+              disabled={isSending}
+              className="px-4 py-2 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition disabled:opacity-50"
+            >
+              No, Cancel
+            </button>
+            <button
+              onClick={confirmSendForApproval}
+              disabled={isSending}
+              className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50 flex items-center gap-2"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Yes, Send for Approval"
+              )}
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 
