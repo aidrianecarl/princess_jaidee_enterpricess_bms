@@ -1155,6 +1155,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             updated.amount = updated.quantity * (updated.unitPrice || 0)
           }
 
+          // Recalculate amount for Tarpaulin if size specifications change
+          if (item.name?.includes("Tarpaulin") && updated.serviceRequirements?.sizeSpecifications?.totalPrice) {
+            updated.unitPrice = updated.serviceRequirements.sizeSpecifications.totalPrice
+            updated.amount = updated.quantity * (updated.unitPrice || 0)
+          }
+
           return updated
         }
         return item

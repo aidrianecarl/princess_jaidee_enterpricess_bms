@@ -65,7 +65,7 @@ export function TarpaulinSizeRequirement({
         totalPrice: price,
       })
     }
-  }, [width, height])
+  }, [width, height, onSizeSpecChange])
 
   return (
     <div className="space-y-4">
