@@ -1,5 +1,5 @@
 "use client"
-
+export const dynamic = "force-dynamic"
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/header"
@@ -10,7 +10,7 @@ import { RatingModal } from "@/components/dashboard/rating-modal"
 import { QuotationSkeleton } from "@/components/dashboard/quotation-skeleton"
 import { FileText, CheckCircle, Clock, DollarSign, Plus } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
-export const dynamic = "force-dynamic"
+
 
 export default function DashboardPage() {
   const router = useRouter()
