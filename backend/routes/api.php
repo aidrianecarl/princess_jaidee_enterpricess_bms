@@ -11,6 +11,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\RatingController;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 
@@ -31,6 +32,9 @@ Route::post('/contact', [ContactController::class, 'sendMessage']);
 
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{id}', [ServiceController::class, 'show']);
+
+// Public ratings endpoint - no authentication required
+Route::get('/ratings', [RatingController::class, 'index']);
 
 // Protected routes - All subsequent routes require valid Sanctum token
 Route::middleware('auth:sanctum')->group(function () {
@@ -123,4 +127,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/admin/users/{id}', [UserController::class, 'update']);
     Route::delete('/admin/users/{id}', [UserController::class, 'destroy']);
     Route::post('/admin/users/{id}/toggle-status', [UserController::class, 'toggleStatus']);
+
+    // Ratings - Authenticated
+    Route::post('/ratings', [RatingController::class, 'store']);
+    Route::get('/ratings/check/user', [RatingController::class, 'checkUserRating']);
+    Route::get('/ratings/{id}', [RatingController::class, 'show']);
 });

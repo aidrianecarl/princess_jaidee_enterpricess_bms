@@ -41,10 +41,8 @@ export function RatingModal({ isOpen, onClose, customerId }: RatingModalProps) {
             Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
           },
           body: JSON.stringify({
-            customer_id: customerId,
             star_rating: rating,
             message: message || null,
-            has_rating: true,
           }),
         }
       )
