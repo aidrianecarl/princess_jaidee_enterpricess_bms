@@ -2618,7 +2618,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             <AlertDialogAction
               onClick={() => {
                 setShowCancelDialog(false)
-                router.push("/dashboard/quotations")
+                router.push("/dashboard")
               }}
               className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
             >
