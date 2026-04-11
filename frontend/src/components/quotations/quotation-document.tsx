@@ -1560,8 +1560,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         </div>
                       </div>
 
-
-
                       {/* Actions Column */}
                       <div className="flex items-center justify-center print:hidden w-12">
                         <button
