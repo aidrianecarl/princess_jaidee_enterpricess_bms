@@ -1095,7 +1095,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     // Auto-calculate quantity for Sublimation Service based on team roster count
     let finalQuantity = item.quantity || 1
     if (item.name?.includes("Sublimation") && item.serviceRequirements?.teamRoster?.length > 0) {
-      finalQuantity = item.serviceRequirements.teamRoster.length
+      finalQuantity = item.serviceRequirements?.teamRoster?.length || 1
     }
 
     const amount = (finalQuantity || 1) * (item.unitPrice || 0)
@@ -1152,7 +1152,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           
           // Auto-update quantity for Sublimation if team roster changes
           if (item.name?.includes("Sublimation") && updated.serviceRequirements?.teamRoster) {
-            updated.quantity = updated.serviceRequirements.teamRoster.length
+            updated.quantity = updated.serviceRequirements?.teamRoster?.length || 1
             updated.amount = updated.quantity * (updated.unitPrice || 0)
           }
           
@@ -1172,8 +1172,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     return <QuotationDocumentSkeleton />
   }
 
+  // Ensure lineItems is always an array
+  if (!lineItems) {
+    return <QuotationDocumentSkeleton />
+  }
+
   // Calculate totals
-  const subtotal = lineItems.reduce((sum, item) => {
+  const subtotal = (lineItems || []).reduce((sum, item) => {
     return sum + ((item.unitPrice || 0) * (item.quantity || 1))
   }, 0)
   
@@ -1573,7 +1578,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     </div>
 
                     {/* Collapsible Roster Details */}
-                    {expandedItems.has(item.id) && item.serviceRequirements?.teamRoster?.length > 0 && (
+                    {expandedItems?.has?.(item.id) && item.serviceRequirements?.teamRoster?.length > 0 && (
                       <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
                         <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-4 border border-gray-200">
                           <div className="flex items-center justify-between mb-3">
@@ -1600,7 +1605,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 onClick={() => {
                                   const newPlayer = { id: Date.now().toString(), name: "", number: "", sizeTop: "", lengthTopInches: "", sizeBottom: "", lengthBottomInches: "" }
                                   const updated = [...(item.serviceRequirements?.teamRoster || []), newPlayer]
-                                  updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                  updateLineItem(item.id, { 
+                                    ...item, 
+                                    serviceRequirements: {
+                                      ...(item.serviceRequirements || {}),
+                                      teamRoster: updated
+                                    }
+                                  })
                                   setEditingRosterId(item.id)
                                 }}
                                 className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
@@ -1707,7 +1718,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       const updated = item.serviceRequirements?.teamRoster?.map((m) =>
                                         m.id === member.id ? { ...m, lengthTopInches: e.target.value } : m
                                       ) || []
-                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                      updateLineItem(item.id, { 
+                                        ...item, 
+                                        serviceRequirements: { 
+                                          ...(item.serviceRequirements || {}),
+                                          teamRoster: updated 
+                                        } 
+                                      })
                                     }}
                                     className={`text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
                                       ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
@@ -1766,7 +1783,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       const updated = item.serviceRequirements?.teamRoster?.map((m) =>
                                         m.id === member.id ? { ...m, lengthBottomInches: e.target.value } : m
                                       ) || []
-                                      updateLineItem(item.id, { ...item, serviceRequirements: { ...item.serviceRequirements, teamRoster: updated } })
+                                      updateLineItem(item.id, { 
+                                        ...item, 
+                                        serviceRequirements: { 
+                                          ...(item.serviceRequirements || {}),
+                                          teamRoster: updated 
+                                        } 
+                                      })
                                     }}
                                     className={`text-sm px-2 py-1 border rounded outline-none transition ${editingRosterId === item.id
                                       ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
@@ -2089,11 +2112,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             </div>
 
             {/* Items Summary Section */}
-            {lineItems.length > 0 && (
+            {lineItems && lineItems.length > 0 && (
               <div className="mb-8 print:hidden">
                 <h3 className="text-lg font-bold text-gray-900 mb-4">Services Summary</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {lineItems.map((item) => {
+                  {(lineItems || []).map((item) => {
                     const isSublimation = item.name?.includes("Sublimation")
                     const isTarpaulin = item.name?.includes("Tarpaulin")
                     const teamRoster = item.serviceRequirements?.teamRoster || []
@@ -2170,10 +2193,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             ) : isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height ? (
                               <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm">
                                 <p className="font-semibold text-blue-700 mb-1">
-                                  {item.serviceRequirements.sizeSpecifications.width}ft × {item.serviceRequirements.sizeSpecifications.height}ft
+                                  {item.serviceRequirements?.sizeSpecifications?.width || 0}ft × {item.serviceRequirements?.sizeSpecifications?.height || 0}ft
                                 </p>
                                 <p className="text-gray-600">
-                                  {item.serviceRequirements.sizeSpecifications.totalSqft} sq ft
+                                  {item.serviceRequirements?.sizeSpecifications?.totalSqft || 0} sq ft
                                 </p>
                               </div>
                             ) : (
