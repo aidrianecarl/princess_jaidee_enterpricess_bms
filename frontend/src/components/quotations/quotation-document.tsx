@@ -316,7 +316,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         if (userDataStr) {
           const userData = JSON.parse(userDataStr)
           const initialData = getInitialFormData()
-          
+
           // Auto-populate client/bill-to fields from user data
           // Construct full name from first_name and last_name
           if (userData.first_name || userData.last_name) {
@@ -343,7 +343,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           if (userData.zip_code) {
             initialData.clientPostal = userData.zip_code
           }
-          
+
           setFormData(initialData)
         } else {
           setFormData(getInitialFormData())
@@ -793,13 +793,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       const itemsPayload = await Promise.all(
         lineItems.map(async (item, index) => {
           let designFileUrl = null
-          
+
           // If there's a design file, upload it
           if (item.serviceRequirements?.designFile instanceof File) {
             try {
               const designFormData = new FormData()
               designFormData.append("design_file", item.serviceRequirements.designFile)
-              
+
               const uploadResponse = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
                 {
@@ -810,7 +810,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                   body: designFormData,
                 }
               )
-              
+
               if (uploadResponse.ok) {
                 const uploadData = await uploadResponse.json()
                 designFileUrl = uploadData.design_file_url
@@ -822,7 +822,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               console.error("[v0] Error uploading design file:", error)
             }
           }
-          
+
           return {
             product_id: item.type === "product" ? item.productId || null : null,
             service_id: item.type === "service" ? item.serviceId || null : null,
@@ -838,7 +838,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           }
         })
       )
-      
+
       formDataToSend.append("items", JSON.stringify(itemsPayload))
 
       const url = isEditMode
@@ -973,13 +973,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       const itemsPayload = await Promise.all(
         lineItems.map(async (item, index) => {
           let designFileUrl = null
-          
+
           // If there's a design file, upload it
           if (item.serviceRequirements?.designFile instanceof File) {
             try {
               const designFormData = new FormData()
               designFormData.append("design_file", item.serviceRequirements.designFile)
-              
+
               const uploadResponse = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/quotations/upload-design`,
                 {
@@ -990,7 +990,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                   body: designFormData,
                 }
               )
-              
+
               if (uploadResponse.ok) {
                 const uploadData = await uploadResponse.json()
                 designFileUrl = uploadData.design_file_url
@@ -1002,7 +1002,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               console.error("[v0] Error uploading design file:", error)
             }
           }
-          
+
           return {
             product_id: item.productId || null,
             service_id: item.serviceId || null,
@@ -1018,7 +1018,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           }
         })
       )
-      
+
       formDataToSend.append("items", JSON.stringify(itemsPayload))
 
       const url = isEditMode
@@ -1147,13 +1147,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       lineItems.map((item) => {
         if (item.id === id) {
           const updated = { ...item, ...updates }
-          
+
           // Auto-update quantity for Sublimation if team roster changes
           if (item.name?.includes("Sublimation") && updated.serviceRequirements?.teamRoster) {
             updated.quantity = updated.serviceRequirements.teamRoster.length
             updated.amount = updated.quantity * (updated.unitPrice || 0)
           }
-          
+
           return updated
         }
         return item
@@ -1527,42 +1527,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         </div>
                       </div>
 
-                      {/* Quantity Column - Editable or Auto from Team Roster */}
-                      <div className="w-16 md:w-20 flex items-center justify-center">
-                        <input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
-                          }
-                          disabled={item.name?.includes("Sublimation")}
-                          title={item.name?.includes("Sublimation") ? "Auto-calculated from Team Roster" : "Edit quantity"}
-                          className={`w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900 ${
-                            item.name?.includes("Sublimation") ? "bg-gray-100 cursor-not-allowed" : ""
-                          }`}
-                        />
-                      </div>
 
-                      {/* Base Price Column - Show service base price */}
-                      <div className="w-24 flex items-center justify-end">
-                        <input
-                          type="text"
-                          value={`₱${(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                          disabled
-                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed print:border-0 print:bg-transparent print:text-gray-900"
-                        />
-                      </div>
-
-                      {/* Amount Column - Blank disabled */}
-                      <div className="hidden lg:flex w-24 items-center justify-end">
-                        <input
-                          type="text"
-                          placeholder="-"
-                          disabled
-                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed print:border-0 print:bg-transparent print:text-gray-900"
-                        />
-                      </div>
 
                       {/* Actions Column */}
                       <div className="flex items-center justify-center print:hidden w-12">
@@ -1704,9 +1669,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Top Length (in)</span>
-                                  <input
-                                    type="number"
-                                    placeholder="Length"
+                                  <select
                                     value={member.lengthTopInches || ""}
                                     disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
@@ -1719,7 +1682,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                       : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
                                       }`}
-                                  />
+                                  >
+                                    <option value="">Select</option>
+                                    <option value="Standard">Standard</option>
+                                    {Array.from({ length: 21 }, (_, i) => 16 + i).map((len) => (
+                                      <option key={len} value={len}>{len}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Bottom Size</span>
@@ -1759,9 +1728,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Bottom Length (in)</span>
-                                  <input
-                                    type="number"
-                                    placeholder="Length"
+                                  <select
                                     value={member.lengthBottomInches || ""}
                                     disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
@@ -1774,7 +1741,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                       : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
                                       }`}
-                                  />
+                                  >
+                                    <option value="">Select</option>
+                                    {Array.from({ length: 12 }, (_, i) => 12 + i).map((len) => (
+                                      <option key={len} value={len}>{len}</option>
+                                    ))}
+                                  </select>
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Price</span>
@@ -2027,7 +1999,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     {/* Size Specifications Display (Generic) */}
                     {expandedItems.has(item.id) && item.serviceRequirements?.sizeSpecifications &&
                       ((item.serviceRequirements.sizeSpecifications.top || item.serviceRequirements.sizeSpecifications.bottom) ||
-                      (item.notes && typeof item.notes === 'object' && item.notes.sizeNotes)) &&
+                        (item.notes && typeof item.notes === 'object' && item.notes.sizeNotes)) &&
                       !item.serviceRequirements.sizeSpecifications.width && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
                           <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-4 border border-purple-200">
@@ -2094,17 +2066,17 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     const isSublimation = item.name?.includes("Sublimation")
                     const isTarpaulin = item.name?.includes("Tarpaulin")
                     const teamRoster = item.serviceRequirements?.teamRoster || []
-                    
+
                     // Calculate team roster stats
                     let setsCount = 0
                     let topOnlyCount = 0
                     let bottomOnlyCount = 0
-                    
+
                     if (isSublimation && Array.isArray(teamRoster)) {
                       teamRoster.forEach((player: any) => {
                         const hasTop = player.sizeTop && player.sizeTop !== "None"
                         const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
-                        
+
                         if (hasTop && hasBottom) {
                           setsCount++
                         } else if (hasTop) {
@@ -2135,28 +2107,28 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             <h4 className="font-semibold text-gray-900 text-sm md:text-base mb-2 break-words">
                               {item.name}
                             </h4>
-                            
+
                             {isSublimation && Array.isArray(teamRoster) && teamRoster.length > 0 ? (
                               <div className="space-y-1 text-xs md:text-sm text-gray-700">
                                 <div className="flex items-center gap-2 p-2 bg-white rounded border border-blue-200">
                                   <span className="font-semibold text-blue-700">{teamRoster.length}</span>
                                   <span className="text-gray-600">Players</span>
                                 </div>
-                                
+
                                 {setsCount > 0 && (
                                   <div className="flex items-center gap-2 p-2 bg-white rounded border border-green-200">
                                     <span className="font-semibold text-green-700">{setsCount}</span>
                                     <span className="text-gray-600">Sets</span>
                                   </div>
                                 )}
-                                
+
                                 {topOnlyCount > 0 && (
                                   <div className="flex items-center gap-2 p-2 bg-white rounded border border-amber-200">
                                     <span className="font-semibold text-amber-700">{topOnlyCount}</span>
                                     <span className="text-gray-600">Top Only</span>
                                   </div>
                                 )}
-                                
+
                                 {bottomOnlyCount > 0 && (
                                   <div className="flex items-center gap-2 p-2 bg-white rounded border border-purple-200">
                                     <span className="font-semibold text-purple-700">{bottomOnlyCount}</span>
