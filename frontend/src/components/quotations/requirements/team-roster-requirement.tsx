@@ -90,7 +90,16 @@ export function TeamRosterRequirement({
             Team Roster {isRequired && <span className="text-red-500">*</span>}
           </h3>
         </div>
-        
+        <Button
+          type="button"
+          onClick={addMember}
+          variant="outline"
+          size="sm"
+          className="gap-1 bg-transparent"
+        >
+          <Plus size={16} />
+          Add Player
+        </Button>
       </div>
 
       {/* Sizing Guide Tables */}
@@ -146,64 +155,13 @@ export function TeamRosterRequirement({
             </div>
           </div>
 
-          <div className="pt-3 border-t-2 border-amber-200">
-            <h4 className="text-sm font-bold text-amber-900 mb-3">SHORT & SPECIALIZED ITEMS SIZE GUIDE</h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-orange-200">
-                    <th rowSpan={2} className="border border-orange-300 px-2 py-1 font-bold text-orange-900">SIZE</th>
-                    <th colSpan={2} className="border border-orange-300 px-2 py-1 font-bold text-orange-900">SHORT (FINISH)</th>
-                    <th colSpan={2} className="border border-orange-300 px-2 py-1 font-bold text-orange-900">SHORT (CUT SIZE)</th>
-                  </tr>
-                  <tr className="bg-orange-200">
-                    <th className="border border-orange-300 px-2 py-1 font-bold text-orange-900">WIDTH</th>
-                    <th className="border border-orange-300 px-2 py-1 font-bold text-orange-900">LENGTH</th>
-                    <th className="border border-orange-300 px-2 py-1 font-bold text-orange-900">WIDTH</th>
-                    <th className="border border-orange-300 px-2 py-1 font-bold text-orange-900">LENGTH</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { size: '5TS', shortW: 26, shortL: 13, cutW: 22, cutL: 17.5 },
-                    { size: '4TS', shortW: 28, shortL: 13, cutW: 23, cutL: 17.5 },
-                    { size: '3TS', shortW: 30, shortL: 14, cutW: 24, cutL: 18.5 },
-                    { size: '2TS', shortW: 32, shortL: 15, cutW: 25, cutL: 19.5 },
-                    { size: 'TS', shortW: 34, shortL: 17, cutW: 26, cutL: 21.5 },
-                    { size: 'XS', shortW: 36, shortL: 18, cutW: 27, cutL: 22.5 },
-                    { size: 'S', shortW: 38, shortL: 19, cutW: 28, cutL: 23.5 },
-                    { size: 'M', shortW: 40, shortL: 20, cutW: 29, cutL: 24.5 },
-                    { size: 'L', shortW: 42, shortL: 21, cutW: 30, cutL: 25.5 },
-                    { size: 'XL', shortW: 44, shortL: 21, cutW: 31, cutL: 25.5 },
-                  ].map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-orange-50'}>
-                      <td className="border border-orange-200 px-2 py-1 font-semibold text-orange-900">{row.size}</td>
-                      <td className="border border-orange-200 px-2 py-1 text-center text-orange-800">{row.shortW}</td>
-                      <td className="border border-orange-200 px-2 py-1 text-center text-orange-800">{row.shortL}</td>
-                      <td className="border border-orange-200 px-2 py-1 text-center text-orange-800">{row.cutW}</td>
-                      <td className="border border-orange-200 px-2 py-1 text-center text-orange-800">{row.cutL}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+
 
           <p className="text-xs text-amber-800 bg-white p-2 rounded border border-amber-200 mt-3">
             <strong>Note:</strong> All measurements are in inches. Please refer to these specifications when selecting sizes for your team members. Contact us if you need custom sizing.
           </p>
         </div>
       )}
-      <Button
-          type="button"
-          onClick={addMember}
-          variant="outline"
-          size="sm"
-          className="gap-1 bg-transparent"
-        >
-          <Plus size={16} />
-          Add Player
-        </Button>
 
       <div className="space-y-3 max-h-96 overflow-y-auto p-2">
         {members.map((member, index) => (
@@ -280,15 +238,19 @@ export function TeamRosterRequirement({
                     <label className="block text-xs font-medium text-neutral-600 mb-1">
                       Top Length (in)
                     </label>
-                    <Input
-                      type="number"
-                      placeholder="Length in inches"
+                    <select
                       value={member.lengthTopInches || ""}
                       onChange={(e) =>
                         updateMember(member.id, "lengthTopInches", e.target.value)
                       }
-                      className="h-9 text-sm"
-                    />
+                      className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">Select</option>
+                      <option value="Standard">Standard</option>
+                      {Array.from({ length: 21 }, (_, i) => 16 + i).map((len) => (
+                        <option key={len} value={len}>{len}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div>
@@ -327,15 +289,18 @@ export function TeamRosterRequirement({
                     <label className="block text-xs font-medium text-neutral-600 mb-1">
                       Bottom Length (in)
                     </label>
-                    <Input
-                      type="number"
-                      placeholder="Length in inches"
+                    <select
                       value={member.lengthBottomInches || ""}
                       onChange={(e) =>
                         updateMember(member.id, "lengthBottomInches", e.target.value)
                       }
-                      className="h-9 text-sm"
-                    />
+                      className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                    >
+                      <option value="">Select</option>
+                      {Array.from({ length: 12 }, (_, i) => 12 + i).map((len) => (
+                        <option key={len} value={len}>{len}</option>
+                      ))}
+                    </select>
                   </div>
                 </>
               )}

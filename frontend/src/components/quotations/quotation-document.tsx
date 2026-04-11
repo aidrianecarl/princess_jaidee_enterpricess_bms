@@ -1458,12 +1458,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
             <div className="mb-6">
               {/* Table Header */}
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700 print:hidden">
-                <div className="flex-1 text-sm md:text-base">Name</div>
-                <div className="w-16 md:w-20 text-center text-sm md:text-base">Qty</div>
-                <div className="w-24 text-right text-sm md:text-base">Base Price</div>
-                <div className="hidden lg:flex w-24 text-right text-sm md:text-base">Amount</div>
-                <div className="w-12 text-center text-sm md:text-base">Actions</div>
+              <div className="hidden md:flex items-center gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700 print:hidden">
+                <div className="flex-1 text-base">Name</div>
+                <div className="w-12 text-center text-base">Actions</div>
               </div>
 
               {/* Table Body */}
@@ -2087,6 +2084,108 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                 Add Service
               </button>
             </div>
+
+            {/* Items Summary Section */}
+            {lineItems.length > 0 && (
+              <div className="mb-8 print:hidden">
+                <h3 className="text-lg font-bold text-gray-900 mb-4">Services Summary</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {lineItems.map((item) => {
+                    const isSublimation = item.name?.includes("Sublimation")
+                    const isTarpaulin = item.name?.includes("Tarpaulin")
+                    const teamRoster = item.serviceRequirements?.teamRoster || []
+                    
+                    // Calculate team roster stats
+                    let setsCount = 0
+                    let topOnlyCount = 0
+                    let bottomOnlyCount = 0
+                    
+                    if (isSublimation && Array.isArray(teamRoster)) {
+                      teamRoster.forEach((player: any) => {
+                        const hasTop = player.sizeTop && player.sizeTop !== "None"
+                        const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+                        
+                        if (hasTop && hasBottom) {
+                          setsCount++
+                        } else if (hasTop) {
+                          topOnlyCount++
+                        } else if (hasBottom) {
+                          bottomOnlyCount++
+                        }
+                      })
+                    }
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-4 md:p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition"
+                      >
+                        <div className="flex items-start gap-3">
+                          {item.image && (
+                            <img
+                              src={item.image}
+                              alt={item.name}
+                              className="w-16 h-16 rounded-lg object-cover border border-blue-300 flex-shrink-0"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none"
+                              }}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-gray-900 text-sm md:text-base mb-2 break-words">
+                              {item.name}
+                            </h4>
+                            
+                            {isSublimation && Array.isArray(teamRoster) && teamRoster.length > 0 ? (
+                              <div className="space-y-1 text-xs md:text-sm text-gray-700">
+                                <div className="flex items-center gap-2 p-2 bg-white rounded border border-blue-200">
+                                  <span className="font-semibold text-blue-700">{teamRoster.length}</span>
+                                  <span className="text-gray-600">Players</span>
+                                </div>
+                                
+                                {setsCount > 0 && (
+                                  <div className="flex items-center gap-2 p-2 bg-white rounded border border-green-200">
+                                    <span className="font-semibold text-green-700">{setsCount}</span>
+                                    <span className="text-gray-600">Sets</span>
+                                  </div>
+                                )}
+                                
+                                {topOnlyCount > 0 && (
+                                  <div className="flex items-center gap-2 p-2 bg-white rounded border border-amber-200">
+                                    <span className="font-semibold text-amber-700">{topOnlyCount}</span>
+                                    <span className="text-gray-600">Top Only</span>
+                                  </div>
+                                )}
+                                
+                                {bottomOnlyCount > 0 && (
+                                  <div className="flex items-center gap-2 p-2 bg-white rounded border border-purple-200">
+                                    <span className="font-semibold text-purple-700">{bottomOnlyCount}</span>
+                                    <span className="text-gray-600">Bottom Only</span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height ? (
+                              <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm">
+                                <p className="font-semibold text-blue-700 mb-1">
+                                  {item.serviceRequirements.sizeSpecifications.width}ft × {item.serviceRequirements.sizeSpecifications.height}ft
+                                </p>
+                                <p className="text-gray-600">
+                                  {item.serviceRequirements.sizeSpecifications.totalSqft} sq ft
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm text-gray-600">
+                                Qty: <span className="font-semibold">{item.quantity}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Notes Section */}
             <div className="mt-8 print:hidden">
