@@ -284,7 +284,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [editingDesignNotesId, setEditingDesignNotesId] = useState<string | null>(null)
   const [expandedImageItem, setExpandedImageItem] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
-  const [showCancelDialog, setShowCancelDialog] = useState(false)
 
   const getInitialFormData = (): QuotationFormData => ({
     quoteNumber: "",
@@ -577,11 +576,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   }
 
   const handleSaveDraft = async () => {
-    // Only require at least one item
-    if (!lineItems || lineItems.length === 0) {
+    if (!validateForm()) {
       toast({
         title: "Validation Error",
-        description: "Please add at least one item to the quotation",
+        description: "Please fill all required fields before saving",
         variant: "destructive",
       })
       return
@@ -1156,11 +1154,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             updated.amount = updated.quantity * (updated.unitPrice || 0)
           }
           
-          // Update amount if unitPrice changed (for Tarpaulin size changes)
-          if (updated.unitPrice !== item.unitPrice) {
-            updated.amount = (updated.quantity || 1) * (updated.unitPrice || 0)
-          }
-          
           return updated
         }
         return item
@@ -1172,29 +1165,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     return <QuotationDocumentSkeleton />
   }
 
-  // Calculate totals
-  const subtotal = lineItems.reduce((sum, item) => {
-    return sum + ((item.unitPrice || 0) * (item.quantity || 1))
-  }, 0)
-  
-  const totalDue = subtotal
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
       <div className="w-full fixed top-14 sm:top-16 z-40 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg print:hidden">
         <div className="w-full px-1 sm:px-3 lg:px-6">
-          <div className="flex items-center justify-between gap-1 sm:gap-2 py-2 md:py-3 overflow-x-auto">
-            {/* Left side - Cancel button */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              <button
-                onClick={() => setShowCancelDialog(true)}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-red-100/90 hover:bg-red-100 text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
-              >
-                <X size={16} className="sm:w-5 sm:h-5" />
-                <span className="hidden sm:inline">Cancel</span>
-              </button>
-            </div>
-
+          <div className="flex items-center justify-end gap-1 sm:gap-2 py-2 md:py-3 overflow-x-auto">
             {/* Right side buttons - Save Draft and Send to Admin */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               <button
@@ -1457,15 +1432,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-gray-500 uppercase mb-2">Due Date</p>
-                    <div className="group relative mb-2">
-                      <p className="cursor-help text-gray-400 hover:text-gray-600 flex items-center justify-center w-5 h-5 border border-gray-300 rounded-full text-xs font-bold">?</p>
-                      <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-xs rounded-lg p-3 w-48 whitespace-normal z-50">
-                        <p>Your quotation will automatically delete in 30 days unless you send it to admin.</p>
-                      </div>
-                    </div>
-                  </div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">Due Date</p>
                   <p className="text-lg font-semibold text-gray-900">
                     {formData.validUntil
                       ? new Date(formData.validUntil).toLocaleDateString('en-US', {
@@ -1560,7 +1527,42 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         </div>
                       </div>
 
+                      {/* Quantity Column - Editable or Auto from Team Roster */}
+                      <div className="w-16 md:w-20 flex items-center justify-center">
+                        <input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateLineItemQuantity(item.id, Math.max(1, Number.parseInt(e.target.value) || 1))
+                          }
+                          disabled={item.name?.includes("Sublimation")}
+                          title={item.name?.includes("Sublimation") ? "Auto-calculated from Team Roster" : "Edit quantity"}
+                          className={`w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm focus:border-red-600 outline-none transition print:border-0 print:bg-transparent print:text-gray-900 ${
+                            item.name?.includes("Sublimation") ? "bg-gray-100 cursor-not-allowed" : ""
+                          }`}
+                        />
+                      </div>
 
+                      {/* Base Price Column - Show service base price */}
+                      <div className="w-24 flex items-center justify-end">
+                        <input
+                          type="text"
+                          value={`₱${(item.unitPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                          disabled
+                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed print:border-0 print:bg-transparent print:text-gray-900"
+                        />
+                      </div>
+
+                      {/* Amount Column - Blank disabled */}
+                      <div className="hidden lg:flex w-24 items-center justify-end">
+                        <input
+                          type="text"
+                          placeholder="-"
+                          disabled
+                          className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right bg-gray-100 text-xs focus:border-red-600 outline-none cursor-not-allowed print:border-0 print:bg-transparent print:text-gray-900"
+                        />
+                      </div>
 
                       {/* Actions Column */}
                       <div className="flex items-center justify-center print:hidden w-12">
@@ -1702,7 +1704,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Top Length (in)</span>
-                                  <select
+                                  <input
+                                    type="number"
+                                    placeholder="Length"
                                     value={member.lengthTopInches || ""}
                                     disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
@@ -1715,13 +1719,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                       : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
                                       }`}
-                                  >
-                                    <option value="">Select</option>
-                                    <option value="Standard">Standard</option>
-                                    {Array.from({ length: 21 }, (_, i) => 16 + i).map((len) => (
-                                      <option key={len} value={len}>{len}</option>
-                                    ))}
-                                  </select>
+                                  />
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Bottom Size</span>
@@ -1761,7 +1759,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Bottom Length (in)</span>
-                                  <select
+                                  <input
+                                    type="number"
+                                    placeholder="Length"
                                     value={member.lengthBottomInches || ""}
                                     disabled={editingRosterId !== item.id}
                                     onChange={(e) => {
@@ -1774,12 +1774,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       ? 'text-gray-700 border-gray-300 focus:border-blue-500 bg-white'
                                       : 'text-gray-700 border-gray-300 bg-gray-50 cursor-not-allowed'
                                       }`}
-                                  >
-                                    <option value="">Select</option>
-                                    {Array.from({ length: 12 }, (_, i) => 12 + i).map((len) => (
-                                      <option key={len} value={len}>{len}</option>
-                                    ))}
-                                  </select>
+                                  />
                                 </div>
                                 <div className="flex flex-col">
                                   <span className="text-xs font-semibold text-gray-500 md:hidden">Price</span>
@@ -2277,32 +2272,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           </div>
         </div>
       )}
-
-      {/* Cancel Transaction Dialog */}
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent className="max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-xl font-bold text-red-600">Cancel Transaction</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-700 mt-2">
-              Are you sure you want to cancel this transaction? All your data will be lost and cannot be recovered.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-3 justify-end mt-6">
-            <AlertDialogCancel className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50">
-              No, Keep It
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                setShowCancelDialog(false)
-                router.push("/dashboard/quotations")
-              }}
-              className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700"
-            >
-              Yes, Cancel
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Service Selector Modal */}
       <ServiceSelectorModal
