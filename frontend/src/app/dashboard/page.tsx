@@ -1,17 +1,19 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { QuotationList } from "@/components/dashboard/quotation-list"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { TermsConditionsModal } from "@/components/dashboard/terms-modal"
+import { RatingModal } from "@/components/dashboard/rating-modal"
 import { QuotationSkeleton } from "@/components/dashboard/quotation-skeleton"
 import { FileText, CheckCircle, Clock, DollarSign, Plus } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
 
 export default function DashboardPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState(null)
   const [stats, setStats] = useState({
     totalQuotations: 0,
@@ -21,6 +23,7 @@ export default function DashboardPage() {
     totalOrders: 0,
   })
   const [showTerms, setShowTerms] = useState(false)
+  const [showRating, setShowRating] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -41,12 +44,19 @@ export default function DashboardPage() {
         setShowTerms(true)
       }
 
+      // Check if coming from quotation creation (show rating modal)
+      const fromQuotation = searchParams?.get("from") === "quotation"
+      const hasRated = localStorage.getItem(`has_rated_${user.id}`)
+      if (fromQuotation && !hasRated) {
+        setShowRating(true)
+      }
+
       await fetchStats(token)
       setIsLoading(false)
     }
 
     checkAuth()
-  }, [router])
+  }, [router, searchParams])
 
   const fetchStats = async (token: string) => {
     try {
@@ -107,6 +117,16 @@ export default function DashboardPage() {
       <DashboardHeader user={user} />
 
       {showTerms && <TermsConditionsModal onAccept={() => setShowTerms(false)} />}
+      {user && (
+        <RatingModal
+          isOpen={showRating}
+          onClose={() => {
+            setShowRating(false)
+            localStorage.setItem(`has_rated_${user?.id}`, "true")
+          }}
+          customerId={user?.id}
+        />
+      )}
 
       <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
         {/* Welcome Section with Create Button */}

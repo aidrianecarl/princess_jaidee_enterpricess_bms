@@ -33,9 +33,11 @@ export default function CreateQuotationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex flex-col">
       <DashboardHeader user={user} />
-      <QuotationDocument />
+      <main className="flex-1 pt-16 md:pt-20 overflow-auto">
+        <QuotationDocument />
+      </main>
       <Toaster />
     </div>
   )

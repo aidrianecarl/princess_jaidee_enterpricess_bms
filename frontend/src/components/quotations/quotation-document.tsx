@@ -285,6 +285,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   const [expandedImageItem, setExpandedImageItem] = useState<string | null>(null)
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [showRatingModal, setShowRatingModal] = useState(false)
+  const [customerId, setCustomerId] = useState<number | null>(null)
 
   const getInitialFormData = (): QuotationFormData => ({
     quoteNumber: "",
@@ -1077,7 +1079,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       await new Promise((resolve) => setTimeout(resolve, 500))
       setShowSendApprovalModal(false)
 
-      router.push("/dashboard/quotations/thank-you")
+      // Redirect to dashboard with rating modal trigger for first-time users
+      router.push("/dashboard?from=quotation")
     } catch (error: any) {
       console.log("Send error:", error.message)
       toast({
