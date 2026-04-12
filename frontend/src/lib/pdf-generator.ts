@@ -1,18 +1,8 @@
 import jsPDF from "jspdf"
-import type { jsPDF as jsPDFType } from "jspdf"
-
-// Declare autoTable extension on jsPDF
-declare global {
-  interface Window {
-    jsPDF: any
-  }
-}
-
-// Import autoTable plugin
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
 
 export const generateQuotationPDF = (quotation: any) => {
-  const doc = new jsPDF() as jsPDFType & { autoTable: any }
+  const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   let yPosition = 20
@@ -112,7 +102,8 @@ export const generateQuotationPDF = (quotation: any) => {
     ])
   })
 
-  ;(doc as any).autoTable({
+  // ✅ FIXED: use autoTable properly
+  autoTable(doc, {
     head: [["ITEM NO.", "UNIT", "DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
     body: tableData,
     startY: yPosition,
@@ -139,6 +130,7 @@ export const generateQuotationPDF = (quotation: any) => {
     margin: 10,
   })
 
+  // ✅ FIXED: get final Y position
   yPosition = (doc as any).lastAutoTable.finalY + 15
 
   // Summary section
