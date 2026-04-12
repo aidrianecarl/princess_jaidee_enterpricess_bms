@@ -246,6 +246,8 @@ class QuotationController extends Controller
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'nullable|integer',
             'items.*.service_id' => 'nullable|integer',
+            'items.*.name' => 'nullable|string',
+            'items.*.description' => 'nullable|string',
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.customization' => 'nullable|string',

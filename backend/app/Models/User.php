@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Rating;
 
 class User extends Authenticatable
 {
@@ -46,6 +48,12 @@ class User extends Authenticatable
     public function permissions(): BelongsToMany
     {
         return $this->roles()->with('permissions')->get()->pluck('permissions')->flatten()->unique('id');
+    }
+
+    // Rating relationship
+    public function rating(): HasOne
+    {
+        return $this->hasOne(Rating::class, 'customer_id');
     }
 
     // Check role

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Rating;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -16,19 +17,23 @@ class RatingController extends Controller
     public function index(Request $request)
     {
         try {
-            $limit = $request->get('limit', 3);
+            $limit = (int)$request->get('limit', 3);
             $orderBy = $request->get('orderBy', 'recent');
 
-            $query = Rating::query()
-                ->with('customer')
-                ->where('has_rating', true);
+            // Validate limit
+            if ($limit < 1) {
+                $limit = 3;
+            }
+            if ($limit > 100) {
+                $limit = 100;
+            }
+
+            $query = Rating::with(['customer'])
+                ->where('has_rating', true)
+                ->whereNotNull('customer_id');
 
             // Order by created_at descending (most recent first)
-            if ($orderBy === 'recent') {
-                $query->orderBy('created_at', 'desc');
-            } else {
-                $query->orderBy('created_at', 'desc');
-            }
+            $query->orderBy('created_at', 'desc');
 
             $ratings = $query->limit($limit)->get();
 
@@ -38,17 +43,20 @@ class RatingController extends Controller
                     'id' => $rating->id,
                     'customer_id' => $rating->customer_id,
                     'star_rating' => $rating->star_rating,
-                    'message' => $rating->message,
+                    'message' => $rating->message ?? null,
                     'has_rating' => $rating->has_rating,
-                    'created_at' => $rating->created_at,
+                    'created_at' => $rating->created_at ? $rating->created_at->toIso8601String() : null,
                     'user' => $rating->customer ? [
                         'id' => $rating->customer->id,
-                        'first_name' => $rating->customer->first_name,
-                        'last_name' => $rating->customer->last_name,
-                        'email' => $rating->customer->email,
+                        'first_name' => $rating->customer->first_name ?? 'Customer',
+                        'last_name' => $rating->customer->last_name ?? '',
+                        'email' => $rating->customer->email ?? null,
                     ] : null,
                 ];
-            });
+            })->filter(function ($item) {
+                // Only return ratings with valid customer data
+                return $item['user'] !== null;
+            })->values();
 
             return response()->json($formattedRatings, 200);
         } catch (\Exception $e) {

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\User;
 
 class Rating extends Model
 {
@@ -31,6 +32,14 @@ class Rating extends Model
      */
     public function customer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'customer_id');
+        return $this->belongsTo(User::class, 'customer_id', 'id');
+    }
+
+    /**
+     * Alias for customer relationship
+     */
+    public function user(): BelongsTo
+    {
+        return $this->customer();
     }
 }
