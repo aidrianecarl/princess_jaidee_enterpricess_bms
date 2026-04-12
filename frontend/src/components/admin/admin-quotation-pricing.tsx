@@ -14,7 +14,6 @@ import {
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogHeader,
-  AlertDialogFooter,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import {
@@ -252,16 +251,14 @@ export function AdminQuotationPricing() {
   }
 
   const calculateTax = (): number => {
-    const subtotal = calculateSubtotal()
-    const discount = calculateDiscount()
-    return (subtotal - discount) * 0.12
+    // Tax is not automatically applied, only if admin sets it
+    return 0
   }
 
   const calculateTotal = (): number => {
     const subtotal = calculateSubtotal()
     const discount = calculateDiscount()
-    const tax = calculateTax()
-    return subtotal - discount + tax
+    return subtotal - discount
   }
 
   const handleSendPrices = async () => {
