@@ -3,9 +3,10 @@
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
-import { Eye } from "lucide-react"
+import { Eye, Download } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
+import { generateQuotationPDF } from "@/lib/pdf-generator"
 
 const QuotationSkeleton = () => (
   <tr>
@@ -62,8 +63,7 @@ export default function AdminQuotationsPage() {
       setIsLoading(true)
       const response = await apiClient.admin().get("/admin/quotations", {
         params: {
-          status: statusFilter,
-          has_price: statusFilter === "pending" ? 0 : undefined,
+          status: statusFilter !== "priced" ? statusFilter : undefined,
         },
       })
       
@@ -73,6 +73,10 @@ export default function AdminQuotationsPage() {
       // For pending, exclude quotations that already have price set (has_price = 1)
       if (statusFilter === "pending") {
         filtered = filtered.filter((q: any) => (q.has_price === 0 || q.has_price === "0" || !q.has_price))
+      }
+      // For priced, show only quotations with has_price = 1
+      else if (statusFilter === "priced") {
+        filtered = filtered.filter((q: any) => (q.has_price === 1 || q.has_price === "1"))
       }
       
       setQuotations(filtered)
@@ -95,6 +99,29 @@ export default function AdminQuotationsPage() {
     }
     console.log("Navigating to quotation pricing:", quotationId)
     router.push(`/admin/quotations/${quotationId}/pricing`)
+  }
+
+  const handleDownloadPDF = async (quotation: any) => {
+    try {
+      const response = await apiClient.admin().get(`/admin/quotations/${quotation.id}`)
+      const quotationData = response.data.data || response.data
+      
+      // Generate PDF with quotation data
+      generateQuotationPDF(quotationData)
+      
+      toast({
+        title: "Success",
+        description: `Quotation ${quotation.quotation_number} downloaded successfully`,
+        variant: "default"
+      })
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error || error?.message || "Failed to download quotation"
+      toast({ 
+        title: "Error", 
+        description: errorMessage, 
+        variant: "destructive" 
+      })
+    }
   }
 
   return (
@@ -126,6 +153,7 @@ export default function AdminQuotationsPage() {
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
             { key: "pending", label: "Pending (No Price)" },
+            { key: "priced", label: "Priced Quotations" },
             { key: "rejected", label: "Rejected" },
           ].map((filter) => (
             <button
@@ -215,13 +243,24 @@ export default function AdminQuotationsPage() {
                               })}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() => handleViewQuotation(quotation.id)}
-                                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
-                              >
-                                <Eye size={16} />
-                                View
-                              </button>
+                              <div className="flex gap-2 justify-end">
+                                <button
+                                  onClick={() => handleViewQuotation(quotation.id)}
+                                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                >
+                                  <Eye size={16} />
+                                  View
+                                </button>
+                                {quotation.has_price && (
+                                  <button
+                                    onClick={() => handleDownloadPDF(quotation)}
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                  >
+                                    <Download size={16} />
+                                    PDF
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         )
