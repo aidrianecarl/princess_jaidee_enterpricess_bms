@@ -103,11 +103,22 @@ export default function AdminQuotationsPage() {
 
   const handleDownloadPDF = async (quotation: any) => {
     try {
+      console.log("[v0] PDF Download - Starting for quotation ID:", quotation.id)
+      
       const response = await apiClient.admin().get(`/admin/quotations/${quotation.id}`)
+      console.log("[v0] PDF Download - API response received:", response)
+      
       const quotationData = response.data.data || response.data
+      console.log("[v0] PDF Download - Quotation data:", quotationData)
+      
+      if (!quotationData) {
+        throw new Error("No quotation data received from API")
+      }
       
       // Generate PDF with quotation data
+      console.log("[v0] PDF Download - Calling generateQuotationPDF")
       generateQuotationPDF(quotationData)
+      console.log("[v0] PDF Download - PDF generated successfully")
       
       toast({
         title: "Success",
@@ -115,7 +126,9 @@ export default function AdminQuotationsPage() {
         variant: "default"
       })
     } catch (error: any) {
+      console.error("[v0] PDF Download - Error occurred:", error)
       const errorMessage = error?.response?.data?.error || error?.message || "Failed to download quotation"
+      console.log("[v0] PDF Download - Error message:", errorMessage)
       toast({ 
         title: "Error", 
         description: errorMessage, 
@@ -244,21 +257,34 @@ export default function AdminQuotationsPage() {
                             </td>
                             <td className="px-4 py-3 text-right">
                               <div className="flex gap-2 justify-end">
-                                <button
-                                  onClick={() => handleViewQuotation(quotation.id)}
-                                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
-                                >
-                                  <Eye size={16} />
-                                  View
-                                </button>
-                                {quotation.has_price && (
+                                {/* For Rejected status, only show View button */}
+                                {statusFilter === "rejected" ? (
                                   <button
-                                    onClick={() => handleDownloadPDF(quotation)}
-                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                    onClick={() => handleViewQuotation(quotation.id)}
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
                                   >
-                                    <Download size={16} />
-                                    PDF
+                                    <Eye size={16} />
+                                    View
                                   </button>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleViewQuotation(quotation.id)}
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                    >
+                                      <Eye size={16} />
+                                      View
+                                    </button>
+                                    {quotation.has_price && statusFilter === "priced" && (
+                                      <button
+                                        onClick={() => handleDownloadPDF(quotation)}
+                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                      >
+                                        <Download size={16} />
+                                        PDF
+                                      </button>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </td>

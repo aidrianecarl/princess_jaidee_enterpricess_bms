@@ -90,7 +90,6 @@ class QuotationController extends Controller
                         'subtotal' => (float) $quotation->subtotal,
                         'discount' => (float) $quotation->discount,
                         'paid_amount' => (float) $quotation->paid_amount,
-                        'tax' => (float) $quotation->tax,
                         'total' => (float) $quotation->total,
                         'currency' => $quotation->currency,
                         'status' => $quotation->status,
@@ -342,8 +341,7 @@ class QuotationController extends Controller
 
             $discount = $request->discount ?? 0;
             $discountAmount = 0;
-            $tax = 0;
-            $total = $subtotal;
+            $total = $subtotal - $discount;
             $paidAmount = $request->paid_amount ?? 0;
 
             $status = $request->status ?? 'draft';
@@ -376,7 +374,6 @@ class QuotationController extends Controller
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'paid_amount' => $paidAmount,
-                'tax' => $tax,
                 'total' => $total,
                 'currency' => 'PHP',
                 'status' => $status,
@@ -925,18 +922,22 @@ class QuotationController extends Controller
                 $discount = $request->discount_value;
             }
 
-            // Calculate tax (12% VAT)
-            $taxableAmount = $subtotal - $discount;
-            $tax = $taxableAmount * 0.12;
-            $total = $taxableAmount + $tax;
+            // Calculate total without tax (tax is removed)
+            $total = $subtotal - $discount;
 
-            // Update quotation with pricing and mark as has_price = 1 (keep status as pending)
+            // Update quotation with pricing and mark as has_price = 1 (no tax field)
             $quotation->update([
                 'subtotal' => $subtotal,
                 'discount' => $discount,
-                'tax' => $tax,
                 'total' => $total,
                 'has_price' => 1,
+            ]);
+
+            Log::info('Quotation pricing updated', [
+                'quotation_id' => $id,
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'total' => $total,
             ]);
 
             $quotation->load(['customer', 'items']);
@@ -946,6 +947,10 @@ class QuotationController extends Controller
                 'quotation' => $quotation,
             ], 200);
         } catch (\Exception $e) {
+            Log::error('Failed to update quotation pricing', [
+                'quotation_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['error' => 'Failed to update quotation pricing: ' . $e->getMessage()], 500);
         }
     }
