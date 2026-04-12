@@ -127,7 +127,6 @@ export default function AdminQuotationsPage() {
           {[
             { key: "pending", label: "Pending (No Price)" },
             { key: "rejected", label: "Rejected" },
-            { key: "sent", label: "Sent to Production" },
           ].map((filter) => (
             <button
               key={filter.key}

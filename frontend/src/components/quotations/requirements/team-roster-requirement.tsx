@@ -206,13 +206,58 @@ export function TeamRosterRequirement({
       {/* Sizing Guide Tables */}
       {requiresSize && (
         <div className="space-y-4 bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-lg border-2 border-amber-200">
-          {/* Short Sizes Image */}
-          <div className="flex justify-center">
-            <img 
-              src="/shortsizes.jpg" 
-              alt="Short Sizes Chart"
-              className="w-full max-w-md rounded-lg border-2 border-amber-300 shadow-md"
-            />
+          {/* Short Sizes Guide */}
+          <div>
+            <h4 className="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs">!</span>
+              Size Specifications Guide - SHORTS
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-amber-200">
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SIZE</th>
+                    <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">FINISH</th>
+                    <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">BOX TYPE</th>
+                  </tr>
+                  <tr className="bg-amber-200">
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900"></th>
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { size: '5TS', finishW: 26, finishL: 13, boxW: 22, boxL: 17.5 },
+                    { size: '4TS', finishW: 28, finishL: 13, boxW: 23, boxL: 17.5 },
+                    { size: '3TS', finishW: 30, finishL: 14, boxW: 24, boxL: 18.5 },
+                    { size: '2TS', finishW: 32, finishL: 15, boxW: 25, boxL: 19.5 },
+                    { size: 'TS', finishW: 34, finishL: 17, boxW: 26, boxL: 21.5 },
+                    { size: 'XS', finishW: 36, finishL: 18, boxW: 27, boxL: 22.5 },
+                    { size: 'S', finishW: 38, finishL: 19, boxW: 28, boxL: 23.5 },
+                    { size: 'M', finishW: 40, finishL: 20, boxW: 29, boxL: 24.5 },
+                    { size: 'L', finishW: 42, finishL: 21, boxW: 30, boxL: 25.5 },
+                    { size: 'XL', finishW: 44, finishL: 21, boxW: 31, boxL: 25.5 },
+                    { size: '2XL', finishW: 46, finishL: 21, boxW: 32, boxL: 25.5 },
+                    { size: '3XL', finishW: 48, finishL: 22, boxW: 33, boxL: 26.5 },
+                    { size: '4XL', finishW: 50, finishL: 22, boxW: 34, boxL: 26.5 },
+                    { size: '5XL', finishW: 52, finishL: 22, boxW: 35, boxL: 26.5 },
+                    { size: '6XL', finishW: 54, finishL: 22, boxW: 36, boxL: 26.5 },
+                    { size: 'XL', finishW: 58, finishL: 22, boxW: 37, boxL: 26.5 },
+                  ].map((row, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-amber-50'}>
+                      <td className="border border-amber-200 px-2 py-1 font-semibold text-amber-900">{row.size}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.finishW}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.finishL}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.boxW}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.boxL}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           <div>
