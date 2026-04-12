@@ -102,29 +102,42 @@ class RatingController extends Controller
      */
     public function store(Request $request)
     {
+        Log::info('[v0] Starting rating submission - store() method');
+        Log::info('[v0] Request data: ' . json_encode($request->all()));
+
         $validator = Validator::make($request->all(), [
             'star_rating' => 'required|integer|min:1|max:5',
             'message' => 'nullable|string|max:1000',
         ]);
 
         if ($validator->fails()) {
+            Log::warning('[v0] Validation failed: ' . json_encode($validator->errors()));
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        Log::info('[v0] Validation passed');
+
         try {
             $customerId = auth()->id();
+            Log::info('[v0] Authenticated customer ID: ' . ($customerId ?? 'NULL'));
 
             if (!$customerId) {
+                Log::warning('[v0] User not authenticated');
                 return response()->json([
                     'error' => 'Unauthorized',
                     'message' => 'You must be logged in to submit a rating',
                 ], 401);
             }
 
+            Log::info('[v0] Checking for existing rating for customer: ' . $customerId);
+
             // Check if customer already has a rating
             $existingRating = Rating::where('customer_id', $customerId)->first();
+            Log::info('[v0] Existing rating found: ' . ($existingRating ? 'YES (ID: ' . $existingRating->id . ')' : 'NO'));
 
             if ($existingRating) {
+                Log::info('[v0] Updating existing rating for customer: ' . $customerId);
+                
                 // Update existing rating
                 $existingRating->update([
                     'star_rating' => $request->star_rating,
@@ -132,9 +145,10 @@ class RatingController extends Controller
                     'has_rating' => true,
                 ]);
 
-                Log::info('Rating updated successfully', [
+                Log::info('[v0] Rating updated successfully', [
                     'customer_id' => $customerId,
                     'rating_id' => $existingRating->id,
+                    'star_rating' => $request->star_rating,
                 ]);
 
                 return response()->json([
@@ -142,6 +156,10 @@ class RatingController extends Controller
                     'rating' => $existingRating,
                 ], 200);
             }
+
+            Log::info('[v0] Creating new rating for customer: ' . $customerId);
+            Log::info('[v0] Star rating: ' . $request->star_rating);
+            Log::info('[v0] Message: ' . ($request->message ?? 'NULL'));
 
             // Create new rating
             $rating = Rating::create([
@@ -151,9 +169,10 @@ class RatingController extends Controller
                 'has_rating' => true,
             ]);
 
-            Log::info('Rating created successfully', [
+            Log::info('[v0] Rating created successfully', [
                 'customer_id' => $customerId,
                 'rating_id' => $rating->id,
+                'star_rating' => $rating->star_rating,
             ]);
 
             return response()->json([
@@ -161,14 +180,18 @@ class RatingController extends Controller
                 'rating' => $rating,
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Error creating rating', [
+            Log::error('[v0] EXCEPTION in rating submission', [
                 'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
                 'customer_id' => auth()->id(),
             ]);
             return response()->json([
                 'error' => 'Failed to submit rating',
                 'message' => $e->getMessage(),
+                'code' => $e->getCode(),
             ], 500);
         }
     }

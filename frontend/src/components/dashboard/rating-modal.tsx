@@ -22,9 +22,9 @@ export function RatingModal({ isOpen, onClose, customerId }: RatingModalProps) {
   const handleSubmit = async () => {
     if (rating === 0) {
       toast({
-        title: "Rating Required",
-        description: "Please select a star rating before submitting.",
-        variant: "destructive",
+        title: "Required",
+        description: "Please select a rating before submitting.",
+        variant: "default",
       })
       return
     }
@@ -32,24 +32,29 @@ export function RatingModal({ isOpen, onClose, customerId }: RatingModalProps) {
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"}/ratings`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("auth_token")}`,
-          },
-          body: JSON.stringify({
-            star_rating: rating,
-            message: message || null,
-          }),
-        }
-      )
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"}/ratings`
+      const authToken = localStorage.getItem("auth_token")
+
+      const requestBody = {
+        star_rating: rating,
+        message: message || null,
+      }
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${authToken}`,
+        },
+        body: JSON.stringify(requestBody),
+      })
 
       if (!response.ok) {
-        throw new Error("Failed to submit rating")
+        const errorText = await response.text()
+        throw new Error(`Failed to submit rating - Status: ${response.status}`)
       }
+
+      const data = await response.json()
 
       toast({
         title: "Thank You!",
@@ -59,7 +64,6 @@ export function RatingModal({ isOpen, onClose, customerId }: RatingModalProps) {
 
       handleClose()
     } catch (error) {
-      console.error("Error submitting rating:", error)
       toast({
         title: "Error",
         description: "Failed to submit your rating. Please try again.",
