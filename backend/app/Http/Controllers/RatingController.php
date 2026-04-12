@@ -17,8 +17,10 @@ class RatingController extends Controller
     public function index(Request $request)
     {
         try {
+            Log::info('[v0] Starting ratings fetch endpoint');
+            
             $limit = (int)$request->get('limit', 3);
-            $orderBy = $request->get('orderBy', 'recent');
+            Log::info('[v0] Request limit parameter: ' . $limit);
 
             // Validate limit
             if ($limit < 1) {
@@ -27,46 +29,69 @@ class RatingController extends Controller
             if ($limit > 100) {
                 $limit = 100;
             }
+            Log::info('[v0] Validated limit: ' . $limit);
 
-            $query = Rating::with(['customer'])
+            // Fetch ratings with customer data
+            Log::info('[v0] Attempting to fetch ratings from database');
+            
+            $ratings = Rating::with('customer')
                 ->where('has_rating', true)
-                ->whereNotNull('customer_id');
+                ->orderBy('created_at', 'desc')
+                ->limit($limit)
+                ->get();
 
-            // Order by created_at descending (most recent first)
-            $query->orderBy('created_at', 'desc');
-
-            $ratings = $query->limit($limit)->get();
+            Log::info('[v0] Successfully fetched ' . count($ratings) . ' ratings from database');
+            Log::info('[v0] Raw ratings data: ' . json_encode($ratings));
 
             // Format response data
             $formattedRatings = $ratings->map(function ($rating) {
-                return [
-                    'id' => $rating->id,
-                    'customer_id' => $rating->customer_id,
-                    'star_rating' => $rating->star_rating,
-                    'message' => $rating->message ?? null,
-                    'has_rating' => $rating->has_rating,
-                    'created_at' => $rating->created_at ? $rating->created_at->toIso8601String() : null,
-                    'user' => $rating->customer ? [
+                Log::info('[v0] Processing rating ID: ' . $rating->id);
+                Log::info('[v0] Rating star_rating: ' . $rating->star_rating);
+                Log::info('[v0] Rating message: ' . ($rating->message ?? 'null'));
+                Log::info('[v0] Rating customer_id: ' . $rating->customer_id);
+                Log::info('[v0] Rating has customer relation: ' . ($rating->customer ? 'YES' : 'NO'));
+                
+                $customerData = null;
+                if ($rating->customer) {
+                    Log::info('[v0] Customer found - ID: ' . $rating->customer->id);
+                    Log::info('[v0] Customer first_name: ' . ($rating->customer->first_name ?? 'null'));
+                    Log::info('[v0] Customer last_name: ' . ($rating->customer->last_name ?? 'null'));
+                    
+                    $customerData = [
                         'id' => $rating->customer->id,
                         'first_name' => $rating->customer->first_name ?? 'Customer',
                         'last_name' => $rating->customer->last_name ?? '',
-                        'email' => $rating->customer->email ?? null,
-                    ] : null,
-                ];
-            })->filter(function ($item) {
-                // Only return ratings with valid customer data
-                return $item['user'] !== null;
-            })->values();
+                    ];
+                } else {
+                    Log::info('[v0] WARNING - Customer relation is null for rating ID: ' . $rating->id);
+                }
 
-            return response()->json($formattedRatings, 200);
+                return [
+                    'id' => $rating->id,
+                    'customer_id' => $rating->customer_id,
+                    'star_rating' => (int)$rating->star_rating,
+                    'message' => $rating->message,
+                    'created_at' => $rating->created_at ? $rating->created_at->format('Y-m-d H:i:s') : null,
+                    'user' => $customerData,
+                ];
+            });
+
+            Log::info('[v0] Formatted ratings collection: ' . json_encode($formattedRatings));
+            Log::info('[v0] Successfully returning ratings response');
+
+            return response()->json($formattedRatings);
         } catch (\Exception $e) {
-            Log::error('Error fetching ratings', [
+            Log::error('[v0] EXCEPTION CAUGHT in ratings index', [
                 'message' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
             ]);
             return response()->json([
                 'error' => 'Failed to fetch ratings',
-                'message' => $e->getMessage(),
+                'exception_message' => $e->getMessage(),
+                'exception_code' => $e->getCode(),
             ], 500);
         }
     }

@@ -27,22 +27,37 @@ export function Testimonials() {
 
   const fetchRatings = async () => {
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"}/ratings?limit=3&orderBy=recent`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      )
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"}/ratings?limit=3&orderBy=recent`
+      console.log("[v0] Starting testimonials fetch from URL:", apiUrl)
+      
+      const response = await fetch(apiUrl, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+
+      console.log("[v0] Response status:", response.status)
+      console.log("[v0] Response ok:", response.ok)
+      console.log("[v0] Response headers:", response.headers)
 
       if (!response.ok) {
-        throw new Error("Failed to fetch ratings")
+        console.log("[v0] Response not ok, attempting to read response text")
+        const errorText = await response.text()
+        console.log("[v0] Error response text:", errorText)
+        throw new Error(`Failed to fetch ratings - Status: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log("[v0] Successfully parsed JSON response")
+      console.log("[v0] Response data:", data)
+      console.log("[v0] Response data type:", typeof data)
+      console.log("[v0] Response data is array:", Array.isArray(data))
+      console.log("[v0] Response data length:", data ? data.length : 0)
+
       const processedTestimonials = data.map((rating: Rating) => {
+        console.log("[v0] Processing rating:", rating)
+        
         const firstName = rating.user?.first_name || "Customer"
         const lastName = rating.user?.last_name || ""
         const fullName = `${firstName} ${lastName}`.trim()
@@ -53,7 +68,7 @@ export function Testimonials() {
           day: "numeric",
         })
 
-        return {
+        const processed = {
           name: fullName,
           role: "Valued Customer",
           rating: rating.star_rating,
@@ -61,11 +76,17 @@ export function Testimonials() {
           avatar: avatarInitials || "C",
           date: createdDate,
         }
+        
+        console.log("[v0] Processed testimonial:", processed)
+        return processed
       })
 
+      console.log("[v0] All processed testimonials:", processedTestimonials)
+      console.log("[v0] Setting testimonials state with", processedTestimonials.length, 'items')
       setTestimonials(processedTestimonials)
     } catch (error) {
-      console.error("Error fetching ratings:", error)
+      console.error("[v0] ERROR fetching ratings:", error)
+      console.log("[v0] Error type:", error instanceof Error ? error.message : String(error))
       // Fallback to default testimonials if fetch fails
       setTestimonials([
         {
@@ -106,6 +127,7 @@ export function Testimonials() {
         },
       ])
     } finally {
+      console.log("[v0] Finally block - setting isLoading to false")
       setIsLoading(false)
     }
   }

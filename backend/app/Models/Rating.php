@@ -34,12 +34,4 @@ class Rating extends Model
     {
         return $this->belongsTo(User::class, 'customer_id', 'id');
     }
-
-    /**
-     * Alias for customer relationship
-     */
-    public function user(): BelongsTo
-    {
-        return $this->customer();
-    }
 }
