@@ -1,8 +1,18 @@
 import jsPDF from "jspdf"
+import type { jsPDF as jsPDFType } from "jspdf"
+
+// Declare autoTable extension on jsPDF
+declare global {
+  interface Window {
+    jsPDF: any
+  }
+}
+
+// Import autoTable plugin
 import "jspdf-autotable"
 
 export const generateQuotationPDF = (quotation: any) => {
-  const doc = new jsPDF()
+  const doc = new jsPDF() as jsPDFType & { autoTable: any }
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   let yPosition = 20

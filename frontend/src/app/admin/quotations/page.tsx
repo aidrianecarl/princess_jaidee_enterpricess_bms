@@ -165,10 +165,10 @@ export default function AdminQuotationsPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
-            { key: "pending", label: "Pending (No Price)" },
+            { key: "pending", label: "Pending (No Price)", hideCount: true },
             { key: "priced", label: "Priced Quotations" },
-            { key: "rejected", label: "Rejected" },
-          ].map((filter) => (
+            { key: "rejected", label: "Rejected", hideCount: true },
+          ].map((filter: any) => (
             <button
               key={filter.key}
               onClick={() => setStatusFilter(filter.key)}
