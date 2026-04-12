@@ -1,9 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
-import { Plus, X, Users } from "lucide-react"
+import React, { useState, useRef } from "react"
+import { Plus, X, Users, Download, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import * as XLSX from "xlsx"
 
 interface TeamMember {
   id: string
@@ -38,6 +39,77 @@ export function TeamRosterRequirement({
       : [{ id: Date.now().toString(), name: "", number: "", sizeTop: "", lengthTopInches: "", sizeBottom: "", lengthBottomInches: "" }]
   )
   const [teamNotes, setTeamNotes] = useState(initialNotes)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const downloadTemplate = () => {
+    const templateData = [
+      {
+        Name: "Sample Player",
+        "Jersey #": "1",
+        "Top Size": "M",
+        "Top Length (in)": "25",
+        "Bottom Size": "L",
+        "Bottom Length (in)": "20",
+      },
+    ]
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData)
+    const workbook = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Team Roster")
+
+    // Set column widths
+    const columnWidths = [
+      { wch: 20 },
+      { wch: 12 },
+      { wch: 12 },
+      { wch: 15 },
+      { wch: 12 },
+      { wch: 15 },
+    ]
+    worksheet["!cols"] = columnWidths
+
+    XLSX.writeFile(workbook, "team_roster_template.xlsx")
+  }
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result as ArrayBuffer
+        const workbook = XLSX.read(data, { type: "array" })
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+        const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+        const importedMembers: TeamMember[] = jsonData.map((row: any, index: number) => ({
+          id: Date.now().toString() + index,
+          name: row["Name"] || row["name"] || "",
+          number: row["Jersey #"] || row["Jersey #"] || row["jersey"] || "",
+          sizeTop: row["Top Size"] || row["top_size"] || "",
+          lengthTopInches: String(row["Top Length (in)"] || row["top_length"] || ""),
+          sizeBottom: row["Bottom Size"] || row["bottom_size"] || "",
+          lengthBottomInches: String(row["Bottom Length (in)"] || row["bottom_length"] || ""),
+        }))
+
+        const updated = importedMembers.filter((m) => m.name.trim())
+        if (updated.length > 0) {
+          setMembers(updated)
+          onTeamRosterChange(updated)
+        }
+      } catch (error) {
+        console.error("Error importing file:", error)
+        alert("Error importing file. Please check the format and try again.")
+      }
+    }
+    reader.readAsArrayBuffer(file)
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
 
   const addMember = () => {
     const newMember: TeamMember = {
@@ -83,28 +155,66 @@ export function TeamRosterRequirement({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Users size={20} className="text-neutral-600" />
           <h3 className="text-lg font-semibold text-neutral-900">
             Team Roster {isRequired && <span className="text-red-500">*</span>}
           </h3>
         </div>
-        <Button
-          type="button"
-          onClick={addMember}
-          variant="outline"
-          size="sm"
-          className="gap-1 bg-transparent"
-        >
-          <Plus size={16} />
-          Add Player
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={downloadTemplate}
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-transparent text-blue-600 hover:bg-blue-50"
+          >
+            <Download size={16} />
+            Download Template
+          </Button>
+          <Button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-transparent text-green-600 hover:bg-green-50"
+          >
+            <Upload size={16} />
+            Import Players
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleFileImport}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            onClick={addMember}
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-transparent"
+          >
+            <Plus size={16} />
+            Add Player
+          </Button>
+        </div>
       </div>
 
       {/* Sizing Guide Tables */}
       {requiresSize && (
         <div className="space-y-4 bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-lg border-2 border-amber-200">
+          {/* Short Sizes Image */}
+          <div className="flex justify-center">
+            <img 
+              src="/shortsizes.jpg" 
+              alt="Short Sizes Chart"
+              className="w-full max-w-md rounded-lg border-2 border-amber-300 shadow-md"
+            />
+          </div>
+
           <div>
             <h4 className="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs">!</span>
