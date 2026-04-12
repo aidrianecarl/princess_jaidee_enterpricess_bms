@@ -545,7 +545,37 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   }
 
   const calculateSubtotal = () => {
-    return lineItems.reduce((sum, item) => sum + item.amount, 0)
+    return lineItems.reduce((sum, item) => {
+      const isSublimation = item.name?.includes("Sublimation")
+      const isTarpaulin = item.name?.includes("Tarpaulin")
+      
+      if (isSublimation && item.serviceRequirements?.teamRoster) {
+        // Calculate Sublimation pricing based on sets and top/bottom only
+        let total = 0
+        const basePrice = item.unitPrice
+        const teamRoster = item.serviceRequirements.teamRoster
+        
+        teamRoster.forEach((player: any) => {
+          const hasTop = player.sizeTop && player.sizeTop !== "None"
+          const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+          
+          if (hasTop && hasBottom) {
+            total += basePrice * 2 // Sets: double the base price
+          } else if (hasTop || hasBottom) {
+            total += basePrice // Top only or Bottom only: single price
+          }
+        })
+        
+        return sum + total
+      } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) {
+        // Calculate Tarpaulin pricing: detail price × quantity
+        const detailPrice = item.serviceRequirements.sizeSpecifications.totalPrice || 0
+        return sum + (detailPrice * item.quantity)
+      } else {
+        // Regular items: quantity × unit price
+        return sum + item.amount
+      }
+    }, 0)
   }
 
   const subtotal = calculateSubtotal()
@@ -1827,26 +1857,35 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                           <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-4 border border-blue-200">
                             <div className="flex items-center justify-between mb-4">
                               <p className="text-xs font-bold text-blue-700 uppercase">Tarpaulin Printing Details</p>
-                              {editingTarpaulinId === item.id ? (
+                              <div className="flex items-center gap-2">
+                                {editingTarpaulinId === item.id ? (
+                                  <button
+                                    onClick={() => setEditingTarpaulinId(null)}
+                                    className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
+                                    title="Save tarpaulin changes"
+                                  >
+                                    <Check size={16} />
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => setEditingTarpaulinId(item.id)}
+                                    className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
+                                    title="Edit tarpaulin"
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => setEditingTarpaulinId(null)}
-                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition flex items-center gap-1"
-                                  title="Save tarpaulin changes"
+                                  onClick={() => removeLineItem(item.id)}
+                                  className="text-red-600 hover:text-red-800 hover:bg-red-100 p-1.5 rounded transition"
+                                  title="Remove item"
                                 >
-                                  <Check size={16} />
+                                  <Trash2 size={16} />
                                 </button>
-                              ) : (
-                                <button
-                                  onClick={() => setEditingTarpaulinId(item.id)}
-                                  className="text-gray-600 hover:text-gray-800 hover:bg-gray-300 p-1.5 rounded transition"
-                                  title="Edit tarpaulin"
-                                >
-                                  <Edit2 size={16} />
-                                </button>
-                              )}
+                              </div>
                             </div>
 
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
                               <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-blue-600">Width</span>
                                 <select
@@ -1907,6 +1946,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 />
                                 <span className="text-xs text-gray-500 mt-1">sq ft</span>
                               </div>
+                              <div className="flex flex-col items-center justify-center py-1">
+                                <span className="text-sm font-bold text-blue-700">₱20/Ft</span>
+                              </div>
                               <div className="flex flex-col">
                                 <span className="text-xs font-semibold text-blue-600">Detail Price</span>
                                 <input
@@ -1916,6 +1958,27 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   className="text-sm font-medium text-gray-900 px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed text-right"
                                 />
                               </div>
+                            </div>
+
+                            {/* Quantity Input Row */}
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4 p-3 bg-white rounded border border-blue-300">
+                              <div></div>
+                              <div></div>
+                              <div></div>
+                              <div className="flex flex-col">
+                                <span className="text-xs font-semibold text-blue-600">Quantity</span>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.quantity}
+                                  onChange={(e) => {
+                                    const newQty = Math.max(1, Number(e.target.value))
+                                    updateLineItem(item.id, { ...item, quantity: newQty, amount: newQty * item.unitPrice })
+                                  }}
+                                  className="text-sm font-medium text-gray-900 px-2 py-1 border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div></div>
                             </div>
 
                             {/* Design Image for Tarpaulin (Simple Display, No Collapsible) */}
@@ -2095,11 +2158,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     const isSublimation = item.name?.includes("Sublimation")
                     const isTarpaulin = item.name?.includes("Tarpaulin")
                     const teamRoster = item.serviceRequirements?.teamRoster || []
+                    const basePrice = item.unitPrice
 
-                    // Calculate team roster stats
+                    // Calculate team roster stats and pricing for Sublimation
                     let setsCount = 0
                     let topOnlyCount = 0
                     let bottomOnlyCount = 0
+                    let setsPrice = 0
+                    let topOnlyPrice = 0
+                    let bottomOnlyPrice = 0
 
                     if (isSublimation && Array.isArray(teamRoster)) {
                       teamRoster.forEach((player: any) => {
@@ -2108,13 +2175,19 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                         if (hasTop && hasBottom) {
                           setsCount++
+                          setsPrice += basePrice * 2 // Double the base price for sets (top + bottom)
                         } else if (hasTop) {
                           topOnlyCount++
+                          topOnlyPrice += basePrice // Single price for top only
                         } else if (hasBottom) {
                           bottomOnlyCount++
+                          bottomOnlyPrice += basePrice // Single price for bottom only
                         }
                       })
                     }
+
+                    const sublimationTotal = setsPrice + topOnlyPrice + bottomOnlyPrice
+                    const tarpaulinTotal = (item.serviceRequirements?.sizeSpecifications?.totalPrice || 0) * item.quantity
 
                     return (
                       <div
@@ -2138,41 +2211,63 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                             </h4>
 
                             {isSublimation && Array.isArray(teamRoster) && teamRoster.length > 0 ? (
-                              <div className="space-y-1 text-xs md:text-sm text-gray-700">
+                              <div className="space-y-2 text-xs md:text-sm text-gray-700">
                                 <div className="flex items-center gap-2 p-2 bg-white rounded border border-blue-200">
                                   <span className="font-semibold text-blue-700">{teamRoster.length}</span>
                                   <span className="text-gray-600">Players</span>
                                 </div>
 
                                 {setsCount > 0 && (
-                                  <div className="flex items-center gap-2 p-2 bg-white rounded border border-green-200">
-                                    <span className="font-semibold text-green-700">{setsCount}</span>
-                                    <span className="text-gray-600">Sets</span>
+                                  <div className="flex items-center justify-between p-2 bg-white rounded border border-green-200">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-green-700">{setsCount}</span>
+                                      <span className="text-gray-600">Sets</span>
+                                    </div>
+                                    <span className="text-green-700 font-bold">₱{setsPrice.toLocaleString()}</span>
                                   </div>
                                 )}
 
                                 {topOnlyCount > 0 && (
-                                  <div className="flex items-center gap-2 p-2 bg-white rounded border border-amber-200">
-                                    <span className="font-semibold text-amber-700">{topOnlyCount}</span>
-                                    <span className="text-gray-600">Top Only</span>
+                                  <div className="flex items-center justify-between p-2 bg-white rounded border border-amber-200">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-amber-700">{topOnlyCount}</span>
+                                      <span className="text-gray-600">Top Only</span>
+                                    </div>
+                                    <span className="text-amber-700 font-bold">₱{topOnlyPrice.toLocaleString()}</span>
                                   </div>
                                 )}
 
                                 {bottomOnlyCount > 0 && (
-                                  <div className="flex items-center gap-2 p-2 bg-white rounded border border-purple-200">
-                                    <span className="font-semibold text-purple-700">{bottomOnlyCount}</span>
-                                    <span className="text-gray-600">Bottom Only</span>
+                                  <div className="flex items-center justify-between p-2 bg-white rounded border border-purple-200">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-semibold text-purple-700">{bottomOnlyCount}</span>
+                                      <span className="text-gray-600">Bottom Only</span>
+                                    </div>
+                                    <span className="text-purple-700 font-bold">₱{bottomOnlyPrice.toLocaleString()}</span>
+                                  </div>
+                                )}
+
+                                {sublimationTotal > 0 && (
+                                  <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded border-2 border-blue-400">
+                                    <span className="font-bold text-blue-900">Subtotal</span>
+                                    <span className="text-lg font-bold text-blue-700">₱{sublimationTotal.toLocaleString()}</span>
                                   </div>
                                 )}
                               </div>
                             ) : isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height ? (
-                              <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm">
-                                <p className="font-semibold text-blue-700 mb-1">
-                                  {item.serviceRequirements.sizeSpecifications.width}ft × {item.serviceRequirements.sizeSpecifications.height}ft
-                                </p>
-                                <p className="text-gray-600">
-                                  {item.serviceRequirements.sizeSpecifications.totalSqft} sq ft
-                                </p>
+                              <div className="space-y-2">
+                                <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm">
+                                  <p className="font-semibold text-blue-700 mb-1">
+                                    {item.serviceRequirements.sizeSpecifications.width}ft × {item.serviceRequirements.sizeSpecifications.height}ft
+                                  </p>
+                                  <p className="text-gray-600">
+                                    {item.serviceRequirements.sizeSpecifications.totalSqft} sq ft × {item.quantity} qty
+                                  </p>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded border-2 border-blue-400">
+                                  <span className="font-bold text-blue-900">Subtotal</span>
+                                  <span className="text-lg font-bold text-blue-700">₱{tarpaulinTotal.toLocaleString()}</span>
+                                </div>
                               </div>
                             ) : (
                               <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm text-gray-600">
