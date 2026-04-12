@@ -856,12 +856,17 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             }
           }
 
+          const quantity = Number(item.quantity) || 1
+          const unitPrice = Number(item.unitPrice) || 0
+          const lineTotal = quantity * unitPrice
+
           return {
             product_id: item.type === "product" ? item.productId || null : null,
             service_id: item.type === "service" ? item.serviceId || null : null,
             customization: item.description || "",
-            quantity: Number(item.quantity) || 1,
-            unit_price: Number(item.unitPrice) || 0,
+            quantity: quantity,
+            unit_price: unitPrice,
+            line_total: lineTotal,
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
             design_file_url: designFileUrl || null,
