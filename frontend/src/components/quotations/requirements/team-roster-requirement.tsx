@@ -155,57 +155,61 @@ export function TeamRosterRequirement({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
-          <Users size={20} className="text-neutral-600" />
-          <h3 className="text-lg font-semibold text-neutral-900">
-            Team Roster {isRequired && <span className="text-red-500">*</span>}
-          </h3>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            onClick={downloadTemplate}
-            variant="outline"
-            size="sm"
-            className="gap-1 bg-transparent text-blue-600 hover:bg-blue-50"
-          >
-            <Download size={16} />
-            Download Template
-          </Button>
-          <Button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            variant="outline"
-            size="sm"
-            className="gap-1 bg-transparent text-green-600 hover:bg-green-50"
-          >
-            <Upload size={16} />
-            Import Players
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFileImport}
-            className="hidden"
-          />
-          <Button
-            type="button"
-            onClick={addMember}
-            variant="outline"
-            size="sm"
-            className="gap-1 bg-transparent"
-          >
-            <Plus size={16} />
-            Add Player
-          </Button>
-        </div>
-      </div>
+      
 
       {/* Sizing Guide Tables */}
       {requiresSize && (
         <div className="space-y-4 bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-lg border-2 border-amber-200">
+          <div>
+            <h4 className="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs">!</span>
+              Size Specifications Guide - SANDO & T-SHIRT
+            </h4>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-amber-200">
+                    <th rowSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SIZE</th>
+                    <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SANDO</th>
+                    <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">T-SHIRT</th>
+                  </tr>
+                  <tr className="bg-amber-200">
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { size: '5TS', sandoW: 26, sandoL: 18, tshirtW: 26, tshirtL: 17 },
+                    { size: '4TS', sandoW: 28, sandoL: 20, tshirtW: 28, tshirtL: 19 },
+                    { size: '3TS', sandoW: 30, sandoL: 24, tshirtW: 30, tshirtL: 23 },
+                    { size: '2TS', sandoW: 32, sandoL: 25, tshirtW: 32, tshirtL: 24 },
+                    { size: 'TS', sandoW: 34, sandoL: 26, tshirtW: 34, tshirtL: 25 },
+                    { size: 'XS', sandoW: 36, sandoL: 27, tshirtW: 36, tshirtL: 26 },
+                    { size: 'S', sandoW: 38, sandoL: 28, tshirtW: 38, tshirtL: 27 },
+                    { size: 'M', sandoW: 40, sandoL: 29, tshirtW: 40, tshirtL: 28 },
+                    { size: 'L', sandoW: 42, sandoL: 30, tshirtW: 42, tshirtL: 29 },
+                    { size: 'XL', sandoW: 44, sandoL: 30, tshirtW: 44, tshirtL: 30 },
+                    { size: '2XL', sandoW: 46, sandoL: 31, tshirtW: 46, tshirtL: 31 },
+                    { size: '3XL', sandoW: 48, sandoL: 31, tshirtW: 48, tshirtL: 31 },
+                    { size: '4XL', sandoW: 50, sandoL: 32, tshirtW: 50, tshirtL: 31 },
+                    { size: '5XL', sandoW: 52, sandoL: 32, tshirtW: 52, tshirtL: 32 },
+                  ].map((row, idx) => (
+                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-amber-50'}>
+                      <td className="border border-amber-200 px-2 py-1 font-semibold text-amber-900">{row.size}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.sandoW}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.sandoL}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.tshirtW}</td>
+                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.tshirtL}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           {/* Short Sizes Guide */}
           <div>
             <h4 className="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
@@ -259,64 +263,59 @@ export function TeamRosterRequirement({
               </table>
             </div>
           </div>
-
-          <div>
-            <h4 className="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs">!</span>
-              Size Specifications Guide - SANDO & T-SHIRT
-            </h4>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs border-collapse">
-                <thead>
-                  <tr className="bg-amber-200">
-                    <th rowSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SIZE</th>
-                    <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SANDO</th>
-                    <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">T-SHIRT</th>
-                  </tr>
-                  <tr className="bg-amber-200">
-                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
-                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
-                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
-                    <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { size: '5TS', sandoW: 26, sandoL: 18, tshirtW: 26, tshirtL: 17 },
-                    { size: '4TS', sandoW: 28, sandoL: 20, tshirtW: 28, tshirtL: 19 },
-                    { size: '3TS', sandoW: 30, sandoL: 24, tshirtW: 30, tshirtL: 23 },
-                    { size: '2TS', sandoW: 32, sandoL: 25, tshirtW: 32, tshirtL: 24 },
-                    { size: 'TS', sandoW: 34, sandoL: 26, tshirtW: 34, tshirtL: 25 },
-                    { size: 'XS', sandoW: 36, sandoL: 27, tshirtW: 36, tshirtL: 26 },
-                    { size: 'S', sandoW: 38, sandoL: 28, tshirtW: 38, tshirtL: 27 },
-                    { size: 'M', sandoW: 40, sandoL: 29, tshirtW: 40, tshirtL: 28 },
-                    { size: 'L', sandoW: 42, sandoL: 30, tshirtW: 42, tshirtL: 29 },
-                    { size: 'XL', sandoW: 44, sandoL: 30, tshirtW: 44, tshirtL: 30 },
-                    { size: '2XL', sandoW: 46, sandoL: 31, tshirtW: 46, tshirtL: 31 },
-                    { size: '3XL', sandoW: 48, sandoL: 31, tshirtW: 48, tshirtL: 31 },
-                    { size: '4XL', sandoW: 50, sandoL: 32, tshirtW: 50, tshirtL: 31 },
-                    { size: '5XL', sandoW: 52, sandoL: 32, tshirtW: 52, tshirtL: 32 },
-                  ].map((row, idx) => (
-                    <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-amber-50'}>
-                      <td className="border border-amber-200 px-2 py-1 font-semibold text-amber-900">{row.size}</td>
-                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.sandoW}</td>
-                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.sandoL}</td>
-                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.tshirtW}</td>
-                      <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.tshirtL}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-
-
           <p className="text-xs text-amber-800 bg-white p-2 rounded border border-amber-200 mt-3">
             <strong>Note:</strong> All measurements are in inches. Please refer to these specifications when selecting sizes for your team members. Contact us if you need custom sizing.
           </p>
         </div>
       )}
+
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Users size={20} className="text-neutral-600" />
+          <h3 className="text-lg font-semibold text-neutral-900">
+            Team Roster {isRequired && <span className="text-red-500">*</span>}
+          </h3>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            onClick={downloadTemplate}
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-transparent text-blue-600 hover:bg-blue-50"
+          >
+            <Download size={16} />
+            Download Template
+          </Button>
+          <Button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-transparent text-green-600 hover:bg-green-50"
+          >
+            <Upload size={16} />
+            Import Players
+          </Button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={handleFileImport}
+            className="hidden"
+          />
+          <Button
+            type="button"
+            onClick={addMember}
+            variant="outline"
+            size="sm"
+            className="gap-1 bg-transparent"
+          >
+            <Plus size={16} />
+            Add Player
+          </Button>
+        </div>
+      </div>
 
       <div className="space-y-3 max-h-96 overflow-y-auto p-2">
         {members.map((member, index) => (
