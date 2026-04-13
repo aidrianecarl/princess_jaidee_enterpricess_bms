@@ -330,11 +330,29 @@ class QuotationController extends Controller
             
             $quotationNumber = 'QT-' . Carbon::today()->format('Ymd') . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
 
-            // Use subtotal and total from the frontend (already correctly calculated)
-            $subtotal = floatval($request->subtotal ?? 0);
-            $total = floatval($request->total ?? $subtotal);
+            // Use subtotal and total from frontend if provided, otherwise calculate
+            $subtotal = $request->subtotal ?? null;
+            $total = $request->total ?? null;
+            
+            // If subtotal/total not provided, calculate them
+            if ($subtotal === null) {
+                $subtotal = 0;
+                foreach ($request->items as $item) {
+                    $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                    if (isset($item['design_cost'])) {
+                        $lineTotal += $item['design_cost'];
+                    }
+                    $subtotal += $lineTotal;
+                }
+            }
+
             $discount = $request->discount ?? 0;
-            $discountAmount = 0;
+            
+            // If total not provided, calculate it
+            if ($total === null) {
+                $total = $subtotal - $discount;
+            }
+            
             $paidAmount = $request->paid_amount ?? 0;
 
             $status = $request->status ?? 'draft';
@@ -384,61 +402,8 @@ class QuotationController extends Controller
                     'team_roster' => $item['team_roster'] ?? null,
                 ]);
 
-                // Calculate line total based on service type and team roster
-                $lineTotal = 0;
-                
-                // Check if this is a Sublimation service with team roster
-                $teamRosterData = $item['team_roster'] ?? null;
-                $isTeamRoster = !empty($teamRosterData);
-                
-                if ($isTeamRoster && is_string($teamRosterData)) {
-                    // Decode team roster if it's a JSON string
-                    $rosterArray = json_decode($teamRosterData, true);
-                    if (is_array($rosterArray) && !empty($rosterArray)) {
-                        // For Sublimation with team roster, calculate based on sets and individual pieces
-                        // unit_price is the full set price (top+bottom)
-                        $setPrice = $item['unit_price'] ?? 0;
-                        $piecePrice = $setPrice / 2; // Half for individual pieces
-                        
-                        $setsCount = 0;
-                        $topOnlyCount = 0;
-                        $bottomOnlyCount = 0;
-                        
-                        foreach ($rosterArray as $player) {
-                            $hasTop = !empty($player['sizeTop']) && $player['sizeTop'] !== 'None';
-                            $hasBottom = !empty($player['sizeBottom']) && $player['sizeBottom'] !== 'None';
-                            
-                            if ($hasTop && $hasBottom) {
-                                $setsCount++;
-                            } else if ($hasTop) {
-                                $topOnlyCount++;
-                            } else if ($hasBottom) {
-                                $bottomOnlyCount++;
-                            }
-                        }
-                        
-                        // Calculate total: sets are full price, singles are half price
-                        $lineTotal = ($setsCount * $setPrice) + ($topOnlyCount * $piecePrice) + ($bottomOnlyCount * $piecePrice);
-                        
-                        Log::info('[v0] Sublimation pricing calculation', [
-                            'setPrice' => $setPrice,
-                            'piecePrice' => $piecePrice,
-                            'sets' => $setsCount,
-                            'topOnly' => $topOnlyCount,
-                            'bottomOnly' => $bottomOnlyCount,
-                            'lineTotal' => $lineTotal,
-                        ]);
-                    } else {
-                        // Fallback if roster is empty or invalid
-                        $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
-                    }
-                } else {
-                    // Standard calculation for non-roster items
-                    $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
-                }
-                
-                // Add design cost if applicable
-                if (isset($item['design_cost']) && $item['design_cost'] > 0) {
+                $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                if (isset($item['design_cost'])) {
                     $lineTotal += $item['design_cost'];
                 }
 
@@ -678,9 +643,27 @@ class QuotationController extends Controller
                 // Delete existing items
                 $quotation->items()->delete();
                 
+                // Use subtotal and total from frontend if provided, otherwise calculate
+                $subtotal = $request->subtotal ?? null;
+                $total = $request->total ?? null;
+                
+                // Calculate subtotal if not provided
+                if ($subtotal === null) {
+                    $subtotal = 0;
+                }
+                
+                $calculatedSubtotal = 0;
                 foreach ($request->items as $item) {
-                    // Use line_total from frontend (already correctly calculated)
-                    $lineTotal = floatval($item['line_total'] ?? 0);
+                    Log::info('[v0] Updating quotation item', [
+                        'item_data' => $item,
+                        'team_roster' => $item['team_roster'] ?? null,
+                    ]);
+
+                    $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                    if (isset($item['design_cost'])) {
+                        $lineTotal += $item['design_cost'];
+                    }
+                    $calculatedSubtotal += $lineTotal;
 
                     // Handle design files - can be array of URLs stored as JSON
                     $designFileUrl = null;
@@ -747,13 +730,20 @@ class QuotationController extends Controller
                     ]);
                 }
                 
-                // Update quotation totals from frontend (already correctly calculated)
-                if ($request->has('subtotal')) {
-                    $quotation->subtotal = floatval($request->subtotal);
+                // Use calculated subtotal if not provided by frontend
+                if ($subtotal === null) {
+                    $subtotal = $calculatedSubtotal;
                 }
-                if ($request->has('total')) {
-                    $quotation->total = floatval($request->total);
+                
+                // Update quotation totals
+                $quotation->subtotal = $subtotal;
+                
+                // Calculate total if not provided
+                if ($total === null) {
+                    $discount = $request->discount ?? $quotation->discount ?? 0;
+                    $total = $subtotal - $discount;
                 }
+                $quotation->total = $total;
             }
 
             if ($request->has('business_name')) {
