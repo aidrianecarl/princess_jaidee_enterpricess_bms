@@ -301,6 +301,9 @@ export function AdminQuotationPricing() {
 
       const payload = {
         items: updatedItems,
+        subtotal: calculateSubtotal(),
+        discount: calculateDiscount(),
+        total: calculateTotal(),
         discount_type: discountType,
         discount_value: Number(discountValue),
       }
