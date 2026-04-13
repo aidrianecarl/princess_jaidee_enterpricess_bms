@@ -719,27 +719,45 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     setIsLoadingBranches(true)
     try {
       const token = localStorage.getItem("auth_token")
-      if (!token) return
+      if (!token) {
+        setIsLoadingBranches(false)
+        return
+      }
 
       const response = await fetch(`${apiUrl}/quotations/active-branches`, {
         headers: {
           Authorization: `Bearer ${token}`,
+          Accept: "application/json",
         },
       })
 
       if (response.ok) {
         const data = await response.json()
-        setBranches(data.branches || [])
+        const branchList = data.branches || []
+        setBranches(branchList)
         // Auto-select main branch if available
-        const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
+        const mainBranch = branchList.find((b: any) => b.is_main_branch)
         if (mainBranch) {
           setSelectedBranchId(mainBranch.id)
-        } else if (data.branches?.length > 0) {
-          setSelectedBranchId(data.branches[0].id)
+        } else if (branchList.length > 0) {
+          setSelectedBranchId(branchList[0].id)
         }
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        console.error("Failed to fetch branches:", response.status, errorData)
+        toast({
+          title: "Could not load branches",
+          description: errorData?.message || "Please try again or contact support.",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error fetching branches:", error)
+      toast({
+        title: "Network error",
+        description: "Could not load branches. Check your connection.",
+        variant: "destructive",
+      })
     } finally {
       setIsLoadingBranches(false)
     }
