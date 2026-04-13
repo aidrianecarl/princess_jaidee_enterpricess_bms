@@ -332,15 +332,7 @@ class QuotationController extends Controller
 
             // Use subtotal from frontend if provided, otherwise calculate
             $subtotal = $request->subtotal ?? 0;
-            if ($subtotal == 0) {
-                foreach ($request->items as $item) {
-                    $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
-                    if (isset($item['design_cost'])) {
-                        $lineTotal += $item['design_cost'];
-                    }
-                    $subtotal += $lineTotal;
-                }
-            }
+            
 
             $discount = $request->discount ?? 0;
             $discountAmount = 0;

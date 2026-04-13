@@ -210,9 +210,11 @@ export default function AdminQuotationsPage() {
                       <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                         Email
                       </th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
-                        Amount
-                      </th>
+                      {statusFilter === "priced" && (
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                          Amount
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                         Created
                       </th>
@@ -242,12 +244,14 @@ export default function AdminQuotationsPage() {
                             </td>
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{customerName}</td>
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{customerEmail}</td>
-                            <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">
-                              ₱
-                              {Number.parseFloat(quotation.total).toLocaleString(undefined, {
-                                minimumFractionDigits: 2,
-                              })}
-                            </td>
+                            {statusFilter === "priced" && (
+                              <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">
+                                ₱
+                                {Number.parseFloat(quotation.total).toLocaleString(undefined, {
+                                  minimumFractionDigits: 2,
+                                })}
+                              </td>
+                            )}
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">
                               {new Date(quotation.created_at).toLocaleDateString("en-US", {
                                 year: "numeric",
@@ -256,43 +260,31 @@ export default function AdminQuotationsPage() {
                               })}
                             </td>
                             <td className="px-4 py-3 text-right">
-                              {statusFilter !== "rejected" && (
-                                <div className="flex gap-2 justify-end">
-                                  {/* Pending → View only */}
-                                  {statusFilter === "pending" && (
-                                    <button
-                                      onClick={() => handleViewQuotation(quotation.id)}
-                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
-                                    >
-                                      <Eye size={16} />
-                                      View
-                                    </button>
-                                  )}
+                              <div className="flex gap-2 justify-end">
+                                {/* Pending (No Price) → View only */}
+                                {statusFilter === "pending" && (
+                                  <button
+                                    onClick={() => handleViewQuotation(quotation.id)}
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                  >
+                                    <Eye size={16} />
+                                    View
+                                  </button>
+                                )}
 
-                                  {/* Priced → View + PDF */}
-                                  {statusFilter === "priced" && (
-                                    <>
-                                      <button
-                                        onClick={() => handleViewQuotation(quotation.id)}
-                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
-                                      >
-                                        <Eye size={16} />
-                                        View
-                                      </button>
+                                {/* Priced → PDF only */}
+                                {statusFilter === "priced" && quotation.has_price && (
+                                  <button
+                                    onClick={() => handleDownloadPDF(quotation)}
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                  >
+                                    <Download size={16} />
+                                    PDF
+                                  </button>
+                                )}
 
-                                      {quotation.has_price && (
-                                        <button
-                                          onClick={() => handleDownloadPDF(quotation)}
-                                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
-                                        >
-                                          <Download size={16} />
-                                          PDF
-                                        </button>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              )}
+                                {/* Rejected → No actions */}
+                              </div>
                             </td>
                           </tr>
                         )
