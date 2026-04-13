@@ -821,9 +821,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("notes", formData.notes || "")
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "draft")
-      formDataToSend.append("subtotal", subtotal.toString())
-      formDataToSend.append("total", totalDue.toString())
-      formDataToSend.append("discount", "0")
+
+      // Pass frontend-computed subtotal and total directly - no backend recalculation
+      formDataToSend.append("subtotal", subtotal.toFixed(2))
+      formDataToSend.append("total", totalDue.toFixed(2))
 
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(
@@ -850,7 +851,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               if (uploadResponse.ok) {
                 const uploadData = await uploadResponse.json()
                 designFileUrl = uploadData.design_file_url
-                console.log("[v0] Design file uploaded:", designFileUrl)
               } else {
                 console.error("[v0] Design file upload failed")
               }
@@ -1009,9 +1009,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "pending")
       formDataToSend.append("branch_id", selectedBranchId?.toString() || "")
-      formDataToSend.append("subtotal", subtotal.toString())
-      formDataToSend.append("total", totalDue.toString())
-      formDataToSend.append("discount", "0")
+
+      // Pass frontend-computed subtotal and total directly - no backend recalculation
+      formDataToSend.append("subtotal", subtotal.toFixed(2))
+      formDataToSend.append("total", totalDue.toFixed(2))
 
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(
@@ -1038,7 +1039,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               if (uploadResponse.ok) {
                 const uploadData = await uploadResponse.json()
                 designFileUrl = uploadData.design_file_url
-                console.log("[v0] Design file uploaded:", designFileUrl)
               } else {
                 console.error("[v0] Design file upload failed")
               }
