@@ -330,11 +330,19 @@ class QuotationController extends Controller
             
             $quotationNumber = 'QT-' . Carbon::today()->format('Ymd') . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
 
-            // Get subtotal and total from frontend - save as-is without computation
-            $subtotal = (float) ($request->subtotal ?? 0);
-            $total = (float) ($request->total ?? 0);
-            $discount = (float) ($request->discount ?? 0);
-            $paidAmount = (float) ($request->paid_amount ?? 0);
+            $subtotal = 0;
+            foreach ($request->items as $item) {
+                $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                if (isset($item['design_cost'])) {
+                    $lineTotal += $item['design_cost'];
+                }
+                $subtotal += $lineTotal;
+            }
+
+            $discount = $request->discount ?? 0;
+            $discountAmount = 0;
+            $total = $subtotal - $discount;
+            $paidAmount = $request->paid_amount ?? 0;
 
             $status = $request->status ?? 'draft';
 
@@ -624,6 +632,7 @@ class QuotationController extends Controller
                 // Delete existing items
                 $quotation->items()->delete();
                 
+                $subtotal = 0;
                 foreach ($request->items as $item) {
                     Log::info('[v0] Updating quotation item', [
                         'item_data' => $item,
@@ -631,6 +640,10 @@ class QuotationController extends Controller
                     ]);
 
                     $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                    if (isset($item['design_cost'])) {
+                        $lineTotal += $item['design_cost'];
+                    }
+                    $subtotal += $lineTotal;
 
                     // Handle design files - can be array of URLs stored as JSON
                     $designFileUrl = null;
@@ -697,10 +710,9 @@ class QuotationController extends Controller
                     ]);
                 }
                 
-                // Update quotation totals from frontend - save as-is without computation
-                $quotation->subtotal = (float) ($request->subtotal ?? 0);
-                $quotation->total = (float) ($request->total ?? 0);
-                $quotation->discount = (float) ($request->discount ?? 0);
+                // Update quotation totals
+                $quotation->subtotal = $subtotal;
+                $quotation->total = $subtotal;
             }
 
             if ($request->has('business_name')) {
