@@ -858,7 +858,32 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
           const quantity = Number(item.quantity) || 1
           const unitPrice = Number(item.unitPrice) || 0
-          const lineTotal = quantity * unitPrice
+          
+          // Calculate line total - handles Sublimation pricing correctly
+          let lineTotal = 0
+          const isSublimation = item.name?.includes("Sublimation")
+          const isTarpaulin = item.name?.includes("Tarpaulin")
+          
+          if (isSublimation && item.serviceRequirements?.teamRoster) {
+            // Sublimation: calculate based on sets and individual pieces
+            const teamRoster = item.serviceRequirements.teamRoster
+            teamRoster.forEach((player: any) => {
+              const hasTop = player.sizeTop && player.sizeTop !== "None"
+              const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+              
+              if (hasTop && hasBottom) {
+                lineTotal += unitPrice * 2 // Set = top + bottom
+              } else if (hasTop || hasBottom) {
+                lineTotal += unitPrice // Individual piece
+              }
+            })
+          } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.totalPrice) {
+            // Tarpaulin: use pre-calculated total price
+            lineTotal = item.serviceRequirements.sizeSpecifications.totalPrice * quantity
+          } else {
+            // Standard: quantity * unit price
+            lineTotal = quantity * unitPrice
+          }
 
           return {
             product_id: item.type === "product" ? item.productId || null : null,
@@ -878,6 +903,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       )
 
       formDataToSend.append("items", JSON.stringify(itemsPayload))
+      formDataToSend.append("subtotal", subtotal.toString())
+      formDataToSend.append("total", totalDue.toString())
 
       const url = isEditMode
         ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
@@ -887,7 +914,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         formDataToSend.append("_method", "PUT")
       }
 
-      console.log("Saving quotation:", { isEditMode, url, itemsCount: lineItems.length })
+      console.log("Saving quotation:", { isEditMode, url, itemsCount: lineItems.length, subtotal, totalDue })
 
       const response = await fetch(url, {
         method: "POST",
@@ -1041,16 +1068,46 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             }
           }
 
+          const quantity = Number(item.quantity) || 1
+          const unitPrice = Number(item.unitPrice) || 0
+          
+          // Calculate line total - handles Sublimation pricing correctly
+          let lineTotal = 0
+          const isSublimation = item.name?.includes("Sublimation")
+          const isTarpaulin = item.name?.includes("Tarpaulin")
+          
+          if (isSublimation && item.serviceRequirements?.teamRoster) {
+            // Sublimation: calculate based on sets and individual pieces
+            const teamRoster = item.serviceRequirements.teamRoster
+            teamRoster.forEach((player: any) => {
+              const hasTop = player.sizeTop && player.sizeTop !== "None"
+              const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+              
+              if (hasTop && hasBottom) {
+                lineTotal += unitPrice * 2 // Set = top + bottom
+              } else if (hasTop || hasBottom) {
+                lineTotal += unitPrice // Individual piece
+              }
+            })
+          } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.totalPrice) {
+            // Tarpaulin: use pre-calculated total price
+            lineTotal = item.serviceRequirements.sizeSpecifications.totalPrice * quantity
+          } else {
+            // Standard: quantity * unit price
+            lineTotal = quantity * unitPrice
+          }
+
           return {
-            product_id: item.productId || null,
-            service_id: item.serviceId || null,
+            product_id: item.type === "product" ? item.productId || null : null,
+            service_id: item.type === "service" ? item.serviceId || null : null,
             customization: item.description || "",
-            quantity: Number(item.quantity) || 1,
-            unit_price: Number(item.unitPrice) || 0,
+            quantity: quantity,
+            unit_price: unitPrice,
+            line_total: lineTotal,
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
             design_file_url: designFileUrl || null,
-            team_roster: item.serviceRequirements?.teamRoster ? JSON.stringify(item.serviceRequirements.teamRoster) : null,
+            team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
             notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
           }
@@ -1058,6 +1115,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       )
 
       formDataToSend.append("items", JSON.stringify(itemsPayload))
+      formDataToSend.append("subtotal", subtotal.toString())
+      formDataToSend.append("total", totalDue.toString())
 
       const url = isEditMode
         ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
@@ -1209,6 +1268,45 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   if (isPageLoading) {
     return <QuotationDocumentSkeleton />
   }
+
+  // Calculate subtotal correctly accounting for Sublimation pricing
+  const subtotal = lineItems.reduce((acc, item) => {
+    const isSublimation = item.name?.includes("Sublimation")
+    const isTarpaulin = item.name?.includes("Tarpaulin")
+    
+    if (isSublimation && item.serviceRequirements?.teamRoster) {
+      // Calculate Sublimation pricing based on team roster
+      const teamRoster = item.serviceRequirements.teamRoster
+      const basePrice = item.unitPrice
+      let itemTotal = 0
+      
+      teamRoster.forEach((player: any) => {
+        const hasTop = player.sizeTop && player.sizeTop !== "None"
+        const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+        
+        if (hasTop && hasBottom) {
+          itemTotal += basePrice * 2 // Set = top + bottom
+        } else if (hasTop || hasBottom) {
+          itemTotal += basePrice // Individual piece
+        }
+      })
+      
+      // Add design cost if any
+      if (item.designCost) {
+        itemTotal += item.designCost
+      }
+      
+      return acc + itemTotal
+    } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.totalPrice) {
+      // Use the pre-calculated total price for tarpaulin
+      return acc + (item.serviceRequirements.sizeSpecifications.totalPrice * item.quantity) + (item.designCost || 0)
+    } else {
+      // Standard calculation for products and other services
+      return acc + item.amount
+    }
+  }, 0)
+
+  const totalDue = subtotal // For now, total equals subtotal (discounts applied later by admin)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-x-hidden">
