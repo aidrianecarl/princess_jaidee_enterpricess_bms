@@ -253,7 +253,9 @@ class QuotationController extends Controller
             'items.*.design_cost' => 'nullable|numeric|min:0',
             'items.*.notes' => 'nullable|string',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'subtotal' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
+            'total' => 'nullable|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
             'valid_until' => 'nullable|date',
@@ -330,18 +332,10 @@ class QuotationController extends Controller
             
             $quotationNumber = 'QT-' . Carbon::today()->format('Ymd') . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
 
-            $subtotal = 0;
-            foreach ($request->items as $item) {
-                $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
-                if (isset($item['design_cost'])) {
-                    $lineTotal += $item['design_cost'];
-                }
-                $subtotal += $lineTotal;
-            }
-
+            // Accept subtotal and total directly from frontend - no recalculation
+            $subtotal = $request->subtotal ?? 0;
             $discount = $request->discount ?? 0;
-            $discountAmount = 0;
-            $total = $subtotal - $discount;
+            $total = $request->total ?? 0;
             $paidAmount = $request->paid_amount ?? 0;
 
             $status = $request->status ?? 'draft';
@@ -632,7 +626,6 @@ class QuotationController extends Controller
                 // Delete existing items
                 $quotation->items()->delete();
                 
-                $subtotal = 0;
                 foreach ($request->items as $item) {
                     Log::info('[v0] Updating quotation item', [
                         'item_data' => $item,
@@ -643,7 +636,6 @@ class QuotationController extends Controller
                     if (isset($item['design_cost'])) {
                         $lineTotal += $item['design_cost'];
                     }
-                    $subtotal += $lineTotal;
 
                     // Handle design files - can be array of URLs stored as JSON
                     $designFileUrl = null;
@@ -710,9 +702,16 @@ class QuotationController extends Controller
                     ]);
                 }
                 
-                // Update quotation totals
-                $quotation->subtotal = $subtotal;
-                $quotation->total = $subtotal;
+                // Update quotation totals from frontend data
+                if ($request->has('subtotal')) {
+                    $quotation->subtotal = $request->subtotal;
+                }
+                if ($request->has('total')) {
+                    $quotation->total = $request->total;
+                }
+                if ($request->has('discount')) {
+                    $quotation->discount = $request->discount;
+                }
             }
 
             if ($request->has('business_name')) {
@@ -1127,6 +1126,89 @@ class QuotationController extends Controller
 
             return response()->json([
                 'error' => 'Failed to reject quotation',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Admin pricing endpoint - Update quotation pricing and send to client
+    public function updatePricing(Request $request, $id)
+    {
+        try {
+            $quotation = Quotation::find($id);
+
+            if (!$quotation) {
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
+            // Validate request data
+            $validator = Validator::make($request->all(), [
+                'items' => 'nullable|array',
+                'items.*.id' => 'nullable|integer',
+                'items.*.unit_price' => 'nullable|numeric|min:0',
+                'items.*.line_total' => 'nullable|numeric|min:0',
+                'subtotal' => 'required|numeric|min:0',
+                'discount' => 'required|numeric|min:0',
+                'total' => 'required|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            // Update quotation with new pricing from frontend (no recalculation)
+            $quotation->update([
+                'subtotal' => $request->subtotal,
+                'discount' => $request->discount,
+                'total' => $request->total,
+                'status' => 'sent',
+                'has_price' => 1,
+            ]);
+
+            // Update quotation items if provided
+            if ($request->has('items') && is_array($request->items)) {
+                foreach ($request->items as $item) {
+                    if (!empty($item['id'])) {
+                        $quotationItem = QuotationItem::find($item['id']);
+                        if ($quotationItem) {
+                            $updateData = [];
+                            if (isset($item['unit_price'])) {
+                                $updateData['unit_price'] = $item['unit_price'];
+                            }
+                            if (isset($item['line_total'])) {
+                                $updateData['line_total'] = $item['line_total'];
+                            }
+                            if (!empty($updateData)) {
+                                $quotationItem->update($updateData);
+                            }
+                        }
+                    }
+                }
+            }
+
+            Log::info('Quotation pricing updated', [
+                'quotation_id' => $id,
+                'subtotal' => $request->subtotal,
+                'discount' => $request->discount,
+                'total' => $request->total,
+            ]);
+
+            $quotation->load(['customer', 'items.service']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pricing has been sent to the client',
+                'data' => $quotation,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Update pricing error', [
+                'quotation_id' => $id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to update pricing',
                 'message' => $e->getMessage()
             ], 500);
         }

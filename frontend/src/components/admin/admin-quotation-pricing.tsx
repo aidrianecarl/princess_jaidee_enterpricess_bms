@@ -303,6 +303,9 @@ export function AdminQuotationPricing() {
         items: updatedItems,
         discount_type: discountType,
         discount_value: Number(discountValue),
+        subtotal: calculateSubtotal(),
+        discount: calculateDiscount(),
+        total: calculateTotal(),
       }
 
       const token = localStorage.getItem("admin_token")
