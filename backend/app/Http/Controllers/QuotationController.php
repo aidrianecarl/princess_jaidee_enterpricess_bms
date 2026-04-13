@@ -330,30 +330,11 @@ class QuotationController extends Controller
             
             $quotationNumber = 'QT-' . Carbon::today()->format('Ymd') . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
 
-            // Use subtotal and total from frontend if provided, otherwise calculate
-            $subtotal = $request->subtotal ?? null;
-            $total = $request->total ?? null;
-            
-            // If subtotal/total not provided, calculate them
-            if ($subtotal === null) {
-                $subtotal = 0;
-                foreach ($request->items as $item) {
-                    $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
-                    if (isset($item['design_cost'])) {
-                        $lineTotal += $item['design_cost'];
-                    }
-                    $subtotal += $lineTotal;
-                }
-            }
-
-            $discount = $request->discount ?? 0;
-            
-            // If total not provided, calculate it
-            if ($total === null) {
-                $total = $subtotal - $discount;
-            }
-            
-            $paidAmount = $request->paid_amount ?? 0;
+            // Get subtotal and total from frontend - save as-is without computation
+            $subtotal = (float) ($request->subtotal ?? 0);
+            $total = (float) ($request->total ?? 0);
+            $discount = (float) ($request->discount ?? 0);
+            $paidAmount = (float) ($request->paid_amount ?? 0);
 
             $status = $request->status ?? 'draft';
 
@@ -643,16 +624,6 @@ class QuotationController extends Controller
                 // Delete existing items
                 $quotation->items()->delete();
                 
-                // Use subtotal and total from frontend if provided, otherwise calculate
-                $subtotal = $request->subtotal ?? null;
-                $total = $request->total ?? null;
-                
-                // Calculate subtotal if not provided
-                if ($subtotal === null) {
-                    $subtotal = 0;
-                }
-                
-                $calculatedSubtotal = 0;
                 foreach ($request->items as $item) {
                     Log::info('[v0] Updating quotation item', [
                         'item_data' => $item,
@@ -660,10 +631,6 @@ class QuotationController extends Controller
                     ]);
 
                     $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
-                    if (isset($item['design_cost'])) {
-                        $lineTotal += $item['design_cost'];
-                    }
-                    $calculatedSubtotal += $lineTotal;
 
                     // Handle design files - can be array of URLs stored as JSON
                     $designFileUrl = null;
@@ -730,20 +697,10 @@ class QuotationController extends Controller
                     ]);
                 }
                 
-                // Use calculated subtotal if not provided by frontend
-                if ($subtotal === null) {
-                    $subtotal = $calculatedSubtotal;
-                }
-                
-                // Update quotation totals
-                $quotation->subtotal = $subtotal;
-                
-                // Calculate total if not provided
-                if ($total === null) {
-                    $discount = $request->discount ?? $quotation->discount ?? 0;
-                    $total = $subtotal - $discount;
-                }
-                $quotation->total = $total;
+                // Update quotation totals from frontend - save as-is without computation
+                $quotation->subtotal = (float) ($request->subtotal ?? 0);
+                $quotation->total = (float) ($request->total ?? 0);
+                $quotation->discount = (float) ($request->discount ?? 0);
             }
 
             if ($request->has('business_name')) {

@@ -858,8 +858,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
           const quantity = Number(item.quantity) || 1
           const unitPrice = Number(item.unitPrice) || 0
-          const designCost = Number(item.designCost) || 0
-          const lineTotal = (quantity * unitPrice) + designCost
+          const lineTotal = quantity * unitPrice
 
           return {
             product_id: item.type === "product" ? item.productId || null : null,
@@ -868,7 +867,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             quantity: quantity,
             unit_price: unitPrice,
             line_total: lineTotal,
-            design_cost: designCost,
+            design_cost: Number(item.designCost) || 0,
             sort_order: index,
             design_file_url: designFileUrl || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
@@ -878,15 +877,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         })
       )
 
-      // Calculate subtotal and total
-      const calculatedSubtotal = itemsPayload.reduce((sum, item) => sum + item.line_total, 0)
-      const calculatedDiscount = Number(formData.discount || 0)
-      const calculatedTotal = calculatedSubtotal - calculatedDiscount
-
       formDataToSend.append("items", JSON.stringify(itemsPayload))
-      formDataToSend.append("subtotal", calculatedSubtotal.toString())
-      formDataToSend.append("total", calculatedTotal.toString())
-      formDataToSend.append("discount", calculatedDiscount.toString())
+      formDataToSend.append("subtotal", (formData.subtotal || "0").toString())
+      formDataToSend.append("total", (formData.total || "0").toString())
+      formDataToSend.append("discount", (formData.discount || "0").toString())
 
       const url = isEditMode
         ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
@@ -1050,19 +1044,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             }
           }
 
-          const quantity = Number(item.quantity) || 1
-          const unitPrice = Number(item.unitPrice) || 0
-          const designCost = Number(item.designCost) || 0
-          const lineTotal = (quantity * unitPrice) + designCost
-
           return {
             product_id: item.productId || null,
             service_id: item.serviceId || null,
             customization: item.description || "",
-            quantity: quantity,
-            unit_price: unitPrice,
-            line_total: lineTotal,
-            design_cost: designCost,
+            quantity: Number(item.quantity) || 1,
+            unit_price: Number(item.unitPrice) || 0,
+            design_cost: Number(item.designCost) || 0,
             sort_order: index,
             design_file_url: designFileUrl || null,
             team_roster: item.serviceRequirements?.teamRoster ? JSON.stringify(item.serviceRequirements.teamRoster) : null,
@@ -1072,15 +1060,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         })
       )
 
-      // Calculate subtotal and total
-      const calculatedSubtotal = itemsPayload.reduce((sum, item) => sum + item.line_total, 0)
-      const calculatedDiscount = Number(formData.discount || 0)
-      const calculatedTotal = calculatedSubtotal - calculatedDiscount
-
       formDataToSend.append("items", JSON.stringify(itemsPayload))
-      formDataToSend.append("subtotal", calculatedSubtotal.toString())
-      formDataToSend.append("total", calculatedTotal.toString())
-      formDataToSend.append("discount", calculatedDiscount.toString())
+      formDataToSend.append("subtotal", (formData.subtotal || "0").toString())
+      formDataToSend.append("total", (formData.total || "0").toString())
+      formDataToSend.append("discount", (formData.discount || "0").toString())
 
       const url = isEditMode
         ? `${process.env.NEXT_PUBLIC_API_URL}/quotations/${existingQuotation.id}`
