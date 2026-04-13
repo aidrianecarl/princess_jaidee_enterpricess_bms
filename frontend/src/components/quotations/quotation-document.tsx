@@ -822,17 +822,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "draft")
 
-      // Calculate subtotal and total from frontend
-      let calculatedSubtotal = 0
-      lineItems.forEach((item) => {
-        const quantity = Number(item.quantity) || 1
-        const unitPrice = Number(item.unitPrice) || 0
-        const designCost = Number(item.designCost) || 0
-        calculatedSubtotal += (quantity * unitPrice) + designCost
-      })
-      const calculatedTotal = calculatedSubtotal
-      formDataToSend.append("subtotal", calculatedSubtotal.toString())
-      formDataToSend.append("total", calculatedTotal.toString())
+  // Set subtotal and total to 0 for new quotations (admin will price it)
+  formDataToSend.append("subtotal", "0")
+  formDataToSend.append("total", "0")
 
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(
@@ -1019,17 +1011,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("status", "pending")
       formDataToSend.append("branch_id", selectedBranchId?.toString() || "")
 
-      // Calculate subtotal and total from frontend
-      let calculatedSubtotal = 0
-      lineItems.forEach((item) => {
-        const quantity = Number(item.quantity) || 1
-        const unitPrice = Number(item.unitPrice) || 0
-        const designCost = Number(item.designCost) || 0
-        calculatedSubtotal += (quantity * unitPrice) + designCost
-      })
-      const calculatedTotal = calculatedSubtotal
-      formDataToSend.append("subtotal", calculatedSubtotal.toString())
-      formDataToSend.append("total", calculatedTotal.toString())
+      // Set subtotal and total to 0 for new quotations (admin will price it)
+      formDataToSend.append("subtotal", "0")
+      formDataToSend.append("total", "0")
 
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(

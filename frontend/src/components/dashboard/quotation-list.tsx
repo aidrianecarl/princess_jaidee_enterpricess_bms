@@ -289,9 +289,8 @@ export function QuotationList() {
                 </div>
 
                 <div className="text-right mr-6 hidden sm:block">
-                  <p className="font-bold text-gray-900">₱{Number(quotation.total || 0).toLocaleString()}</p>
                   <span
-                    className={`text-xs font-semibold px-3 py-1 rounded-full inline-block mt-1 ${getStatusColor(quotation.status)}`}
+                    className={`text-xs font-semibold px-3 py-1 rounded-full inline-block ${getStatusColor(quotation.status)}`}
                   >
                     {quotation.status === "pending"
                       ? "Pending"
