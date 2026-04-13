@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { ArrowLeft, Eye, FileText, Loader2 } from "lucide-react"
+import { ArrowLeft, Eye, FileText, Loader2, Download } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
+import { generateQuotationPDF } from "@/lib/pdf-generator"
 
 interface Quotation {
   id: number
@@ -31,7 +32,7 @@ export default function QuotedProposalsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [sendingId, setSendingId] = useState<number | null>(null)
-  const [statusFilter, setStatusFilter] = useState<"pending" | "sent" | "approved" | "all">("pending")
+  const [statusFilter, setStatusFilter] = useState<"pending" | "sent" | "history">("pending")
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; quotationId: number | null }>({
     isOpen: false,
     quotationId: null,
@@ -58,7 +59,7 @@ export default function QuotedProposalsPage() {
     checkAuth()
   }, [router])
 
-  const handleSendForProduction = async (quotationId: number) => {
+  const handleRequestOrder = async (quotationId: number) => {
     try {
       setSendingId(quotationId)
       const token = localStorage.getItem("auth_token")
@@ -75,7 +76,7 @@ export default function QuotedProposalsPage() {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to send for production")
+        throw new Error("Failed to request order")
       }
 
       // Update the quotation in the list
@@ -89,8 +90,8 @@ export default function QuotedProposalsPage() {
       router.push(`/dashboard/quotations/thank-you?quotation=${quotationId}`)
       setConfirmModal({ isOpen: false, quotationId: null })
     } catch (error) {
-      console.error("Error sending for production:", error)
-      alert("Failed to send for production. Please try again.")
+      console.error("Error requesting order:", error)
+      alert("Failed to request order. Please try again.")
       setConfirmModal({ isOpen: false, quotationId: null })
     } finally {
       setSendingId(null)
@@ -134,7 +135,7 @@ export default function QuotedProposalsPage() {
     }
   }
 
-  const filterQuotations = (quots: Quotation[], status: "pending" | "sent" | "approved" | "all") => {
+  const filterQuotations = (quots: Quotation[], status: "pending" | "sent" | "history") => {
     let filtered = quots
     if (status === "pending") {
       // Only show pending quotations with prices
@@ -142,12 +143,9 @@ export default function QuotedProposalsPage() {
     } else if (status === "sent") {
       // Only show sent quotations
       filtered = quots.filter((q) => q.status === "sent")
-    } else if (status === "approved") {
-      // Only show approved quotations
-      filtered = quots.filter((q) => q.status === "approved")
-    } else if (status === "all") {
-      // Show pending, sent, and approved (all with has_price)
-      filtered = quots.filter((q) => (q.has_price === 1 || q.has_price === "1" || q.has_price === true) && ["pending", "sent", "approved"].includes(q.status))
+    } else if (status === "history") {
+      // Show all has_price quotations (history)
+      filtered = quots.filter((q) => (q.has_price === 1 || q.has_price === "1" || q.has_price === true))
     }
     
     setFilteredQuotations(filtered)
@@ -220,24 +218,14 @@ export default function QuotedProposalsPage() {
             Sent to Production ({quotations.filter((q) => q.status === "sent").length})
           </button>
           <button
-            onClick={() => filterQuotations(quotations, "approved")}
+            onClick={() => filterQuotations(quotations, "history")}
             className={`px-6 py-2 rounded-lg font-medium transition ${
-              statusFilter === "approved"
-                ? "bg-blue-500 text-white"
-                : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
-            }`}
-          >
-            Approved ({quotations.filter((q) => q.status === "approved").length})
-          </button>
-          <button
-            onClick={() => filterQuotations(quotations, "all")}
-            className={`px-6 py-2 rounded-lg font-medium transition ${
-              statusFilter === "all"
+              statusFilter === "history"
                 ? "bg-purple-500 text-white"
                 : "bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-white hover:bg-neutral-300 dark:hover:bg-neutral-700"
             }`}
           >
-            All Proposals ({quotations.filter((q) => (q.has_price === 1 || q.has_price === "1") && ["pending", "sent", "approved"].includes(q.status)).length})
+            Quotation History ({quotations.filter((q) => (q.has_price === 1 || q.has_price === "1")).length})
           </button>
         </div>
 
@@ -288,35 +276,66 @@ export default function QuotedProposalsPage() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-2">
-                    <Link href={`/dashboard/quotations/view/${quotation.id}`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center gap-2 w-full sm:w-auto border-neutral-300 dark:border-neutral-700"
-                      >
-                        <Eye size={16} />
-                        View Details
-                      </Button>
-                    </Link>
-                    {(quotation.has_price === 1 || quotation.has_price === "1") && quotation.status === "pending" && (
-                      <Button
-                        onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
-                        disabled={sendingId === quotation.id}
-                        className="flex items-center gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
-                        size="sm"
-                      >
-                        {sendingId === quotation.id ? (
-                          <>
-                            <Loader2 size={16} className="animate-spin" />
-                            Sending...
-                          </>
-                        ) : (
-                          <>
-                            <FileText size={16} />
-                            Send for Production
-                          </>
-                        )}
-                      </Button>
+                    {/* Pending - View Details + Download PDF */}
+                    {statusFilter === "pending" && (
+                      <>
+                        <Link href={`/dashboard/quotations/view/${quotation.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 w-full sm:w-auto border-neutral-300 dark:border-neutral-700"
+                          >
+                            <Eye size={16} />
+                            View Details
+                          </Button>
+                        </Link>
+                        <Button
+                          onClick={() => generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)}
+                          size="sm"
+                          className="flex items-center gap-2 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Download size={16} />
+                          Download PDF
+                        </Button>
+                      </>
+                    )}
+
+                    {/* Sent to Production - Request Order button */}
+                    {statusFilter === "sent" && (
+                      <Link href={`/dashboard/quotations/view/${quotation.id}`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2 w-full sm:w-auto border-neutral-300 dark:border-neutral-700"
+                        >
+                          <Eye size={16} />
+                          View Details
+                        </Button>
+                      </Link>
+                    )}
+
+                    {/* History - View Details + Download PDF only */}
+                    {statusFilter === "history" && (
+                      <>
+                        <Link href={`/dashboard/quotations/view/${quotation.id}`}>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex items-center gap-2 w-full sm:w-auto border-neutral-300 dark:border-neutral-700"
+                          >
+                            <Eye size={16} />
+                            View Details
+                          </Button>
+                        </Link>
+                        <Button
+                          onClick={() => generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)}
+                          size="sm"
+                          className="flex items-center gap-2 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <Download size={16} />
+                          PDF
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -351,9 +370,9 @@ export default function QuotedProposalsPage() {
         {confirmModal.isOpen && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-neutral-200 dark:border-neutral-800">
-              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Confirm Order</h2>
+              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Confirm Request Order</h2>
               <p className="text-neutral-600 dark:text-neutral-400 mb-6">
-                Are you sure you want to send this quotation for production? This will finalize your proposal and send it to our production team.
+                Are you sure you want to request this quotation for order? This will finalize your proposal and send it to our production team.
               </p>
 
               <div className="flex gap-3">
@@ -367,7 +386,7 @@ export default function QuotedProposalsPage() {
                 <Button
                   onClick={() => {
                     if (confirmModal.quotationId) {
-                      handleSendForProduction(confirmModal.quotationId)
+                      handleRequestOrder(confirmModal.quotationId)
                     }
                   }}
                   disabled={sendingId !== null}
@@ -379,7 +398,7 @@ export default function QuotedProposalsPage() {
                       Confirming...
                     </>
                   ) : (
-                    "Yes, Confirm"
+                    "Yes, Request Order"
                   )}
                 </Button>
               </div>

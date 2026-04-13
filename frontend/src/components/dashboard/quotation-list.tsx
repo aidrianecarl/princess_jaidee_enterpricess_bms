@@ -1,11 +1,12 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { FileText, Send, Edit, Package, Loader2 } from "lucide-react"
+import { FileText, Send, Edit, Package, Loader2, Download } from "lucide-react"
 import { QuotationSkeleton } from "./quotation-skeleton"
 import { QuotationViewModal } from "./quotation-view-modal"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
+import { generateQuotationPDF } from "@/lib/pdf-generator"
 
 interface Quotation {
   id: number
@@ -97,8 +98,10 @@ export function QuotationList() {
   }
 
   const filteredQuotations = quotations.filter((q) => {
-    if (filter === "all") return q.status === "draft" || q.status === "pending"
-    return q.status === filter && (filter === "draft" || filter === "pending")
+    if (filter === "all") return (q.status === "draft" || q.status === "pending") && q.has_price !== 1
+    if (filter === "draft") return q.status === "draft"
+    if (filter === "pending") return q.status === "pending" && q.has_price !== 1
+    return q.status === filter
   })
 
   const getStatusColor = (status: string) => {
@@ -306,6 +309,16 @@ export function QuotationList() {
                   >
                     <FileText size={18} />
                   </button>
+
+                  {quotation.has_price === 1 && (
+                    <button
+                      onClick={() => generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)}
+                      className="p-2 hover:bg-green-100 text-gray-600 hover:text-green-600 rounded-lg transition"
+                      title="Download PDF"
+                    >
+                      <Download size={18} />
+                    </button>
+                  )}
 
                   {quotation.status === "draft" && (
                     <button

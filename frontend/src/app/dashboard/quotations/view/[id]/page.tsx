@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Loader } from "lucide-react"
+import { ArrowLeft, Loader, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { getApiImageUrl } from "@/lib/api-urls"
+import { generateQuotationPDF } from "@/lib/pdf-generator"
 
 interface TeamMember {
   name: string
@@ -48,6 +49,7 @@ interface Quotation {
   has_price: number
   created_at: string
   items: QuotationItem[]
+  logo_url?: string
 }
 
 export default function ViewQuotationPage() {
@@ -59,6 +61,7 @@ export default function ViewQuotationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
@@ -129,6 +132,20 @@ export default function ViewQuotationPage() {
     }
   }
 
+  const handleDownloadPDF = async () => {
+    if (!quotation) return
+    
+    try {
+      setIsDownloading(true)
+      await generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)
+    } catch (err) {
+      console.error("[v0] Error downloading PDF:", err)
+      alert("Failed to download PDF")
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -181,12 +198,22 @@ export default function ViewQuotationPage() {
       <DashboardHeader user={user} />
 
       <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
-        {/* Back Button */}
-        <div className="mb-6">
+        {/* Header with Back Button and Download */}
+        <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
           <Button onClick={() => router.back()} variant="outline" className="gap-2">
             <ArrowLeft size={16} />
             Back
           </Button>
+          {quotation.has_price === 1 && (
+            <Button 
+              onClick={handleDownloadPDF} 
+              disabled={isDownloading}
+              className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+            >
+              <Download size={16} />
+              {isDownloading ? "Downloading..." : "Download PDF"}
+            </Button>
+          )}
         </div>
 
         {/* Header */}
@@ -195,8 +222,8 @@ export default function ViewQuotationPage() {
             <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white">
               {quotation.quotation_number}
             </h1>
-            <Badge className={`${quotation.status === "sent" ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" : "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200"}`}>
-              {quotation.status === "sent" ? "Sent to Production" : quotation.status}
+            <Badge className={`${quotation.status === "sent" ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" : quotation.has_price === 1 ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"}`}>
+              {quotation.status === "sent" ? "Sent to Production" : quotation.has_price === 1 ? "Priced" : "Pending"}
             </Badge>
           </div>
           <p className="text-neutral-600 dark:text-neutral-400">Created {formatDate(quotation.created_at)}</p>
@@ -407,23 +434,23 @@ export default function ViewQuotationPage() {
             {quotation.discount > 0 && (
               <div className="flex justify-between items-center">
                 <p className="text-neutral-600 dark:text-neutral-400">Discount</p>
-                <p className="font-semibold text-red-600 dark:text-red-400">-{formatCurrency(quotation.discount)}</p>
+                <p className="font-semibold text-neutral-900 dark:text-white">-{formatCurrency(quotation.discount)}</p>
               </div>
             )}
-            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-4 flex justify-between items-center bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 -mx-6 px-6">
-              <p className="text-lg font-bold text-neutral-900 dark:text-white">Total</p>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{formatCurrency(quotation.total)}</p>
+            {quotation.tax > 0 && (
+              <div className="flex justify-between items-center">
+                <p className="text-neutral-600 dark:text-neutral-400">Tax</p>
+                <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(quotation.tax)}</p>
+              </div>
+            )}
+            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-3 mt-3">
+              <div className="flex justify-between items-center">
+                <p className="text-lg font-bold text-neutral-900 dark:text-white">Total</p>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{formatCurrency(quotation.total)}</p>
+              </div>
             </div>
           </div>
         </Card>
-
-        {/* Notes */}
-        {quotation.notes && (
-          <Card className="p-6 mt-6 border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-2">Notes</h3>
-            <p className="text-neutral-700 dark:text-neutral-300">{quotation.notes}</p>
-          </Card>
-        )}
       </main>
     </div>
   )
