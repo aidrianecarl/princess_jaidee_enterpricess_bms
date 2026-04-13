@@ -1,38 +1,45 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Loader, Download } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { DashboardHeader } from "@/components/dashboard/header"
+import { useParams } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import { getApiImageUrl } from "@/lib/api-urls"
+import { ArrowLeft, Loader2, ChevronDown, ChevronUp, X, ZoomIn, Download } from "lucide-react"
+import { useRouter } from "next/navigation"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { generateQuotationPDF } from "@/lib/pdf-generator"
 
-interface TeamMember {
-  name: string
-  number: number
-  sizeTop?: string
-  sizeBottom?: string
-}
-
-interface QuotationItem {
+interface PricingLineItem {
   id: number
-  service_id: number
-  quantity: number
-  unit_price: number
+  quotation_id: number
+  service_id?: number
   description: string
+  quantity: number
+  unit_price: number | string
+  line_total: number | string
   design_file_url?: string
+  notes?: any
   team_roster?: any
   size_specifications?: any
-  notes?: any
-  service?: { id: number; name: string }
+  service?: {
+    id: number
+    name: string
+    image_url?: string
+    description?: string
+  }
 }
 
-interface Quotation {
+interface QuotationForPricing {
   id: number
   quotation_number: string
+  created_at: string
+  customer?: any
   business_name: string
   business_address: string
   business_city: string
@@ -40,93 +47,99 @@ interface Quotation {
   business_postal: string
   business_phone: string
   business_email: string
+  logo_url: string
+  items: PricingLineItem[]
   subtotal: number
   discount: number
   tax: number
   total: number
   notes: string
+  valid_until: string
   status: string
   has_price: number
-  created_at: string
-  items: QuotationItem[]
-  logo_url?: string
 }
 
-export default function ViewQuotationPage() {
+export default function DashboardViewQuotationPage() {
   const params = useParams()
+  const quotationId = params.id as string
   const router = useRouter()
-  const quotationId = params.id
+  const { toast } = useToast()
 
-  const [quotation, setQuotation] = useState<Quotation | null>(null)
+  const [quotation, setQuotation] = useState<QuotationForPricing | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [user, setUser] = useState<any>(null)
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
+  const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
   useEffect(() => {
-    const userData = localStorage.getItem("user")
-    if (userData) {
-      setUser(JSON.parse(userData))
-    }
+    fetchQuotation()
   }, [])
-
-  useEffect(() => {
-    if (quotationId) {
-      fetchQuotation()
-    }
-  }, [quotationId])
-
-  const parseJSON = (value: any): any => {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value)
-      } catch {
-        return null
-      }
-    }
-    return value
-  }
 
   const fetchQuotation = async () => {
     try {
       setIsLoading(true)
       const token = localStorage.getItem("auth_token")
+      const url = `${apiUrl}/quotations/${quotationId}`
 
-      if (!token) {
-        router.push("/")
-        return
-      }
-
-      const response = await fetch(`${apiUrl}/quotations/${quotationId}`, {
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
       })
 
       if (!response.ok) {
-        throw new Error("Failed to fetch quotation")
+        throw new Error(`Failed to fetch quotation (Status: ${response.status})`)
       }
 
       const data = await response.json()
       const quot = data.data || data
-      
-      // Parse JSON fields from items
-      if (quot.items && Array.isArray(quot.items)) {
-        quot.items = quot.items.map((item: QuotationItem) => ({
+
+      // Decode JSON fields from backend
+      const processedItems = quot.items?.map((item: any) => {
+        let teamRoster = item.team_roster
+        if (typeof item.team_roster === 'string' && item.team_roster) {
+          try {
+            teamRoster = JSON.parse(item.team_roster)
+          } catch (e) {
+            teamRoster = null
+          }
+        }
+
+        let sizeSpecs = item.size_specifications
+        if (typeof item.size_specifications === 'string' && item.size_specifications) {
+          try {
+            sizeSpecs = JSON.parse(item.size_specifications)
+          } catch (e) {
+            sizeSpecs = null
+          }
+        }
+
+        let notesData = item.notes
+        if (typeof item.notes === 'string' && item.notes) {
+          try {
+            notesData = JSON.parse(item.notes)
+          } catch (e) {
+            notesData = null
+          }
+        }
+
+        return {
           ...item,
-          team_roster: parseJSON(item.team_roster),
-          size_specifications: parseJSON(item.size_specifications),
-          notes: parseJSON(item.notes),
-        }))
-      }
-      
-      setQuotation(quot)
-    } catch (err) {
-      console.error("[v0] Error fetching quotation:", err)
-      setError(err instanceof Error ? err.message : "Failed to load quotation")
+          team_roster: teamRoster,
+          size_specifications: sizeSpecs,
+          notes: notesData,
+        }
+      }) || []
+
+      setQuotation({ ...quot, items: processedItems })
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to load quotation",
+        variant: "destructive",
+      })
     } finally {
       setIsLoading(false)
     }
@@ -134,324 +147,334 @@ export default function ViewQuotationPage() {
 
   const handleDownloadPDF = async () => {
     if (!quotation) return
-    
     try {
       setIsDownloading(true)
       await generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)
-    } catch (err) {
-      console.error("[v0] Error downloading PDF:", err)
-      alert("Failed to download PDF")
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to download PDF",
+        variant: "destructive",
+      })
     } finally {
       setIsDownloading(false)
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PH", {
-      style: "currency",
-      currency: "PHP",
-    }).format(amount)
+  const toggleItemExpanded = (itemId: number) => {
+    const newExpanded = new Set(expandedItems)
+    if (newExpanded.has(itemId)) {
+      newExpanded.delete(itemId)
+    } else {
+      newExpanded.add(itemId)
+    }
+    setExpandedItems(newExpanded)
   }
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-neutral-950">
-        <DashboardHeader user={user} />
-        <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
-          <div className="flex justify-center items-center py-12">
-            <Loader className="h-8 w-8 text-orange-500 animate-spin" />
-          </div>
-        </main>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
+          <p>Loading quotation...</p>
+        </div>
       </div>
     )
   }
 
-  if (error || !quotation) {
+  if (!quotation) {
     return (
-      <div className="min-h-screen bg-white dark:bg-neutral-950">
-        <DashboardHeader user={user} />
-        <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
-          <div className="mb-6">
-            <Button onClick={() => router.back()} variant="outline" className="gap-2">
-              <ArrowLeft size={16} />
-              Back
-            </Button>
-          </div>
-          <Card className="p-6 border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/20">
-            <p className="text-red-700 dark:text-red-400">{error || "Quotation not found"}</p>
-          </Card>
-        </main>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <p className="text-red-600">Quotation not found</p>
+          <button onClick={() => router.back()} className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg">
+            Go Back
+          </button>
+        </div>
       </div>
     )
   }
+
+  const subtotal = quotation.subtotal
+  const discount = quotation.discount
+  const tax = quotation.tax
+  const total = quotation.total
 
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-950">
-      <DashboardHeader user={user} />
-
-      <main className="pt-14 sm:pt-16 md:ml-64 max-w-7xl mx-auto px-4 py-8">
-        {/* Header with Back Button and Download */}
-        <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
-          <Button onClick={() => router.back()} variant="outline" className="gap-2">
-            <ArrowLeft size={16} />
-            Back
-          </Button>
-          {quotation.has_price === 1 && (
-            <Button 
-              onClick={handleDownloadPDF} 
-              disabled={isDownloading}
-              className="gap-2 bg-green-600 hover:bg-green-700 text-white"
-            >
-              <Download size={16} />
-              {isDownloading ? "Downloading..." : "Download PDF"}
-            </Button>
-          )}
-        </div>
-
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-3 flex-wrap">
-            <h1 className="text-3xl md:text-4xl font-bold text-neutral-900 dark:text-white">
-              {quotation.quotation_number}
-            </h1>
-            <Badge className={`${quotation.status === "sent" ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200" : quotation.has_price === 1 ? "bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200" : "bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200"}`}>
-              {quotation.status === "sent" ? "Sent to Production" : quotation.has_price === 1 ? "Priced" : "Pending"}
-            </Badge>
-          </div>
-          <p className="text-neutral-600 dark:text-neutral-400">Created {formatDate(quotation.created_at)}</p>
-        </div>
-
-        {/* Business Information */}
-        <Card className="p-6 mb-6 border-neutral-200 dark:border-neutral-800">
-          <h2 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Business Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">Business Name</p>
-              <p className="font-semibold text-neutral-900 dark:text-white">{quotation.business_name}</p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">Email</p>
-              <p className="font-semibold text-neutral-900 dark:text-white">{quotation.business_email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">Phone</p>
-              <p className="font-semibold text-neutral-900 dark:text-white">{quotation.business_phone}</p>
-            </div>
-            <div>
-              <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">Address</p>
-              <p className="font-semibold text-neutral-900 dark:text-white">
-                {quotation.business_address}, {quotation.business_city}, {quotation.business_state} {quotation.business_postal}
-              </p>
+    <>
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+        {/* Toolbar */}
+        <div className="sticky top-0 z-30 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between gap-4 py-4">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => router.back()}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition"
+                >
+                  <ArrowLeft size={18} />
+                  Back
+                </button>
+                <h2 className="text-xl font-bold text-white">Quotation Details</h2>
+              </div>
+              <div className="flex gap-2">
+                {quotation.has_price === 1 && (
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={isDownloading}
+                    className="flex items-center gap-2 px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition disabled:opacity-50"
+                  >
+                    {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download size={18} />}
+                    Download PDF
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* Quotation Items */}
-        {quotation.items && quotation.items.length > 0 && (
-          <div className="space-y-6 mb-8">
-            <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Quotation Items</h2>
-            
-            {quotation.items.map((item) => {
-              const teamRoster = Array.isArray(item.team_roster) ? item.team_roster : null
-              const sizeSpecs = typeof item.size_specifications === 'object' ? item.size_specifications : null
-
-              return (
-                <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 shadow-md hover:shadow-lg transition">
-                  {/* Item Header */}
-                  <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-b border-neutral-200 dark:border-neutral-700">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex-1">
-                        <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-1">
-                          {item.service?.name || 'Service Item'}
-                        </h3>
-                        <div className="flex items-center gap-3 flex-wrap text-sm">
-                          <span className="text-neutral-600 dark:text-neutral-400">
-                            Quantity: <span className="font-semibold text-neutral-900 dark:text-white">{item.quantity}</span>
-                          </span>
-                          <span className="text-neutral-600 dark:text-neutral-400">
-                            Unit Price: <span className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(item.unit_price)}</span>
-                          </span>
-                        </div>
+        {/* Content */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Header with Logo */}
+            <div className="p-8 border-b-4 border-orange-100">
+              <div className="space-y-8">
+                <div className="flex gap-8">
+                  {quotation.logo_url && (
+                    <div className="flex justify-start">
+                      <img
+                        src={getApiImageUrl(quotation.logo_url)}
+                        alt="Logo"
+                        className="max-w-32 h-auto rounded-lg bg-gray-100"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none"
+                        }}
+                      />
+                    </div>
+                  )}
+                  <div className="space-y-4 flex-1">
+                    <h1 className="text-4xl font-bold text-red-600">Quote</h1>
+                    <div className="grid grid-cols-2 gap-8 text-sm">
+                      <div>
+                        <p className="text-gray-600">QUOTE NO.</p>
+                        <p className="font-semibold text-gray-900">{quotation.quotation_number}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">Total</p>
-                        <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                          {formatCurrency(item.quantity * item.unit_price)}
+                      <div>
+                        <p className="text-gray-600">DATE</p>
+                        <p className="font-semibold text-gray-900">
+                          {new Date(quotation.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
                         </p>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Content */}
-                  <div className="p-6 space-y-6">
-                    {/* Team Roster */}
-                    {teamRoster && teamRoster.length > 0 && (
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster</h4>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/50">
-                                <th className="px-4 py-3 text-left font-semibold text-blue-900 dark:text-blue-300">Player Name</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top Size</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom Size</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {teamRoster.map((player: TeamMember, idx: number) => (
-                                <tr key={idx} className="border-b border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
-                                  <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">{player.name}</td>
-                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
-                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '—'}</td>
-                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</td>
-                                </tr>
+                <div className="text-right">
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">From</h3>
+                  <div className="space-y-1 text-sm text-gray-900">
+                    <p className="font-semibold">{quotation.business_name}</p>
+                    <p>{quotation.business_address}</p>
+                    <p>
+                      {quotation.business_city}, {quotation.business_state} {quotation.business_postal}
+                    </p>
+                    <p>{quotation.business_phone}</p>
+                    <p>{quotation.business_email}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bill To Section */}
+            <div className="p-8 border-b-2 border-gray-200 bg-orange-50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">Bill To</h3>
+                  <div className="space-y-1 text-gray-900 text-sm">
+                    <p className="font-semibold">{quotation.customer?.bill_to_name || "-"}</p>
+                    <p>{quotation.customer?.bill_to_street || "-"}</p>
+                    <p>
+                      {quotation.customer?.bill_to_city || ""} {quotation.customer?.bill_to_state || ""} {quotation.customer?.bill_to_postal || ""}
+                    </p>
+                    <p>{quotation.customer?.bill_to_phone || "-"}</p>
+                    <p>{quotation.customer?.bill_to_email || "-"}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">DUE DATE</h3>
+                  <div className="space-y-4">
+                    <p className="text-gray-900 font-semibold">
+                      {quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Services Summary */}
+            <div className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 border-b-2 border-blue-200">
+              <h2 className="text-xl font-bold text-gray-900 mb-6">Services Summary</h2>
+              <div className="space-y-4">
+                {quotation.items.map((item, idx) => (
+                  <div key={item.id} className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+                    <button
+                      onClick={() => toggleItemExpanded(item.id)}
+                      className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition"
+                    >
+                      <div className="flex items-center gap-4 flex-1 text-left">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <p className="font-bold text-blue-900">{item.service?.name}</p>
+                          <p className="text-sm text-gray-600">{item.description || "No description"}</p>
+                        </div>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="font-bold text-gray-900">₱{(Number(item.line_total) || 0).toLocaleString()}</p>
+                        <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                      </div>
+                      {expandedItems.has(item.id) ? (
+                        <ChevronUp size={20} className="text-gray-600" />
+                      ) : (
+                        <ChevronDown size={20} className="text-gray-600" />
+                      )}
+                    </button>
+
+                    {expandedItems.has(item.id) && (
+                      <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 space-y-6">
+                        {/* Design File */}
+                        {item.design_file_url && (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-3 uppercase">Design File</p>
+                            <div
+                              className="relative inline-block cursor-pointer group"
+                              onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || ""))}
+                            >
+                              <img
+                                src={getApiImageUrl(item.design_file_url)}
+                                alt="Design"
+                                className="max-w-xs h-auto rounded-lg border border-gray-300 group-hover:border-blue-500 transition"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none"
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center rounded-lg transition">
+                                <ZoomIn className="text-white opacity-0 group-hover:opacity-100" size={24} />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Team Roster */}
+                        {item.team_roster && item.team_roster.length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-3 uppercase">Team Roster</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {item.team_roster.map((member: any, i: number) => (
+                                <div key={i} className="p-3 bg-white rounded border border-gray-200">
+                                  <p className="font-semibold text-gray-900">{member.name}</p>
+                                  <p className="text-sm text-gray-600">Number: {member.number}</p>
+                                  {member.sizeTop && member.sizeTop !== "None" && (
+                                    <p className="text-sm text-gray-600">Top: {member.sizeTop}</p>
+                                  )}
+                                  {member.sizeBottom && member.sizeBottom !== "None" && (
+                                    <p className="text-sm text-gray-600">Bottom: {member.sizeBottom}</p>
+                                  )}
+                                </div>
                               ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Size Specifications */}
-                    {sizeSpecs && Object.keys(sizeSpecs).length > 0 && (
-                      <div className={`p-4 rounded-lg border ${item.service?.name?.includes('Tarpaulin') ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' : 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800'}`}>
-                        <h4 className={`font-bold mb-4 text-lg ${item.service?.name?.includes('Tarpaulin') ? 'text-purple-900 dark:text-purple-300' : 'text-indigo-900 dark:text-indigo-300'}`}>
-                          {item.service?.name?.includes('Tarpaulin') ? 'Tarpaulin Size Specification' : 'Uniform Size'}
-                        </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {sizeSpecs.width && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width} ft</p>
+                        {/* Size Specifications */}
+                        {item.size_specifications && Object.keys(item.size_specifications).length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-3 uppercase">Size Specifications</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              {Object.entries(item.size_specifications).map(([key, value]: [string, any]) => (
+                                <div key={key} className="p-2 bg-white rounded border border-gray-200">
+                                  <p className="text-xs text-gray-600 uppercase font-semibold">{key}</p>
+                                  <p className="text-sm font-semibold text-gray-900">{value}</p>
+                                </div>
+                              ))}
                             </div>
-                          )}
-                          {sizeSpecs.height && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height} ft</p>
-                            </div>
-                          )}
-                          {sizeSpecs.totalSqft && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft} sq ft</p>
-                            </div>
-                          )}
-                          {sizeSpecs.top && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
-                            </div>
-                          )}
-                          {sizeSpecs.bottom && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+                          </div>
+                        )}
 
-                    {/* Design Preview */}
-                    {item.design_file_url && (
-                      <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-lg border border-gray-200 dark:border-gray-800">
-                        <h4 className="font-bold text-gray-900 dark:text-gray-300 mb-4 text-lg">Design Preview</h4>
-                        <div className="relative w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 flex items-center justify-center">
-                          <img 
-                            src={getApiImageUrl(item.design_file_url)} 
-                            alt="Design preview" 
-                            crossOrigin="anonymous"
-                            onError={(e) => {
-                              console.error("[v0] Image failed to load:", item.design_file_url)
-                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect fill='%23e5e7eb' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-size='14'%3EImage Not Found%3C/text%3E%3C/svg%3E"
-                            }}
-                            className="w-full h-full object-contain p-4"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                          <span className="font-semibold">File:</span> {item.design_file_url?.split('/').pop() || 'Unknown'}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Notes */}
-                    {item.notes && typeof item.notes === 'object' && Object.keys(item.notes).length > 0 && (
-                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-                        <h4 className="font-bold text-amber-900 dark:text-amber-300 mb-4 text-lg">Notes</h4>
-                        <div className="space-y-3">
-                          {item.notes.designNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Design Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.designNotes}</p>
+                        {/* Notes */}
+                        {item.notes && Object.keys(item.notes).length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-3 uppercase">Additional Notes</p>
+                            <div className="bg-white rounded border border-gray-200 p-3 space-y-2">
+                              {Object.entries(item.notes).map(([key, value]: [string, any]) => (
+                                <div key={key}>
+                                  <p className="text-xs text-gray-600 font-semibold uppercase">{key}</p>
+                                  <p className="text-sm text-gray-900">{String(value)}</p>
+                                </div>
+                              ))}
                             </div>
-                          )}
-                          {item.notes.sizeNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Size Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.sizeNotes}</p>
-                            </div>
-                          )}
-                          {item.notes.teamNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Team Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.teamNotes}</p>
-                            </div>
-                          )}
-                          {item.notes.additionalNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Additional Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.additionalNotes}</p>
-                            </div>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
+                ))}
+              </div>
+            </div>
 
-        {/* Summary */}
-        <Card className="p-6 border-neutral-200 dark:border-neutral-800 bg-gradient-to-br from-neutral-50 to-white dark:from-neutral-800 dark:to-neutral-900">
-          <h2 className="text-xl font-bold text-neutral-900 dark:text-white mb-6">Order Summary</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <p className="text-neutral-600 dark:text-neutral-400">Subtotal</p>
-              <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(quotation.subtotal)}</p>
+            {/* Totals Section */}
+            <div className="p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Subtotal:</span>
+                  <span className="text-lg font-semibold text-gray-900">₱{subtotal.toLocaleString()}</span>
+                </div>
+                {discount > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Discount:</span>
+                    <span className="text-lg font-semibold text-green-600">-₱{discount.toLocaleString()}</span>
+                  </div>
+                )}
+                {tax > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Tax:</span>
+                    <span className="text-lg font-semibold text-gray-900">₱{tax.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+              <div className="border-t-2 border-gray-300 pt-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xl font-bold text-gray-900">TOTAL:</span>
+                  <span className="text-3xl font-bold text-red-600">₱{total.toLocaleString()}</span>
+                </div>
+              </div>
             </div>
-            {quotation.discount > 0 && (
-              <div className="flex justify-between items-center">
-                <p className="text-neutral-600 dark:text-neutral-400">Discount</p>
-                <p className="font-semibold text-neutral-900 dark:text-white">-{formatCurrency(quotation.discount)}</p>
+
+            {/* General Notes */}
+            {quotation.notes && (
+              <div className="p-8 border-t border-gray-200">
+                <h3 className="font-bold text-gray-900 mb-3">Notes:</h3>
+                <p className="text-gray-700 text-sm whitespace-pre-wrap">{quotation.notes}</p>
               </div>
             )}
-            {quotation.tax > 0 && (
-              <div className="flex justify-between items-center">
-                <p className="text-neutral-600 dark:text-neutral-400">Tax</p>
-                <p className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(quotation.tax)}</p>
-              </div>
-            )}
-            <div className="border-t border-neutral-200 dark:border-neutral-700 pt-3 mt-3">
-              <div className="flex justify-between items-center">
-                <p className="text-lg font-bold text-neutral-900 dark:text-white">Total</p>
-                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{formatCurrency(quotation.total)}</p>
-              </div>
-            </div>
           </div>
-        </Card>
-      </main>
-    </div>
+        </div>
+
+        {/* Image Expand Modal */}
+        <Dialog open={!!expandedImage} onOpenChange={() => setExpandedImage(null)}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Design Preview</DialogTitle>
+            </DialogHeader>
+            {expandedImage && (
+              <div className="flex items-center justify-center">
+                <img src={expandedImage} alt="Expanded design" className="max-w-full h-auto rounded-lg" />
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   )
 }

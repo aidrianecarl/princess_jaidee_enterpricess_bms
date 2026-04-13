@@ -276,7 +276,7 @@ export default function QuotedProposalsPage() {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-2">
-                    {/* Pending - View Details + Download PDF */}
+                    {/* Pending - View Details + Download PDF + Request Order */}
                     {statusFilter === "pending" && (
                       <>
                         <Link href={`/dashboard/quotations/view/${quotation.id}`}>
@@ -296,6 +296,24 @@ export default function QuotedProposalsPage() {
                         >
                           <Download size={16} />
                           Download PDF
+                        </Button>
+                        <Button
+                          onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
+                          disabled={sendingId === quotation.id}
+                          size="sm"
+                          className="flex items-center gap-2 w-full sm:w-auto bg-orange-500 hover:bg-orange-600 text-white"
+                        >
+                          {sendingId === quotation.id ? (
+                            <>
+                              <Loader2 size={16} className="animate-spin" />
+                              Sending...
+                            </>
+                          ) : (
+                            <>
+                              <FileText size={16} />
+                              Request Order
+                            </>
+                          )}
                         </Button>
                       </>
                     )}
