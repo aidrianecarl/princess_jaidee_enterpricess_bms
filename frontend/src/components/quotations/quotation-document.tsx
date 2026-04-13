@@ -229,6 +229,9 @@ interface QuotationFormData {
   logo?: File
   logoUrl?: string // Added for existing logo URL
   notes?: string // Added notes field
+  subtotal: number
+  total: number
+  discount: number
 }
 
 export function QuotationDocument({ existingQuotation }: { existingQuotation?: any }) {
@@ -253,6 +256,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     businessEmail: "",
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Added default validUntil
     notes: "", // Initialize notes
+    subtotal: 0,
+    total: 0,
+    discount: 0,
   })
 
   const [lineItems, setLineItems] = useState<LineItem[]>([])
@@ -307,6 +313,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     businessEmail: "",
     validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
     notes: "",
+    subtotal: 0,
+    total: 0,
+    discount: 0,
   })
 
   useEffect(() => {
@@ -360,6 +369,21 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     }
   }, [existingQuotation])
 
+  // Calculate subtotal and total whenever lineItems or discount changes
+  useEffect(() => {
+    const calculatedSubtotal = lineItems.reduce((sum, item) => {
+      return sum + (item.quantity * item.unitPrice) + (item.designCost || 0)
+    }, 0)
+    
+    const calculatedTotal = calculatedSubtotal - (formData.discount || 0)
+    
+    setFormData(prev => ({
+      ...prev,
+      subtotal: calculatedSubtotal,
+      total: calculatedTotal,
+    }))
+  }, [lineItems, formData.discount])
+
   useEffect(() => {
     if (existingQuotation) {
       const parseDate = (dateStr: string | null | undefined, fallback: Date = new Date()) => {
@@ -388,6 +412,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         validUntil: parseDate(existingQuotation.valid_until, new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
         logoUrl: existingQuotation.logo_url || "",
         notes: existingQuotation.notes || "", // Load notes
+        subtotal: existingQuotation.subtotal || 0,
+        total: existingQuotation.total || 0,
+        discount: existingQuotation.discount || 0,
       })
 
       // Load existing line items if they exist
@@ -2294,6 +2321,23 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               </div>
             )}
 
+            {/* Discount Section */}
+            <div className="mt-8 print:hidden">
+              <label htmlFor="discount" className="block text-sm font-semibold text-gray-700 mb-2">
+                Discount (₱)
+              </label>
+              <input
+                id="discount"
+                type="number"
+                value={formData.discount || 0}
+                onChange={(e) => setFormData({ ...formData, discount: Number(e.target.value) || 0 })}
+                placeholder="Enter discount amount"
+                className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 outline-none"
+                min="0"
+                step="0.01"
+              />
+            </div>
+
             {/* Notes Section */}
             <div className="mt-8 print:hidden">
               <label htmlFor="notes" className="block text-sm font-semibold text-gray-700 mb-2">
@@ -2317,20 +2361,29 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                 <div className="flex justify-between items-center mb-3 pb-3 border-b-2 border-red-200">
                   <span className="text-gray-700 font-semibold">Subtotal</span>
                   <span className="text-lg font-bold text-gray-900">
-                    ₱{subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{formData.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
+
+                {formData.discount > 0 && (
+                  <div className="flex justify-between items-center mb-2 pb-2 border-b border-red-100">
+                    <span className="text-gray-700 font-semibold">Discount</span>
+                    <span className="text-sm font-bold text-green-600">
+                      -₱{formData.discount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center pt-2">
                   <span className="text-xl font-bold text-gray-900">Total</span>
                   <span className="text-3xl font-bold bg-gradient-to-r from-red-600 to-orange-500 bg-clip-text text-transparent">
-                    ₱{totalDue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    ₱{formData.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
               <p className="text-xs text-gray-500 mt-3 text-center italic">
-                * Discounts and payment terms will be applied by admin after approval
+                * Final discounts and payment terms will be confirmed by admin
               </p>
             </div>
           </div>
