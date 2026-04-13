@@ -299,18 +299,10 @@ export function AdminQuotationPricing() {
         }
       })
 
-      // Pass the frontend-computed subtotal, discount amount, and total directly
-      const computedSubtotal = calculateSubtotal()
-      const computedDiscount = calculateDiscount()
-      const computedTotal = calculateTotal()
-
       const payload = {
         items: updatedItems,
         discount_type: discountType,
         discount_value: Number(discountValue),
-        subtotal: computedSubtotal,
-        discount_amount: computedDiscount,
-        total: computedTotal,
       }
 
       const token = localStorage.getItem("admin_token")

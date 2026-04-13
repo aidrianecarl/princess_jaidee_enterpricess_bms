@@ -98,7 +98,7 @@ class QuotationController extends Controller
                         'valid_until' => $quotation->valid_until,
                         'created_at' => $quotation->created_at,
                         'updated_at' => $quotation->updated_at,
-                        'items_count' => $quotation->items ? $quotation->items->count() : 0,
+                        'items_count' => $quotation->items ? count($quotation->items) : 0,
                     ];
 
                     // Add customer data if exists
@@ -136,68 +136,21 @@ class QuotationController extends Controller
                         ];
                     }
 
-                    // Add items data if exists - use raw attributes to avoid cast errors
+                    // Add items data if exists
                     if ($quotation->items) {
-                        $quotationArray['items'] = $quotation->items->map(function ($item) {
-                            try {
-                                return [
-                                    'id' => $item->id,
-                                    'quotation_id' => $item->quotation_id,
-                                    'service_id' => $item->service_id,
-                                    'name' => $item->name,
-                                    'description' => $item->description,
-                                    'quantity' => $item->quantity,
-                                    'unit_price' => (float) $item->unit_price,
-                                    'line_total' => (float) $item->line_total,
-                                    'design_file_url' => $item->design_file_url,
-                                    'notes' => $this->safeDecodeJson($item->getRawOriginal('notes')),
-                                    'team_roster' => $this->safeDecodeJson($item->getRawOriginal('team_roster')),
-                                    'size_specifications' => $this->safeDecodeJson($item->getRawOriginal('size_specifications')),
-                                    'created_at' => $item->created_at,
-                                    'updated_at' => $item->updated_at,
-                                    'service' => $item->service ? [
-                                        'id' => $item->service->id,
-                                        'name' => $item->service->name,
-                                        'description' => $item->service->description,
-                                        'base_price' => $item->service->base_price,
-                                        'image_url' => $item->service->image_url,
-                                    ] : null,
-                                ];
-                            } catch (\Exception $e) {
-                                Log::warning('Error processing quotation item', [
-                                    'item_id' => $item->id ?? 'unknown',
-                                    'error' => $e->getMessage(),
-                                ]);
-                                return [
-                                    'id' => $item->id,
-                                    'quotation_id' => $item->quotation_id,
-                                    'service_id' => $item->service_id,
-                                    'name' => $item->getRawOriginal('name'),
-                                    'description' => $item->getRawOriginal('description'),
-                                    'quantity' => $item->quantity,
-                                    'unit_price' => (float) $item->getRawOriginal('unit_price'),
-                                    'line_total' => (float) $item->getRawOriginal('line_total'),
-                                    'design_file_url' => $item->getRawOriginal('design_file_url'),
-                                    'notes' => null,
-                                    'team_roster' => null,
-                                    'size_specifications' => null,
-                                    'service' => null,
-                                ];
-                            }
-                        })->values()->toArray();
+                        $quotationArray['items'] = $quotation->items->toArray();
                     } else {
                         $quotationArray['items'] = [];
                     }
 
                     $result[] = $quotationArray;
                 } catch (\Exception $itemError) {
-                    Log::error('Error processing quotation in adminIndex, skipping', [
+                    Log::error('Error processing quotation item', [
                         'quotation_id' => $quotation->id ?? 'unknown',
                         'error' => $itemError->getMessage(),
                         'line' => $itemError->getLine(),
                     ]);
-                    // Skip this quotation instead of crashing the whole response
-                    continue;
+                    throw $itemError;
                 }
             }
 
@@ -213,102 +166,6 @@ class QuotationController extends Controller
             return response()->json([
                 'error' => 'Failed to fetch quotations',
                 'message' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // Get single quotation for admin with safe JSON decoding
-    public function adminShow($id)
-    {
-        try {
-            $quotation = Quotation::with(['customer', 'items.service', 'creator'])->find($id);
-
-            if (!$quotation) {
-                return response()->json(['error' => 'Quotation not found'], 404);
-            }
-
-            $result = [
-                'id' => $quotation->id,
-                'quotation_number' => $quotation->quotation_number,
-                'customer_id' => $quotation->customer_id,
-                'created_by' => $quotation->created_by,
-                'branch_id' => $quotation->branch_id,
-                'business_name' => $quotation->business_name,
-                'business_address' => $quotation->business_address,
-                'business_city' => $quotation->business_city,
-                'business_state' => $quotation->business_state,
-                'business_postal' => $quotation->business_postal,
-                'business_phone' => $quotation->business_phone,
-                'business_email' => $quotation->business_email,
-                'logo_url' => $quotation->logo_url,
-                'subtotal' => (float) $quotation->subtotal,
-                'discount' => (float) $quotation->discount,
-                'paid_amount' => (float) $quotation->paid_amount,
-                'total' => (float) $quotation->total,
-                'currency' => $quotation->currency,
-                'status' => $quotation->status,
-                'has_price' => $quotation->has_price,
-                'notes' => $quotation->notes,
-                'valid_until' => $quotation->valid_until,
-                'created_at' => $quotation->created_at,
-                'updated_at' => $quotation->updated_at,
-                'customer' => $quotation->customer ? [
-                    'id' => $quotation->customer->id,
-                    'quotation_id' => $quotation->customer->quotation_id,
-                    'name' => $quotation->customer->bill_to_name ?? '',
-                    'email' => $quotation->customer->bill_to_email ?? '',
-                    'phone' => $quotation->customer->bill_to_phone ?? '',
-                    'bill_to_name' => $quotation->customer->bill_to_name,
-                    'bill_to_street' => $quotation->customer->bill_to_street,
-                    'bill_to_city' => $quotation->customer->bill_to_city,
-                    'bill_to_state' => $quotation->customer->bill_to_state,
-                    'bill_to_postal' => $quotation->customer->bill_to_postal,
-                    'bill_to_phone' => $quotation->customer->bill_to_phone,
-                    'bill_to_email' => $quotation->customer->bill_to_email,
-                ] : null,
-                'creator' => $quotation->creator ? [
-                    'id' => $quotation->creator->id,
-                    'first_name' => $quotation->creator->first_name,
-                    'last_name' => $quotation->creator->last_name,
-                    'email' => $quotation->creator->email,
-                ] : null,
-                'items' => $quotation->items->map(function ($item) {
-                    return [
-                        'id' => $item->id,
-                        'quotation_id' => $item->quotation_id,
-                        'service_id' => $item->service_id,
-                        'name' => $item->name,
-                        'description' => $item->description,
-                        'quantity' => $item->quantity,
-                        'unit_price' => (float) $item->unit_price,
-                        'line_total' => (float) $item->line_total,
-                        'design_file_url' => $item->design_file_url,
-                        'notes' => $this->safeDecodeJson($item->getRawOriginal('notes')),
-                        'team_roster' => $this->safeDecodeJson($item->getRawOriginal('team_roster')),
-                        'size_specifications' => $this->safeDecodeJson($item->getRawOriginal('size_specifications')),
-                        'created_at' => $item->created_at,
-                        'updated_at' => $item->updated_at,
-                        'service' => $item->service ? [
-                            'id' => $item->service->id,
-                            'name' => $item->service->name,
-                            'description' => $item->service->description,
-                            'base_price' => $item->service->base_price,
-                            'image_url' => $item->service->image_url,
-                        ] : null,
-                    ];
-                })->values()->toArray(),
-            ];
-
-            return response()->json($result, 200);
-        } catch (\Exception $e) {
-            Log::error('Admin show quotation error', [
-                'id' => $id,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
-            ]);
-            return response()->json([
-                'error' => 'Failed to fetch quotation',
-                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -396,8 +253,6 @@ class QuotationController extends Controller
             'items.*.design_cost' => 'nullable|numeric|min:0',
             'items.*.notes' => 'nullable|string',
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'subtotal' => 'nullable|numeric|min:0',
-            'total' => 'nullable|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
@@ -475,11 +330,19 @@ class QuotationController extends Controller
             
             $quotationNumber = 'QT-' . Carbon::today()->format('Ymd') . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
 
-            // Use the frontend-computed subtotal and total directly (no backend recalculation)
-            $subtotal = (float) ($request->subtotal ?? 0);
-            $discount = (float) ($request->discount ?? 0);
-            $total = (float) ($request->total ?? $subtotal);
-            $paidAmount = (float) ($request->paid_amount ?? 0);
+            $subtotal = 0;
+            foreach ($request->items as $item) {
+                $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                if (isset($item['design_cost'])) {
+                    $lineTotal += $item['design_cost'];
+                }
+                $subtotal += $lineTotal;
+            }
+
+            $discount = $request->discount ?? 0;
+            $discountAmount = 0;
+            $total = $subtotal - $discount;
+            $paidAmount = $request->paid_amount ?? 0;
 
             $status = $request->status ?? 'draft';
 
@@ -768,7 +631,8 @@ class QuotationController extends Controller
             if ($request->has('items')) {
                 // Delete existing items
                 $quotation->items()->delete();
-
+                
+                $subtotal = 0;
                 foreach ($request->items as $item) {
                     Log::info('[v0] Updating quotation item', [
                         'item_data' => $item,
@@ -776,6 +640,10 @@ class QuotationController extends Controller
                     ]);
 
                     $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                    if (isset($item['design_cost'])) {
+                        $lineTotal += $item['design_cost'];
+                    }
+                    $subtotal += $lineTotal;
 
                     // Handle design files - can be array of URLs stored as JSON
                     $designFileUrl = null;
@@ -842,9 +710,9 @@ class QuotationController extends Controller
                     ]);
                 }
                 
-                // Use frontend-computed subtotal and total directly (no backend recalculation)
-                $quotation->subtotal = (float) ($request->subtotal ?? 0);
-                $quotation->total = (float) ($request->total ?? $request->subtotal ?? 0);
+                // Update quotation totals
+                $quotation->subtotal = $subtotal;
+                $quotation->total = $subtotal;
             }
 
             if ($request->has('business_name')) {
@@ -1026,9 +894,6 @@ class QuotationController extends Controller
             'items.*.line_total' => 'required|numeric',
             'discount_type' => 'required|in:percent,peso',
             'discount_value' => 'required|numeric|min:0',
-            'subtotal' => 'required|numeric|min:0',
-            'discount_amount' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -1037,6 +902,7 @@ class QuotationController extends Controller
 
         try {
             // Update quotation items with new pricing
+            $subtotal = 0;
             foreach ($request->items as $itemData) {
                 $item = QuotationItem::find($itemData['id']);
                 if ($item) {
@@ -1044,15 +910,22 @@ class QuotationController extends Controller
                         'unit_price' => $itemData['unit_price'],
                         'line_total' => $itemData['line_total'],
                     ]);
+                    $subtotal += $itemData['line_total'];
                 }
             }
 
-            // Use frontend-computed subtotal, discount, and total directly (no backend recalculation)
-            $subtotal = (float) $request->subtotal;
-            $discount = (float) $request->discount_amount;
-            $total = (float) $request->total;
+            // Calculate discount
+            $discount = 0;
+            if ($request->discount_type === 'percent') {
+                $discount = ($subtotal * $request->discount_value) / 100;
+            } else {
+                $discount = $request->discount_value;
+            }
 
-            // Update quotation with pricing and mark as has_price = 1
+            // Calculate total without tax (tax is removed)
+            $total = $subtotal - $discount;
+
+            // Update quotation with pricing and mark as has_price = 1 (no tax field)
             $quotation->update([
                 'subtotal' => $subtotal,
                 'discount' => $discount,
@@ -1257,35 +1130,6 @@ class QuotationController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Safely decode a JSON value, handling double-encoded strings.
-     * Returns null on failure, array/scalar on success.
-     */
-    private function safeDecodeJson($value)
-    {
-        if ($value === null || $value === '') {
-            return null;
-        }
-
-        // First decode pass
-        $decoded = json_decode($value, true);
-
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            return null; // Not valid JSON
-        }
-
-        // Handle double-encoded: decoded value is itself a JSON string
-        if (is_string($decoded)) {
-            $secondPass = json_decode($decoded, true);
-            if (json_last_error() === JSON_ERROR_NONE) {
-                return $secondPass;
-            }
-            return $decoded; // Return string as-is if second decode fails
-        }
-
-        return $decoded;
     }
 
     // Get all active branches for sending quotations

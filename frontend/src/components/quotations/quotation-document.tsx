@@ -719,45 +719,27 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     setIsLoadingBranches(true)
     try {
       const token = localStorage.getItem("auth_token")
-      if (!token) {
-        setIsLoadingBranches(false)
-        return
-      }
+      if (!token) return
 
       const response = await fetch(`${apiUrl}/quotations/active-branches`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          Accept: "application/json",
         },
       })
 
       if (response.ok) {
         const data = await response.json()
-        const branchList = data.branches || []
-        setBranches(branchList)
+        setBranches(data.branches || [])
         // Auto-select main branch if available
-        const mainBranch = branchList.find((b: any) => b.is_main_branch)
+        const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
         if (mainBranch) {
           setSelectedBranchId(mainBranch.id)
-        } else if (branchList.length > 0) {
-          setSelectedBranchId(branchList[0].id)
+        } else if (data.branches?.length > 0) {
+          setSelectedBranchId(data.branches[0].id)
         }
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        console.error("Failed to fetch branches:", response.status, errorData)
-        toast({
-          title: "Could not load branches",
-          description: errorData?.message || "Please try again or contact support.",
-          variant: "destructive",
-        })
       }
     } catch (error) {
       console.error("Error fetching branches:", error)
-      toast({
-        title: "Network error",
-        description: "Could not load branches. Check your connection.",
-        variant: "destructive",
-      })
     } finally {
       setIsLoadingBranches(false)
     }
@@ -840,10 +822,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("valid_until", formData.validUntil || "")
       formDataToSend.append("status", "draft")
 
-      // Pass frontend-computed subtotal and total directly - no backend recalculation
-      formDataToSend.append("subtotal", subtotal.toFixed(2))
-      formDataToSend.append("total", totalDue.toFixed(2))
-
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(
         lineItems.map(async (item, index) => {
@@ -869,6 +847,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               if (uploadResponse.ok) {
                 const uploadData = await uploadResponse.json()
                 designFileUrl = uploadData.design_file_url
+                console.log("[v0] Design file uploaded:", designFileUrl)
               } else {
                 console.error("[v0] Design file upload failed")
               }
@@ -1028,10 +1007,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       formDataToSend.append("status", "pending")
       formDataToSend.append("branch_id", selectedBranchId?.toString() || "")
 
-      // Pass frontend-computed subtotal and total directly - no backend recalculation
-      formDataToSend.append("subtotal", subtotal.toFixed(2))
-      formDataToSend.append("total", totalDue.toFixed(2))
-
       // Upload design files and get URLs
       const itemsPayload = await Promise.all(
         lineItems.map(async (item, index) => {
@@ -1057,6 +1032,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
               if (uploadResponse.ok) {
                 const uploadData = await uploadResponse.json()
                 designFileUrl = uploadData.design_file_url
+                console.log("[v0] Design file uploaded:", designFileUrl)
               } else {
                 console.error("[v0] Design file upload failed")
               }
