@@ -3,7 +3,7 @@
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
-import { Eye, Download, FileText, Loader2 } from "lucide-react"
+import { Eye, Download, FileText, Loader2, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { generateQuotationPDF } from "@/lib/pdf-generator"
@@ -338,7 +338,7 @@ export default function AdminQuotationsPage() {
                                   </button>
                                 )}
 
-                                {/* Priced → PDF + Request Order */}
+                                {/* Priced → PDF + Request Order or Ordered */}
                                 {statusFilter === "priced" && quotation.has_price && (
                                   <>
                                     <button
@@ -348,23 +348,33 @@ export default function AdminQuotationsPage() {
                                       <Download size={16} />
                                       PDF
                                     </button>
-                                    <button
-                                      onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
-                                      disabled={sendingId === quotation.id}
-                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition text-sm font-medium hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                      {sendingId === quotation.id ? (
-                                        <>
-                                          <Loader2 size={16} className="animate-spin" />
-                                          Sending...
-                                        </>
-                                      ) : (
-                                        <>
-                                          <FileText size={16} />
-                                          Request Order
-                                        </>
-                                      )}
-                                    </button>
+                                    {quotation.status === "sent" ? (
+                                      <button
+                                        disabled
+                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400 text-sm font-medium cursor-not-allowed opacity-60"
+                                      >
+                                        <CheckCircle size={16} />
+                                        Ordered
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
+                                        disabled={sendingId === quotation.id}
+                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition text-sm font-medium hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                      >
+                                        {sendingId === quotation.id ? (
+                                          <>
+                                            <Loader2 size={16} className="animate-spin" />
+                                            Sending...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <FileText size={16} />
+                                            Request Order
+                                          </>
+                                        )}
+                                      </button>
+                                    )}
                                   </>
                                 )}
 

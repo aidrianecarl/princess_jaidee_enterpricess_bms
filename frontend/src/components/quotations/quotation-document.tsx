@@ -1494,7 +1494,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       type="text"
                       value={formData.clientCity}
                       onChange={(e) => setFormData({ ...formData, clientCity: e.target.value })}
-                      placeholder="City"
+                      placeholder="City/Municipality"
                       className={`text-sm text-gray-700 w-full bg-transparent border-b ${errors.clientCity ? "border-red-500" : "border-gray-200"} focus:border-red-600 outline-none transition`}
                     />
                     {errors.clientCity && <p className="text-xs text-red-500">{errors.clientCity}</p>}
@@ -1504,7 +1504,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       type="text"
                       value={formData.clientState}
                       onChange={(e) => setFormData({ ...formData, clientState: e.target.value })}
-                      placeholder="State"
+                      placeholder="Province"
                       className={`text-sm text-gray-700 w-full bg-transparent border-b ${errors.clientState ? "border-red-500" : "border-gray-200"} focus:border-red-600 outline-none transition`}
                     />
                     {errors.clientState && <p className="text-xs text-red-500">{errors.clientState}</p>}
@@ -1526,7 +1526,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       type="tel"
                       value={formData.clientPhone}
                       onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
-                      placeholder="Phone"
+                      placeholder="Phone#"
                       className={`text-sm text-gray-700 w-full bg-transparent border-b ${errors.clientPhone ? "border-red-500" : "border-gray-200"} focus:border-red-600 outline-none transition`}
                     />
                     {errors.clientPhone && <p className="text-xs text-red-500">{errors.clientPhone}</p>}

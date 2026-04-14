@@ -36,6 +36,8 @@ export function QuotationList() {
   const [branches, setBranches] = useState<any[]>([])
   const [selectedBranchId, setSelectedBranchId] = useState<number | null>(null)
   const [isLoadingBranches, setIsLoadingBranches] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 6
   const { toast } = useToast()
 
   useEffect(() => {
@@ -46,7 +48,7 @@ export function QuotationList() {
     try {
       setIsLoading(true)
       const token = localStorage.getItem("auth_token")
-      
+
       if (!token) {
         console.error("No auth token found")
         setIsLoading(false)
@@ -63,22 +65,17 @@ export function QuotationList() {
 
       if (response.ok) {
         const data = await response.json()
-        console.log("Quotations data:", data)
-        
-        // Handle paginated response
+
         const quotationsList = Array.isArray(data) ? data : data.data || data || []
-        
+
         const quotationsWithCount = (Array.isArray(quotationsList) ? quotationsList : []).map((q: Quotation) => ({
           ...q,
           items_count: q.items?.length || 0,
         }))
-        
+
         setQuotations(quotationsWithCount)
-        console.log("Quotations loaded:", quotationsWithCount)
       } else {
-        console.error("Failed to fetch quotations:", response.status, response.statusText)
         const errorData = await response.json()
-        console.error("Error details:", errorData)
         toast({
           title: "Error",
           description: "Failed to load quotations",
@@ -86,7 +83,6 @@ export function QuotationList() {
         })
       }
     } catch (error) {
-      console.error("Failed to fetch quotations:", error)
       toast({
         title: "Error",
         description: "An error occurred while fetching quotations",
@@ -103,20 +99,18 @@ export function QuotationList() {
     return q.status === filter
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "approved":
-        return "bg-green-100 text-green-700"
-      case "pending":
-        return "bg-yellow-100 text-yellow-700"
-      case "rejected":
-        return "bg-red-100 text-red-700"
-      case "draft":
-        return "bg-gray-100 text-gray-700"
-      default:
-        return "bg-blue-100 text-blue-700"
-    }
+  const counts = {
+    all: quotations.length,
+    draft: quotations.filter((q) => q.status === "draft").length,
+    pending: quotations.filter((q) => q.status === "pending").length,
+    approved: quotations.filter((q) => q.status === "approved").length,
+    rejected: quotations.filter((q) => q.status === "rejected").length,
   }
+
+  // Pagination
+  const totalPages = Math.ceil(filteredQuotations.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + itemsPerPage)
 
   const handleViewQuotation = (quotation: Quotation) => {
     setSelectedQuotation(quotation)
@@ -139,7 +133,7 @@ export function QuotationList() {
         const data = await response.json()
         const branchList = Array.isArray(data) ? data : data.branches || data.data || []
         setBranches(branchList)
-        // Auto-select main branch if available
+
         const mainBranch = branchList?.find((b: any) => b.is_main_branch)
         if (mainBranch) {
           setSelectedBranchId(mainBranch.id)
@@ -163,6 +157,7 @@ export function QuotationList() {
   const confirmSendForApproval = async () => {
     if (!quotationToSend) return
     setIsSending(true)
+
     try {
       const token = localStorage.getItem("auth_token")
       const response = await fetch(
@@ -182,7 +177,7 @@ export function QuotationList() {
           title: "Quotation Sent",
           description: `Quotation ${quotationToSend.quotation_number} has been sent for admin approval`,
         })
-        // Update local state
+
         setQuotations(
           quotations.map((q) =>
             q.id === quotationToSend.id ? { ...q, status: "pending" } : q
@@ -197,7 +192,6 @@ export function QuotationList() {
         })
       }
     } catch (error) {
-      console.error("Failed to send quotation:", error)
       toast({
         title: "Error",
         description: "An error occurred while sending the quotation",
@@ -223,14 +217,6 @@ export function QuotationList() {
         ))}
       </div>
     )
-  }
-
-  const counts = {
-    all: quotations.length,
-    draft: quotations.filter((q) => q.status === "draft").length,
-    pending: quotations.filter((q) => q.status === "pending").length,
-    approved: quotations.filter((q) => q.status === "approved").length,
-    rejected: quotations.filter((q) => q.status === "rejected").length,
   }
 
   return (
@@ -265,8 +251,9 @@ export function QuotationList() {
             <p className="text-sm text-gray-500 mt-1">Create your first quotation to get started</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredQuotations.map((quotation) => (
+          <>
+            <div className="space-y-3">
+              {paginatedQuotations.map((quotation) => (
               <div
                 key={quotation.id}
                 className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:border-red-300 hover:shadow-md transition group"
@@ -340,8 +327,51 @@ export function QuotationList() {
                   )}
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {/* Modern Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-6 flex items-center justify-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Previous
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-10 h-10 rounded-lg transition font-medium ${
+                        currentPage === page
+                          ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-md"
+                          : "border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+
+            {/* Results info */}
+            <div className="mt-4 text-center text-sm text-gray-600">
+              Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredQuotations.length)} of {filteredQuotations.length} quotations
+            </div>
+          </>
         )}
       </div>
 

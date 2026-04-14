@@ -109,9 +109,9 @@ export function SetPaymentModal({
 
   if (!quotation) return null
 
-  const calculatedDownPayment = quotation.total * 0.3
-  const effectiveDownPayment = downPaymentInput ? parseFloat(downPaymentInput) : calculatedDownPayment
-  const remainingBalance = quotation.total - effectiveDownPayment
+  const calculatedHalfPayment = quotation.total * 0.5
+  const effectivePayment = downPaymentInput ? parseFloat(downPaymentInput) : calculatedHalfPayment
+  const remainingBalance = quotation.total - effectivePayment
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -147,7 +147,7 @@ export function SetPaymentModal({
               Payment Type
             </label>
             <div className="grid grid-cols-2 gap-3">
-              {/* Down Payment Option */}
+              {/* Half Payment Option */}
               <button
                 onClick={() => setPaymentType("downpayment")}
                 className={`p-4 rounded-lg border-2 transition text-center ${
@@ -169,14 +169,14 @@ export function SetPaymentModal({
                     ? "text-orange-700 dark:text-orange-400"
                     : "text-neutral-700 dark:text-neutral-300"
                 }`}>
-                  Down Payment
+                  Half Payment
                 </p>
                 <p className={`text-xs mt-1 ${
                   paymentType === "downpayment"
                     ? "text-orange-600"
                     : "text-neutral-500 dark:text-neutral-400"
                 }`}>
-                  (30% = ₱{calculatedDownPayment.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                  (50% = ₱{(quotation.total * 0.5).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
                 </p>
               </button>
 
@@ -246,7 +246,7 @@ export function SetPaymentModal({
               </div>
               {downPaymentInput && (
                 <div className="text-xs text-neutral-600 dark:text-neutral-400 space-y-1">
-                  <p>Down Payment: ₱{parseFloat(downPaymentInput).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p>Half Payment: ₱{parseFloat(downPaymentInput).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   <p className="font-semibold text-orange-600 dark:text-orange-400">
                     Remaining Balance: ₱{remainingBalance.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </p>
@@ -275,9 +275,7 @@ export function SetPaymentModal({
               className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
             >
               <option value="cash">Cash</option>
-              <option value="credit_card">Credit Card</option>
-              <option value="bank_transfer">Bank Transfer</option>
-              <option value="check">Check</option>
+              <option value="gcash">GCash</option>
             </select>
           </div>
 
