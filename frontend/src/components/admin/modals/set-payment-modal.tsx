@@ -46,7 +46,9 @@ export function SetPaymentModal({
   const [dueDate, setDueDate] = useState<string>("")
   const [notes, setNotes] = useState<string>("")
   const [paymentMethod, setPaymentMethod] = useState<string>("cash")
+  const [isPriority, setIsPriority] = useState<string>("no")
   const [error, setError] = useState("")
+  const [paymentTypeChangeTimer, setPaymentTypeChangeTimer] = useState<NodeJS.Timeout | null>(null)
 
   const handleConfirm = async () => {
     setError("")
@@ -72,16 +74,27 @@ export function SetPaymentModal({
     }
 
     if (paymentType === "downpayment" && !downPaymentInput) {
-      setError("Please enter down payment amount")
+      setError("Please enter half payment amount")
       return
     }
 
-    const downPaymentAmount = paymentType === "downpayment" 
+    const halfPaymentAmount = quotation!.total * 0.5
+    const paymentAmount = paymentType === "downpayment" 
       ? parseFloat(downPaymentInput) 
       : quotation!.total
 
-    if (downPaymentAmount <= 0 || downPaymentAmount > quotation!.total) {
-      setError("Invalid payment amount")
+    if (paymentAmount <= 0) {
+      setError("Payment amount must be greater than 0")
+      return
+    }
+
+    if (paymentAmount > quotation!.total) {
+      setError("Payment amount cannot exceed total amount")
+      return
+    }
+
+    if (paymentType === "downpayment" && paymentAmount < halfPaymentAmount) {
+      setError(`Half payment must be at least ₱${halfPaymentAmount.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (50% of total)`)
       return
     }
 
@@ -92,6 +105,7 @@ export function SetPaymentModal({
         dueDate,
         notes,
         paymentMethod,
+        isPriority: isPriority === "yes" ? 1 : 0,
         items: quotation.items || [],
       })
       onOpenChange(false)
@@ -215,32 +229,39 @@ export function SetPaymentModal({
             </div>
           </div>
 
-          {/* Down Payment Input - Only show when down payment is selected */}
+          {/* Half Payment Input - Only show when half payment is selected */}
           {paymentType === "downpayment" && (
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-neutral-900 dark:text-white">
-                Down Payment Amount
+                Half Payment Amount (Minimum ₱{(quotation.total * 0.5).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-neutral-600 dark:text-neutral-400 font-semibold">₱</span>
                 <input
                   type="number"
                   step="0.01"
-                  min="0"
+                  min={quotation.total * 0.5}
                   max={quotation.total}
                   value={downPaymentInput}
                   onChange={(e) => {
                     const value = e.target.value
-                    if (value) {
-                      const numValue = parseFloat(value)
-                      // Auto-cap to total amount if it exceeds
-                      const cappedValue = numValue > quotation.total ? quotation.total : numValue
-                      setDownPaymentInput(cappedValue.toString())
-                    } else {
-                      setDownPaymentInput(value)
+                    setDownPaymentInput(value)
+                    
+                    // Clear existing timer
+                    if (paymentTypeChangeTimer) {
+                      clearTimeout(paymentTypeChangeTimer)
                     }
+                    
+                    // Set new timer to auto-switch payment type
+                    const timer = setTimeout(() => {
+                      if (value && parseFloat(value) >= quotation.total * 0.95) {
+                        setPaymentType("fullpayment")
+                      }
+                    }, 500)
+                    
+                    setPaymentTypeChangeTimer(timer)
                   }}
-                  placeholder={`Min: 0, Max: ${quotation.total.toLocaleString('en-PH')}`}
+                  placeholder={`Min: ${(quotation.total * 0.5).toLocaleString('en-PH')}, Max: ${quotation.total.toLocaleString('en-PH')}`}
                   className="w-full pl-8 pr-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
                 />
               </div>
@@ -301,6 +322,26 @@ export function SetPaymentModal({
             {selectedEmployeeId && (
               <p className="text-xs text-green-600 dark:text-green-400">
                 ✓ {`${employees.find(e => e.id === selectedEmployeeId)?.first_name} ${employees.find(e => e.id === selectedEmployeeId)?.last_name}`} selected
+              </p>
+            )}
+          </div>
+
+          {/* Priority Dropdown */}
+          <div className="space-y-2">
+            <label className="block text-sm font-semibold text-neutral-900 dark:text-white">
+              Priority (Rush Order)
+            </label>
+            <select
+              value={isPriority}
+              onChange={(e) => setIsPriority(e.target.value)}
+              className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
+            >
+              <option value="no">No</option>
+              <option value="yes">Yes (Rush Order)</option>
+            </select>
+            {isPriority === "yes" && (
+              <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                This is marked as a priority order
               </p>
             )}
           </div>

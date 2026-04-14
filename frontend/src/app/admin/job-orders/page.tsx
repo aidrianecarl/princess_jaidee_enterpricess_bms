@@ -46,6 +46,7 @@ export default function AdminJobOrdersPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
+  const [jobOrdersStats, setJobOrdersStats] = useState<{[key: number]: {completed: number, total: number}}>({})
   const [error, setError] = useState('')
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null)
@@ -115,6 +116,37 @@ export default function AdminJobOrdersPage() {
     fetchJobOrders(token)
   }
 
+  const fetchJobOrderItems = async (jobOrderId: number, token: string) => {
+    try {
+      const response = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}/orders`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        console.error('[v0] Failed to fetch job order items for ID:', jobOrderId)
+        return
+      }
+
+      const data = await response.json()
+      const items = Array.isArray(data) ? data : (data.data || data.orders || [])
+      
+      // Calculate statistics
+      const completed = items.filter((item: any) => item.status === 'completed').length
+      const total = items.length
+
+      setJobOrdersStats((prev) => ({
+        ...prev,
+        [jobOrderId]: { completed, total }
+      }))
+    } catch (err) {
+      console.error('[v0] Error fetching job order items:', err)
+    }
+  }
+
   const fetchJobOrders = async (token: string) => {
     try {
       setIsLoading(true)
@@ -135,6 +167,11 @@ export default function AdminJobOrdersPage() {
       const data = await response.json()
       const orders = Array.isArray(data) ? data : data.data || []
       setJobOrders(orders)
+      
+      // Fetch items for each job order to get stats
+      for (const order of orders) {
+        await fetchJobOrderItems(order.id, token)
+      }
     } catch (err) {
       console.error('[v0] Error fetching job orders:', err)
       setError(err instanceof Error ? err.message : 'Failed to load job orders')
@@ -270,6 +307,26 @@ export default function AdminJobOrdersPage() {
                                 {getStatusLabel(jobOrder.status)}
                               </span>
                             </div>
+
+                            {/* Progress Bar */}
+                            {jobOrdersStats[jobOrder.id] && jobOrdersStats[jobOrder.id].total > 0 && (
+                              <div className="mb-4">
+                                <div className="flex justify-between items-center mb-2">
+                                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">Order Progress</p>
+                                  <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                                    {jobOrdersStats[jobOrder.id].completed}/{jobOrdersStats[jobOrder.id].total} completed
+                                  </p>
+                                </div>
+                                <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className="bg-gradient-to-r from-green-500 to-emerald-600 h-full transition-all duration-300"
+                                    style={{
+                                      width: `${jobOrdersStats[jobOrder.id].total > 0 ? (jobOrdersStats[jobOrder.id].completed / jobOrdersStats[jobOrder.id].total) * 100 : 0}%`
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )}
 
                             {/* Customer Info */}
                             <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-700">

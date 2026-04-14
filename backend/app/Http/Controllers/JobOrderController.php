@@ -71,6 +71,7 @@ class JobOrderController extends Controller
             'start_date' => 'required|date',
             'due_date' => 'required|date|after_or_equal:start_date',
             'notes' => 'nullable|string',
+            'is_priority' => 'nullable|integer|in:0,1',
         ]);
 
         if ($validator->fails()) {
@@ -93,6 +94,7 @@ class JobOrderController extends Controller
                 'due_date' => $request->due_date,
                 'status' => 'pending',
                 'notes' => $request->notes ?? null,
+                'is_priority' => $request->is_priority ?? 0,
             ]);
 
             Log::info('Job order created successfully', [

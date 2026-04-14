@@ -274,6 +274,7 @@ export default function OrdersPage() {
           start_date: formData.startDate,
           due_date: formData.dueDate,
           notes: formData.notes,
+          is_priority: formData.isPriority || 0,
         }),
       })
 

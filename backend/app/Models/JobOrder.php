@@ -18,6 +18,7 @@ class JobOrder extends Model
         'completed_date',
         'status',
         'notes',
+        'is_priority',
     ];
 
     protected $casts = [
