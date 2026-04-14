@@ -6,6 +6,7 @@ import { useToast } from "@/hooks/use-toast"
 import { getApiImageUrl } from "@/lib/api-urls"
 import { ArrowLeft, Loader2, ChevronDown, X, ZoomIn, Download } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { DashboardHeader } from "@/components/dashboard/header"
 import {
   Dialog,
   DialogContent,
@@ -107,7 +108,7 @@ export default function DashboardViewQuotationPage() {
             teamRoster = null
           }
         }
-        
+
         let sizeSpecs = item.size_specifications
         if (typeof item.size_specifications === 'string' && item.size_specifications) {
           try {
@@ -116,7 +117,7 @@ export default function DashboardViewQuotationPage() {
             sizeSpecs = null
           }
         }
-        
+
         let notesData = item.notes
         if (typeof item.notes === 'string' && item.notes) {
           try {
@@ -125,7 +126,7 @@ export default function DashboardViewQuotationPage() {
             notesData = null
           }
         }
-        
+
         return {
           ...item,
           team_roster: teamRoster,
@@ -138,7 +139,7 @@ export default function DashboardViewQuotationPage() {
 
       // Initialize sublimation pricing
       const sublimationMap: Record<number, { setPrice: string; topPrice: string; bottomPrice: string }> = {}
-      
+
       processedItems.forEach((item: PricingLineItem) => {
         if (item.service?.name?.includes('Sublimation')) {
           const basePrice = item.unit_price || 0
@@ -149,7 +150,7 @@ export default function DashboardViewQuotationPage() {
           }
         }
       })
-      
+
       setSublimationPrices(sublimationMap)
 
     } catch (error: any) {
@@ -241,29 +242,31 @@ export default function DashboardViewQuotationPage() {
 
   return (
     <>
+      <DashboardHeader />
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Toolbar */}
-        <div className="sticky top-0 z-30 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between gap-4 py-4">
+        <div className="sticky top-16 z-30 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg">
+          <div className="ml-0 md:ml-64 px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between gap-2 md:gap-4 py-3 md:py-4 flex-wrap">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => router.back()}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition"
+                  className="flex items-center gap-1 md:gap-2 px-3 md:px-4 py-2 rounded-lg bg-white/20 hover:bg-white/30 text-white transition text-sm md:text-base"
                 >
-                  <ArrowLeft size={18} />
-                  Back
+                  <ArrowLeft size={16} className="md:w-5 md:h-5" />
+                  <span className="hidden md:inline">Back</span>
                 </button>
-                <h2 className="text-xl font-bold text-white">View Quotation</h2>
+                <h2 className="text-lg md:text-xl font-bold text-white">View Quotation</h2>
               </div>
               {quotation.has_price === 1 && (
                 <button
                   onClick={handleDownloadPDF}
                   disabled={isDownloading}
-                  className="flex items-center gap-2 px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition disabled:opacity-50"
+                  className="flex items-center gap-1 md:gap-2 px-4 md:px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition disabled:opacity-50 text-sm md:text-base"
                 >
-                  {isDownloading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download size={18} />}
-                  Download PDF
+                  {isDownloading ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Download size={16} className="md:w-5 md:h-5" />}
+                  <span className="hidden md:inline">Download PDF</span>
+                  <span className="md:hidden">PDF</span>
                 </button>
               )}
             </div>
@@ -271,7 +274,7 @@ export default function DashboardViewQuotationPage() {
         </div>
 
         {/* Content */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="ml-0 md:ml-64 px-3 md:px-4 lg:px-8 py-6 md:py-8">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header with Logo */}
             <div className="p-8 border-b-4 border-orange-100">
@@ -608,7 +611,9 @@ export default function DashboardViewQuotationPage() {
                           {item.notes && (
                             <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                               <h4 className="font-bold text-amber-900 mb-2">NOTES</h4>
-                              <p className="text-gray-900 whitespace-pre-wrap text-sm">{item.notes}</p>
+                              <p className="text-gray-900 whitespace-pre-wrap text-sm">
+                  {typeof item.notes === 'string' ? item.notes : item.notes ? JSON.stringify(item.notes, null, 2) : 'No notes'}
+                </p>
                             </div>
                           )}
                         </div>
