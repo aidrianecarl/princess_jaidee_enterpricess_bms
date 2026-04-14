@@ -191,12 +191,26 @@ export default function OrdersPage() {
       })
 
       if (!orderResponse.ok) {
-        const errorData = await orderResponse.json()
-        throw new Error(errorData.message || "Failed to create order")
+        let errorData: any = {}
+        try {
+          errorData = await orderResponse.json()
+          console.error("[v0] Order creation failed - API error response:", errorData)
+        } catch (e) {
+          const errorText = await orderResponse.text()
+          console.error("[v0] Order creation failed - non-JSON response:", errorText)
+          throw new Error(`Failed to create order: HTTP ${orderResponse.status}`)
+        }
+        throw new Error(errorData.message || errorData.error || "Failed to create order")
       }
 
       const orderData = await orderResponse.json()
+      console.log("[v0] Order created successfully:", orderData)
       const orderId = orderData.data?.id || orderData.id
+      
+      if (!orderId) {
+        console.error("[v0] No order ID in response:", orderData)
+        throw new Error("Failed to extract order ID from response")
+      }
 
       // Step 3: Create Order Items from quotation items (only unique items)
       if (formData.items && formData.items.length > 0) {
@@ -302,9 +316,12 @@ export default function OrdersPage() {
       setError("")
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to save order"
-      console.error("[v0] Save order error:", errorMsg)
+      console.error("[v0] Save order error:", {
+        message: errorMsg,
+        error: err,
+        stack: err instanceof Error ? err.stack : undefined
+      })
       setError(errorMsg)
-      throw err
     } finally {
       setSavingId(null)
     }

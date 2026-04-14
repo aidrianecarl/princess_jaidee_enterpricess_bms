@@ -129,14 +129,14 @@ export function SetPaymentModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700" aria-describedby="payment-modal-description">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-neutral-900 dark:text-white">
             Set Payment & Schedule Order
           </DialogTitle>
-          <div className="sr-only" id="payment-modal-description">
-            Configure payment method, assign employee, set start and due dates for the job order
-          </div>
+          <p id="payment-modal-description" className="sr-only">
+            Configure payment details and schedule this order for production
+          </p>
         </DialogHeader>
 
         <div className="space-y-6 py-4">

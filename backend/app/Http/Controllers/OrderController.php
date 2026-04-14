@@ -87,9 +87,11 @@ class OrderController extends Controller
 
     public function store(Request $request)
     {
+        Log::info('[v0] OrderController store - Request data:', $request->all());
+        
         $validator = Validator::make($request->all(), [
             'quotation_id' => 'nullable|exists:quotations,id',
-            'customer_id' => 'required|exists:users,id',
+            'customer_id' => 'required|numeric',
             'order_date' => 'required|date',
             'subtotal' => 'required|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
@@ -97,16 +99,19 @@ class OrderController extends Controller
             'total' => 'required|numeric|min:0',
             'payment_status' => 'nullable|in:unpaid,partial,paid,pending',
             'order_status' => 'nullable|in:pending,processing,completed,shipped,delivered,cancelled',
-            'payment_method' => 'required|in:cash,credit_card,bank_transfer,check',
+            'payment_method' => 'required|in:cash,gcash,credit_card,bank_transfer,check',
             'notes' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
+            Log::error('[v0] OrderController validation failed:', ['errors' => $validator->errors()]);
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
         try {
             $orderNumber = 'ORD-' . date('Ymd') . '-' . str_pad(Order::count() + 1, 5, '0', STR_PAD_LEFT);
+            
+            Log::info('[v0] Creating order with number: ' . $orderNumber);
 
             $order = Order::create([
                 'order_number' => $orderNumber,
@@ -123,6 +128,8 @@ class OrderController extends Controller
                 'payment_method' => $request->payment_method,
                 'notes' => $request->notes,
             ]);
+            
+            Log::info('[v0] Order created successfully:', ['order_id' => $order->id, 'order_number' => $orderNumber]);
 
             // If quotation_id is provided, copy quotation items to order_items
             if ($request->quotation_id) {
@@ -151,8 +158,17 @@ class OrderController extends Controller
                 'data' => $order->load('items'),
             ], 201);
         } catch (\Exception $e) {
-            Log::error('Order creation error: ' . $e->getMessage());
-            return response()->json(['error' => $e->getMessage()], 500);
+            Log::error('[v0] Order creation error:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'message' => 'Failed to create order'
+            ], 500);
         }
     }
 
