@@ -1141,26 +1141,34 @@ class QuotationController extends Controller
     public function getActiveBranches()
     {
         try {
+            Log::info('Getting active branches - Request started');
+
             $branches = \App\Models\Branch::where('status', 'active')
                 ->select('id', 'name', 'location', 'address', 'phone_number', 'email', 'is_main_branch')
                 ->orderBy('is_main_branch', 'desc')
                 ->orderBy('name', 'asc')
                 ->get();
 
-            return response()->json([
-                'success' => true,
-                'branches' => $branches,
+            Log::info('Active branches fetched successfully', [
                 'count' => $branches->count(),
-            ], 200);
+                'data' => $branches->toArray(),
+            ]);
+
+            // Return as array directly (frontend expects this format)
+            return response()->json($branches, 200);
 
         } catch (\Exception $e) {
             Log::error('Get active branches error', [
                 'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'error' => 'Failed to fetch branches',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'debug' => config('app.debug') ? $e->getTraceAsString() : null
             ], 500);
         }
     }
