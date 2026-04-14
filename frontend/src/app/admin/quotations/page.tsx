@@ -3,10 +3,11 @@
 import { AdminLayout } from "@/components/admin/admin-layout"
 import { useState, useEffect } from "react"
 import { apiClient } from "@/lib/api-client"
-import { Eye, Download } from "lucide-react"
+import { Eye, Download, FileText, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 import { generateQuotationPDF } from "@/lib/pdf-generator"
+import { Button } from "@/components/ui/button"
 
 const QuotationSkeleton = () => (
   <tr>
@@ -35,9 +36,15 @@ export default function AdminQuotationsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [filteredQuotations, setFilteredQuotations] = useState<any[]>([])
+  const [sendingId, setSendingId] = useState<number | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; quotationId: number | null }>({
+    isOpen: false,
+    quotationId: null,
+  })
   const itemsPerPage = 10
   const { toast } = useToast()
   const router = useRouter()
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
 
   useEffect(() => {
     fetchQuotations()
@@ -134,6 +141,65 @@ export default function AdminQuotationsPage() {
         description: errorMessage, 
         variant: "destructive" 
       })
+    }
+  }
+
+  const handleRequestOrder = async (quotationId: number) => {
+    try {
+      setSendingId(quotationId)
+      console.log("[v0] Request Order - Starting for quotation ID:", quotationId)
+
+      const token = localStorage.getItem("auth_token")
+      if (!token) {
+        throw new Error("No authentication token found")
+      }
+
+      const response = await fetch(`${apiUrl}/quotations/${quotationId}/send-production`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "sent",
+        }),
+      })
+
+      console.log("[v0] Request Order - Response status:", response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to request order")
+      }
+
+      // Update the quotation in the list
+      setQuotations(
+        quotations.map((q) =>
+          q.id === quotationId ? { ...q, status: "sent" } : q
+        )
+      )
+
+      console.log("[v0] Request Order - Status updated successfully")
+
+      toast({
+        title: "Success",
+        description: "Order request sent to production successfully",
+        variant: "default"
+      })
+
+      setConfirmModal({ isOpen: false, quotationId: null })
+      // Refresh the quotations list
+      fetchQuotations()
+    } catch (error: any) {
+      console.error("[v0] Request Order - Error occurred:", error)
+      const errorMessage = error?.message || "Failed to request order"
+      toast({ 
+        title: "Error", 
+        description: errorMessage, 
+        variant: "destructive" 
+      })
+    } finally {
+      setSendingId(null)
     }
   }
 
@@ -272,15 +338,34 @@ export default function AdminQuotationsPage() {
                                   </button>
                                 )}
 
-                                {/* Priced → PDF only */}
+                                {/* Priced → PDF + Request Order */}
                                 {statusFilter === "priced" && quotation.has_price && (
-                                  <button
-                                    onClick={() => handleDownloadPDF(quotation)}
-                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
-                                  >
-                                    <Download size={16} />
-                                    PDF
-                                  </button>
+                                  <>
+                                    <button
+                                      onClick={() => handleDownloadPDF(quotation)}
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                    >
+                                      <Download size={16} />
+                                      PDF
+                                    </button>
+                                    <button
+                                      onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
+                                      disabled={sendingId === quotation.id}
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition text-sm font-medium hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {sendingId === quotation.id ? (
+                                        <>
+                                          <Loader2 size={16} className="animate-spin" />
+                                          Sending...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FileText size={16} />
+                                          Request Order
+                                        </>
+                                      )}
+                                    </button>
+                                  </>
                                 )}
 
                                 {/* Rejected → No actions */}
@@ -333,6 +418,46 @@ export default function AdminQuotationsPage() {
             </>
           )}
         </div>
+
+        {/* Confirmation Modal */}
+        {confirmModal.isOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-neutral-900 rounded-xl shadow-2xl max-w-md w-full p-6 sm:p-8 border border-neutral-200 dark:border-neutral-800">
+              <h2 className="text-2xl font-bold text-neutral-900 dark:text-white mb-2">Request Order</h2>
+              <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+                Are you sure you want to request this quotation for production? This will update the status to sent.
+              </p>
+
+              <div className="flex gap-3">
+                <Button
+                  onClick={() => setConfirmModal({ isOpen: false, quotationId: null })}
+                  variant="outline"
+                  className="flex-1 border-neutral-300 dark:border-neutral-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (confirmModal.quotationId) {
+                      handleRequestOrder(confirmModal.quotationId)
+                    }
+                  }}
+                  disabled={sendingId !== null}
+                  className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  {sendingId ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                      Confirming...
+                    </>
+                  ) : (
+                    "Yes, Request Order"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AdminLayout>
   )

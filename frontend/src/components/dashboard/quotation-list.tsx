@@ -27,7 +27,7 @@ interface Quotation {
 export function QuotationList() {
   const [quotations, setQuotations] = useState<Quotation[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [filter, setFilter] = useState("all")
+  const [filter, setFilter] = useState("pending")
   const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showSendDialog, setShowSendDialog] = useState(false)
@@ -98,9 +98,8 @@ export function QuotationList() {
   }
 
   const filteredQuotations = quotations.filter((q) => {
-    if (filter === "all") return (q.status === "draft" || q.status === "pending") && q.has_price !== 1
     if (filter === "draft") return q.status === "draft"
-    if (filter === "pending") return q.status === "pending" && q.has_price !== 1
+    if (filter === "pending") return q.status === "pending" && (q.has_price !== 1 && q.has_price !== "1")
     return q.status === filter
   })
 
@@ -239,7 +238,7 @@ export function QuotationList() {
       <div className="space-y-4">
         {/* Filter Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap border-b border-gray-200 pb-4">
-          {["all", "draft", "pending"].map((status) => (
+          {["draft", "pending"].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
