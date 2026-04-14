@@ -719,27 +719,77 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     setIsLoadingBranches(true)
     try {
       const token = localStorage.getItem("auth_token")
-      if (!token) return
+      if (!token) {
+        console.error("[v0] No authentication token found")
+        toast({
+          title: "Authentication Error",
+          description: "Please log in to fetch branches",
+          variant: "destructive",
+        })
+        setIsLoadingBranches(false)
+        return
+      }
+
+      console.log("[v0] Fetching branches from:", `${apiUrl}/quotations/active-branches`)
 
       const response = await fetch(`${apiUrl}/quotations/active-branches`, {
+        method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
+          'Accept': 'application/json',
         },
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        setBranches(data.branches || [])
-        // Auto-select main branch if available
-        const mainBranch = data.branches?.find((b: any) => b.is_main_branch)
-        if (mainBranch) {
-          setSelectedBranchId(mainBranch.id)
-        } else if (data.branches?.length > 0) {
-          setSelectedBranchId(data.branches[0].id)
-        }
+      console.log("[v0] Branches response status:", response.status)
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[v0] Error fetching branches - Status:", response.status)
+        console.error("[v0] Error response body:", errorText)
+        toast({
+          title: "Error Fetching Branches",
+          description: `Failed to fetch branches: ${response.status}. Please try again.`,
+          variant: "destructive",
+        })
+        setIsLoadingBranches(false)
+        return
       }
-    } catch (error) {
-      console.error("Error fetching branches:", error)
+
+      const data = await response.json()
+      console.log("[v0] Branches data received:", data)
+
+      // Handle both array and object responses
+      const branchesArray = Array.isArray(data) ? data : (data.branches || data.data || [])
+      
+      console.log("[v0] Processed branches array:", branchesArray)
+      setBranches(branchesArray)
+
+      // Auto-select main branch if available
+      const mainBranch = branchesArray.find((b: any) => b.is_main_branch)
+      if (mainBranch) {
+        console.log("[v0] Auto-selecting main branch:", mainBranch.id)
+        setSelectedBranchId(mainBranch.id)
+      } else if (branchesArray.length > 0) {
+        console.log("[v0] Auto-selecting first branch:", branchesArray[0].id)
+        setSelectedBranchId(branchesArray[0].id)
+      }
+
+      if (branchesArray.length === 0) {
+        toast({
+          title: "No Branches Available",
+          description: "No active branches found. Please contact the administrator.",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("[v0] Error fetching branches:", error)
+      console.error("[v0] Error message:", error.message)
+      console.error("[v0] Error stack:", error.stack)
+      toast({
+        title: "Error",
+        description: `Failed to fetch branches: ${error.message || 'Unknown error'}`,
+        variant: "destructive",
+      })
     } finally {
       setIsLoadingBranches(false)
     }

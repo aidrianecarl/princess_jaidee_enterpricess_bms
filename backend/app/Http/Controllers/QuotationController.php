@@ -6,6 +6,7 @@ use App\Models\Quotation;
 use App\Models\QuotationItem;
 use App\Models\Customer;
 use App\Models\User;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
@@ -210,6 +211,38 @@ class QuotationController extends Controller
             'quotation_number' => $quotationNumber,
             'date' => date('Y-m-d'),
         ], 200);
+    }
+
+    public function getActiveBranches()
+    {
+        try {
+            Log::info('Getting active branches');
+            
+            $branches = Branch::select('id', 'name', 'location', 'email', 'phone_number', 'status')
+                ->where('status', 'active')
+                ->orderBy('name', 'asc')
+                ->get();
+
+            Log::info('Active branches fetched successfully', [
+                'count' => $branches->count(),
+                'branches' => $branches->toArray(),
+            ]);
+
+            return response()->json($branches, 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching active branches', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to fetch branches',
+                'message' => $e->getMessage(),
+                'debug' => config('app.debug') ? $e->getTraceAsString() : null
+            ], 500);
+        }
     }
 
     public function store(Request $request)
