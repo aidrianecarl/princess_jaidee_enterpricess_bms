@@ -51,6 +51,38 @@ export function SetPaymentModal({
   const [paymentTypeChangeTimer, setPaymentTypeChangeTimer] = useState<NodeJS.Timeout | null>(null)
   const isInitializedRef = useRef(false)
 
+  // ✅ ALL HOOKS MUST BE HERE - BEFORE ANY EARLY RETURNS
+  
+  // Reset form and re-initialize when modal opens/closes
+  useEffect(() => {
+    if (isOpen && quotation) {
+      // When modal opens, initialize with half payment
+      if (!isInitializedRef.current) {
+        const halfPayment = quotation.total * 0.5
+        setDownPaymentInput(halfPayment.toString())
+        setPaymentType("downpayment")
+        isInitializedRef.current = true
+      }
+    } else if (!isOpen) {
+      // When modal closes, reset the ref for next time
+      isInitializedRef.current = false
+    }
+  }, [isOpen, quotation])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (paymentTypeChangeTimer) {
+        clearTimeout(paymentTypeChangeTimer)
+      }
+    }
+  }, [paymentTypeChangeTimer])
+
+  // Guard clause MUST come AFTER all hooks
+  if (!quotation) {
+    return null
+  }
+
   const handleConfirm = async () => {
     console.log("[v0] handleConfirm called - selectedEmployeeId:", selectedEmployeeId)
     setError("")
@@ -145,35 +177,9 @@ export function SetPaymentModal({
     return null
   }
 
-  console.log("[v0] SetPaymentModal render - quotation ID:", quotation.id, "total:", quotation.total)
-
   const calculatedHalfPayment = quotation.total * 0.5
   const effectivePayment = downPaymentInput ? parseFloat(downPaymentInput) : calculatedHalfPayment
   const remainingBalance = quotation.total - effectivePayment
-
-  // Reset form and re-initialize when modal opens/closes
-  useEffect(() => {
-    if (isOpen) {
-      // When modal opens, initialize with half payment
-      if (!isInitializedRef.current) {
-        setDownPaymentInput(calculatedHalfPayment.toString())
-        setPaymentType("downpayment")
-        isInitializedRef.current = true
-      }
-    } else {
-      // When modal closes, reset the ref for next time
-      isInitializedRef.current = false
-    }
-  }, [isOpen]) // Only depend on isOpen, not calculatedHalfPayment
-
-  // Cleanup timer on unmount
-  useEffect(() => {
-    return () => {
-      if (paymentTypeChangeTimer) {
-        clearTimeout(paymentTypeChangeTimer)
-      }
-    }
-  }, [])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

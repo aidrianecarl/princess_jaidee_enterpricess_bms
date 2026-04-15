@@ -29,12 +29,16 @@ export function UpdatePaymentModal({
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
 
+  // Hooks must be before any conditional returns
   useEffect(() => {
     if (!isOpen) {
       setError("")
       setSuccess(false)
     }
   }, [isOpen])
+
+  // Guard clause must come AFTER all hooks
+  if (!order) return null
 
   const handleConfirm = async () => {
     setError("")
@@ -51,8 +55,6 @@ export function UpdatePaymentModal({
       setError(err instanceof Error ? err.message : "Failed to update payment status")
     }
   }
-
-  if (!order) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
