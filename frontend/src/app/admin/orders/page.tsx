@@ -198,12 +198,9 @@ export default function OrdersPage() {
       const token = localStorage.getItem("admin_token")
 
       // Calculate paid amount
-      let paidAmount = 0
-      if (paymentType === "fullpayment") {
-        paidAmount = selectedQuotation.total
-      } else if (formData.downPaymentInput) {
-        paidAmount = parseFloat(formData.downPaymentInput)
-      }
+      const paidAmount = paymentType === "fullpayment" 
+        ? selectedQuotation.total 
+        : parseFloat(formData.downPaymentInput || (selectedQuotation.total * 0.5).toString())
 
       // First, update the quotation with paid_amount and status using the new PATCH route
       const quotationUpdateResponse = await fetch(
@@ -234,13 +231,9 @@ export default function OrdersPage() {
       // Step 2: Create an Order from the quotation
 
       // Calculate remaining balance based on payment type
-      const totalAmount = selectedQuotation.total
-      const paidAmount = paymentType === "fullpayment" 
-        ? totalAmount 
-        : parseFloat(formData.downPaymentInput || (totalAmount * 0.5).toString())
       const remainingBalance = paymentType === "fullpayment" 
         ? 0 
-        : totalAmount - paidAmount
+        : selectedQuotation.total - paidAmount
 
       const orderResponse = await fetch(`${apiUrl}/admin/orders`, {
         method: "POST",
