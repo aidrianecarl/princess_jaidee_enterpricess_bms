@@ -269,15 +269,42 @@ class OrderController extends Controller
 
     public function customerIndex(Request $request)
     {
-        $query = Order::with(['customer', 'items'])
-            ->where('customer_id', auth()->user()->customer_id ?? auth()->id());
+        try {
+            Log::info('[v0] OrderController customerIndex - Fetching orders for customer');
+            
+            // Get the authenticated user's customer_id from their quotations or use their user_id
+            $user = auth()->user();
+            
+            // First, try to find orders linked to quotations created by this user
+            $query = Order::with(['customer', 'items.service', 'quotation'])
+                ->whereHas('quotation', function($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
 
-        $orders = $query->orderBy('created_at', 'desc')->get();
+            $orders = $query->orderBy('created_at', 'desc')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $orders,
-        ], 200);
+            Log::info('[v0] Customer orders fetched:', [
+                'user_id' => $user->id,
+                'count' => $orders->count()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders,
+                'count' => $orders->count()
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('[v0] Error fetching customer orders:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function updatePaymentStatus(Request $request, $id)
@@ -346,12 +373,35 @@ class OrderController extends Controller
 
     public function getOrderItems(Request $request)
     {
-        $items = OrderItem::with('order')->get();
-        
-        return response()->json([
-            'success' => true,
-            'data' => $items,
-        ], 200);
+        try {
+            $query = OrderItem::with(['order', 'service']);
+            
+            // Filter by order_id if provided
+            if ($request->has('order_id')) {
+                $query->where('order_id', $request->order_id);
+            }
+            
+            $items = $query->get();
+            
+            Log::info('[v0] Order items fetched:', [
+                'count' => $items->count(),
+                'order_id_filter' => $request->order_id ?? 'none'
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'data' => $items,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('[v0] Error fetching order items:', [
+                'message' => $e->getMessage(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch order items',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function storeOrderItem(Request $request)
