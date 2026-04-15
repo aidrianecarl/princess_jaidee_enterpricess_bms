@@ -127,6 +127,8 @@ export default function OrdersPage() {
       setIsLoading(true)
       setError("")
       
+      console.log("[v0] Fetching orders from:", `${apiUrl}/orders`)
+      
       const response = await fetch(`${apiUrl}/orders`, {
         method: 'GET',
         headers: {
@@ -135,15 +137,27 @@ export default function OrdersPage() {
         },
       })
 
+      console.log("[v0] Orders response status:", response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error(`Failed to fetch orders`)
+        const errorText = await response.text()
+        console.error("[v0] Orders fetch failed - Response:", errorText)
+        throw new Error(`Failed to fetch orders: HTTP ${response.status}`)
       }
 
       const data = await response.json()
+      console.log("[v0] Orders response data:", data)
+      
       const orders = Array.isArray(data) ? data : (data.data || [])
+      console.log("[v0] Parsed orders count:", orders.length)
+      
       setAllOrders(orders)
     } catch (err) {
-      console.error("[v0] Error fetching orders:", err)
+      console.error("[v0] Error fetching orders - Full error:", {
+        message: err instanceof Error ? err.message : String(err),
+        error: err,
+        stack: err instanceof Error ? err.stack : undefined
+      })
       setError("Failed to load sales data")
     } finally {
       setIsLoading(false)
@@ -517,23 +531,78 @@ export default function OrdersPage() {
           </Card>
 
           {/* Filter Buttons */}
-          <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-            {["pending", "sales", "partial", "paid"].map((status) => (
+          <div className="mb-6 flex flex-wrap gap-2">
+            {/* Pending Button */}
+            <button
+              onClick={() => {
+                setFilterStatus("pending")
+                setCurrentPage(1)
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                filterStatus === "pending"
+                  ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+              }`}
+            >
+              Pending
+            </button>
+
+            {/* Sales Button with nested options */}
+            <div className="relative group">
               <button
-                key={status}
-                onClick={() => {
-                  setFilterStatus(status as any)
-                  setCurrentPage(1)
-                }}
                 className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                  filterStatus === status
+                  ["sales", "partial", "paid"].includes(filterStatus)
                     ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg"
                     : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
                 }`}
               >
-                {status.charAt(0).toUpperCase() + status.slice(1)}
+                Sales ▼
               </button>
-            ))}
+
+              {/* Dropdown Menu */}
+              <div className="absolute left-0 mt-1 w-40 bg-white dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button
+                  onClick={() => {
+                    setFilterStatus("sales")
+                    setCurrentPage(1)
+                  }}
+                  className={`w-full text-left px-4 py-3 font-semibold transition ${
+                    filterStatus === "sales"
+                      ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  }`}
+                >
+                  All Orders
+                </button>
+                <div className="border-t border-neutral-200 dark:border-neutral-700"></div>
+                <button
+                  onClick={() => {
+                    setFilterStatus("partial")
+                    setCurrentPage(1)
+                  }}
+                  className={`w-full text-left px-4 py-3 font-semibold transition ${
+                    filterStatus === "partial"
+                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  }`}
+                >
+                  Partial Payment
+                </button>
+                <button
+                  onClick={() => {
+                    setFilterStatus("paid")
+                    setCurrentPage(1)
+                  }}
+                  className={`w-full text-left px-4 py-3 font-semibold transition rounded-b-lg ${
+                    filterStatus === "paid"
+                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
+                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  }`}
+                >
+                  Fully Paid
+                </button>
+              </div>
+            </div>
           </div>
 
           {isLoading ? (

@@ -16,31 +16,40 @@ class OrderController extends Controller
     {
         try {
             // For admin users - fetch all orders
-            Log::info('OrderController index - Admin fetch orders');
+            Log::info('[v0] OrderController index - Fetching all orders', ['request' => $request->all()]);
             
             $query = Order::with(['customer', 'items', 'quotation']);
 
             if ($request->has('search')) {
+                Log::info('[v0] OrderController - Applying search filter:', ['search' => $request->search]);
                 $query->where('order_number', 'like', '%' . $request->search . '%');
             }
 
             if ($request->has('status')) {
+                Log::info('[v0] OrderController - Applying status filter:', ['status' => $request->status]);
                 $query->where('order_status', $request->status);
             }
 
             $orders = $query->orderBy('created_at', 'desc')->get();
             
-            Log::info('Orders fetched:', ['count' => $orders->count()]);
+            Log::info('[v0] Orders fetched successfully:', ['count' => $orders->count(), 'data_sample' => $orders->take(1)->toArray()]);
 
             return response()->json([
                 'success' => true,
-                'data' => $orders
+                'data' => $orders,
+                'count' => $orders->count()
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error fetching orders: ' . $e->getMessage());
+            Log::error('[v0] Error fetching orders:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Failed to fetch orders',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

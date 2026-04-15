@@ -32,7 +32,6 @@ interface Order {
   order_date: string
   subtotal: number
   discount: number
-  tax: number
   total: number
   payment_status: string
   order_status: string
@@ -274,7 +273,7 @@ export default function OrderDetailsPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <Card className="p-6 border-neutral-200 dark:border-neutral-800">
             <div className="flex items-center justify-between">
               <div>
@@ -296,18 +295,6 @@ export default function OrderDetailsPage() {
                 </p>
               </div>
               <DollarSign className="text-blue-500" size={32} />
-            </div>
-          </Card>
-
-          <Card className="p-6 border-neutral-200 dark:border-neutral-800">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 font-medium">Tax</p>
-                <p className="text-2xl font-bold text-neutral-900 dark:text-white mt-2">
-                  ₱{order.tax.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                </p>
-              </div>
-              <FileText className="text-green-500" size={32} />
             </div>
           </Card>
 
