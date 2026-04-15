@@ -3,11 +3,11 @@ import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { SetPaymentModal } from "@/components/admin/modals/set-payment-modal"
 import { ViewItemsModal } from "@/components/admin/modals/view-items-modal"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings } from "lucide-react"
+import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X } from "lucide-react"
 
 interface SentQuotation {
   id: number
@@ -30,6 +30,21 @@ interface SentQuotation {
   items?: any[]
 }
 
+interface Order {
+  id: number
+  order_number: string
+  quotation_id: number
+  customer_id: number
+  created_by: number
+  order_date: string
+  subtotal: number
+  discount: number
+  total: number
+  payment_status: string
+  order_status: string
+  payment_method: string
+}
+
 interface Employee {
   id: number
   first_name: string
@@ -42,11 +57,16 @@ export default function OrdersPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [sentQuotations, setSentQuotations] = useState<SentQuotation[]>([])
+  const [allOrders, setAllOrders] = useState<Order[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
   const [savingId, setSavingId] = useState<number | null>(null)
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [error, setError] = useState("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterStatus, setFilterStatus] = useState<"pending" | "sales" | "partial" | "paid">("pending")
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 6
   
   // Modal states
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
@@ -70,14 +90,12 @@ export default function OrdersPage() {
     const adminUser = JSON.parse(userData)
     setUser(adminUser)
     fetchSentQuotations(token)
+    fetchAllOrders(token)
     fetchEmployees(token)
   }
 
   const fetchSentQuotations = async (token: string) => {
     try {
-      setIsLoading(true)
-      setError("")
-      
       const response = await fetch(`${apiUrl}/admin/quotations?status=sent`, {
         method: 'GET',
         headers: {
@@ -94,7 +112,6 @@ export default function OrdersPage() {
       const data = await response.json()
       const quotations = Array.isArray(data) ? data : (data.data || data)
       
-      // Filter only sent status quotations
       const sent = Array.isArray(quotations) 
         ? quotations.filter((q: any) => q && q.status === "sent")
         : []
@@ -102,8 +119,32 @@ export default function OrdersPage() {
       setSentQuotations(sent)
     } catch (err) {
       console.error("[v0] Error fetching quotations:", err)
-      const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
-      setError(`Failed to load orders: ${errorMessage}`)
+    }
+  }
+
+  const fetchAllOrders = async (token: string) => {
+    try {
+      setIsLoading(true)
+      setError("")
+      
+      const response = await fetch(`${apiUrl}/orders`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch orders`)
+      }
+
+      const data = await response.json()
+      const orders = Array.isArray(data) ? data : (data.data || [])
+      setAllOrders(orders)
+    } catch (err) {
+      console.error("[v0] Error fetching orders:", err)
+      setError("Failed to load sales data")
     } finally {
       setIsLoading(false)
     }
@@ -341,6 +382,95 @@ export default function OrdersPage() {
     })
   }
 
+  // Determine which data to display based on filter
+  const displayData = useMemo(() => {
+    let filtered: any[] = []
+
+    if (filterStatus === "pending") {
+      filtered = sentQuotations
+    } else {
+      // For sales, partial, and paid filters - use orders data
+      if (filterStatus === "sales") {
+        filtered = allOrders.map(order => ({
+          id: order.id,
+          quotation_number: order.order_number,
+          total: order.total,
+          customer: { name: order.customer_id ? `Customer ${order.customer_id}` : "Unknown", email: "", phone: "" },
+          created_at: order.order_date,
+          payment_status: order.payment_status,
+          order_status: order.order_status,
+          subtotal: order.subtotal,
+          discount: order.discount,
+          payment_method: order.payment_method,
+          isOrder: true
+        }))
+      } else if (filterStatus === "partial") {
+        filtered = allOrders
+          .filter(o => o.payment_status === "partial")
+          .map(order => ({
+            id: order.id,
+            quotation_number: order.order_number,
+            total: order.total,
+            customer: { name: `Customer ${order.customer_id}`, email: "", phone: "" },
+            created_at: order.order_date,
+            payment_status: order.payment_status,
+            order_status: order.order_status,
+            subtotal: order.subtotal,
+            discount: order.discount,
+            payment_method: order.payment_method,
+            isOrder: true
+          }))
+      } else if (filterStatus === "paid") {
+        filtered = allOrders
+          .filter(o => o.payment_status === "paid")
+          .map(order => ({
+            id: order.id,
+            quotation_number: order.order_number,
+            total: order.total,
+            customer: { name: `Customer ${order.customer_id}`, email: "", phone: "" },
+            created_at: order.order_date,
+            payment_status: order.payment_status,
+            order_status: order.order_status,
+            subtotal: order.subtotal,
+            discount: order.discount,
+            payment_method: order.payment_method,
+            isOrder: true
+          }))
+      }
+    }
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(item =>
+        item.quotation_number.toLowerCase().includes(query) ||
+        (item.customer?.name && item.customer.name.toLowerCase().includes(query))
+      )
+    }
+
+    return filtered
+  }, [filterStatus, sentQuotations, allOrders, searchQuery])
+
+  // Pagination
+  const totalPages = Math.ceil(displayData.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedData = displayData.slice(startIndex, startIndex + itemsPerPage)
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-yellow-100 text-yellow-800"
+      case "partial":
+        return "bg-blue-100 text-blue-800"
+      case "paid":
+        return "bg-green-100 text-green-800"
+      case "sales":
+        return "bg-orange-100 text-orange-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
   return (
     <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
       <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -348,112 +478,256 @@ export default function OrdersPage() {
         <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2 text-neutral-900">Sales & Orders</h1>
-            <p className="text-neutral-600">Manage sent quotations, payments, and employee assignments</p>
+            <h1 className="text-4xl font-bold mb-2 text-neutral-900 dark:text-white">Sales & Orders</h1>
+            <p className="text-neutral-600 dark:text-neutral-400">Manage sent quotations, payments, and employee assignments</p>
           </div>
 
           {error && (
-            <Card className="mb-6 p-4 bg-red-50 border-red-200">
-              <p className="text-red-600">{error}</p>
+            <Card className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
+              <p className="text-red-600 dark:text-red-400">{error}</p>
             </Card>
           )}
+
+          {/* Search Bar */}
+          <Card className="mb-6 p-4 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 shadow-sm">
+            <div className="relative">
+              <Search size={20} className="absolute left-3 top-3 text-neutral-400" />
+              <input
+                type="text"
+                placeholder="Search by quotation number or customer name..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value)
+                  setCurrentPage(1)
+                }}
+                className="w-full pl-10 pr-10 py-2.5 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchQuery("")
+                    setCurrentPage(1)
+                  }}
+                  className="absolute right-3 top-3 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition"
+                >
+                  <X size={20} />
+                </button>
+              )}
+            </div>
+          </Card>
+
+          {/* Filter Buttons */}
+          <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+            {["pending", "sales", "partial", "paid"].map((status) => (
+              <button
+                key={status}
+                onClick={() => {
+                  setFilterStatus(status as any)
+                  setCurrentPage(1)
+                }}
+                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                  filterStatus === status
+                    ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg"
+                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                }`}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+              </button>
+            ))}
+          </div>
 
           {isLoading ? (
             <div className="flex items-center justify-center min-h-[400px]">
               <Loader2 className="animate-spin mr-2" />
-              <p>Loading orders...</p>
+              <p className="text-neutral-600 dark:text-neutral-400">Loading orders...</p>
             </div>
-          ) : sentQuotations.length === 0 ? (
-            <Card className="p-12 text-center bg-white">
+          ) : displayData.length === 0 ? (
+            <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <FileText className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-              <p className="text-neutral-600 font-medium">No pending orders</p>
-              <p className="text-sm text-neutral-500 mt-2">Sent quotations will appear here</p>
+              <p className="text-neutral-600 dark:text-neutral-300 font-medium">
+                {searchQuery ? "No matching orders found" : "No orders in this category"}
+              </p>
+              <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+                {searchQuery
+                  ? "Try adjusting your search criteria"
+                  : `${filterStatus === "pending" ? "Sent quotations" : "Orders"} will appear here`}
+              </p>
             </Card>
           ) : (
-            <div className="grid gap-4">
-              {sentQuotations.map((quotation) => (
-                <Card key={quotation.id} className="overflow-hidden hover:shadow-lg transition bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                  <div className="p-4 md:p-6">
-                    {/* Header with flex layout */}
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
-                            {quotation.quotation_number}
-                          </h3>
-                          <span className="px-3 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 rounded-full text-sm font-semibold">
-                            Pending
-                          </span>
+            <>
+              <div className="grid gap-4 animate-fade-in">
+                {paginatedData.map((item: any, idx: number) => (
+                  <Card key={`${item.isOrder ? "order" : "quot"}-${item.id}`} className="overflow-hidden hover:shadow-lg transition-all duration-300 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:border-orange-300 dark:hover:border-orange-600">
+                    <div className="p-4 md:p-6">
+                      {/* Header with flex layout */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2 flex-wrap">
+                            <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
+                              {item.quotation_number}
+                            </h3>
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${item.isOrder && item.payment_status ? getStatusColor(item.payment_status) : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"}`}>
+                              {item.isOrder && item.payment_status 
+                                ? item.payment_status.charAt(0).toUpperCase() + item.payment_status.slice(1)
+                                : "Pending"}
+                            </span>
+                          </div>
+                          <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
+                            Customer: <span className="font-semibold text-neutral-900 dark:text-white">{item.customer?.name}</span>
+                          </p>
+                          <div className="flex flex-wrap gap-4 text-sm">
+                            <div className="flex items-center gap-1">
+                              <Clock size={16} className="text-neutral-400 dark:text-neutral-500" />
+                              <span className="text-neutral-600 dark:text-neutral-400">{formatDate(item.created_at)}</span>
+                            </div>
+                            {!item.isOrder && (
+                              <div className="flex items-center gap-1">
+                                <FileText size={16} className="text-neutral-400 dark:text-neutral-500" />
+                                <span className="text-neutral-600 dark:text-neutral-400">{item.items?.length || 0} items</span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1">
+                              <DollarSign size={16} className="text-neutral-400 dark:text-neutral-500" />
+                              <span className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(item.total)}</span>
+                            </div>
+                          </div>
                         </div>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-3">
-                          Customer: <span className="font-semibold text-neutral-900 dark:text-white">{quotation.customer?.name}</span>
-                        </p>
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          <div className="flex items-center gap-1">
-                            <Clock size={16} className="text-neutral-400 dark:text-neutral-500" />
-                            <span className="text-neutral-600 dark:text-neutral-400">{formatDate(quotation.created_at)}</span>
+
+                        {/* Right Side Buttons */}
+                        {!item.isOrder && (
+                          <div className="flex flex-col sm:flex-row gap-2 min-w-max">
+                            <Button
+                              onClick={() => {
+                                const quotation = sentQuotations.find(q => q.id === item.id)
+                                if (quotation) {
+                                  setSelectedQuotation(quotation)
+                                  setViewItemsModalOpen(true)
+                                }
+                              }}
+                              variant="outline"
+                              className="flex items-center justify-center gap-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-700 transition"
+                              title="View Items"
+                            >
+                              <Eye size={18} />
+                              <span className="hidden sm:inline">Items</span>
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                const quotation = sentQuotations.find(q => q.id === item.id)
+                                if (quotation) {
+                                  setSelectedQuotation(quotation)
+                                  setPaymentModalOpen(true)
+                                }
+                              }}
+                              className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-lg transition active:scale-95"
+                              title="Set Payment & Assign Employee"
+                            >
+                              <Settings size={18} />
+                              <span className="hidden sm:inline">Set Payment</span>
+                            </Button>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <FileText size={16} className="text-neutral-400 dark:text-neutral-500" />
-                            <span className="text-neutral-600 dark:text-neutral-400">{quotation.items?.length || 0} items</span>
+                        )}
+                        {item.isOrder && (
+                          <div className="flex items-center justify-center">
+                            <span className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(item.payment_status)}`}>
+                              {item.payment_method ? `Paid via ${item.payment_method}` : "No payment method"}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <DollarSign size={16} className="text-neutral-400 dark:text-neutral-500" />
-                            <span className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(quotation.total)}</span>
-                          </div>
-                        </div>
+                        )}
                       </div>
 
-                      {/* Right Side Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-2 min-w-max">
-                        <Button
-                          onClick={() => {
-                            setSelectedQuotation(quotation)
-                            setViewItemsModalOpen(true)
-                          }}
-                          variant="outline"
-                          className="flex items-center justify-center gap-2 border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                          title="View Items"
-                        >
-                          <Eye size={18} />
-                          <span className="hidden sm:inline">Items</span>
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setSelectedQuotation(quotation)
-                            setPaymentModalOpen(true)
-                          }}
-                          className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-lg"
-                          title="Set Payment & Assign Employee"
-                        >
-                          <Settings size={18} />
-                          <span className="hidden sm:inline">Set Payment</span>
-                        </Button>
-                      </div>
-                    </div>
+                      {/* Order Details for Sales/Partial/Paid */}
+                      {item.isOrder && (
+                        <div className="bg-neutral-50 dark:bg-neutral-700 p-4 rounded-lg mt-4">
+                          <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 text-sm">Order Information</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm">
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Subtotal</p>
+                              <p className="font-medium text-neutral-900 dark:text-white">{formatCurrency(item.subtotal)}</p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Discount</p>
+                              <p className="font-medium text-neutral-900 dark:text-white">{formatCurrency(item.discount)}</p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Total</p>
+                              <p className="font-bold text-orange-600 dark:text-orange-400">{formatCurrency(item.total)}</p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Status</p>
+                              <p className="font-medium text-neutral-900 dark:text-white">{item.order_status}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
 
-                    {/* Customer Details */}
-                    <div className="bg-neutral-50 dark:bg-neutral-700 p-4 rounded-lg mt-4">
-                      <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 text-sm">Customer Information</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                        <div>
-                          <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Email</p>
-                          <p className="font-medium text-neutral-900 dark:text-white break-all">{quotation.customer?.email}</p>
+                      {/* Customer Details for Quotations */}
+                      {!item.isOrder && item.customer && (
+                        <div className="bg-neutral-50 dark:bg-neutral-700 p-4 rounded-lg mt-4">
+                          <h4 className="font-semibold text-neutral-900 dark:text-white mb-3 text-sm">Customer Information</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Email</p>
+                              <p className="font-medium text-neutral-900 dark:text-white break-all">{item.customer?.email || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Phone</p>
+                              <p className="font-medium text-neutral-900 dark:text-white">{item.customer?.phone || "N/A"}</p>
+                            </div>
+                            <div>
+                              <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Total Amount</p>
+                              <p className="font-bold text-orange-600 dark:text-orange-400">{formatCurrency(item.total)}</p>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Phone</p>
-                          <p className="font-medium text-neutral-900 dark:text-white">{quotation.customer?.phone || "N/A"}</p>
-                        </div>
-                        <div>
-                          <p className="text-neutral-600 dark:text-neutral-400 text-xs mb-1">Total Amount</p>
-                          <p className="font-bold text-orange-600 dark:text-orange-400">{formatCurrency(quotation.total)}</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-10 h-10 rounded-lg transition font-medium transform hover:scale-105 active:scale-95 ${
+                          currentPage === page
+                            ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg"
+                            : "border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
                   </div>
-                </Card>
-              ))}
-            </div>
+
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 rounded-lg border border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+
+              {/* Results info */}
+              <div className="mt-4 text-center text-sm text-neutral-600 dark:text-neutral-400">
+                Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, displayData.length)} of {displayData.length} {filterStatus === "pending" ? "pending orders" : "orders"}
+              </div>
+            </>
           )}
 
           {/* Modals */}
