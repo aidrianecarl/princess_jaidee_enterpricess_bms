@@ -643,7 +643,52 @@ export default function JobOrderDetailPage() {
                               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
                                 <h4 className="font-bold text-amber-900 dark:text-amber-300 mb-3 text-lg">Notes</h4>
                                 <div className="space-y-3">
-                                  {typeof item.notes === 'object' ? (
+                                  {typeof item.notes === 'string' ? (
+                                    (() => {
+                                      try {
+                                        const parsedNotes = JSON.parse(item.notes)
+                                        if (typeof parsedNotes === 'object') {
+                                          return (
+                                            <>
+                                              {parsedNotes.designNotes && (
+                                                <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Design Notes</p>
+                                                  <p className="text-sm text-neutral-900 dark:text-white">{parsedNotes.designNotes}</p>
+                                                </div>
+                                              )}
+                                              {parsedNotes.teamNotes && (
+                                                <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Team Notes</p>
+                                                  <p className="text-sm text-neutral-900 dark:text-white">{parsedNotes.teamNotes}</p>
+                                                </div>
+                                              )}
+                                              {parsedNotes.jerseyCustomizationNotes && (
+                                                <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Jersey Customization Notes</p>
+                                                  <p className="text-sm text-neutral-900 dark:text-white">{parsedNotes.jerseyCustomizationNotes}</p>
+                                                </div>
+                                              )}
+                                              {parsedNotes.sizeNotes && (
+                                                <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Size Notes</p>
+                                                  <p className="text-sm text-neutral-900 dark:text-white">{parsedNotes.sizeNotes}</p>
+                                                </div>
+                                              )}
+                                              {parsedNotes.additionalNotes && (
+                                                <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Additional Notes</p>
+                                                  <p className="text-sm text-neutral-900 dark:text-white">{parsedNotes.additionalNotes}</p>
+                                                </div>
+                                              )}
+                                            </>
+                                          )
+                                        }
+                                        return <p className="text-sm text-neutral-900 dark:text-white">{item.notes}</p>
+                                      } catch {
+                                        return <p className="text-sm text-neutral-900 dark:text-white">{item.notes}</p>
+                                      }
+                                    })()
+                                  ) : typeof item.notes === 'object' ? (
                                     <>
                                       {item.notes.designNotes && (
                                         <div className="p-3 bg-white dark:bg-neutral-800 rounded">
@@ -655,6 +700,12 @@ export default function JobOrderDetailPage() {
                                         <div className="p-3 bg-white dark:bg-neutral-800 rounded">
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Team Notes</p>
                                           <p className="text-sm text-neutral-900 dark:text-white">{item.notes.teamNotes}</p>
+                                        </div>
+                                      )}
+                                      {item.notes.jerseyCustomizationNotes && (
+                                        <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Jersey Customization Notes</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{item.notes.jerseyCustomizationNotes}</p>
                                         </div>
                                       )}
                                       {item.notes.sizeNotes && (

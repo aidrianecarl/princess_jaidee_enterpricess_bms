@@ -182,9 +182,16 @@ export default function AdminJobOrdersPage() {
       const data = await response.json()
       const items = Array.isArray(data) ? data : (data.data || data.orders || [])
       
-      // Calculate statistics
+      // Calculate statistics - check both completed and ongoing/in_progress as not-pending states
       const completed = items.filter((item: any) => item.status === 'completed').length
       const total = items.length
+      
+      console.log('[v0] Job Order Items Stats:', {
+        jobOrderId,
+        completed,
+        total,
+        items: items.map((i: any) => ({ id: i.id, status: i.status }))
+      })
 
       setJobOrdersStats((prev) => ({
         ...prev,
@@ -339,7 +346,7 @@ export default function AdminJobOrdersPage() {
 
                             {/* Progress Bar - Inside Card */}
                             {jobOrdersStats[jobOrder.id] && jobOrdersStats[jobOrder.id].total > 0 && (
-                              <div className="mb-4 p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
+                              <div className="mb-4 w-full p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
                                 <OrderProgressBar items={Array.from({ length: jobOrdersStats[jobOrder.id].total }, (_, i) => ({
                                   id: i,
                                   status: i < jobOrdersStats[jobOrder.id].completed ? 'completed' : 'pending'
