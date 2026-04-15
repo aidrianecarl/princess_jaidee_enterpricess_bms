@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -49,6 +49,7 @@ export function SetPaymentModal({
   const [isPriority, setIsPriority] = useState<string>("no")
   const [error, setError] = useState("")
   const [paymentTypeChangeTimer, setPaymentTypeChangeTimer] = useState<NodeJS.Timeout | null>(null)
+  const isInitializedRef = useRef(false)
 
   const handleConfirm = async () => {
     setError("")
@@ -127,12 +128,16 @@ export function SetPaymentModal({
   const effectivePayment = downPaymentInput ? parseFloat(downPaymentInput) : calculatedHalfPayment
   const remainingBalance = quotation.total - effectivePayment
 
-  // Auto-populate down payment with half payment amount on first load
+  // Auto-populate down payment with half payment amount when modal opens
   useEffect(() => {
-    if (isOpen && paymentType === "downpayment" && !downPaymentInput) {
+    if (isOpen && paymentType === "downpayment" && !isInitializedRef.current) {
       setDownPaymentInput(calculatedHalfPayment.toString())
+      isInitializedRef.current = true
     }
-  }, [isOpen, paymentType])
+    if (!isOpen) {
+      isInitializedRef.current = false
+    }
+  }, [isOpen, paymentType, calculatedHalfPayment])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
