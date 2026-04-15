@@ -149,26 +149,8 @@ class OrderController extends Controller
             
             Log::info('[v0] Order created successfully:', ['order_id' => $order->id, 'order_number' => $orderNumber]);
 
-            // If quotation_id is provided, copy quotation items to order_items
-            if ($request->quotation_id) {
-                $quotation = Quotation::with('items')->find($request->quotation_id);
-                if ($quotation && $quotation->items) {
-                    foreach ($quotation->items as $quotationItem) {
-                        OrderItem::create([
-                            'order_id' => $order->id,
-                            'quotation_items_id' => $quotationItem->id,
-                            'service_id' => $quotationItem->service_id,
-                            'quantity' => $quotationItem->quantity,
-                            'unit_price' => $quotationItem->unit_price,
-                            'design_file_url' => $quotationItem->design_file_url ?? null,
-                            'team_roster' => $quotationItem->team_roster ?? null,
-                            'size_specifications' => $quotationItem->size_specifications ?? null,
-                            'notes' => $quotationItem->notes ?? null,
-                            'status' => 'pending',
-                        ]);
-                    }
-                }
-            }
+            // Note: Order items are created separately via the order-items endpoint
+            // This prevents duplicate items when the frontend explicitly creates them
 
             return response()->json([
                 'success' => true,

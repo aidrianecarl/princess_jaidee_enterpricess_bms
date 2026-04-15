@@ -18,6 +18,7 @@ import {
 import { ArrowRight, Loader2, AlertCircle, Package, Eye, Calendar, Users, CheckCircle2 } from 'lucide-react'
 import { ordersApi, jobOrdersApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
+import { OrderProgressBar } from '@/components/order/order-progress-bar'
 
 interface JobOrder {
   id: number
@@ -26,13 +27,16 @@ interface JobOrder {
   status: 'pending' | 'in-progress' | 'completed' | 'cancelled'
   start_date: string
   due_date: string
+  is_priority?: number | boolean
   notes?: string
   customer?: {
     bill_to_name: string
     bill_to_email: string
     bill_to_phone?: string
   }
+  assigned_to?: number
   assignedTo?: {
+    id?: number
     first_name: string
     last_name: string
     email: string
@@ -234,40 +238,6 @@ export default function AdminJobOrdersPage() {
               </div>
 
               {/* Error Message */}
-              {/* Progress Bar */}
-              {jobOrders.length > 0 && (
-                <Card className="p-4 mb-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-semibold text-neutral-900 dark:text-white">Order Progress</p>
-                      <p className="text-xs text-neutral-600 dark:text-neutral-400">{jobOrders.filter(j => j.status === 'completed').length} of {jobOrders.length} completed</p>
-                    </div>
-                    <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-3 overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-green-500 to-emerald-600 h-full transition-all duration-300"
-                        style={{
-                          width: `${jobOrders.length > 0 ? (jobOrders.filter(j => j.status === 'completed').length / jobOrders.length) * 100 : 0}%`
-                        }}
-                      />
-                    </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="text-center">
-                        <p className="font-semibold text-neutral-900 dark:text-white">{jobOrders.filter(j => j.status === 'pending').length}</p>
-                        <p className="text-neutral-600 dark:text-neutral-400">Pending</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-neutral-900 dark:text-white">{jobOrders.filter(j => j.status === 'in-progress').length}</p>
-                        <p className="text-neutral-600 dark:text-neutral-400">In Progress</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-semibold text-neutral-900 dark:text-white">{jobOrders.filter(j => j.status === 'completed').length}</p>
-                        <p className="text-neutral-600 dark:text-neutral-400">Completed</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              )}
-
               {error && (
                 <Card className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
                   <div className="flex gap-3">
@@ -303,28 +273,25 @@ export default function AdminJobOrdersPage() {
                               <h3 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-white">
                                 {jobOrder.job_order_number}
                               </h3>
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(jobOrder.status)}`}>
-                                {getStatusLabel(jobOrder.status)}
-                              </span>
+                              <div className="flex gap-2 flex-wrap items-center">
+                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(jobOrder.status)}`}>
+                                  {getStatusLabel(jobOrder.status)}
+                                </span>
+                                {jobOrder.is_priority ? (
+                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
+                                    Priority
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
 
-                            {/* Progress Bar */}
+                            {/* Progress Bar - Inside Card */}
                             {jobOrdersStats[jobOrder.id] && jobOrdersStats[jobOrder.id].total > 0 && (
-                              <div className="mb-4">
-                                <div className="flex justify-between items-center mb-2">
-                                  <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide">Order Progress</p>
-                                  <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
-                                    {jobOrdersStats[jobOrder.id].completed}/{jobOrdersStats[jobOrder.id].total} completed
-                                  </p>
-                                </div>
-                                <div className="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2 overflow-hidden">
-                                  <div
-                                    className="bg-gradient-to-r from-green-500 to-emerald-600 h-full transition-all duration-300"
-                                    style={{
-                                      width: `${jobOrdersStats[jobOrder.id].total > 0 ? (jobOrdersStats[jobOrder.id].completed / jobOrdersStats[jobOrder.id].total) * 100 : 0}%`
-                                    }}
-                                  />
-                                </div>
+                              <div className="mb-4 p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
+                                <OrderProgressBar items={Array.from({ length: jobOrdersStats[jobOrder.id].total }, (_, i) => ({
+                                  id: i,
+                                  status: i < jobOrdersStats[jobOrder.id].completed ? 'completed' : 'pending'
+                                }))} />
                               </div>
                             )}
 
@@ -372,9 +339,9 @@ export default function AdminJobOrdersPage() {
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide">Assigned To</p>
                                 </div>
                                 <p className="font-semibold text-neutral-900 dark:text-white text-sm">
-                                  {jobOrder.assignedTo
-                                    ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name}`
-                                    : 'Unassigned'}
+                                  {jobOrder.assignedTo && jobOrder.assignedTo.first_name
+                                    ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name || ''}`
+                                    : (jobOrder.assigned_to ? `Employee #${jobOrder.assigned_to}` : 'Unassigned')}
                                 </p>
                               </div>
                             </div>

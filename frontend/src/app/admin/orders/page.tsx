@@ -192,6 +192,9 @@ export default function OrdersPage() {
 
   const handleSaveOrder = async (paymentType: "downpayment" | "fullpayment", employeeId: number, formData: any) => {
     if (!selectedQuotation) return
+    
+    // Prevent double-click/duplicate submission
+    if (savingId === selectedQuotation.id) return
 
     try {
       setSavingId(selectedQuotation.id)

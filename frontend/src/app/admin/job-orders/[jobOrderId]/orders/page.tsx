@@ -6,18 +6,11 @@ import { AdminHeader } from '@/components/admin/header'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X, Edit2 } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X, Edit2, ChevronDown } from 'lucide-react'
 import { getApiImageUrl } from '@/lib/api-urls'
 import { ordersApi, jobOrdersApi } from '@/lib/api'
+import { OrderProgressBar } from '@/components/order/order-progress-bar'
+import { ItemCompletionModal } from '@/components/order/item-completion-modal'
 
 interface TeamMember {
   id?: string
@@ -97,9 +90,10 @@ export default function JobOrderDetailPage() {
   const [error, setError] = useState('')
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
-  const [completeDialogOpen, setCompleteDialogOpen] = useState(false)
   const [completingItemId, setCompletingItemId] = useState<number | null>(null)
+  const [completingItemName, setCompletingItemName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [itemCompletionModalOpen, setItemCompletionModalOpen] = useState(false)
   const router = useRouter()
   const params = useParams()
   const jobOrderId = params.jobOrderId
@@ -314,8 +308,9 @@ export default function JobOrderDetailPage() {
         }
       }
 
-      setCompleteDialogOpen(false)
+      setItemCompletionModalOpen(false)
       setCompletingItemId(null)
+      setCompletingItemName('')
       console.log('[v0] Item marked as completed successfully')
     } catch (err) {
       console.error('[v0] Error completing item:', err)
@@ -326,9 +321,10 @@ export default function JobOrderDetailPage() {
     }
   }
 
-  const openCompleteDialog = (itemId: number) => {
+  const openCompleteDialog = (itemId: number, itemName: string) => {
     setCompletingItemId(itemId)
-    setCompleteDialogOpen(true)
+    setCompletingItemName(itemName)
+    setItemCompletionModalOpen(true)
   }
 
   const formatCurrency = (value: number | string | null | undefined) => {
@@ -444,21 +440,23 @@ export default function JobOrderDetailPage() {
                 </p>
               </div>
 
-              {/* Summary Cards */}
+              {/* Order Progress and Summary */}
               {order && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div className="space-y-6 mb-8">
                   <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Order Number</p>
-                    <p className="text-xl font-bold text-neutral-900 dark:text-white">{order.order_number}</p>
+                    <OrderProgressBar items={order.items || []} />
                   </Card>
-                  <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Order Date</p>
-                    <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatDate(order.order_date)}</p>
-                  </Card>
-                  <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                    <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Total Amount</p>
-                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{formatCurrency(order.total)}</p>
-                  </Card>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Order Number</p>
+                      <p className="text-xl font-bold text-neutral-900 dark:text-white">{order.order_number}</p>
+                    </Card>
+                    <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                      <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Order Date</p>
+                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{formatDate(order.order_date)}</p>
+                    </Card>
+                  </div>
                 </div>
               )}
 
@@ -473,16 +471,25 @@ export default function JobOrderDetailPage() {
 
                     return (
                       <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 shadow-md hover:shadow-lg transition">
-                        {/* Item Header with Mark Complete Button */}
-                        <div className="p-6 bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 border-b border-neutral-200 dark:border-neutral-700">
+                        {/* Item Header with Collapse Button and Submit Button */}
+                        <button
+                          onClick={() => toggleItemExpanded(item.id)}
+                          className="w-full p-6 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-b border-neutral-200 dark:border-neutral-700 hover:from-blue-100 hover:to-cyan-100 dark:hover:from-blue-900/30 dark:hover:to-cyan-900/30 transition text-left"
+                        >
                           <div className="flex items-start justify-between gap-4">
                             <div className="flex-1">
-                              <h3 className="text-xl font-bold text-neutral-900 dark:text-white mb-2">
-                                {item.service?.name || 'Service Item'} 
-                              </h3>
-                              <div className="flex items-center gap-3 flex-wrap">
+                              <div className="flex items-center gap-3 mb-2">
+                                <ChevronDown 
+                                  size={20} 
+                                  className={`text-neutral-600 dark:text-neutral-400 transition-transform ${expandedItems.has(item.id) ? 'rotate-180' : ''}`}
+                                />
+                                <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
+                                  {item.service?.name || 'Service Item'}
+                                </h3>
+                              </div>
+                              <div className="flex items-center gap-3 flex-wrap ml-8">
                                 <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                                  Quantity: <span className="font-semibold text-neutral-900 dark:text-white">{item.quantity}</span>
+                                  Qty: <span className="font-semibold text-neutral-900 dark:text-white">{item.quantity}</span>
                                 </span>
                                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(item.status)}`}>
                                   {getStatusLabel(item.status)}
@@ -491,17 +498,22 @@ export default function JobOrderDetailPage() {
                             </div>
                             {item.status !== 'completed' && (
                               <button
-                                onClick={() => openCompleteDialog(item.id)}
-                                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition whitespace-nowrap"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openCompleteDialog(item.id, item.service?.name || 'Item')
+                                }}
+                                disabled={isSubmitting && completingItemId === item.id}
+                                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white font-semibold rounded-lg transition whitespace-nowrap"
                               >
-                                ✓ Complete
+                                {isSubmitting && completingItemId === item.id ? 'Submitting...' : '✓ Submit'}
                               </button>
                             )}
                           </div>
-                        </div>
+                        </button>
 
-                        {/* Content */}
-                        <div className="p-6 space-y-6">
+                        {/* Collapsible Content */}
+                        {expandedItems.has(item.id) && (
+                          <div className="p-6 space-y-6 border-t border-neutral-200 dark:border-neutral-700 animate-in fade-in duration-200">
                             {/* Design Image */}
                             {item.design_file_url && (
                               <div>
@@ -539,7 +551,6 @@ export default function JobOrderDetailPage() {
                                         <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
                                         <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top Size</th>
                                         <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom Size</th>
-                                        <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Action</th>
                                       </tr>
                                     </thead>
                                     <tbody>
@@ -549,11 +560,6 @@ export default function JobOrderDetailPage() {
                                           <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
                                           <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '—'}</td>
                                           <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</td>
-                                          <td className="px-4 py-3 text-center">
-                                            <button className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded transition">
-                                              Complete
-                                            </button>
-                                          </td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -636,6 +642,7 @@ export default function JobOrderDetailPage() {
                               </div>
                             )}
                           </div>
+                        )}
                       </div>
                     )
                   })}
@@ -667,29 +674,13 @@ export default function JobOrderDetailPage() {
         </div>
       )}
 
-      {/* Completion Confirmation Dialog */}
-      <AlertDialog open={completeDialogOpen} onOpenChange={setCompleteDialogOpen}>
-        <AlertDialogContent className="bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-neutral-900 dark:text-white">Mark Item as Completed?</AlertDialogTitle>
-            <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
-              Are you sure this item is completed? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-3 justify-end">
-            <AlertDialogCancel className="border-neutral-300 dark:border-neutral-600 text-neutral-900 dark:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800">
-              No, Keep it
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCompleteItem}
-              disabled={isSubmitting}
-              className="bg-green-600 hover:bg-green-700 text-white"
-            >
-              {isSubmitting ? 'Marking...' : 'Yes, Mark Complete'}
-            </AlertDialogAction>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Item Completion Modal */}
+      <ItemCompletionModal
+        isOpen={itemCompletionModalOpen}
+        onOpenChange={setItemCompletionModalOpen}
+        itemName={completingItemName}
+        onConfirm={handleCompleteItem}
+      />
     </div>
   )
 }
