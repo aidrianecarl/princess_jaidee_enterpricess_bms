@@ -708,10 +708,15 @@ export default function OrdersPage() {
                             </Button>
                             <Button
                               onClick={() => {
+                                console.log("[v0] Set Payment button clicked - item:", item)
                                 const quotation = sentQuotations.find(q => q.id === item.id)
+                                console.log("[v0] Found quotation:", quotation)
                                 if (quotation) {
+                                  console.log("[v0] Setting selected quotation and opening modal")
                                   setSelectedQuotation(quotation)
                                   setPaymentModalOpen(true)
+                                } else {
+                                  console.warn("[v0] Quotation not found for item id:", item.id)
                                 }
                               }}
                               className="flex items-center justify-center gap-2 bg-gradient-to-r from-orange-600 to-red-600 text-white hover:shadow-lg transition active:scale-95"

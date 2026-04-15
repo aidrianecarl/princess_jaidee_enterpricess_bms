@@ -52,9 +52,11 @@ export function SetPaymentModal({
   const isInitializedRef = useRef(false)
 
   const handleConfirm = async () => {
+    console.log("[v0] handleConfirm called - selectedEmployeeId:", selectedEmployeeId)
     setError("")
 
     if (!selectedEmployeeId) {
+      console.warn("[v0] No employee selected")
       setError("Please select an employee")
       return
     }
@@ -100,6 +102,17 @@ export function SetPaymentModal({
     }
 
     try {
+      console.log("[v0] Calling onConfirm with:", {
+        paymentType,
+        selectedEmployeeId,
+        downPaymentInput,
+        startDate,
+        dueDate,
+        notes,
+        paymentMethod,
+        isPriority: isPriority === "yes" ? 1 : 0,
+      })
+      
       await onConfirm(paymentType, selectedEmployeeId, {
         downPaymentInput,
         startDate,
@@ -109,6 +122,8 @@ export function SetPaymentModal({
         isPriority: isPriority === "yes" ? 1 : 0,
         items: quotation.items || [],
       })
+      
+      console.log("[v0] onConfirm completed successfully")
       onOpenChange(false)
       setPaymentType("downpayment")
       setSelectedEmployeeId(null)
@@ -118,26 +133,45 @@ export function SetPaymentModal({
       setNotes("")
       setPaymentMethod("cash")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to save order")
+      console.error("[v0] Error in handleConfirm:", err)
+      const errorMessage = err instanceof Error ? err.message : "Failed to save order"
+      console.error("[v0] Setting error message:", errorMessage)
+      setError(errorMessage)
     }
   }
 
-  if (!quotation) return null
+  if (!quotation) {
+    console.log("[v0] SetPaymentModal - quotation is null, returning early")
+    return null
+  }
+
+  console.log("[v0] SetPaymentModal render - quotation ID:", quotation.id, "total:", quotation.total)
 
   const calculatedHalfPayment = quotation.total * 0.5
   const effectivePayment = downPaymentInput ? parseFloat(downPaymentInput) : calculatedHalfPayment
   const remainingBalance = quotation.total - effectivePayment
 
+  console.log("[v0] SetPaymentModal state - isOpen:", isOpen, "paymentType:", paymentType, "downPaymentInput:", downPaymentInput)
+  console.log("[v0] SetPaymentModal calculations - calculatedHalfPayment:", calculatedHalfPayment, "effectivePayment:", effectivePayment, "remainingBalance:", remainingBalance)
+
   // Auto-populate down payment with half payment amount when modal opens
   useEffect(() => {
-    if (isOpen && paymentType === "downpayment" && !isInitializedRef.current) {
-      setDownPaymentInput(calculatedHalfPayment.toString())
-      isInitializedRef.current = true
+    console.log("[v0] useEffect running - isOpen:", isOpen, "paymentType:", paymentType, "isInitialized:", isInitializedRef.current)
+    
+    try {
+      if (isOpen && paymentType === "downpayment" && !isInitializedRef.current) {
+        console.log("[v0] Setting down payment to half payment:", calculatedHalfPayment.toString())
+        setDownPaymentInput(calculatedHalfPayment.toString())
+        isInitializedRef.current = true
+      }
+      if (!isOpen) {
+        console.log("[v0] Modal closed, resetting ref")
+        isInitializedRef.current = false
+      }
+    } catch (error) {
+      console.error("[v0] Error in useEffect:", error)
     }
-    if (!isOpen) {
-      isInitializedRef.current = false
-    }
-  }, [isOpen, paymentType, calculatedHalfPayment])
+  }, [isOpen, paymentType])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
