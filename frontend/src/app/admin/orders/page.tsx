@@ -127,9 +127,9 @@ export default function OrdersPage() {
       setIsLoading(true)
       setError("")
       
-      console.log("[v0] Fetching orders from:", `${apiUrl}/orders`)
+      console.log("[v0] Fetching orders from:", `${apiUrl}/admin/orders`)
       
-      const response = await fetch(`${apiUrl}/orders`, {
+      const response = await fetch(`${apiUrl}/admin/orders`, {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,

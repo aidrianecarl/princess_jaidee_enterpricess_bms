@@ -59,4 +59,9 @@ class Order extends Model
     {
         return $this->belongsTo(Quotation::class);
     }
+
+    public function orderItems(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
 }

@@ -229,6 +229,51 @@ class OrderController extends Controller
         ], 200);
     }
 
+    public function adminIndex(Request $request)
+    {
+        try {
+            Log::info('[v0] OrderController adminIndex - Fetching all orders for admin');
+            
+            $query = Order::with(['customer', 'items', 'quotation', 'creator']);
+
+            if ($request->has('search')) {
+                Log::info('[v0] OrderController - Applying search filter:', ['search' => $request->search]);
+                $query->where('order_number', 'like', '%' . $request->search . '%');
+            }
+
+            if ($request->has('status')) {
+                Log::info('[v0] OrderController - Applying status filter:', ['status' => $request->status]);
+                $query->where('order_status', $request->status);
+            }
+
+            if ($request->has('payment_status')) {
+                Log::info('[v0] OrderController - Applying payment status filter:', ['payment_status' => $request->payment_status]);
+                $query->where('payment_status', $request->payment_status);
+            }
+
+            $orders = $query->orderBy('created_at', 'desc')->get();
+            
+            Log::info('[v0] Orders fetched successfully for admin:', ['count' => $orders->count()]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $orders,
+                'count' => $orders->count()
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('[v0] Error fetching admin orders:', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch orders',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function customerIndex(Request $request)
     {
         $query = Order::with(['customer', 'items'])
