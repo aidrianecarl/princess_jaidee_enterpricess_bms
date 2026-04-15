@@ -96,7 +96,7 @@ export function OrderProgressBar({ items }: OrderProgressProps) {
   }
 
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h3 className="font-semibold text-sm text-neutral-700 dark:text-neutral-300">
           Order Progress
@@ -107,18 +107,18 @@ export function OrderProgressBar({ items }: OrderProgressProps) {
       </div>
       
       {/* Progress Steps */}
-      <div className="relative w-full px-0">
+      <div className="relative">
         {/* Background Line */}
-        <div className="absolute top-4 left-4 right-4 h-1 bg-neutral-200 dark:bg-neutral-700" />
+        <div className="absolute top-4 left-0 right-0 h-1 bg-neutral-200 dark:bg-neutral-700 mx-4" />
         
         {/* Progress Line */}
         <div 
-          className="absolute top-4 left-4 h-1 bg-gradient-to-r from-yellow-500 via-blue-500 to-green-500 transition-all duration-500 ease-out"
-          style={{ width: `calc(${getProgressBarWidth()})` }}
+          className="absolute top-4 left-0 h-1 bg-gradient-to-r from-yellow-500 via-blue-500 to-green-500 mx-4 transition-all duration-500 ease-out"
+          style={{ width: `calc(${getProgressBarWidth()} - 32px)` }}
         />
         
         {/* Steps */}
-        <div className="relative flex justify-between w-full px-4">
+        <div className="relative flex justify-between">
           {/* Pending Step */}
           <div className={getStepClass('pending')}>
             <div className={getCircleClass('pending')}>
@@ -152,12 +152,12 @@ export function OrderProgressBar({ items }: OrderProgressProps) {
       </div>
 
       {/* Items Progress Bar */}
-      <div className="mt-4 w-full">
+      <div className="mt-4">
         <div className="flex justify-between text-xs text-neutral-500 dark:text-neutral-500 mb-1">
           <span>Items Completed</span>
           <span>{items.filter(i => i.status === 'completed').length} / {items.length}</span>
         </div>
-        <div className="relative h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden w-full">
+        <div className="relative h-2 bg-neutral-200 dark:bg-neutral-700 rounded-full overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
