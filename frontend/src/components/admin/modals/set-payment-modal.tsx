@@ -155,23 +155,26 @@ export function SetPaymentModal({
   console.log("[v0] SetPaymentModal calculations - calculatedHalfPayment:", calculatedHalfPayment, "effectivePayment:", effectivePayment, "remainingBalance:", remainingBalance)
 
   // Auto-populate down payment with half payment amount when modal opens
+  // ✅ ALWAYS declare hooks first
   useEffect(() => {
-    console.log("[v0] useEffect running - isOpen:", isOpen, "paymentType:", paymentType, "isInitialized:", isInitializedRef.current)
-    
+    if (!quotation) return // ✅ guard FIRST
+
+    console.log("[v0] useEffect running - isOpen:", isOpen, "paymentType:", paymentType)
+
     try {
       if (isOpen && paymentType === "downpayment" && !isInitializedRef.current) {
-        console.log("[v0] Setting down payment to half payment:", calculatedHalfPayment.toString())
-        setDownPaymentInput(calculatedHalfPayment.toString())
+        const half = quotation.total * 0.5
+        setDownPaymentInput(half.toString())
         isInitializedRef.current = true
       }
+
       if (!isOpen) {
-        console.log("[v0] Modal closed, resetting ref")
         isInitializedRef.current = false
       }
     } catch (error) {
       console.error("[v0] Error in useEffect:", error)
     }
-  }, [isOpen, paymentType])
+  }, [isOpen, paymentType, quotation])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
