@@ -181,7 +181,6 @@ export default function OrdersPage() {
           order_date: new Date().toISOString().split('T')[0],
           subtotal: selectedQuotation.total,
           discount: 0,
-          tax: 0,
           total: selectedQuotation.total,
           payment_status: paymentType === "fullpayment" ? "paid" : "partial",
           order_status: "pending",

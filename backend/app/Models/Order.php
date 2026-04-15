@@ -16,7 +16,6 @@ class Order extends Model
         'order_date',
         'subtotal',
         'discount',
-        'tax',
         'total',
         'payment_status',
         'order_status',
@@ -28,7 +27,6 @@ class Order extends Model
         'order_date' => 'date',
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
-        'tax' => 'decimal:2',
         'total' => 'decimal:2',
     ];
 
