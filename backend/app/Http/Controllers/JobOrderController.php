@@ -33,6 +33,24 @@ class JobOrderController extends Controller
 
             $jobOrders = $query->orderBy('created_at', 'desc')->get();
 
+            \Log::info('[v0] Job Orders Index - Fetched', [
+                'count' => $jobOrders->count(),
+                'orders' => $jobOrders->map(function($order) {
+                    return [
+                        'id' => $order->id,
+                        'number' => $order->job_order_number,
+                        'status' => $order->status,
+                        'assigned_to' => $order->assigned_to,
+                        'assignedTo' => $order->assignedTo ? [
+                            'id' => $order->assignedTo->id,
+                            'first_name' => $order->assignedTo->first_name,
+                            'last_name' => $order->assignedTo->last_name,
+                            'email' => $order->assignedTo->email
+                        ] : null
+                    ];
+                })
+            ]);
+
             return response()->json([
                 'data' => $jobOrders,
             ], 200);
@@ -351,19 +369,46 @@ class JobOrderController extends Controller
     public function releaseJobOrder(Request $request, $id)
     {
         try {
-            $jobOrder = JobOrder::with(['order.items'])->find($id);
+            \Log::info('[v0] Release Job Order - START', ['job_order_id' => $id]);
+            
+            $jobOrder = JobOrder::with(['order.items', 'assignedTo', 'customer'])->find($id);
 
             if (!$jobOrder) {
+                \Log::warning('[v0] Release Job Order - NOT FOUND', ['job_order_id' => $id]);
                 return response()->json(['error' => 'Job Order not found'], 404);
             }
 
+            \Log::info('[v0] Release Job Order - FOUND', [
+                'job_order_id' => $id,
+                'current_status' => $jobOrder->status,
+                'has_order' => !!$jobOrder->order,
+                'items_count' => $jobOrder->order ? $jobOrder->order->items->count() : 0
+            ]);
+
             // Check if all items are completed
             if ($jobOrder->order) {
-                $allCompleted = $jobOrder->order->items->every(function ($item) {
+                $items = $jobOrder->order->items;
+                $completed = $items->filter(function ($item) {
+                    return $item->status === 'completed';
+                })->count();
+                
+                \Log::info('[v0] Release Job Order - Items Status', [
+                    'total' => $items->count(),
+                    'completed' => $completed,
+                    'items' => $items->map(function($item) {
+                        return ['id' => $item->id, 'status' => $item->status];
+                    })
+                ]);
+
+                $allCompleted = $items->every(function ($item) {
                     return $item->status === 'completed';
                 });
 
                 if (!$allCompleted) {
+                    \Log::warning('[v0] Release Job Order - NOT ALL COMPLETED', [
+                        'job_order_id' => $id,
+                        'all_completed' => $allCompleted
+                    ]);
                     return response()->json([
                         'success' => false,
                         'error' => 'Cannot release job order. Not all items are completed.'
@@ -382,7 +427,7 @@ class JobOrderController extends Controller
                 $jobOrder->order->update(['order_status' => 'completed']);
             }
 
-            Log::info('Job order released', ['job_order_id' => $id]);
+            \Log::info('[v0] Release Job Order - SUCCESS', ['job_order_id' => $id]);
 
             return response()->json([
                 'success' => true,
@@ -390,7 +435,11 @@ class JobOrderController extends Controller
                 'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo'])
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error releasing job order: ' . $e->getMessage());
+            \Log::error('[v0] Error releasing job order:', [
+                'job_order_id' => $id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

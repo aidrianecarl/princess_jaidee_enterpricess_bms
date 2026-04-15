@@ -186,17 +186,32 @@ export default function AdminJobOrdersPage() {
       const completed = items.filter((item: any) => item.status === 'completed').length
       const total = items.length
       
-      console.log('[v0] Job Order Items Stats:', {
+      console.log('[v0] ========== JOB ORDER ITEMS STATS ==========')
+      console.log('[v0] Job Order Items:', {
         jobOrderId,
         completed,
         total,
-        items: items.map((i: any) => ({ id: i.id, status: i.status }))
+        shouldShowRelease: completed === total,
+        items: items.map((i: any) => ({ 
+          id: i.id, 
+          status: i.status,
+          service: i.service?.name
+        }))
       })
+      console.log('[v0] ==========================================')
 
-      setJobOrdersStats((prev) => ({
-        ...prev,
-        [jobOrderId]: { completed, total }
-      }))
+      setJobOrdersStats((prev) => {
+        const newStats = {
+          ...prev,
+          [jobOrderId]: { completed, total }
+        }
+        console.log('[v0] Stats updated for Job Order:', {
+          jobOrderId,
+          newStats: newStats[jobOrderId],
+          allStats: newStats
+        })
+        return newStats
+      })
     } catch (err) {
       console.error('[v0] Error fetching job order items:', err)
     }
@@ -222,12 +237,21 @@ export default function AdminJobOrdersPage() {
       const data = await response.json()
       const orders = Array.isArray(data) ? data : data.data || []
       
-      console.log('[v0] Fetched Job Orders:', orders.map((o: any) => ({
-        id: o.id,
-        status: o.status,
-        statusLower: o.status?.toLowerCase(),
-        number: o.job_order_number
-      })))
+      console.log('[v0] ========== FETCHED JOB ORDERS ==========')
+      orders.forEach((o: any) => {
+        console.log('[v0] Job Order:', {
+          id: o.id,
+          number: o.job_order_number,
+          status: o.status,
+          statusLowercase: o.status?.toLowerCase(),
+          assignedTo: o.assignedTo,
+          assignedToId: o.assigned_to,
+          firstName: o.assignedTo?.first_name,
+          lastName: o.assignedTo?.last_name,
+          fullName: o.assignedTo ? `${o.assignedTo.first_name} ${o.assignedTo.last_name}` : 'N/A'
+        })
+      })
+      console.log('[v0] ========================================')
       
       setJobOrders(orders)
       
@@ -405,6 +429,19 @@ export default function AdminJobOrdersPage() {
                                   <Users size={16} className="text-neutral-600 dark:text-neutral-400" />
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide">Assigned To</p>
                                 </div>
+                                {(() => {
+                                  console.log('[v0] ASSIGNED TO DEBUG:', {
+                                    jobOrderId: jobOrder.id,
+                                    assignedTo: jobOrder.assignedTo,
+                                    assignedToId: jobOrder.assigned_to,
+                                    hasFirstName: !!jobOrder.assignedTo?.first_name,
+                                    firstName: jobOrder.assignedTo?.first_name,
+                                    lastName: jobOrder.assignedTo?.last_name,
+                                    fullName: jobOrder.assignedTo ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name || ''}` : null,
+                                    fallback: jobOrder.assigned_to ? `Employee #${jobOrder.assigned_to}` : 'Unassigned'
+                                  })
+                                  return null
+                                })()}
                                 <p className="font-semibold text-neutral-900 dark:text-white text-sm">
                                   {jobOrder.assignedTo && jobOrder.assignedTo.first_name
                                     ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name || ''}`
@@ -423,6 +460,28 @@ export default function AdminJobOrdersPage() {
 
                           {/* Right Buttons */}
                           <div className="flex gap-2 w-full md:w-auto flex-col md:flex-row">
+                            {(() => {
+                              const stats = jobOrdersStats[jobOrder.id]
+                              const statusLower = jobOrder.status?.toLowerCase()
+                              const hasStats = stats && stats.total > 0
+                              const allCompleted = stats && stats.completed === stats.total
+                              const notCompleted = statusLower !== 'completed'
+                              const shouldShow = hasStats && allCompleted && notCompleted
+                              
+                              console.log('[v0] RELEASE BUTTON DEBUG:', {
+                                jobOrderId: jobOrder.id,
+                                stats: stats,
+                                hasStats,
+                                allCompleted,
+                                notCompleted,
+                                shouldShow,
+                                statusLower,
+                                statsTotal: stats?.total,
+                                statsCompleted: stats?.completed
+                              })
+                              
+                              return null
+                            })()}
                             <Button
                               onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
                               className="bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
