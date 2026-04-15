@@ -221,6 +221,14 @@ export default function AdminJobOrdersPage() {
 
       const data = await response.json()
       const orders = Array.isArray(data) ? data : data.data || []
+      
+      console.log('[v0] Fetched Job Orders:', orders.map((o: any) => ({
+        id: o.id,
+        status: o.status,
+        statusLower: o.status?.toLowerCase(),
+        number: o.job_order_number
+      })))
+      
       setJobOrders(orders)
       
       // Fetch items for each job order to get stats
@@ -422,13 +430,15 @@ export default function AdminJobOrdersPage() {
                               <Eye size={18} />
                               Update Order
                             </Button>
-                            {/* Show Release button when all items are completed */}
-                            {jobOrdersStats[jobOrder.id] && 
-                             jobOrdersStats[jobOrder.id].total > 0 && 
-                             jobOrdersStats[jobOrder.id].completed === jobOrdersStats[jobOrder.id].total &&
+                            {/* Show Release button when all items are completed and job order is not yet completed */}
+                            {jobOrdersStats[jobOrder.id]?.total > 0 && 
+                             jobOrdersStats[jobOrder.id]?.completed === jobOrdersStats[jobOrder.id]?.total &&
                              jobOrder.status?.toLowerCase() !== 'completed' && (
                               <Button
-                                onClick={() => handleReleaseJobOrder(jobOrder.id)}
+                                onClick={() => {
+                                  console.log('[v0] Releasing job order:', jobOrder.id)
+                                  handleReleaseJobOrder(jobOrder.id)
+                                }}
                                 disabled={isReleasing === jobOrder.id}
                                 className="bg-green-600 hover:bg-green-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
                               >
