@@ -70,9 +70,7 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
-  if (!quotation) return null
-
-  const items = quotation.items || []
+  const items = quotation?.items || []
 
   const toggleItemExpanded = (itemId: number) => {
     const newExpanded = new Set(expandedItems)
@@ -106,6 +104,8 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
       maximumFractionDigits: 2,
     }).format(num)
   }
+
+  if (!quotation) return null
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
