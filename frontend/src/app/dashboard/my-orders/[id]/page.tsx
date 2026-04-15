@@ -207,6 +207,11 @@ export default function MyOrderDetailPage() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
+      
+      console.log("[v0] MyOrderDetail - Fetching from:", apiUrl)
+      console.log("[v0] MyOrderDetail - Order ID:", params.id)
+      console.log("[v0] MyOrderDetail - Auth token:", token ? "Present" : "Missing")
+      
       const response = await fetch(`${apiUrl}/orders/${params.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -214,11 +219,17 @@ export default function MyOrderDetailPage() {
         },
       })
 
+      console.log("[v0] MyOrderDetail - Response status:", response.status)
+
       if (!response.ok) {
-        throw new Error("Failed to fetch order details")
+        const errorText = await response.text()
+        console.error("[v0] MyOrderDetail - Error response:", errorText)
+        throw new Error(`Failed to fetch order details: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
+      console.log("[v0] MyOrderDetail - Order data:", data)
+      
       let orderData = data.data || data
       
       // Fetch order items with their status
@@ -231,8 +242,12 @@ export default function MyOrderDetailPage() {
             },
           })
           
+          console.log("[v0] MyOrderDetail - Items response status:", itemsResponse.status)
+          
           if (itemsResponse.ok) {
             const itemsData = await itemsResponse.json()
+            console.log("[v0] MyOrderDetail - Items data:", itemsData)
+            
             let items = itemsData.data || itemsData
             
             if (Array.isArray(items)) {
@@ -254,7 +269,11 @@ export default function MyOrderDetailPage() {
       setOrder(orderData)
     } catch (err) {
       console.error("[v0] Error fetching order:", err)
-      setError("Failed to load order details")
+      console.error("[v0] Error details:", {
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined
+      })
+      setError(err instanceof Error ? err.message : "Failed to load order details")
     } finally {
       setIsLoading(false)
     }

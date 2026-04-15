@@ -184,6 +184,9 @@ export default function MyOrdersPage() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+      
+      console.log("[v0] MyOrders - Fetching from:", apiUrl)
+      console.log("[v0] MyOrders - Auth token:", token ? "Present" : "Missing")
 
       const response = await fetch(`${apiUrl}/orders`, {
         method: "GET",
@@ -194,24 +197,39 @@ export default function MyOrdersPage() {
         },
       })
 
+      console.log("[v0] MyOrders - Response status:", response.status)
+      console.log("[v0] MyOrders - Response ok:", response.ok)
+
       if (!response.ok) {
+        const errorText = await response.text()
+        console.error("[v0] MyOrders - Error response text:", errorText)
+        
         if (response.status === 401) {
+          console.log("[v0] MyOrders - Unauthorized, redirecting to home")
           router.push("/")
           return
         }
-        throw new Error(`Failed to fetch orders: ${response.statusText}`)
+        throw new Error(`Failed to fetch orders: ${response.status} ${response.statusText} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log("[v0] MyOrders - Response data:", data)
+      
       const ordersData = data.data || data
       
       if (Array.isArray(ordersData)) {
+        console.log("[v0] MyOrders - Orders loaded:", ordersData.length)
         setOrders(ordersData)
       } else {
+        console.warn("[v0] MyOrders - Data is not an array:", ordersData)
         setOrders([])
       }
     } catch (err) {
       console.error("[v0] MyOrders - Error fetching orders:", err)
+      console.error("[v0] MyOrders - Error details:", {
+        message: err instanceof Error ? err.message : String(err),
+        stack: err instanceof Error ? err.stack : undefined
+      })
       setError(err instanceof Error ? err.message : "Failed to load orders")
       setOrders([])
     } finally {

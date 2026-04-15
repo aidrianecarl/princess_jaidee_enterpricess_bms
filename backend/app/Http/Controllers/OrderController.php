@@ -270,39 +270,56 @@ class OrderController extends Controller
     public function customerIndex(Request $request)
     {
         try {
-            Log::info('[v0] OrderController customerIndex - Fetching orders for customer');
-            
-            // Get the authenticated user's customer_id from their quotations or use their user_id
             $user = auth()->user();
             
-            // First, try to find orders linked to quotations created by this user
-            $query = Order::with(['customer', 'items.service', 'quotation'])
-                ->whereHas('quotation', function($q) use ($user) {
-                    $q->where('user_id', $user->id);
-                });
+            \Log::info('[v0] OrderController customerIndex - START', [
+                'user_id' => $user->id,
+                'user_email' => $user->email,
+                'timestamp' => now()
+            ]);
+            
+            // Fetch orders linked to quotations created by this user (created_by field in quotations)
+            $query = Order::with(['customer', 'items.service', 'quotation']);
+            
+            // Add where clause for quotation relationship - use 'created_by' not 'user_id'
+            $query->whereHas('quotation', function($q) use ($user) {
+                \Log::info('[v0] whereHas quotation - filtering by created_by: ' . $user->id);
+                $q->where('created_by', $user->id);
+            });
 
             $orders = $query->orderBy('created_at', 'desc')->get();
 
-            Log::info('[v0] Customer orders fetched:', [
+            \Log::info('[v0] OrderController customerIndex - SUCCESS', [
                 'user_id' => $user->id,
-                'count' => $orders->count()
+                'orders_count' => $orders->count(),
+                'timestamp' => now()
             ]);
 
             return response()->json([
                 'success' => true,
                 'data' => $orders,
-                'count' => $orders->count()
+                'count' => $orders->count(),
+                'message' => 'Orders fetched successfully'
             ], 200);
+            
         } catch (\Exception $e) {
-            Log::error('[v0] Error fetching customer orders:', [
+            \Log::error('[v0] OrderController customerIndex - ERROR', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->user()->id ?? 'unknown',
+                'timestamp' => now()
             ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch orders',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'debug' => env('APP_DEBUG') ? [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ] : null
             ], 500);
         }
     }
