@@ -151,19 +151,29 @@ export function SetPaymentModal({
   const effectivePayment = downPaymentInput ? parseFloat(downPaymentInput) : calculatedHalfPayment
   const remainingBalance = quotation.total - effectivePayment
 
-  console.log("[v0] SetPaymentModal state - isOpen:", isOpen, "paymentType:", paymentType, "downPaymentInput:", downPaymentInput)
-  console.log("[v0] SetPaymentModal calculations - calculatedHalfPayment:", calculatedHalfPayment, "effectivePayment:", effectivePayment, "remainingBalance:", remainingBalance)
-
-  // Auto-populate down payment with half payment amount when modal opens
+  // Reset form and re-initialize when modal opens/closes
   useEffect(() => {
-    if (isOpen && !isInitializedRef.current) {
-      setDownPaymentInput(calculatedHalfPayment.toString())
-      isInitializedRef.current = true
-    }
-    if (!isOpen) {
+    if (isOpen) {
+      // When modal opens, initialize with half payment
+      if (!isInitializedRef.current) {
+        setDownPaymentInput(calculatedHalfPayment.toString())
+        setPaymentType("downpayment")
+        isInitializedRef.current = true
+      }
+    } else {
+      // When modal closes, reset the ref for next time
       isInitializedRef.current = false
     }
-  }, [isOpen, calculatedHalfPayment])
+  }, [isOpen]) // Only depend on isOpen, not calculatedHalfPayment
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (paymentTypeChangeTimer) {
+        clearTimeout(paymentTypeChangeTimer)
+      }
+    }
+  }, [])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
