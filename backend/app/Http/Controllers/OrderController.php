@@ -466,6 +466,11 @@ class OrderController extends Controller
 
             \Log::info('Order item updated successfully', ['item_id' => $id]);
 
+            // Auto-update order and job order status based on item completion
+            if ($request->has('status') && $request->status === 'completed') {
+                $this->autoUpdateOrderAndJobOrderStatus($item->order_id);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Order item updated successfully',
@@ -473,6 +478,101 @@ class OrderController extends Controller
             ], 200);
         } catch (\Exception $e) {
             \Log::error('Order item update error: ' . $e->getMessage(), ['item_id' => $id, 'exception' => $e]);
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Auto-update order and job order status based on order items completion
+     */
+    private function autoUpdateOrderAndJobOrderStatus($orderId)
+    {
+        try {
+            $order = Order::with('items')->find($orderId);
+            if (!$order) {
+                \Log::warning('Order not found for auto-update: ' . $orderId);
+                return;
+            }
+
+            $items = $order->items;
+            $totalItems = $items->count();
+            $completedItems = $items->where('status', 'completed')->count();
+
+            \Log::info('Auto-update check', [
+                'order_id' => $orderId,
+                'total_items' => $totalItems,
+                'completed_items' => $completedItems
+            ]);
+
+            // If at least one item is completed, set status to InProduction
+            // Note: orders table has ' InProduction' (with leading space) in enum, job_orders has 'InProduction'
+            if ($completedItems > 0 && $completedItems < $totalItems) {
+                $order->update(['order_status' => ' InProduction']); // Note: leading space for orders table enum
+                \Log::info('Order status updated to InProduction', ['order_id' => $orderId]);
+
+                // Also update associated job orders (no leading space for job_orders table)
+                $this->updateJobOrderStatus($orderId, 'InProduction');
+            }
+
+            // If all items are completed, set status to completed
+            if ($completedItems === $totalItems && $totalItems > 0) {
+                $order->update(['order_status' => 'completed']);
+                \Log::info('Order status updated to completed', ['order_id' => $orderId]);
+
+                // Also update associated job orders to completed with completed_date
+                $this->updateJobOrderStatus($orderId, 'completed', now()->toDateString());
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error in autoUpdateOrderAndJobOrderStatus: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update job order status based on order status
+     */
+    private function updateJobOrderStatus($orderId, $status, $completedDate = null)
+    {
+        try {
+            $jobOrders = \App\Models\JobOrder::where('order_id', $orderId)->get();
+            
+            foreach ($jobOrders as $jobOrder) {
+                $updateData = ['status' => $status];
+                
+                if ($completedDate && $status === 'completed') {
+                    $updateData['completed_date'] = $completedDate;
+                }
+                
+                $jobOrder->update($updateData);
+                \Log::info('Job order status updated', [
+                    'job_order_id' => $jobOrder->id,
+                    'status' => $status,
+                    'completed_date' => $completedDate
+                ]);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error updating job order status: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get order items by order ID (for job order details page)
+     */
+    public function getOrderItemsByOrderId($orderId)
+    {
+        try {
+            $order = Order::with(['items.service', 'customer'])->find($orderId);
+            
+            if (!$order) {
+                return response()->json(['error' => 'Order not found'], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $order->items,
+                'order' => $order
+            ], 200);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching order items: ' . $e->getMessage());
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }

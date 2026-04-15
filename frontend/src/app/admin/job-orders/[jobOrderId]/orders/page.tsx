@@ -6,9 +6,10 @@ import { AdminHeader } from '@/components/admin/header'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X, Edit2, ChevronDown } from 'lucide-react'
+import { ArrowLeft, AlertCircle, Package, CheckCircle, ZoomIn, X, Edit2, ChevronDown, CheckCircle2, Loader2 } from 'lucide-react'
 import { getApiImageUrl } from '@/lib/api-urls'
 import { ordersApi, jobOrdersApi } from '@/lib/api'
+import { useToast } from '@/hooks/use-toast'
 import { OrderProgressBar } from '@/components/order/order-progress-bar'
 import { ItemCompletionModal } from '@/components/order/item-completion-modal'
 
@@ -76,6 +77,7 @@ interface JobOrder {
   job_order_number: string
   order_id: number
   status: string
+  completed_date?: string
   customer?: {
     bill_to_name: string
   }
@@ -94,11 +96,60 @@ export default function JobOrderDetailPage() {
   const [completingItemName, setCompletingItemName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [itemCompletionModalOpen, setItemCompletionModalOpen] = useState(false)
+  const [isReleasing, setIsReleasing] = useState(false)
   const router = useRouter()
   const params = useParams()
+  const { toast } = useToast()
   const jobOrderId = params.jobOrderId
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
+
+  const handleReleaseJobOrder = async () => {
+    const token = localStorage.getItem('admin_token')
+    if (!token || !jobOrder) return
+
+    try {
+      setIsReleasing(true)
+      
+      const response = await fetch(`${apiUrl}/admin/job-orders/${jobOrder.id}/release`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Job order released successfully',
+          variant: 'default',
+        })
+        fetchData(token)
+      } else {
+        const data = await response.json()
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to release job order',
+          variant: 'destructive',
+        })
+      }
+    } catch (err) {
+      console.error('[v0] Error releasing job order:', err)
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to release job order',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsReleasing(false)
+    }
+  }
+
+  const isAllItemsCompleted = () => {
+    if (!order?.items || order.items.length === 0) return false
+    return order.items.every(item => item.status === 'completed')
+  }
 
   useEffect(() => {
     checkAuth()
@@ -234,6 +285,7 @@ export default function JobOrderDetailPage() {
       console.log('[v0] Item ID:', completingItemId)
       console.log('[v0] API Endpoint:', `${apiUrl}/admin/order-items/${completingItemId}`)
 
+      // The backend will automatically update order and job order status
       const response = await fetch(`${apiUrl}/admin/order-items/${completingItemId}`, {
         method: 'PUT',
         headers: {
@@ -254,59 +306,8 @@ export default function JobOrderDetailPage() {
       const responseData = await response.json()
       console.log('[v0] Response Data:', responseData)
 
-      // Update local state
-      const updatedOrder = { ...order } as Order
-      if (updatedOrder.items) {
-        updatedOrder.items = updatedOrder.items.map((item) =>
-          item.id === completingItemId ? { ...item, status: 'completed' } : item
-        )
-        setOrder(updatedOrder)
-        console.log('[v0] Local state updated')
-
-        // Check if at least one item is completed - update job order to in-progress
-        const hasCompletedItem = updatedOrder.items.some((item) => item.status === 'completed')
-        if (hasCompletedItem && jobOrder.status === 'pending') {
-          console.log('[v0] Updating job order status to in-progress')
-          await fetch(`${apiUrl}/admin/job-orders/${jobOrder.id}/status`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: 'in-progress' }),
-          })
-          setJobOrder({ ...jobOrder, status: 'in-progress' })
-        }
-
-        // Check if all items are completed - update to completed
-        const allCompleted = updatedOrder.items.every((item) => item.status === 'completed')
-        if (allCompleted) {
-          console.log('[v0] All items completed - updating order and job order to completed')
-          
-          // Update order status
-          await fetch(`${apiUrl}/orders/${order.id}/status`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: 'completed' }),
-          })
-          
-          // Update job order status
-          await fetch(`${apiUrl}/admin/job-orders/${jobOrder.id}/status`, {
-            method: 'PUT',
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ status: 'completed' }),
-          })
-          
-          setOrder({ ...updatedOrder, status: 'completed' } as Order)
-          setJobOrder({ ...jobOrder, status: 'completed' })
-        }
-      }
+      // Refetch data to get updated statuses from backend
+      fetchData(token)
 
       setItemCompletionModalOpen(false)
       setCompletingItemId(null)
@@ -348,11 +349,14 @@ export default function JobOrderDetailPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase()
+    switch (normalizedStatus) {
       case 'pending':
         return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
       case 'ongoing':
       case 'in-progress':
+      case 'inproduction':
+      case 'in_production':
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
       case 'completed':
         return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -362,6 +366,11 @@ export default function JobOrderDetailPage() {
   }
 
   const getStatusLabel = (status: string) => {
+    if (!status) return 'Unknown'
+    const normalizedStatus = status.toLowerCase()
+    if (normalizedStatus === 'inproduction' || normalizedStatus === 'in_production') {
+      return 'In Production'
+    }
     return status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
@@ -445,6 +454,32 @@ export default function JobOrderDetailPage() {
                 <div className="space-y-6 mb-8">
                   <Card className="p-6 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                     <OrderProgressBar items={order.items || []} />
+                    
+                    {/* Release Button - Show when all items are completed */}
+                    {isAllItemsCompleted() && jobOrder.status?.toLowerCase() !== 'completed' && (
+                      <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                        <Button
+                          onClick={handleReleaseJobOrder}
+                          disabled={isReleasing}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3"
+                        >
+                          {isReleasing ? (
+                            <>
+                              <Loader2 size={18} className="animate-spin mr-2" />
+                              Releasing...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 size={18} className="mr-2" />
+                              Release Job Order
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-2">
+                          All items are completed. Release this job order to mark it as finished.
+                        </p>
+                      </div>
+                    )}
                   </Card>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -16,23 +16,22 @@ class JobOrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = JobOrder::with(['assignedTo', 'customer']);
+            $query = JobOrder::with(['assignedTo', 'customer', 'order.items']);
 
             if ($request->has('search')) {
                 $query->where('job_order_number', 'like', '%' . $request->search . '%');
             }
 
             if ($request->has('status')) {
-                $status = $request->status === 'in_progress' ? 'in-progress' : $request->status;
+                // Normalize status for filtering
+                $status = $request->status;
+                if ($status === 'in_progress' || $status === 'in-progress') {
+                    $status = 'InProduction';
+                }
                 $query->where('status', $status);
             }
 
             $jobOrders = $query->orderBy('created_at', 'desc')->get();
-
-            $jobOrders = $jobOrders->map(function($jobOrder) {
-                $jobOrder->status = str_replace('-', '_', $jobOrder->status);
-                return $jobOrder;
-            });
 
             return response()->json([
                 'data' => $jobOrders,
@@ -46,13 +45,11 @@ class JobOrderController extends Controller
     public function show($id)
     {
         try {
-            $jobOrder = JobOrder::with(['assignedTo', 'customer'])->find($id);
+            $jobOrder = JobOrder::with(['assignedTo', 'customer', 'order.items'])->find($id);
 
             if (!$jobOrder) {
                 return response()->json(['error' => 'Job Order not found'], 404);
             }
-
-            $jobOrder->status = str_replace('-', '_', $jobOrder->status);
 
             return response()->json($jobOrder, 200);
         } catch (\Exception $e) {
@@ -135,14 +132,18 @@ class JobOrderController extends Controller
             }
 
             $validator = Validator::make($request->all(), [
-                'status' => 'required|in:pending,in_progress,in-progress,on_hold,completed,cancelled',
+                'status' => 'required|in:pending,in_progress,in-progress,InProduction,on_hold,completed,cancelled',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            $status = $request->status === 'in_progress' ? 'in-progress' : $request->status;
+            // Normalize status: convert various formats to database enum values
+            $status = $request->status;
+            if ($status === 'in_progress' || $status === 'in-progress') {
+                $status = 'InProduction';
+            }
 
             if ($status === 'completed') {
                 // Mark all uncompleted items as completed and reduce stock
@@ -171,17 +172,17 @@ class JobOrderController extends Controller
             } else {
                 $jobOrder->update(['status' => $status]);
                 
-                // Also update the related order status when job order status changes
-                if ($jobOrder->order_id && $status === 'in-progress') {
+                // Also update the related order status when job order status changes to InProduction
+                if ($jobOrder->order_id && $status === 'InProduction') {
                     $order = \App\Models\Order::find($jobOrder->order_id);
                     if ($order) {
-                        $order->update(['order_status' => 'processing']);
+                        // Note: orders table has ' InProduction' (with leading space) in enum
+                        $order->update(['order_status' => ' InProduction']);
                     }
                 }
             }
 
-            $jobOrder->load(['assignedTo', 'customer', 'items.product', 'items.service']);
-            $jobOrder->status = str_replace('-', '_', $jobOrder->status);
+            $jobOrder->load(['assignedTo', 'customer', 'order.items']);
 
             return response()->json([
                 'message' => 'Job Order updated successfully',
@@ -317,5 +318,80 @@ class JobOrderController extends Controller
         return response()->json([
             'message' => 'Job Order deleted successfully',
         ], 200);
+    }
+
+    /**
+     * Get order items for a job order
+     */
+    public function getOrderItems($id)
+    {
+        try {
+            $jobOrder = JobOrder::with(['order.items.service', 'customer'])->find($id);
+
+            if (!$jobOrder) {
+                return response()->json(['error' => 'Job Order not found'], 404);
+            }
+
+            $orderItems = $jobOrder->order ? $jobOrder->order->items : [];
+
+            return response()->json([
+                'success' => true,
+                'data' => $orderItems,
+                'job_order' => $jobOrder
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error fetching order items for job order: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Release a completed job order
+     */
+    public function releaseJobOrder(Request $request, $id)
+    {
+        try {
+            $jobOrder = JobOrder::with(['order.items'])->find($id);
+
+            if (!$jobOrder) {
+                return response()->json(['error' => 'Job Order not found'], 404);
+            }
+
+            // Check if all items are completed
+            if ($jobOrder->order) {
+                $allCompleted = $jobOrder->order->items->every(function ($item) {
+                    return $item->status === 'completed';
+                });
+
+                if (!$allCompleted) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Cannot release job order. Not all items are completed.'
+                    ], 400);
+                }
+            }
+
+            // Update job order status to completed if not already
+            $jobOrder->update([
+                'status' => 'completed',
+                'completed_date' => $jobOrder->completed_date ?? now()->toDateString()
+            ]);
+
+            // Also update order status
+            if ($jobOrder->order) {
+                $jobOrder->order->update(['order_status' => 'completed']);
+            }
+
+            Log::info('Job order released', ['job_order_id' => $id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Job order released successfully',
+                'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo'])
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error releasing job order: ' . $e->getMessage());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
     }
 }

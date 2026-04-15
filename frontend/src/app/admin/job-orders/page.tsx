@@ -24,9 +24,10 @@ interface JobOrder {
   id: number
   job_order_number: string
   order_id: number
-  status: 'pending' | 'in-progress' | 'completed' | 'cancelled'
+  status: 'pending' | 'InProduction' | 'completed' | 'cancelled'
   start_date: string
   due_date: string
+  completed_date?: string
   is_priority?: number | boolean
   notes?: string
   customer?: {
@@ -55,6 +56,7 @@ export default function AdminJobOrdersPage() {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null)
   const [isApproving, setIsApproving] = useState(false)
+  const [isReleasing, setIsReleasing] = useState<number | null>(null)
 
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
@@ -71,12 +73,12 @@ export default function AdminJobOrdersPage() {
       setIsApproving(true)
       
       // Update job order status to in-progress (backend will also update related order status)
-      const response = await jobOrdersApi.updateStatus(selectedJobOrder.id, 'in-progress')
+      const response = await jobOrdersApi.updateStatus(selectedJobOrder.id, 'InProduction')
       
       if (response && response.status === 200) {
         toast({
           title: 'Success',
-          description: 'Job order approved and marked as processing',
+          description: 'Job order approved and marked as In Production',
           variant: 'default',
         })
         
@@ -101,6 +103,48 @@ export default function AdminJobOrdersPage() {
       })
     } finally {
       setIsApproving(false)
+    }
+  }
+
+  const handleReleaseJobOrder = async (jobOrderId: number) => {
+    const token = localStorage.getItem('admin_token')
+    if (!token) return
+
+    try {
+      setIsReleasing(jobOrderId)
+      
+      const response = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}/release`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Job order released successfully',
+          variant: 'default',
+        })
+        fetchJobOrders(token)
+      } else {
+        const data = await response.json()
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to release job order',
+          variant: 'destructive',
+        })
+      }
+    } catch (err) {
+      console.error('[v0] Error releasing job order:', err)
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to release job order',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsReleasing(null)
     }
   }
 
@@ -193,10 +237,13 @@ export default function AdminJobOrdersPage() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase()
+    switch (normalizedStatus) {
       case 'pending':
         return 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400'
+      case 'inproduction':
       case 'in-progress':
+      case 'in_production':
         return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
       case 'completed':
         return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
@@ -208,6 +255,11 @@ export default function AdminJobOrdersPage() {
   }
 
   const getStatusLabel = (status: string) => {
+    if (!status) return 'Unknown'
+    const normalizedStatus = status.toLowerCase()
+    if (normalizedStatus === 'inproduction' || normalizedStatus === 'in_production') {
+      return 'In Production'
+    }
     return status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
@@ -363,6 +415,29 @@ export default function AdminJobOrdersPage() {
                               <Eye size={18} />
                               Update Order
                             </Button>
+                            {/* Show Release button when all items are completed */}
+                            {jobOrdersStats[jobOrder.id] && 
+                             jobOrdersStats[jobOrder.id].total > 0 && 
+                             jobOrdersStats[jobOrder.id].completed === jobOrdersStats[jobOrder.id].total &&
+                             jobOrder.status?.toLowerCase() !== 'completed' && (
+                              <Button
+                                onClick={() => handleReleaseJobOrder(jobOrder.id)}
+                                disabled={isReleasing === jobOrder.id}
+                                className="bg-green-600 hover:bg-green-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
+                              >
+                                {isReleasing === jobOrder.id ? (
+                                  <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Releasing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={18} />
+                                    Release
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </div>
                       </div>
