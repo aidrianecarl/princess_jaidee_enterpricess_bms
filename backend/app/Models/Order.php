@@ -20,6 +20,7 @@ class Order extends Model
         'payment_status',
         'order_status',
         'payment_method',
+        'remaining_balance',
         'notes',
     ];
 
@@ -28,6 +29,7 @@ class Order extends Model
         'subtotal' => 'decimal:2',
         'discount' => 'decimal:2',
         'total' => 'decimal:2',
+        'remaining_balance' => 'decimal:2',
     ];
 
     public function customer(): BelongsTo

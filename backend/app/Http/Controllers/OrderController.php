@@ -108,6 +108,7 @@ class OrderController extends Controller
             'payment_status' => 'nullable|in:unpaid,partial,paid,pending',
             'order_status' => 'nullable|in:pending,processing,completed,shipped,delivered,cancelled',
             'payment_method' => 'required|in:cash,gcash,credit_card,bank_transfer,check',
+            'remaining_balance' => 'nullable|numeric|min:0',
             'notes' => 'nullable|string',
         ]);
 
@@ -121,6 +122,15 @@ class OrderController extends Controller
             
             Log::info('[v0] Creating order with number: ' . $orderNumber);
 
+            // Calculate remaining balance based on payment status
+            $paymentStatus = $request->payment_status ?? 'unpaid';
+            $remainingBalance = $request->remaining_balance ?? 0;
+            
+            // If payment_status is 'paid', remaining balance is 0
+            if ($paymentStatus === 'paid') {
+                $remainingBalance = 0;
+            }
+            
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'quotation_id' => $request->quotation_id,
@@ -130,9 +140,10 @@ class OrderController extends Controller
                 'subtotal' => $request->subtotal,
                 'discount' => $request->discount ?? 0,
                 'total' => $request->total,
-                'payment_status' => $request->payment_status ?? 'unpaid',
+                'payment_status' => $paymentStatus,
                 'order_status' => $request->order_status ?? 'pending',
                 'payment_method' => $request->payment_method,
+                'remaining_balance' => $remainingBalance,
                 'notes' => $request->notes,
             ]);
             
@@ -285,6 +296,70 @@ class OrderController extends Controller
             'success' => true,
             'data' => $orders,
         ], 200);
+    }
+
+    public function updatePaymentStatus(Request $request, $id)
+    {
+        try {
+            Log::info('[v0] OrderController updatePaymentStatus - Order ID: ' . $id, ['request' => $request->all()]);
+            
+            $order = Order::find($id);
+            
+            if (!$order) {
+                Log::warning('[v0] Order not found for payment status update: ' . $id);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order not found'
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'payment_status' => 'required|in:unpaid,partial,paid',
+                'remaining_balance' => 'nullable|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                Log::error('[v0] Validation failed for payment status update:', ['errors' => $validator->errors()]);
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            $paymentStatus = $request->payment_status;
+            $remainingBalance = $request->remaining_balance ?? 0;
+
+            // If payment status is 'paid', remaining balance must be 0
+            if ($paymentStatus === 'paid') {
+                $remainingBalance = 0;
+            }
+
+            $order->update([
+                'payment_status' => $paymentStatus,
+                'remaining_balance' => $remainingBalance,
+            ]);
+
+            Log::info('[v0] Payment status updated successfully:', [
+                'order_id' => $order->id,
+                'payment_status' => $paymentStatus,
+                'remaining_balance' => $remainingBalance
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Payment status updated successfully',
+                'data' => $order,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('[v0] Error updating payment status:', [
+                'order_id' => $id,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update payment status',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function getOrderItems(Request $request)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -126,6 +126,13 @@ export function SetPaymentModal({
   const calculatedHalfPayment = quotation.total * 0.5
   const effectivePayment = downPaymentInput ? parseFloat(downPaymentInput) : calculatedHalfPayment
   const remainingBalance = quotation.total - effectivePayment
+
+  // Auto-populate down payment with half payment amount on first load
+  useEffect(() => {
+    if (isOpen && paymentType === "downpayment" && !downPaymentInput) {
+      setDownPaymentInput(calculatedHalfPayment.toString())
+    }
+  }, [isOpen, paymentType])
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>

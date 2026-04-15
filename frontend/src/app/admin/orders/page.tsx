@@ -2,6 +2,7 @@
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { SetPaymentModal } from "@/components/admin/modals/set-payment-modal"
+import { UpdatePaymentModal } from "@/components/admin/modals/update-payment-modal"
 import { ViewItemsModal } from "@/components/admin/modals/view-items-modal"
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
@@ -43,6 +44,12 @@ interface Order {
   payment_status: string
   order_status: string
   payment_method: string
+  remaining_balance: number
+  customer?: {
+    name: string
+    email: string
+    phone: string
+  }
 }
 
 interface Employee {
@@ -70,8 +77,10 @@ export default function OrdersPage() {
   
   // Modal states
   const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [updatePaymentModalOpen, setUpdatePaymentModalOpen] = useState(false)
   const [viewItemsModalOpen, setViewItemsModalOpen] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<SentQuotation | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
@@ -224,7 +233,16 @@ export default function OrdersPage() {
 
       // Step 2: Create an Order from the quotation
 
-      const orderResponse = await fetch(`${apiUrl}/orders`, {
+      // Calculate remaining balance based on payment type
+      const totalAmount = selectedQuotation.total
+      const paidAmount = paymentType === "fullpayment" 
+        ? totalAmount 
+        : parseFloat(formData.downPaymentInput || (totalAmount * 0.5).toString())
+      const remainingBalance = paymentType === "fullpayment" 
+        ? 0 
+        : totalAmount - paidAmount
+
+      const orderResponse = await fetch(`${apiUrl}/admin/orders`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -240,6 +258,7 @@ export default function OrdersPage() {
           payment_status: paymentType === "fullpayment" ? "paid" : "partial",
           order_status: "pending",
           payment_method: formData.paymentMethod || "cash",
+          remaining_balance: remainingBalance,
           notes: formData.notes || "",
         }),
       })
@@ -381,6 +400,62 @@ export default function OrdersPage() {
     }
   }
 
+  const handleUpdatePaymentStatus = async (paymentStatus: "paid", remainingBalance: number) => {
+    if (!selectedOrder) return
+
+    try {
+      setSavingId(selectedOrder.id)
+      const token = localStorage.getItem("admin_token")
+
+      console.log("[v0] Updating payment status for order:", selectedOrder.id, {
+        payment_status: paymentStatus,
+        remaining_balance: remainingBalance,
+      })
+
+      const response = await fetch(
+        `${apiUrl}/admin/orders/${selectedOrder.id}/payment-status`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            payment_status: paymentStatus,
+            remaining_balance: remainingBalance,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || errorData.error || "Failed to update payment status")
+      }
+
+      const result = await response.json()
+      console.log("[v0] Payment status updated successfully:", result)
+
+      // Update the local orders list
+      setAllOrders(
+        allOrders.map(order =>
+          order.id === selectedOrder.id
+            ? { ...order, payment_status: paymentStatus, remaining_balance: remainingBalance }
+            : order
+        )
+      )
+
+      setSelectedOrder(null)
+      setUpdatePaymentModalOpen(false)
+      setError("")
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to update payment status"
+      console.error("[v0] Update payment status error:", errorMsg)
+      setError(errorMsg)
+    } finally {
+      setSavingId(null)
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
@@ -402,14 +477,15 @@ export default function OrdersPage() {
 
     if (filterStatus === "pending") {
       filtered = sentQuotations
-    } else {
-      // For sales, partial, and paid filters - use orders data
-      if (filterStatus === "sales") {
-        filtered = allOrders.map(order => ({
+    } else if (filterStatus === "partial") {
+      filtered = allOrders
+        .filter(o => o.payment_status === "partial")
+        .map(order => ({
           id: order.id,
           quotation_number: order.order_number,
           total: order.total,
-          customer: { name: order.customer_id ? `Customer ${order.customer_id}` : "Unknown", email: "", phone: "" },
+          remaining_balance: order.remaining_balance,
+          customer: { name: order.customer?.name || `Customer ${order.customer_id}`, email: "", phone: "" },
           created_at: order.order_date,
           payment_status: order.payment_status,
           order_status: order.order_status,
@@ -418,39 +494,23 @@ export default function OrdersPage() {
           payment_method: order.payment_method,
           isOrder: true
         }))
-      } else if (filterStatus === "partial") {
-        filtered = allOrders
-          .filter(o => o.payment_status === "partial")
-          .map(order => ({
-            id: order.id,
-            quotation_number: order.order_number,
-            total: order.total,
-            customer: { name: `Customer ${order.customer_id}`, email: "", phone: "" },
-            created_at: order.order_date,
-            payment_status: order.payment_status,
-            order_status: order.order_status,
-            subtotal: order.subtotal,
-            discount: order.discount,
-            payment_method: order.payment_method,
-            isOrder: true
-          }))
-      } else if (filterStatus === "paid") {
-        filtered = allOrders
-          .filter(o => o.payment_status === "paid")
-          .map(order => ({
-            id: order.id,
-            quotation_number: order.order_number,
-            total: order.total,
-            customer: { name: `Customer ${order.customer_id}`, email: "", phone: "" },
-            created_at: order.order_date,
-            payment_status: order.payment_status,
-            order_status: order.order_status,
-            subtotal: order.subtotal,
-            discount: order.discount,
-            payment_method: order.payment_method,
-            isOrder: true
-          }))
-      }
+    } else if (filterStatus === "paid") {
+      filtered = allOrders
+        .filter(o => o.payment_status === "paid")
+        .map(order => ({
+          id: order.id,
+          quotation_number: order.order_number,
+          total: order.total,
+          remaining_balance: order.remaining_balance,
+          customer: { name: order.customer?.name || `Customer ${order.customer_id}`, email: "", phone: "" },
+          created_at: order.order_date,
+          payment_status: order.payment_status,
+          order_status: order.order_status,
+          subtotal: order.subtotal,
+          discount: order.discount,
+          payment_method: order.payment_method,
+          isOrder: true
+        }))
     }
 
     // Apply search filter
@@ -547,62 +607,35 @@ export default function OrdersPage() {
               Pending
             </button>
 
-            {/* Sales Button with nested options */}
-            <div className="relative group">
-              <button
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                  ["sales", "partial", "paid"].includes(filterStatus)
-                    ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg"
-                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                }`}
-              >
-                Sales ▼
-              </button>
+            {/* Partial Payment Button */}
+            <button
+              onClick={() => {
+                setFilterStatus("partial")
+                setCurrentPage(1)
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                filterStatus === "partial"
+                  ? "bg-blue-500 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+              }`}
+            >
+              Partial Payment
+            </button>
 
-              {/* Dropdown Menu */}
-              <div className="absolute left-0 mt-1 w-40 bg-white dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
-                <button
-                  onClick={() => {
-                    setFilterStatus("sales")
-                    setCurrentPage(1)
-                  }}
-                  className={`w-full text-left px-4 py-3 font-semibold transition ${
-                    filterStatus === "sales"
-                      ? "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"
-                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                  }`}
-                >
-                  All Orders
-                </button>
-                <div className="border-t border-neutral-200 dark:border-neutral-700"></div>
-                <button
-                  onClick={() => {
-                    setFilterStatus("partial")
-                    setCurrentPage(1)
-                  }}
-                  className={`w-full text-left px-4 py-3 font-semibold transition ${
-                    filterStatus === "partial"
-                      ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                  }`}
-                >
-                  Partial Payment
-                </button>
-                <button
-                  onClick={() => {
-                    setFilterStatus("paid")
-                    setCurrentPage(1)
-                  }}
-                  className={`w-full text-left px-4 py-3 font-semibold transition rounded-b-lg ${
-                    filterStatus === "paid"
-                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                      : "text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                  }`}
-                >
-                  Fully Paid
-                </button>
-              </div>
-            </div>
+            {/* Fully Paid Button */}
+            <button
+              onClick={() => {
+                setFilterStatus("paid")
+                setCurrentPage(1)
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                filterStatus === "paid"
+                  ? "bg-green-500 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+              }`}
+            >
+              Fully Paid
+            </button>
           </div>
 
           {isLoading ? (
@@ -697,10 +730,23 @@ export default function OrdersPage() {
                           </div>
                         )}
                         {item.isOrder && (
-                          <div className="flex items-center justify-center">
+                          <div className="flex flex-col sm:flex-row gap-2 min-w-max items-center">
                             <span className={`px-4 py-2 rounded-full font-semibold text-sm ${getStatusColor(item.payment_status)}`}>
                               {item.payment_method ? `Paid via ${item.payment_method}` : "No payment method"}
                             </span>
+                            {item.payment_status === "partial" && (
+                              <Button
+                                onClick={() => {
+                                  setSelectedOrder(item)
+                                  setUpdatePaymentModalOpen(true)
+                                }}
+                                className="flex items-center justify-center gap-2 bg-blue-600 text-white hover:shadow-lg hover:bg-blue-700 transition active:scale-95"
+                                title="Update Payment Status"
+                              >
+                                <Settings size={18} />
+                                <span className="hidden sm:inline">Update</span>
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -806,6 +852,13 @@ export default function OrdersPage() {
             quotation={selectedQuotation}
             employees={employees}
             onConfirm={handleSaveOrder}
+            isSaving={savingId !== null}
+          />
+          <UpdatePaymentModal
+            isOpen={updatePaymentModalOpen}
+            onOpenChange={setUpdatePaymentModalOpen}
+            order={selectedOrder}
+            onConfirm={handleUpdatePaymentStatus}
             isSaving={savingId !== null}
           />
           <ViewItemsModal
