@@ -13,6 +13,7 @@ function ThankYouContent() {
   const [isClient, setIsClient] = useState(false)
   const [branch, setBranch] = useState<any>(null)
   const [isLoadingBranch, setIsLoadingBranch] = useState(true)
+  const [quotationNumber, setQuotationNumber] = useState<string>("")
 
   useEffect(() => {
     setIsClient(true)
@@ -37,7 +38,14 @@ function ThankYouContent() {
 
         if (quotationResponse.ok) {
           const quotationData = await quotationResponse.json()
-          const branchId = quotationData.data?.branch_id || quotationData.branch_id
+          const quotData = quotationData.data || quotationData
+          const branchId = quotData?.branch_id
+          const qNumber = quotData?.quotation_number
+
+          // Set quotation number
+          if (qNumber) {
+            setQuotationNumber(qNumber)
+          }
 
           if (branchId) {
             // Fetch branch details
@@ -202,7 +210,7 @@ function ThankYouContent() {
             {/* Footer Info */}
             <div className="mt-8 pt-8 border-t border-gray-200">
               <p className="text-sm text-gray-500 mb-2">
-                Order Reference: <span className="font-mono font-semibold text-gray-700">#{quotationId || "Pending"}</span>
+                Quotation Reference: <span className="font-mono font-semibold text-gray-700">{quotationNumber || "Pending"}</span>
               </p>
               <p className="text-xs text-gray-400">
                 An email confirmation has been sent to your registered email address.

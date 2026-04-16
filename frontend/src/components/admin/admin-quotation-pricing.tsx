@@ -706,6 +706,40 @@ export function AdminQuotationPricing() {
                           {item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0 && item.service?.name?.includes('Sublimation') && (
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-4">Sublimation Printing Service</h4>
+                              
+                              {/* Price Inputs - DISABLED/VIEW ONLY */}
+                              <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-white rounded border border-blue-200 opacity-60">
+                                <div>
+                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Set Price</label>
+                                  <input
+                                    type="number"
+                                    value={sublimationPrices[item.id]?.setPrice || ""}
+                                    disabled
+                                    step="0.01"
+                                    className="w-full px-2 py-2 border border-gray-300 rounded text-right focus:outline-none bg-gray-100 cursor-not-allowed text-gray-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Top Price</label>
+                                  <input
+                                    type="number"
+                                    value={sublimationPrices[item.id]?.topPrice || ""}
+                                    disabled
+                                    step="0.01"
+                                    className="w-full px-2 py-2 border border-gray-300 rounded text-right focus:outline-none bg-gray-100 cursor-not-allowed text-gray-500"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Bottom Price</label>
+                                  <input
+                                    type="number"
+                                    value={sublimationPrices[item.id]?.bottomPrice || ""}
+                                    disabled
+                                    step="0.01"
+                                    className="w-full px-2 py-2 border border-gray-300 rounded text-right focus:outline-none bg-gray-100 cursor-not-allowed text-gray-500"
+                                  />
+                                </div>
+                              </div>
 
                               {/* Team Roster Table */}
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>

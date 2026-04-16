@@ -99,8 +99,7 @@ class OrderController extends Controller
         Log::info('[v0] OrderController store - Request data:', $request->all());
         
         $validator = Validator::make($request->all(), [
-            'quotation_id' => 'nullable|exists:quotations,id',
-            'customer_id' => 'required|numeric',
+            'quotation_id' => 'required|exists:quotations,id',
             'order_date' => 'required|date',
             'subtotal' => 'required|numeric|min:0',
             'discount' => 'nullable|numeric|min:0',
@@ -118,6 +117,12 @@ class OrderController extends Controller
         }
 
         try {
+            // Get quotation to fetch customer_id
+            $quotation = Quotation::find($request->quotation_id);
+            if (!$quotation) {
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
             $orderNumber = 'ORD-' . date('Ymd') . '-' . str_pad(Order::count() + 1, 5, '0', STR_PAD_LEFT);
             
             Log::info('[v0] Creating order with number: ' . $orderNumber);
@@ -131,10 +136,11 @@ class OrderController extends Controller
                 $remainingBalance = 0;
             }
             
+            // Use customer_id from quotation, not from request
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'quotation_id' => $request->quotation_id,
-                'customer_id' => $request->customer_id,
+                'customer_id' => $quotation->customer_id,  // Get from quotation
                 'created_by' => auth()->id(),
                 'order_date' => $request->order_date,
                 'subtotal' => $request->subtotal,
