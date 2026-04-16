@@ -14,29 +14,49 @@ import {
   Lock,
   ChevronDown,
   Package,
+  AlertCircle,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
+import { usePermissions } from "@/hooks/use-permissions"
+import { SIDEBAR_MENU_ITEMS } from "@/lib/rbac-helper"
 
 interface SidebarProps {
   isOpen: boolean
   onToggle: (open: boolean) => void
 }
 
-const menuItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/admin/dashboard" },
-  { icon: MapPin, label: "Branches", href: "/admin/branches" },
-  { icon: Lock, label: "Roles & Permissions", href: "/admin/roles" },
-  { icon: Users, label: "Members", href: "/admin/members" },
-  { icon: Briefcase, label: "Services", href: "/admin/services" },
-  { icon: ShoppingCart, label: "Quotations", href: "/admin/quotations" },
-  { icon: Layers, label: "Sales/Orders", href: "/admin/orders" },
-  { icon: LayoutDashboard, label: "Job Orders", href: "/admin/job-orders" },
-]
+const iconMap: Record<string, React.ComponentType<any>> = {
+  LayoutDashboard,
+  MapPin,
+  Lock,
+  Users,
+  Briefcase,
+  ShoppingCart,
+  Layers,
+}
 
 export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
   const pathname = usePathname()
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
+  const { permissions, isLoading } = usePermissions()
+  const [accessibleItems, setAccessibleItems] = useState(SIDEBAR_MENU_ITEMS)
+
+  useEffect(() => {
+    // Filter menu items based on user permissions
+    if (permissions.length > 0) {
+      const filtered = SIDEBAR_MENU_ITEMS.filter(item => {
+        // Dashboard is always visible
+        if (item.permissions.length === 0) return true
+        // Check if user has any of the required permissions
+        return item.permissions.some(perm => permissions.includes(perm))
+      })
+      setAccessibleItems(filtered)
+    } else if (!isLoading) {
+      // If no permissions and not loading, show only dashboard
+      setAccessibleItems(SIDEBAR_MENU_ITEMS.filter(item => item.permissions.length === 0))
+    }
+  }, [permissions, isLoading])
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token")
@@ -76,65 +96,38 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
 
         {/* Menu */}
         <nav className="flex-1 overflow-y-auto px-3 py-6 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
-            const hasSubmenu = "submenu" in item
-            const isExpanded = expandedMenu === item.label
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+            </div>
+          ) : accessibleItems.length > 0 ? (
+            accessibleItems.map((item) => {
+              const Icon = iconMap[item.icon] || LayoutDashboard
+              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/")
 
-            return (
-              <div key={item.label}>
-                {hasSubmenu ? (
-                  <button
-                    onClick={() => setExpandedMenu(isExpanded ? null : item.label)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                      isActive
-                        ? "bg-gradient-to-r from-red-600 to-orange-600 text-white"
-                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600"
-                    }`}
-                  >
-                    <Icon size={20} />
-                    <span className="font-medium flex-1 text-left">{item.label}</span>
-                    <ChevronDown size={16} className={`transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-                  </button>
-                ) : (
-                  <Link
-                    href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                      isActive
-                        ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg"
-                        : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600"
-                    }`}
-                    onClick={() => onToggle(false)}
-                  >
-                    <Icon size={20} className={`${isActive ? "" : "group-hover:scale-110 transition-transform"}`} />
-                    <span className="font-medium">{item.label}</span>
-                    {isActive && <ChevronRight size={16} className="ml-auto animate-slideRight" />}
-                  </Link>
-                )}
-
-                {/* Submenu */}
-                {hasSubmenu && isExpanded && (
-                  <div className="ml-4 mt-2 space-y-1 border-l border-neutral-200 dark:border-neutral-700 pl-4">
-                    {item.submenu?.map((subitem) => (
-                      <Link
-                        key={subitem.href}
-                        href={subitem.href}
-                        className={`block px-4 py-2 rounded-lg transition-all duration-200 text-sm ${
-                          pathname === subitem.href
-                            ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-medium"
-                            : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600"
-                        }`}
-                        onClick={() => onToggle(false)}
-                      >
-                        {subitem.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+              return (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                    isActive
+                      ? "bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-lg"
+                      : "text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600"
+                  }`}
+                  onClick={() => onToggle(false)}
+                >
+                  <Icon size={20} className={`${isActive ? "" : "group-hover:scale-110 transition-transform"}`} />
+                  <span className="font-medium">{item.label}</span>
+                  {isActive && <ChevronRight size={16} className="ml-auto animate-slideRight" />}
+                </Link>
+              )
+            })
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <AlertCircle size={32} className="text-neutral-400 mb-2" />
+              <p className="text-xs text-neutral-500">No access assigned</p>
+            </div>
+          )}
         </nav>
 
         {/* Footer */}

@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
-import { Plus, Edit2, Trash2, Lock, Shield } from 'lucide-react'
+import { Plus, Edit2, Trash2, Lock, Shield, Check, X } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
 import { useRouter } from "next/navigation"
+import { SIDEBAR_MENU_ITEMS } from "@/lib/rbac-helper"
 
 interface Role {
   id: number
@@ -19,7 +20,16 @@ interface Permission {
   id: number
   name: string
   description?: string
+  module?: string
 }
+
+// Map permissions to sidebar menu items for display
+const PERMISSION_TO_MENU_ITEM: Record<string, string> = {}
+SIDEBAR_MENU_ITEMS.forEach(item => {
+  item.permissions.forEach(perm => {
+    PERMISSION_TO_MENU_ITEM[perm] = item.label
+  })
+})
 
 export default function RolesPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -30,7 +40,7 @@ export default function RolesPage() {
   const [selectedRole, setSelectedRole] = useState<Role | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const router = useRouter()
-    const [user, setUser] = useState(null)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
     checkAuth()
@@ -45,7 +55,6 @@ export default function RolesPage() {
       return
     }
     setUser(JSON.parse(userData))
-    setIsLoading(false)
   }
 
   const [formData, setFormData] = useState({
@@ -126,6 +135,50 @@ export default function RolesPage() {
     })
   }
 
+  const togglePermission = (permissionId: number) => {
+    setFormData(prev => ({
+      ...prev,
+      permissions: prev.permissions.includes(permissionId)
+        ? prev.permissions.filter(p => p !== permissionId)
+        : [...prev.permissions, permissionId]
+    }))
+  }
+
+  const getMenuItemPermissions = () => {
+    // Get all unique permissions by menu item
+    const itemPermissions: Record<string, { icon: string; permissions: any[] }> = {}
+    
+    SIDEBAR_MENU_ITEMS.forEach(item => {
+      const itemPerms = item.permissions.length === 0 
+        ? [] 
+        : permissions.filter(p => item.permissions.includes(p.name))
+      
+      if (itemPerms.length > 0 || item.permissions.length === 0) {
+        itemPermissions[item.id] = {
+          icon: item.icon,
+          permissions: itemPerms
+        }
+      }
+    })
+    
+    return itemPermissions
+  }
+
+  const getSelectedPermissionsText = () => {
+    const selectedPerms = permissions.filter(p => formData.permissions.includes(p.id))
+    const menuItems = new Set<string>()
+    
+    selectedPerms.forEach(p => {
+      SIDEBAR_MENU_ITEMS.forEach(item => {
+        if (item.permissions.includes(p.name)) {
+          menuItems.add(item.label)
+        }
+      })
+    })
+    
+    return Array.from(menuItems).join(', ') || 'No access selected'
+  }
+
   return (
     <div className="flex h-screen flex-col  bg-neutral-50 dark:bg-neutral-950">
       <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -202,25 +255,30 @@ export default function RolesPage() {
                   <div className="p-6 space-y-4">
                     {role.permissions && role.permissions.length > 0 ? (
                       <div>
-                        <p className="text-xs font-semibold text-neutral-600 mb-3">Permissions:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {role.permissions.slice(0, 3).map((perm) => (
-                            <span
-                              key={perm.id}
-                              className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full"
-                            >
-                              {perm.name}
-                            </span>
-                          ))}
+                        <p className="text-xs font-semibold text-neutral-600 mb-3">Can Access:</p>
+                        <div className="space-y-2">
+                          {role.permissions.slice(0, 3).map((perm) => {
+                            const menuItem = SIDEBAR_MENU_ITEMS.find(item => item.permissions.includes(perm.name))
+                            const displayName = menuItem ? menuItem.label : perm.name
+                            
+                            return (
+                              <span
+                                key={perm.id}
+                                className="block px-3 py-2 bg-green-50 text-green-700 text-xs font-medium rounded-lg border border-green-200"
+                              >
+                                ✓ {displayName}
+                              </span>
+                            )
+                          })}
                           {role.permissions.length > 3 && (
-                            <span className="px-3 py-1 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-full">
+                            <span className="block px-3 py-2 bg-neutral-100 text-neutral-700 text-xs font-medium rounded-lg">
                               +{role.permissions.length - 3} more
                             </span>
                           )}
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm text-neutral-500">No permissions assigned</p>
+                      <p className="text-sm text-neutral-500 italic">No access assigned</p>
                     )}
                   </div>
 
@@ -286,38 +344,35 @@ export default function RolesPage() {
 
                   <div>
                     <label className="block text-sm font-semibold text-neutral-900 mb-4">
-                      Assign Permissions
+                      Can Access
                     </label>
-                    <div className="space-y-2 max-h-48 overflow-y-auto p-4 bg-neutral-50 rounded-lg border border-neutral-200">
-                      {permissions.map((permission) => (
-                        <div key={permission.id} className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            id={`perm-${permission.id}`}
-                            checked={formData.permissions.includes(permission.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setFormData({
-                                  ...formData,
-                                  permissions: [...formData.permissions, permission.id],
-                                })
-                              } else {
-                                setFormData({
-                                  ...formData,
-                                  permissions: formData.permissions.filter((p) => p !== permission.id),
-                                })
-                              }
-                            }}
-                            className="w-4 h-4 rounded border-neutral-300 text-red-600 focus:ring-red-500"
-                          />
-                          <label
-                            htmlFor={`perm-${permission.id}`}
-                            className="flex-1 text-sm font-medium text-neutral-900 cursor-pointer"
-                          >
-                            {permission.name}
-                          </label>
-                        </div>
-                      ))}
+                    <p className="text-xs text-neutral-600 mb-4">Select which admin sections this role can access:</p>
+                    <div className="space-y-3 max-h-96 overflow-y-auto p-4 bg-neutral-50 rounded-lg border border-neutral-200">
+                      {SIDEBAR_MENU_ITEMS.filter(item => item.permissions.length > 0).map((menuItem) => {
+                        const itemPerms = permissions.filter(p => menuItem.permissions.includes(p.name))
+                        if (itemPerms.length === 0) return null
+
+                        const mainPerm = itemPerms[0] // Get the first permission for this menu item
+                        const isChecked = formData.permissions.includes(mainPerm.id)
+
+                        return (
+                          <div key={menuItem.id} className="border border-neutral-300 rounded-lg p-4 bg-white hover:bg-neutral-50 transition">
+                            <label className="flex items-center gap-3 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => togglePermission(mainPerm.id)}
+                                className="w-5 h-5 rounded border-neutral-300 text-red-600 focus:ring-red-500 cursor-pointer"
+                              />
+                              <div className="flex-1">
+                                <div className="font-semibold text-neutral-900">{menuItem.label}</div>
+                                <div className="text-xs text-neutral-600 mt-1">Can access {menuItem.label.toLowerCase()} section</div>
+                              </div>
+                              {isChecked && <Check size={20} className="text-green-600" />}
+                            </label>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
 

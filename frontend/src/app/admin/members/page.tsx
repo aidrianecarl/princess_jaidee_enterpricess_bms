@@ -16,18 +16,34 @@ interface Member {
   address?: string
   status: string
   user_type: string
+  branch_id?: number
   created_at: string
+}
+
+interface Branch {
+  id: number
+  name: string
+  location?: string
+  status: string
+}
+
+interface Role {
+  id: number
+  name: string
+  description?: string
 }
 
 export default function MembersPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [members, setMembers] = useState<Member[]>([])
+  const [branches, setBranches] = useState<Branch[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [isEditMode, setIsEditMode] = useState(false)
   const router = useRouter()
-    const [user, setUser] = useState(null)
+  const [user, setUser] = useState(null)
   
     useEffect(() => {
       checkAuth()
@@ -52,24 +68,36 @@ export default function MembersPage() {
     phone_number: "",
     address: "",
     password: "",
-    user_type: "client",
+    user_type: "employee",
     status: "active",
+    branch_id: "",
+    role_id: "",
   })
 
   useEffect(() => {
-    fetchMembers()
+    fetchData()
   }, [])
 
-  const fetchMembers = async () => {
+  const fetchData = async () => {
     try {
       setIsLoading(true)
-      const response = await apiClient.get("/admin/users")
-      setMembers(response.data.data || [])
+      const [usersRes, branchesRes, rolesRes] = await Promise.all([
+        apiClient.get("/admin/users"),
+        apiClient.get("/admin/branches"),
+        apiClient.get("/admin/roles"),
+      ])
+      setMembers(usersRes.data.data || [])
+      setBranches(branchesRes.data.data || [])
+      setRoles(rolesRes.data.data || [])
     } catch (error) {
-      console.error("Error fetching members:", error)
+      console.error("Error fetching data:", error)
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const fetchMembers = () => {
+    fetchData()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -122,6 +150,8 @@ export default function MembersPage() {
       password: "",
       user_type: member.user_type,
       status: member.status,
+      branch_id: member.branch_id?.toString() || "",
+      role_id: "",
     })
     setIsEditMode(true)
     setIsAddModalOpen(true)
@@ -138,8 +168,10 @@ export default function MembersPage() {
       phone_number: "",
       address: "",
       password: "",
-      user_type: "client",
+      user_type: "employee",
       status: "active",
+      branch_id: "",
+      role_id: "",
     })
   }
 
@@ -252,6 +284,11 @@ export default function MembersPage() {
                           <span className="font-semibold">Address:</span> {member.address}
                         </div>
                       )}
+                      {member.branch_id && formData.user_type === "employee" && (
+                        <div className="text-xs text-neutral-600">
+                          <span className="font-semibold">Branch:</span> {branches.find(b => b.id === member.branch_id)?.name || 'N/A'}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -362,6 +399,74 @@ export default function MembersPage() {
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                         className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                        User Type *
+                      </label>
+                      <select
+                        value={formData.user_type}
+                        onChange={(e) => setFormData({ ...formData, user_type: e.target.value })}
+                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        required
+                      >
+                        <option value="">Select User Type</option>
+                        <option value="admin">Admin</option>
+                        <option value="employee">Employee</option>
+                        <option value="client">Client</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                        Status *
+                      </label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        required
+                      >
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                      </select>
+                    </div>
+                    {formData.user_type === "employee" && (
+                      <div>
+                        <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                          Branch *
+                        </label>
+                        <select
+                          value={formData.branch_id}
+                          onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
+                          className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                          required={formData.user_type === "employee"}
+                        >
+                          <option value="">Select Branch</option>
+                          {branches.map((branch) => (
+                            <option key={branch.id} value={branch.id}>
+                              {branch.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <div>
+                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                        Role
+                      </label>
+                      <select
+                        value={formData.role_id}
+                        onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
+                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                      >
+                        <option value="">Select Role</option>
+                        {roles.map((role) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
                     </div>
                     {!isEditMode && (
                       <div className="md:col-span-2">
