@@ -182,6 +182,13 @@ class QuotationController extends Controller
         
         $quotation->items_count = $quotation->items->count();
 
+        // Log for debugging
+        \Log::info('[v0] Fetching quotation with items', [
+            'quotation_id' => $id,
+            'items_count' => $quotation->items->count(),
+            'first_item_team_roster' => $quotation->items->first()?->team_roster ?? null,
+        ]);
+
         return response()->json($quotation, 200);
     }
 
@@ -893,8 +900,9 @@ class QuotationController extends Controller
             'items.*.id' => 'required|numeric',
             'items.*.unit_price' => 'required|numeric',
             'items.*.line_total' => 'required|numeric',
-            'discount_type' => 'required|in:percent,peso',
-            'discount_value' => 'required|numeric|min:0',
+            'subtotal' => 'required|numeric|min:0',
+            'discount' => 'required|numeric|min:0',
+            'total' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -903,7 +911,6 @@ class QuotationController extends Controller
 
         try {
             // Update quotation items with new pricing
-            $subtotal = 0;
             foreach ($request->items as $itemData) {
                 $item = QuotationItem::find($itemData['id']);
                 if ($item) {
@@ -911,26 +918,16 @@ class QuotationController extends Controller
                         'unit_price' => $itemData['unit_price'],
                         'line_total' => $itemData['line_total'],
                     ]);
-                    $subtotal += $itemData['line_total'];
                 }
             }
 
-            // Use discount and total from frontend if provided, otherwise calculate
-            // Frontend sends: subtotal, discount (already calculated), and total
-            $discount = $request->discount ?? 0;
-            $total = $request->total ?? 0;
-            
-            // If neither is provided, calculate them
-            if ($request->discount_type) {
-                if ($request->discount_type === 'percent') {
-                    $discount = ($subtotal * $request->discount_value) / 100;
-                } else {
-                    $discount = $request->discount_value;
-                }
-                $total = $subtotal - $discount;
-            }
+            // Use the exact subtotal, discount, and total from frontend
+            // This ensures what the admin sets in the UI is exactly what gets saved to the database
+            $subtotal = $request->subtotal;
+            $discount = $request->discount;
+            $total = $request->total;
 
-            // Update quotation with pricing and mark as has_price = 1 (no tax field)
+            // Update quotation with pricing from frontend and mark as has_price = 1
             $quotation->update([
                 'subtotal' => $subtotal,
                 'discount' => $discount,

@@ -127,6 +127,13 @@ export default function DashboardViewQuotationPage() {
           }
         }
 
+        console.log("[v0] Processing item team roster:", {
+          itemId: item.id,
+          teamRoster: teamRoster,
+          sizeSpecs: sizeSpecs,
+          notes: notesData
+        })
+
         return {
           ...item,
           team_roster: teamRoster,
@@ -134,6 +141,13 @@ export default function DashboardViewQuotationPage() {
           notes: notesData,
         }
       }) || []
+
+      console.log("[v0] Quotation fetched successfully:", {
+        quotation_id: quot.id,
+        items_count: processedItems.length,
+        customer: quot.customer,
+        first_item_team_roster: processedItems[0]?.team_roster
+      })
 
       setQuotation({ ...quot, items: processedItems })
 
@@ -305,6 +319,16 @@ export default function DashboardViewQuotationPage() {
                           {new Date(quotation.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
                         </p>
                       </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4 flex-1">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Bill To</h3>
+                    <div className="space-y-1 text-sm text-gray-900">
+                      <p className="font-semibold">{quotation.customer?.name || quotation.customer?.bill_to_name || "-"}</p>
+                      <p>{quotation.customer?.email || quotation.customer?.bill_to_email || "-"}</p>
                     </div>
                   </div>
                 </div>
@@ -554,11 +578,11 @@ export default function DashboardViewQuotationPage() {
                                       return (
                                         <tr key={idx} className="border-b border-blue-100 hover:bg-blue-100/50">
                                           <td className="p-2 text-gray-900">{player.name || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.jerseyNumber || "-"}</td>
+                                          <td className="p-2 text-gray-900">{player.number || "-"}</td>
                                           <td className="p-2 text-gray-900">{player.sizeTop || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.topLength || "-"}</td>
+                                          <td className="p-2 text-gray-900">{player.lengthTopInches || "-"}</td>
                                           <td className="p-2 text-gray-900">{player.sizeBottom || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.bottomLength || "-"}</td>
+                                          <td className="p-2 text-gray-900">{player.lengthBottomInches || "-"}</td>
                                           <td className="p-2 font-bold text-blue-600">₱{amount.toLocaleString()}</td>
                                         </tr>
                                       )
@@ -612,7 +636,11 @@ export default function DashboardViewQuotationPage() {
                             <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
                               <h4 className="font-bold text-amber-900 mb-2">NOTES</h4>
                               <p className="text-gray-900 whitespace-pre-wrap text-sm">
-                  {typeof item.notes === 'string' ? item.notes : item.notes ? JSON.stringify(item.notes, null, 2) : 'No notes'}
+                  {typeof item.notes === 'string' 
+                    ? item.notes 
+                    : typeof item.notes === 'object' 
+                      ? (item.notes.additionalNotes || item.notes.teamNotes || item.notes.sizeNotes || item.notes.designNotes || item.notes.notes || Object.values(item.notes).filter((v: any) => v && typeof v === 'string').join(' | ') || 'No notes')
+                      : 'No notes'}
                 </p>
                             </div>
                           )}

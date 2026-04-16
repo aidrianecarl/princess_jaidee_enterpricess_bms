@@ -59,6 +59,23 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
 
   if (!isOpen || !quotation) return null
 
+  // Debug logging for team roster
+  quotation.items.forEach((item: any) => {
+    console.log("[v0] QuotationViewModal - Item:", {
+      itemId: item.id,
+      serviceName: item.service?.name,
+      hasTeamRoster: !!item.team_roster,
+      teamRosterType: typeof item.team_roster,
+      teamRosterLength: Array.isArray(item.team_roster) ? item.team_roster.length : 'N/A',
+      teamRosterData: item.team_roster,
+      hasSizeSpecs: !!item.size_specifications,
+      sizeSpecsType: typeof item.size_specifications,
+      sizeSpecsData: item.size_specifications,
+      notesType: typeof item.notes,
+      notesData: item.notes
+    })
+  })
+
   const toggleItemExpanded = (itemId: number) => {
     const newSet = new Set(expandedItems)
     if (newSet.has(itemId)) {
@@ -245,27 +262,7 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                           </div>
                         </div>
 
-                        {/* Quantity Column */}
-                        <div className="w-16 md:w-20 flex items-center justify-center">
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            disabled
-                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm bg-gray-100 cursor-not-allowed"
-                          />
-                        </div>
 
-                        {/* Amount Column - Read Only */}
-                        <div className="w-24 flex items-center justify-end">
-                          <input
-                            type="number"
-                            value={item.unit_price || ""}
-                            disabled
-                            placeholder="0.00"
-                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right text-xs bg-gray-100 cursor-not-allowed"
-                          />
-                        </div>
                       </div>
 
                       {/* Collapsible Details */}
@@ -278,7 +275,7 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                               <div className="space-y-3">
                                 {Array.isArray(item.team_roster) && item.team_roster.length > 0 ? (
                                   item.team_roster.map((player: any, idx: number) => (
-                                    <div key={idx} className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm bg-white p-3 rounded">
+                                    <div key={idx} className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs md:text-sm bg-white p-3 rounded">
                                       <div>
                                         <p className="text-xs text-gray-600 font-semibold">Name</p>
                                         <p className="text-gray-900">{player.name}</p>
@@ -292,8 +289,16 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                         <p className="text-gray-900">{player.sizeTop || "-"}</p>
                                       </div>
                                       <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Top Len (in)</p>
+                                        <p className="text-gray-900">{player.lengthTopInches || "-"}</p>
+                                      </div>
+                                      <div>
                                         <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
                                         <p className="text-gray-900">{player.sizeBottom || "-"}</p>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs text-gray-600 font-semibold">Bottom Len (in)</p>
+                                        <p className="text-gray-900">{player.lengthBottomInches || "-"}</p>
                                       </div>
                                       <div>
                                         <p className="text-xs text-gray-600 font-semibold">Position</p>
@@ -424,9 +429,11 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                       ? item.notes 
                                       : typeof item.notes === "object" && item.notes.designNotes
                                         ? item.notes.designNotes
-                                        : typeof item.notes === "object"
-                                          ? Object.values(item.notes).filter(v => v && typeof v === "string").join(", ")
-                                          : ""}
+                                        : typeof item.notes === "object" && item.notes.additionalNotes
+                                          ? item.notes.additionalNotes
+                                          : typeof item.notes === "object"
+                                            ? Object.values(item.notes).filter(v => v && typeof v === "string").join(" | ")
+                                            : ""}
                                   </p>
                                 </div>
                               )}

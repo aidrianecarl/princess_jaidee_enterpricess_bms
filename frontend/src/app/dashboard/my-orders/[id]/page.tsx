@@ -197,6 +197,7 @@ export default function MyOrderDetailPage() {
   }
 
   const fetchOrderDetails = async () => {
+    console.log("[v0] Fetching order details for order ID:", params.id)
     try {
       setIsLoading(true)
       const token = localStorage.getItem("auth_token")
@@ -253,12 +254,24 @@ export default function MyOrderDetailPage() {
             if (Array.isArray(items)) {
               items = items.filter((item: OrderItem) => item.order_id === orderData.id)
               
-              orderData.items = items.map((item: OrderItem) => ({
-                ...item,
-                team_roster: parseJSON(item.team_roster),
-                size_specifications: parseJSON(item.size_specifications),
-                notes: parseJSON(item.notes),
-              }))
+              orderData.items = items.map((item: OrderItem) => {
+                const parsedItem = {
+                  ...item,
+                  team_roster: parseJSON(item.team_roster),
+                  size_specifications: parseJSON(item.size_specifications),
+                  notes: parseJSON(item.notes),
+                }
+                console.log("[v0] MyOrderDetail - Parsed item:", {
+                  itemId: item.id,
+                  rawTeamRoster: item.team_roster,
+                  parsedTeamRoster: parsedItem.team_roster,
+                  rawSizeSpecs: item.size_specifications,
+                  parsedSizeSpecs: parsedItem.size_specifications,
+                  rawNotes: item.notes,
+                  parsedNotes: parsedItem.notes
+                })
+                return parsedItem
+              })
             }
           }
         } catch (itemErr) {
@@ -419,6 +432,17 @@ export default function MyOrderDetailPage() {
             {order.items.filter((item, index, arr) => arr.findIndex(t => t.id === item.id) === index).map((item, index) => {
               const teamRoster = Array.isArray(item.team_roster) ? item.team_roster : null
               const sizeSpecs = typeof item.size_specifications === 'object' ? item.size_specifications : null
+              
+              console.log("[v0] Order Item Details:", {
+                itemId: item.id,
+                serviceName: item.service?.name,
+                hasTeamRoster: !!teamRoster,
+                teamRosterLength: teamRoster?.length || 0,
+                teamRosterData: item.team_roster,
+                hasSizeSpecs: !!sizeSpecs,
+                sizeSpecsData: item.size_specifications,
+                notesData: item.notes
+              })
               const statusColor = item.status === 'completed' 
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                 : item.status === 'InProduction' || item.status === 'ongoing'
