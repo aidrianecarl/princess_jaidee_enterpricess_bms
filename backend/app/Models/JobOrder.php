@@ -16,6 +16,8 @@ class JobOrder extends Model
         'start_date',
         'due_date',
         'completed_date',
+        'released_date',
+        'released_by',
         'status',
         'notes',
         'is_priority',
@@ -25,6 +27,7 @@ class JobOrder extends Model
         'start_date' => 'date',
         'due_date' => 'date',
         'completed_date' => 'date',
+        'released_date' => 'datetime',
     ];
 
     public function quotation(): BelongsTo
@@ -45,5 +48,10 @@ class JobOrder extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function releasedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'released_by');
     }
 }

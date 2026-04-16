@@ -385,55 +385,81 @@ class JobOrderController extends Controller
                 'items_count' => $jobOrder->order ? $jobOrder->order->items->count() : 0
             ]);
 
-            // Check if the job order is already completed
-            if ($jobOrder->status === 'completed') {
-                \Log::info('[v0] Release Job Order - ALREADY COMPLETED', [
+            // Check if job order is already released
+            if ($jobOrder->released_date !== null) {
+                \Log::info('[v0] Release Job Order - ALREADY RELEASED', [
                     'job_order_id' => $id,
-                    'status' => $jobOrder->status
+                    'released_date' => $jobOrder->released_date
                 ]);
                 return response()->json([
                     'success' => false,
-                    'error' => 'Job order is already completed'
+                    'error' => 'Job order has already been released'
                 ], 400);
             }
 
-            // Verify all items are completed before allowing release
-            if ($jobOrder->order) {
-                $items = $jobOrder->order->items;
-                
-                $allCompleted = $items->every(function ($item) {
-                    return $item->status === 'completed';
-                });
-
-                if (!$allCompleted) {
-                    \Log::warning('[v0] Release Job Order - NOT ALL ITEMS COMPLETED', [
-                        'job_order_id' => $id,
-                        'all_completed' => $allCompleted
-                    ]);
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'Cannot release job order. Not all items are completed.'
-                    ], 400);
-                }
+            // Check if job order status is completed
+            if ($jobOrder->status !== 'completed') {
+                \Log::warning('[v0] Release Job Order - STATUS NOT COMPLETED', [
+                    'job_order_id' => $id,
+                    'current_status' => $jobOrder->status
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Job order status must be completed to release'
+                ], 400);
             }
 
-            // Update job order status to completed
+            // Check if order status is completed
+            if (!$jobOrder->order || $jobOrder->order->order_status !== 'completed') {
+                \Log::warning('[v0] Release Job Order - ORDER NOT COMPLETED', [
+                    'job_order_id' => $id,
+                    'order_status' => $jobOrder->order ? $jobOrder->order->order_status : 'N/A'
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Associated order must be completed to release the job order'
+                ], 400);
+            }
+
+            // Check if payment status is paid
+            if (!$jobOrder->order || $jobOrder->order->payment_status !== 'paid') {
+                \Log::warning('[v0] Release Job Order - PAYMENT NOT PAID', [
+                    'job_order_id' => $id,
+                    'payment_status' => $jobOrder->order ? $jobOrder->order->payment_status : 'N/A'
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Payment must be marked as paid before releasing the job order',
+                    'canRelease' => false
+                ], 400);
+            }
+
+            // Get current authenticated user
+            $userId = auth()->id();
+            if (!$userId) {
+                \Log::warning('[v0] Release Job Order - NO AUTHENTICATED USER');
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Unauthenticated user'
+                ], 401);
+            }
+
+            // Update job order with release information
             $jobOrder->update([
-                'status' => 'completed',
-                'completed_date' => now()
+                'released_date' => now(),
+                'released_by' => $userId
             ]);
 
-            // Also update order status
-            if ($jobOrder->order) {
-                $jobOrder->order->update(['order_status' => 'completed']);
-            }
-
-            \Log::info('[v0] Release Job Order - SUCCESS', ['job_order_id' => $id]);
+            \Log::info('[v0] Release Job Order - SUCCESS', [
+                'job_order_id' => $id,
+                'released_by' => $userId,
+                'released_date' => $jobOrder->released_date
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Job order released successfully',
-                'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo'])
+                'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo', 'releasedBy'])
             ], 200);
         } catch (\Exception $e) {
             \Log::error('[v0] Error releasing job order:', [

@@ -29,6 +29,8 @@ interface JobOrder {
   start_date: string
   due_date: string
   completed_date?: string
+  released_date?: string
+  released_by?: number
   is_priority?: number | boolean
   notes?: string
   customer?: {
@@ -42,6 +44,12 @@ interface JobOrder {
     first_name: string
     last_name: string
     email: string
+  }
+  order?: {
+    id: number
+    order_status: string
+    payment_status: string
+    items?: any[]
   }
 }
 
@@ -217,12 +225,34 @@ export default function AdminJobOrdersPage() {
       }
 
       const data = await response.json()
-      const orders = Array.isArray(data) ? data : data.data || []
+      let orders = Array.isArray(data) ? data : data.data || []
       
-      setJobOrders(orders)
+      // Fetch order details for each job order to check payment status
+      const ordersWithDetails = await Promise.all(
+        orders.map(async (jobOrder) => {
+          try {
+            const orderResponse = await fetch(`${apiUrl}/admin/orders/${jobOrder.order_id}`, {
+              method: 'GET',
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            })
+            if (orderResponse.ok) {
+              const orderData = await orderResponse.json()
+              return { ...jobOrder, order: orderData }
+            }
+          } catch (err) {
+            console.error('[v0] Error fetching order details:', err)
+          }
+          return jobOrder
+        })
+      )
+      
+      setJobOrders(ordersWithDetails)
       
       // Fetch items for each job order to get stats
-      for (const order of orders) {
+      for (const order of ordersWithDetails) {
         await fetchJobOrderItems(order.id, token)
       }
     } catch (err) {
@@ -449,52 +479,55 @@ export default function AdminJobOrdersPage() {
 
                           {/* Right Buttons */}
                           <div className="flex gap-2 w-full md:w-auto flex-col md:flex-row">
-                            {(() => {
-                              const stats = jobOrdersStats[jobOrder.id]
-                              const statusLower = jobOrder.status?.toLowerCase()
-                              const hasStats = stats && stats.total > 0
-                              const allCompleted = stats && stats.completed === stats.total
-                              const notCompleted = statusLower !== 'completed'
-                              const shouldShow = hasStats && allCompleted && notCompleted
-                              
-                              console.log('[v0] RELEASE BUTTON DEBUG:', {
-                                jobOrderId: jobOrder.id,
-                                stats: stats,
-                                hasStats,
-                                allCompleted,
-                                notCompleted,
-                                shouldShow,
-                                statusLower,
-                                statsTotal: stats?.total,
-                                statsCompleted: stats?.completed
-                              })
-                              
-                              return null
-                            })()}
+                            {/* Update Order Button - Always shown, disabled when released */}
                             <Button
                               onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
-                              className="bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
+                              disabled={!!jobOrder.released_date}
+                              className={`${jobOrder.released_date ? 'opacity-50 cursor-not-allowed' : ''} bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2`}
                             >
                               <Eye size={18} />
                               Update Order
                             </Button>
-                            {/* Show Release button when job order status is completed */}
-                            {jobOrder.status?.toLowerCase() === 'completed' && (
+
+                            {/* Release Button - Show when status is completed, order status is completed, and not already released */}
+                            {jobOrder.status?.toLowerCase() === 'completed' && 
+                             jobOrder.order?.order_status === 'completed' &&
+                             !jobOrder.released_date ? (
                               <Button
-                                onClick={() => {
-                                  toast({
-                                    title: 'Info',
-                                    description: 'This job order is already completed and released.',
-                                    variant: 'default',
-                                  })
-                                }}
+                                onClick={() => handleReleaseJobOrder(jobOrder.id)}
+                                disabled={
+                                  isReleasing === jobOrder.id || 
+                                  jobOrder.order?.payment_status !== 'paid'
+                                }
+                                className={`${
+                                  jobOrder.order?.payment_status !== 'paid'
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : ''
+                                } bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2`}
+                                title={jobOrder.order?.payment_status !== 'paid' ? 'Payment must be marked as paid before releasing' : ''}
+                              >
+                                {isReleasing === jobOrder.id ? (
+                                  <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Releasing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={18} />
+                                    Release
+                                  </>
+                                )}
+                              </Button>
+                            ) : jobOrder.released_date ? (
+                              /* Released Button - Show when already released */
+                              <Button
                                 disabled={true}
                                 className="bg-green-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
                               >
                                 <CheckCircle2 size={18} />
-                                Completed
+                                Released
                               </Button>
-                            )}
+                            ) : null}
                           </div>
                         </div>
                       </div>
