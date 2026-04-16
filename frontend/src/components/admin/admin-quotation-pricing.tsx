@@ -274,28 +274,33 @@ export function AdminQuotationPricing() {
       if (!quotation) return
 
       // Prepare items with updated pricing
+      // For Sublimation items: send sublimation_prices but NOT unit_price/line_total
+      // For Tarpaulin items: don't modify pricing (readonly)
+      // For other items: send unit_price and line_total
       const updatedItems = quotation.items.map(item => {
-        let unitPrice = 0
-        
         if (item.service?.name?.includes('Sublimation')) {
-          unitPrice = calculateSublimationSubtotal(item.id)
-        } else if (item.service?.name?.includes('Tarpaulin')) {
-          unitPrice = item.size_specifications?.totalPrice || 0
-        } else {
-          unitPrice = Number(editingPrices[item.id]) || 0
-        }
-
-        return {
-          id: item.id,
-          unit_price: unitPrice,
-          line_total: item.service?.name?.includes('Sublimation') 
-            ? calculateSublimationSubtotal(item.id)
-            : item.service?.name?.includes('Tarpaulin')
-            ? calculateTarpaulinSubtotal(item.id)
-            : unitPrice * item.quantity,
-          ...(item.service?.name?.includes('Sublimation') && {
+          // Sublimation items - only send sublimation pricing, keep original unit_price
+          return {
+            id: item.id,
+            unit_price: item.unit_price,  // Keep original
+            line_total: item.line_total,  // Keep original
             sublimation_prices: sublimationPrices[item.id]
-          })
+          }
+        } else if (item.service?.name?.includes('Tarpaulin')) {
+          // Tarpaulin items - don't modify (size-based pricing is calculated from size_specifications)
+          return {
+            id: item.id,
+            unit_price: item.unit_price,  // Keep original
+            line_total: item.line_total,  // Keep original
+          }
+        } else {
+          // Regular items - update with new pricing from input fields
+          const unitPrice = Number(editingPrices[item.id]) || 0
+          return {
+            id: item.id,
+            unit_price: unitPrice,
+            line_total: unitPrice * item.quantity,
+          }
         }
       })
 
@@ -701,49 +706,6 @@ export function AdminQuotationPricing() {
                           {item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0 && item.service?.name?.includes('Sublimation') && (
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-4">Sublimation Printing Service</h4>
-                              
-                              {/* Price Inputs */}
-                              <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-white rounded border border-blue-200">
-                                <div>
-                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Set Price</label>
-                                  <input
-                                    type="number"
-                                    value={sublimationPrices[item.id]?.setPrice || ""}
-                                    onChange={(e) => setSublimationPrices(prev => ({
-                                      ...prev,
-                                      [item.id]: { ...prev[item.id], setPrice: e.target.value }
-                                    }))}
-                                    step="0.01"
-                                    className="w-full px-2 py-2 border border-orange-400 rounded text-right focus:outline-none bg-white focus:border-orange-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Top Price</label>
-                                  <input
-                                    type="number"
-                                    value={sublimationPrices[item.id]?.topPrice || ""}
-                                    onChange={(e) => setSublimationPrices(prev => ({
-                                      ...prev,
-                                      [item.id]: { ...prev[item.id], topPrice: e.target.value }
-                                    }))}
-                                    step="0.01"
-                                    className="w-full px-2 py-2 border border-orange-400 rounded text-right focus:outline-none bg-white focus:border-orange-500"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Bottom Price</label>
-                                  <input
-                                    type="number"
-                                    value={sublimationPrices[item.id]?.bottomPrice || ""}
-                                    onChange={(e) => setSublimationPrices(prev => ({
-                                      ...prev,
-                                      [item.id]: { ...prev[item.id], bottomPrice: e.target.value }
-                                    }))}
-                                    step="0.01"
-                                    className="w-full px-2 py-2 border border-orange-400 rounded text-right focus:outline-none bg-white focus:border-orange-500"
-                                  />
-                                </div>
-                              </div>
 
                               {/* Team Roster Table */}
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>

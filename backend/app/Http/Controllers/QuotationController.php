@@ -882,11 +882,101 @@ class QuotationController extends Controller
     // Admin update quotation pricing and send back to client
     public function updatePricing(Request $request, $id)
     {
-        $quotation = Quotation::with('items')->find($id);
+        $quotation = Quotation::find($id);
 
         if (!$quotation) {
             return response()->json(['error' => 'Quotation not found'], 404);
         }
+
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|integer',
+            'items.*.unit_price' => 'nullable|numeric|min:0',
+            'items.*.line_total' => 'nullable|numeric|min:0',
+            'items.*.sublimation_prices' => 'nullable|array',
+            'subtotal' => 'required|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'discount_value' => 'nullable|numeric',
+            'discount_type' => 'nullable|string|in:percent,peso',
+            'total' => 'required|numeric|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        try {
+            // Update quotation items with new pricing
+            // IMPORTANT: Only update pricing fields for non-Sublimation/non-Tarpaulin items
+            // For Sublimation items, store the sublimation pricing in notes
+            foreach ($request->items as $itemData) {
+                $item = QuotationItem::find($itemData['id']);
+                if ($item) {
+                    // If this item has sublimation_prices, store them in the notes field
+                    if (!empty($itemData['sublimation_prices'])) {
+                        $existingNotes = $item->notes ? (is_array($item->notes) ? $item->notes : json_decode($item->notes, true) ?? []) : [];
+                        $existingNotes['sublimation_prices'] = $itemData['sublimation_prices'];
+                        $item->notes = json_encode($existingNotes);
+                        $item->save();
+                    } else {
+                        // For regular items (non-Sublimation), update unit_price and line_total
+                        // Only update if unit_price is provided and not zero
+                        if (isset($itemData['unit_price']) && isset($itemData['line_total'])) {
+                            $item->update([
+                                'unit_price' => $itemData['unit_price'],
+                                'line_total' => $itemData['line_total'],
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // Use subtotal from frontend (which was calculated on frontend after pricing)
+            $subtotal = $request->subtotal ?? 0;
+            $discount = $request->discount ?? 0;
+            $total = $request->total ?? 0;
+            
+            // If discount_type is provided, recalculate discount and total
+            if ($request->has('discount_type') && $request->discount_type) {
+                if ($request->discount_type === 'percent') {
+                    $discount = ($subtotal * $request->discount_value) / 100;
+                } else {
+                    $discount = $request->discount_value ?? 0;
+                }
+                $total = $subtotal - $discount;
+            }
+
+            // Update quotation with pricing and mark as has_price = 1 (no tax field)
+            $quotation->update([
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'total' => $total,
+                'has_price' => 1,
+            ]);
+
+            Log::info('Quotation pricing updated', [
+                'quotation_id' => $id,
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'total' => $total,
+                'items_count' => count($request->items),
+            ]);
+
+            $quotation->load(['customer', 'items']);
+
+            return response()->json([
+                'message' => 'Quotation pricing updated and sent back to client',
+                'quotation' => $quotation,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Failed to update quotation pricing', [
+                'quotation_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['error' => 'Failed to update quotation pricing: ' . $e->getMessage()], 500);
+        }
+    }
 
         $validator = Validator::make($request->all(), [
             'items' => 'required|array',
