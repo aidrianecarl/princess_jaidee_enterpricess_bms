@@ -35,6 +35,11 @@ interface Order {
   notes: string | null
   created_at: string
   items?: OrderItem[]
+  job_order?: {
+    id: number
+    status: string
+    released_date?: string
+  }
 }
 
 const statusColors: Record<string, { badge: string; text: string }> = {
@@ -314,6 +319,15 @@ export default function MyOrdersPage() {
                         <Badge className={orderStatusColors[order.order_status] || orderStatusColors.pending}>
                           {getOrderStatusLabel(order.order_status)}
                         </Badge>
+                        {order.order_status === 'completed' && order.job_order?.released_date ? (
+                          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 font-bold">
+                            ✓ Released
+                          </Badge>
+                        ) : order.order_status === 'completed' ? (
+                          <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 font-bold animate-pulse">
+                            📦 Ready to Pickup
+                          </Badge>
+                        ) : null}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
                         <Calendar size={14} />

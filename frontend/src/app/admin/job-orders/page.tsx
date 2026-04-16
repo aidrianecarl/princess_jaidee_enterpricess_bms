@@ -502,27 +502,18 @@ export default function AdminJobOrdersPage() {
                                   <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase tracking-wider">Assigned To</p>
                                 </div>
                                 {(() => {
-                                  const assignedToObj = jobOrder.assignedTo
+                                  // Handle both camelCase (assignedTo) and snake_case (assigned_to) from backend
+                                  const assignedToObj = jobOrder.assignedTo || (typeof jobOrder.assigned_to === 'object' ? jobOrder.assigned_to : null)
                                   const firstName = assignedToObj?.first_name
                                   const lastName = assignedToObj?.last_name
-                                  const assignedToId = jobOrder.assigned_to
-                                  
-                                  console.log(`[v0] ASSIGNED TO DEBUG - Job Order ${jobOrder.id}:`, {
-                                    jobOrderId: jobOrder.id,
-                                    assignedToObj: assignedToObj,
-                                    assignedToObjType: typeof assignedToObj,
-                                    firstName: firstName,
-                                    lastName: lastName,
-                                    assignedToId: assignedToId,
-                                    fullName: firstName || lastName ? `${firstName || ''} ${lastName || ''}`.trim() : undefined
-                                  })
+                                  const assignedToId = typeof jobOrder.assigned_to === 'number' ? jobOrder.assigned_to : jobOrder.assigned_to?.id
                                   
                                   const displayName = firstName || lastName
                                     ? `${firstName || ''} ${lastName || ''}`.trim()
                                     : (assignedToId ? `Employee #${assignedToId}` : 'Unassigned')
                                   
                                   return (
-                                    <p className={`font-bold text-sm ${!firstName && !lastName && assignedToId ? 'text-yellow-600 dark:text-yellow-400' : 'text-neutral-900 dark:text-white'}`}>
+                                    <p className="font-bold text-sm text-neutral-900 dark:text-white">
                                       {displayName}
                                     </p>
                                   )
