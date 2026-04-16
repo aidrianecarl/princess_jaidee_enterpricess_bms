@@ -230,7 +230,13 @@ export default function AdminJobOrdersPage() {
       console.log('[v0] FETCHED JOB ORDERS:', {
         orderCount: orders.length,
         rawData: data,
-        orders: orders
+        orders: orders,
+        firstOrderAssignedTo: orders[0] ? {
+          assigned_to: orders[0].assigned_to,
+          assignedTo: orders[0].assignedTo,
+          assignedToType: typeof orders[0].assignedTo,
+          assignedToKeys: orders[0].assignedTo ? Object.keys(orders[0].assignedTo) : []
+        } : 'No orders'
       })
       
       // Fetch order details for each job order to check payment status
@@ -374,14 +380,16 @@ export default function AdminJobOrdersPage() {
               </div>
 
               {/* Search Bar */}
-              <div className="mb-6 relative">
-                <Search className="absolute left-3 top-3 text-neutral-400 dark:text-neutral-500" size={20} />
+              <div className="mb-8 relative group">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                  <Search className="text-neutral-400 dark:text-neutral-500 group-focus-within:text-blue-500 transition-colors duration-300" size={20} />
+                </div>
                 <Input
                   type="text"
                   placeholder="Search by job order number or customer name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 py-2 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700"
+                  className="pl-12 pr-4 py-3 w-full bg-white dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg transition-all duration-300 focus:border-blue-500 dark:focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 dark:focus:shadow-blue-900/20 hover:border-neutral-300 dark:hover:border-neutral-600 text-base"
                 />
               </div>
 
@@ -414,24 +422,24 @@ export default function AdminJobOrdersPage() {
                   {paginatedJobOrders.map((jobOrder) => (
                     <Card
                       key={jobOrder.id}
-                      className="overflow-hidden bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-xl transition-all duration-300 hover:scale-[1.01] animate-in fade-in slide-in-from-bottom-4"
+                      className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:scale-[1.01] hover:border-blue-300 dark:hover:border-blue-700 animate-in fade-in slide-in-from-bottom-4 group"
                     >
-                      <div className="p-6">
+                      <div className="p-6 sm:p-8">
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
                           {/* Left Content */}
                           <div className="flex-1">
                             {/* Title and Status */}
-                            <div className="flex items-center gap-3 mb-4 flex-wrap">
-                              <h3 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-white">
+                            <div className="flex items-center gap-3 mb-6 flex-wrap">
+                              <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
                                 {jobOrder.job_order_number}
                               </h3>
                               <div className="flex gap-2 flex-wrap items-center">
-                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(jobOrder.status)}`}>
+                                <span className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all duration-200 ${getStatusColor(jobOrder.status)}`}>
                                   {getStatusLabel(jobOrder.status)}
                                 </span>
                                 {jobOrder.is_priority ? (
-                                  <span className="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">
-                                    Priority
+                                  <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 shadow-sm shadow-red-200 dark:shadow-red-900/20 animate-pulse">
+                                    🔴 Priority
                                   </span>
                                 ) : null}
                               </div>
@@ -448,18 +456,21 @@ export default function AdminJobOrdersPage() {
                             )}
 
                             {/* Customer Info */}
-                            <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-700">
-                              <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Customer</p>
-                              <div className="space-y-1">
-                                <p className="text-sm md:text-base font-semibold text-neutral-900 dark:text-white">
+                            <div className="mb-6 pb-6 border-b-2 border-neutral-200 dark:border-neutral-700">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-bold uppercase tracking-wider">Customer</p>
+                              </div>
+                              <div className="space-y-2 bg-neutral-50 dark:bg-neutral-700/30 rounded-lg p-3">
+                                <p className="text-sm md:text-base font-bold text-neutral-900 dark:text-white">
                                   {jobOrder.customer?.bill_to_name || 'N/A'}
                                 </p>
-                                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline cursor-help">
                                   {jobOrder.customer?.bill_to_email || 'N/A'}
                                 </p>
                                 {jobOrder.customer?.bill_to_phone && (
-                                  <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                                    {jobOrder.customer.bill_to_phone}
+                                  <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                                    📞 {jobOrder.customer.bill_to_phone}
                                   </p>
                                 )}
                               </div>
@@ -467,34 +478,55 @@ export default function AdminJobOrdersPage() {
 
                             {/* Dates and Assignment Info */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
+                              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800/50">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Calendar size={16} className="text-neutral-600 dark:text-neutral-400" />
-                                  <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide">Start Date</p>
+                                  <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
+                                  <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase tracking-wider">Start Date</p>
                                 </div>
-                                <p className="font-semibold text-neutral-900 dark:text-white">
+                                <p className="font-bold text-neutral-900 dark:text-white text-sm">
                                   {formatDate(jobOrder.start_date)}
                                 </p>
                               </div>
-                              <div>
+                              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-800/50">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Calendar size={16} className="text-neutral-600 dark:text-neutral-400" />
-                                  <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide">Due Date</p>
+                                  <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
+                                  <p className="text-xs text-orange-600 dark:text-orange-300 font-bold uppercase tracking-wider">Due Date</p>
                                 </div>
-                                <p className="font-semibold text-neutral-900 dark:text-white">
+                                <p className="font-bold text-neutral-900 dark:text-white text-sm">
                                   {formatDate(jobOrder.due_date)}
                                 </p>
                               </div>
-                              <div>
+                              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800/50">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <Users size={16} className="text-neutral-600 dark:text-neutral-400" />
-                                  <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide">Assigned To</p>
+                                  <Users size={16} className="text-purple-600 dark:text-purple-400" />
+                                  <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase tracking-wider">Assigned To</p>
                                 </div>
-                                <p className="font-semibold text-neutral-900 dark:text-white text-sm">
-                                  {jobOrder.assignedTo && (jobOrder.assignedTo.first_name || jobOrder.assignedTo.last_name)
-                                    ? `${jobOrder.assignedTo.first_name || ''} ${jobOrder.assignedTo.last_name || ''}`.trim()
-                                    : (jobOrder.assigned_to ? `Employee #${jobOrder.assigned_to}` : 'Unassigned')}
-                                </p>
+                                {(() => {
+                                  const assignedToObj = jobOrder.assignedTo
+                                  const firstName = assignedToObj?.first_name
+                                  const lastName = assignedToObj?.last_name
+                                  const assignedToId = jobOrder.assigned_to
+                                  
+                                  console.log(`[v0] ASSIGNED TO DEBUG - Job Order ${jobOrder.id}:`, {
+                                    jobOrderId: jobOrder.id,
+                                    assignedToObj: assignedToObj,
+                                    assignedToObjType: typeof assignedToObj,
+                                    firstName: firstName,
+                                    lastName: lastName,
+                                    assignedToId: assignedToId,
+                                    fullName: firstName || lastName ? `${firstName || ''} ${lastName || ''}`.trim() : undefined
+                                  })
+                                  
+                                  const displayName = firstName || lastName
+                                    ? `${firstName || ''} ${lastName || ''}`.trim()
+                                    : (assignedToId ? `Employee #${assignedToId}` : 'Unassigned')
+                                  
+                                  return (
+                                    <p className={`font-bold text-sm ${!firstName && !lastName && assignedToId ? 'text-yellow-600 dark:text-yellow-400' : 'text-neutral-900 dark:text-white'}`}>
+                                      {displayName}
+                                    </p>
+                                  )
+                                })()}
                               </div>
                             </div>
 
@@ -592,29 +624,29 @@ export default function AdminJobOrdersPage() {
 
               {/* Pagination */}
               {filteredJobOrders.length > itemsPerPage && (
-                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-6 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 animate-in fade-in slide-in-from-bottom-4">
-                  <div className="text-sm text-neutral-600 dark:text-neutral-400">
-                    Showing <span className="font-semibold">{startIndex + 1}</span> to <span className="font-semibold">{Math.min(startIndex + itemsPerPage, filteredJobOrders.length)}</span> of <span className="font-semibold">{filteredJobOrders.length}</span> results
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-6 px-6 py-6 bg-gradient-to-r from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 rounded-xl border border-neutral-200 dark:border-neutral-700 shadow-md hover:shadow-lg transition-all duration-300 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="text-sm text-neutral-700 dark:text-neutral-300 font-medium">
+                    Showing <span className="font-bold text-blue-600 dark:text-blue-400">{startIndex + 1}</span> to <span className="font-bold text-blue-600 dark:text-blue-400">{Math.min(startIndex + itemsPerPage, filteredJobOrders.length)}</span> of <span className="font-bold text-blue-600 dark:text-blue-400">{filteredJobOrders.length}</span> results
                   </div>
-                  <div className="flex gap-2 items-center">
+                  <div className="flex gap-2 items-center flex-wrap justify-center">
                     <Button
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
                       variant="outline"
                       size="sm"
-                      className="gap-1"
+                      className="gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
                     >
                       <ChevronLeft size={16} />
                       Previous
                     </Button>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-neutral-100 dark:bg-neutral-700/50 rounded-lg p-1">
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                         <Button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          variant={currentPage === page ? 'default' : 'outline'}
+                          variant={currentPage === page ? 'default' : 'ghost'}
                           size="sm"
-                          className={currentPage === page ? 'min-w-10' : ''}
+                          className={`transition-all duration-200 ${currentPage === page ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md min-w-10' : 'hover:bg-neutral-200 dark:hover:bg-neutral-600 min-w-10'}`}
                         >
                           {page}
                         </Button>
@@ -625,7 +657,7 @@ export default function AdminJobOrdersPage() {
                       disabled={currentPage === totalPages}
                       variant="outline"
                       size="sm"
-                      className="gap-1"
+                      className="gap-1 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:border-blue-300 dark:hover:border-blue-600 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-200"
                     >
                       Next
                       <ChevronRight size={16} />
