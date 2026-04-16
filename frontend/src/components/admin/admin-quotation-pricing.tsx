@@ -275,27 +275,29 @@ export function AdminQuotationPricing() {
 
       // Prepare items with updated pricing
       const updatedItems = quotation.items.map(item => {
-        let unitPrice = 0
+        let unitPrice = Number(item.unit_price) || 0
+        let lineTotal = Number(item.line_total) || 0
         
+        // For Sublimation Printing Service, preserve existing unit_price and line_price
         if (item.service?.name?.includes('Sublimation')) {
-          unitPrice = calculateSublimationSubtotal(item.id)
+          // Keep the original unit_price and line_price - don't modify them
+          return {
+            id: item.id,
+            unit_price: unitPrice,
+            line_total: lineTotal
+          }
         } else if (item.service?.name?.includes('Tarpaulin')) {
           unitPrice = item.size_specifications?.totalPrice || 0
+          lineTotal = calculateTarpaulinSubtotal(item.id)
         } else {
           unitPrice = Number(editingPrices[item.id]) || 0
+          lineTotal = unitPrice * item.quantity
         }
 
         return {
           id: item.id,
           unit_price: unitPrice,
-          line_total: item.service?.name?.includes('Sublimation') 
-            ? calculateSublimationSubtotal(item.id)
-            : item.service?.name?.includes('Tarpaulin')
-            ? calculateTarpaulinSubtotal(item.id)
-            : unitPrice * item.quantity,
-          ...(item.service?.name?.includes('Sublimation') && {
-            sublimation_prices: sublimationPrices[item.id]
-          })
+          line_total: lineTotal
         }
       })
 
@@ -702,48 +704,43 @@ export function AdminQuotationPricing() {
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-4">Sublimation Printing Service</h4>
                               
-                              {/* Price Inputs */}
-                              <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-white rounded border border-blue-200">
+                              {/* Price Inputs - DISABLED for Sublimation Printing */}
+                              <div className="grid grid-cols-3 gap-3 mb-4 p-3 bg-gray-100 rounded border border-gray-300">
                                 <div>
-                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Set Price</label>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Set Price</label>
                                   <input
                                     type="number"
                                     value={sublimationPrices[item.id]?.setPrice || ""}
-                                    onChange={(e) => setSublimationPrices(prev => ({
-                                      ...prev,
-                                      [item.id]: { ...prev[item.id], setPrice: e.target.value }
-                                    }))}
+                                    disabled={true}
                                     step="0.01"
-                                    className="w-full px-2 py-2 border border-orange-400 rounded text-right focus:outline-none bg-white focus:border-orange-500"
+                                    className="w-full px-2 py-2 border border-gray-300 rounded text-right bg-gray-200 cursor-not-allowed text-gray-500"
+                                    title="Pricing is disabled for Sublimation Printing Service"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Top Price</label>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Top Price</label>
                                   <input
                                     type="number"
                                     value={sublimationPrices[item.id]?.topPrice || ""}
-                                    onChange={(e) => setSublimationPrices(prev => ({
-                                      ...prev,
-                                      [item.id]: { ...prev[item.id], topPrice: e.target.value }
-                                    }))}
+                                    disabled={true}
                                     step="0.01"
-                                    className="w-full px-2 py-2 border border-orange-400 rounded text-right focus:outline-none bg-white focus:border-orange-500"
+                                    className="w-full px-2 py-2 border border-gray-300 rounded text-right bg-gray-200 cursor-not-allowed text-gray-500"
+                                    title="Pricing is disabled for Sublimation Printing Service"
                                   />
                                 </div>
                                 <div>
-                                  <label className="block text-xs font-semibold text-blue-700 mb-1">Bottom Price</label>
+                                  <label className="block text-xs font-semibold text-gray-600 mb-1">Bottom Price</label>
                                   <input
                                     type="number"
                                     value={sublimationPrices[item.id]?.bottomPrice || ""}
-                                    onChange={(e) => setSublimationPrices(prev => ({
-                                      ...prev,
-                                      [item.id]: { ...prev[item.id], bottomPrice: e.target.value }
-                                    }))}
+                                    disabled={true}
                                     step="0.01"
-                                    className="w-full px-2 py-2 border border-orange-400 rounded text-right focus:outline-none bg-white focus:border-orange-500"
+                                    className="w-full px-2 py-2 border border-gray-300 rounded text-right bg-gray-200 cursor-not-allowed text-gray-500"
+                                    title="Pricing is disabled for Sublimation Printing Service"
                                   />
                                 </div>
                               </div>
+                              <p className="text-xs text-gray-600 mb-4 italic">Pricing fields are disabled for Sublimation Printing Service. Existing prices will be preserved.</p>
 
                               {/* Team Roster Table */}
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
