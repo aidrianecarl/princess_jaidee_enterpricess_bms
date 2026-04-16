@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { AdminHeader } from '@/components/admin/header'
 import { AdminSidebar } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ArrowRight, Loader2, AlertCircle, Package, Eye, Calendar, Users, CheckCircle2 } from 'lucide-react'
+import { ArrowRight, Loader2, AlertCircle, Package, Eye, Calendar, Users, CheckCircle2, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ordersApi, jobOrdersApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 import { OrderProgressBar } from '@/components/order/order-progress-bar'
@@ -57,6 +58,9 @@ export default function AdminJobOrdersPage() {
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null)
   const [isApproving, setIsApproving] = useState(false)
   const [isReleasing, setIsReleasing] = useState<number | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
 
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
@@ -95,7 +99,6 @@ export default function AdminJobOrdersPage() {
         })
       }
     } catch (err) {
-      console.error('[v0] Error approving job order:', err)
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to approve job order',
@@ -137,7 +140,6 @@ export default function AdminJobOrdersPage() {
         })
       }
     } catch (err) {
-      console.error('[v0] Error releasing job order:', err)
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to release job order',
@@ -186,31 +188,11 @@ export default function AdminJobOrdersPage() {
       const completed = items.filter((item: any) => item.status === 'completed').length
       const total = items.length
       
-      console.log('[v0] ========== JOB ORDER ITEMS STATS ==========')
-      console.log('[v0] Job Order Items:', {
-        jobOrderId,
-        completed,
-        total,
-        shouldShowRelease: completed === total,
-        items: items.map((i: any) => ({ 
-          id: i.id, 
-          status: i.status,
-          service: i.service?.name
-        }))
-      })
-      console.log('[v0] ==========================================')
-
       setJobOrdersStats((prev) => {
-        const newStats = {
+        return {
           ...prev,
           [jobOrderId]: { completed, total }
         }
-        console.log('[v0] Stats updated for Job Order:', {
-          jobOrderId,
-          newStats: newStats[jobOrderId],
-          allStats: newStats
-        })
-        return newStats
       })
     } catch (err) {
       console.error('[v0] Error fetching job order items:', err)
@@ -236,22 +218,6 @@ export default function AdminJobOrdersPage() {
 
       const data = await response.json()
       const orders = Array.isArray(data) ? data : data.data || []
-      
-      console.log('[v0] ========== FETCHED JOB ORDERS ==========')
-      orders.forEach((o: any) => {
-        console.log('[v0] Job Order:', {
-          id: o.id,
-          number: o.job_order_number,
-          status: o.status,
-          statusLowercase: o.status?.toLowerCase(),
-          assignedTo: o.assignedTo,
-          assignedToId: o.assigned_to,
-          firstName: o.assignedTo?.first_name,
-          lastName: o.assignedTo?.last_name,
-          fullName: o.assignedTo ? `${o.assignedTo.first_name} ${o.assignedTo.last_name}` : 'N/A'
-        })
-      })
-      console.log('[v0] ========================================')
       
       setJobOrders(orders)
       
@@ -302,6 +268,26 @@ export default function AdminJobOrdersPage() {
     return status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
   }
 
+  // Filter and search logic
+  const filteredJobOrders = useMemo(() => {
+    return jobOrders.filter(order => {
+      const searchLower = searchQuery.toLowerCase()
+      const numberMatch = order.job_order_number?.toLowerCase().includes(searchLower)
+      const customerMatch = order.customer?.bill_to_name?.toLowerCase().includes(searchLower)
+      return numberMatch || customerMatch
+    })
+  }, [jobOrders, searchQuery])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredJobOrders.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const paginatedJobOrders = filteredJobOrders.slice(startIndex, startIndex + itemsPerPage)
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
@@ -328,6 +314,18 @@ export default function AdminJobOrdersPage() {
                 </p>
               </div>
 
+              {/* Search Bar */}
+              <div className="mb-6 relative">
+                <Search className="absolute left-3 top-3 text-neutral-400 dark:text-neutral-500" size={20} />
+                <Input
+                  type="text"
+                  placeholder="Search by job order number or customer name..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 py-2 bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700"
+                />
+              </div>
+
               {/* Error Message */}
               {error && (
                 <Card className="p-4 mb-6 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
@@ -342,18 +340,22 @@ export default function AdminJobOrdersPage() {
               )}
 
               {/* Content */}
-              {jobOrders.length === 0 ? (
+              {filteredJobOrders.length === 0 ? (
                 <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                   <Package size={40} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-                  <p className="text-neutral-600 dark:text-neutral-400 font-medium text-lg">No job orders found</p>
-                  <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-2">Job orders will appear here once created</p>
+                  <p className="text-neutral-600 dark:text-neutral-400 font-medium text-lg">
+                    {jobOrders.length === 0 ? 'No job orders found' : 'No results matching your search'}
+                  </p>
+                  <p className="text-neutral-500 dark:text-neutral-400 text-sm mt-2">
+                    {jobOrders.length === 0 ? 'Job orders will appear here once created' : 'Try adjusting your search criteria'}
+                  </p>
                 </Card>
               ) : (
                 <div className="grid gap-4 md:gap-6">
-                  {jobOrders.map((jobOrder) => (
+                  {paginatedJobOrders.map((jobOrder) => (
                     <Card
                       key={jobOrder.id}
-                      className="overflow-hidden bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-lg transition-shadow"
+                      className="overflow-hidden bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700 hover:shadow-xl transition-all duration-300 hover:scale-[1.01] animate-in fade-in slide-in-from-bottom-4"
                     >
                       <div className="p-6">
                         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
@@ -429,22 +431,9 @@ export default function AdminJobOrdersPage() {
                                   <Users size={16} className="text-neutral-600 dark:text-neutral-400" />
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide">Assigned To</p>
                                 </div>
-                                {(() => {
-                                  console.log('[v0] ASSIGNED TO DEBUG:', {
-                                    jobOrderId: jobOrder.id,
-                                    assignedTo: jobOrder.assignedTo,
-                                    assignedToId: jobOrder.assigned_to,
-                                    hasFirstName: !!jobOrder.assignedTo?.first_name,
-                                    firstName: jobOrder.assignedTo?.first_name,
-                                    lastName: jobOrder.assignedTo?.last_name,
-                                    fullName: jobOrder.assignedTo ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name || ''}` : null,
-                                    fallback: jobOrder.assigned_to ? `Employee #${jobOrder.assigned_to}` : 'Unassigned'
-                                  })
-                                  return null
-                                })()}
                                 <p className="font-semibold text-neutral-900 dark:text-white text-sm">
-                                  {jobOrder.assignedTo && jobOrder.assignedTo.first_name
-                                    ? `${jobOrder.assignedTo.first_name} ${jobOrder.assignedTo.last_name || ''}`
+                                  {jobOrder.assignedTo && (jobOrder.assignedTo.first_name || jobOrder.assignedTo.last_name)
+                                    ? `${jobOrder.assignedTo.first_name || ''} ${jobOrder.assignedTo.last_name || ''}`.trim()
                                     : (jobOrder.assigned_to ? `Employee #${jobOrder.assigned_to}` : 'Unassigned')}
                                 </p>
                               </div>
@@ -489,29 +478,21 @@ export default function AdminJobOrdersPage() {
                               <Eye size={18} />
                               Update Order
                             </Button>
-                            {/* Show Release button when all items are completed and job order is not yet completed */}
-                            {jobOrdersStats[jobOrder.id]?.total > 0 && 
-                             jobOrdersStats[jobOrder.id]?.completed === jobOrdersStats[jobOrder.id]?.total &&
-                             jobOrder.status?.toLowerCase() !== 'completed' && (
+                            {/* Show Release button when job order status is completed */}
+                            {jobOrder.status?.toLowerCase() === 'completed' && (
                               <Button
                                 onClick={() => {
-                                  console.log('[v0] Releasing job order:', jobOrder.id)
-                                  handleReleaseJobOrder(jobOrder.id)
+                                  toast({
+                                    title: 'Info',
+                                    description: 'This job order is already completed and released.',
+                                    variant: 'default',
+                                  })
                                 }}
-                                disabled={isReleasing === jobOrder.id}
-                                className="bg-green-600 hover:bg-green-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
+                                disabled={true}
+                                className="bg-green-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
                               >
-                                {isReleasing === jobOrder.id ? (
-                                  <>
-                                    <Loader2 size={18} className="animate-spin" />
-                                    Releasing...
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle2 size={18} />
-                                    Release
-                                  </>
-                                )}
+                                <CheckCircle2 size={18} />
+                                Completed
                               </Button>
                             )}
                           </div>
@@ -519,6 +500,50 @@ export default function AdminJobOrdersPage() {
                       </div>
                     </Card>
                   ))}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {filteredJobOrders.length > itemsPerPage && (
+                <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-6 bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 animate-in fade-in slide-in-from-bottom-4">
+                  <div className="text-sm text-neutral-600 dark:text-neutral-400">
+                    Showing <span className="font-semibold">{startIndex + 1}</span> to <span className="font-semibold">{Math.min(startIndex + itemsPerPage, filteredJobOrders.length)}</span> of <span className="font-semibold">{filteredJobOrders.length}</span> results
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                      disabled={currentPage === 1}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                    >
+                      <ChevronLeft size={16} />
+                      Previous
+                    </Button>
+                    <div className="flex items-center gap-2">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          className={currentPage === page ? 'min-w-10' : ''}
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                      disabled={currentPage === totalPages}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                    >
+                      Next
+                      <ChevronRight size={16} />
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>

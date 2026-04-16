@@ -385,27 +385,28 @@ class JobOrderController extends Controller
                 'items_count' => $jobOrder->order ? $jobOrder->order->items->count() : 0
             ]);
 
-            // Check if all items are completed
+            // Check if the job order is already completed
+            if ($jobOrder->status === 'completed') {
+                \Log::info('[v0] Release Job Order - ALREADY COMPLETED', [
+                    'job_order_id' => $id,
+                    'status' => $jobOrder->status
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Job order is already completed'
+                ], 400);
+            }
+
+            // Verify all items are completed before allowing release
             if ($jobOrder->order) {
                 $items = $jobOrder->order->items;
-                $completed = $items->filter(function ($item) {
-                    return $item->status === 'completed';
-                })->count();
                 
-                \Log::info('[v0] Release Job Order - Items Status', [
-                    'total' => $items->count(),
-                    'completed' => $completed,
-                    'items' => $items->map(function($item) {
-                        return ['id' => $item->id, 'status' => $item->status];
-                    })
-                ]);
-
                 $allCompleted = $items->every(function ($item) {
                     return $item->status === 'completed';
                 });
 
                 if (!$allCompleted) {
-                    \Log::warning('[v0] Release Job Order - NOT ALL COMPLETED', [
+                    \Log::warning('[v0] Release Job Order - NOT ALL ITEMS COMPLETED', [
                         'job_order_id' => $id,
                         'all_completed' => $allCompleted
                     ]);
@@ -416,10 +417,10 @@ class JobOrderController extends Controller
                 }
             }
 
-            // Update job order status to completed if not already
+            // Update job order status to completed
             $jobOrder->update([
                 'status' => 'completed',
-                'completed_date' => $jobOrder->completed_date ?? now()->toDateString()
+                'completed_date' => now()
             ]);
 
             // Also update order status
