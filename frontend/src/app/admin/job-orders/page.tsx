@@ -68,6 +68,9 @@ export default function AdminJobOrdersPage() {
   const [isReleasing, setIsReleasing] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'InProduction' | 'completed' | 'released' | null>(null)
+  const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false)
+  const [releaseJobOrderId, setReleaseJobOrderId] = useState<number | null>(null)
   const itemsPerPage = 10
 
 
@@ -117,14 +120,21 @@ export default function AdminJobOrdersPage() {
     }
   }
 
-  const handleReleaseJobOrder = async (jobOrderId: number) => {
+  const handleReleaseConfirm = (jobOrderId: number) => {
+    setReleaseJobOrderId(jobOrderId)
+    setReleaseConfirmOpen(true)
+  }
+
+  const handleReleaseJobOrder = async () => {
+    if (!releaseJobOrderId) return
+    
     const token = localStorage.getItem('admin_token')
     if (!token) return
 
     try {
-      setIsReleasing(jobOrderId)
+      setIsReleasing(releaseJobOrderId)
       
-      const response = await fetch(`${apiUrl}/admin/job-orders/${jobOrderId}/release`, {
+      const response = await fetch(`${apiUrl}/admin/job-orders/${releaseJobOrderId}/release`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -138,6 +148,7 @@ export default function AdminJobOrdersPage() {
           description: 'Job order released successfully',
           variant: 'default',
         })
+        setReleaseConfirmOpen(false)
         fetchJobOrders(token)
       } else {
         const data = await response.json()
@@ -339,9 +350,18 @@ export default function AdminJobOrdersPage() {
       const searchLower = searchQuery.toLowerCase()
       const numberMatch = order.job_order_number?.toLowerCase().includes(searchLower)
       const customerMatch = order.customer?.bill_to_name?.toLowerCase().includes(searchLower)
-      return numberMatch || customerMatch
+      const searchMatches = numberMatch || customerMatch
+
+      // Apply status filter
+      if (statusFilter === 'released') {
+        return searchMatches && !!order.released_date
+      } else if (statusFilter) {
+        return searchMatches && order.status === statusFilter
+      }
+      
+      return searchMatches
     })
-  }, [jobOrders, searchQuery])
+  }, [jobOrders, searchQuery, statusFilter])
 
   // Pagination logic
   const totalPages = Math.ceil(filteredJobOrders.length / itemsPerPage)
@@ -355,9 +375,49 @@ export default function AdminJobOrdersPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 flex items-center justify-center">
-        <div className="animate-spin">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="flex h-screen flex-col bg-neutral-50 dark:bg-neutral-950">
+        <AdminHeader user={user} onMenuClick={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <div className="flex flex-1 overflow-hidden">
+          <AdminSidebar isOpen={isSidebarOpen} onToggle={setIsSidebarOpen} />
+          <main className="flex-1 overflow-auto">
+            <div className="p-4 md:p-8">
+              <div className="max-w-7xl mx-auto">
+                {/* Header Skeleton */}
+                <div className="mb-8">
+                  <div className="h-10 bg-neutral-300 dark:bg-neutral-700 rounded-lg w-64 mb-2 animate-pulse"></div>
+                  <div className="h-4 bg-neutral-300 dark:bg-neutral-700 rounded w-96 animate-pulse"></div>
+                </div>
+
+                {/* Search Bar Skeleton */}
+                <div className="mb-8">
+                  <div className="h-12 bg-neutral-300 dark:bg-neutral-700 rounded-lg animate-pulse"></div>
+                </div>
+
+                {/* Filter Buttons Skeleton */}
+                <div className="mb-8 flex gap-3 flex-wrap">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-10 bg-neutral-300 dark:bg-neutral-700 rounded-lg w-32 animate-pulse"></div>
+                  ))}
+                </div>
+
+                {/* Cards Skeleton */}
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700 p-6">
+                      <div className="space-y-4">
+                        <div className="h-6 bg-neutral-300 dark:bg-neutral-700 rounded w-48 animate-pulse"></div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          {[1, 2, 3].map((j) => (
+                            <div key={j} className="h-16 bg-neutral-300 dark:bg-neutral-700 rounded animate-pulse"></div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     )
@@ -391,6 +451,51 @@ export default function AdminJobOrdersPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-12 pr-4 py-3 w-full bg-white dark:bg-neutral-800 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg transition-all duration-300 focus:border-blue-500 dark:focus:border-blue-500 focus:shadow-lg focus:shadow-blue-100 dark:focus:shadow-blue-900/20 hover:border-neutral-300 dark:hover:border-neutral-600 text-base"
                 />
+              </div>
+
+              {/* Status Filter Buttons */}
+              <div className="mb-8 flex gap-3 flex-wrap">
+                <Button
+                  onClick={() => setStatusFilter('pending')}
+                  className={`transition-all duration-300 ${statusFilter === 'pending' 
+                    ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg scale-105' 
+                    : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 dark:text-yellow-300'}`}
+                >
+                  Pending
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('InProduction')}
+                  className={`transition-all duration-300 ${statusFilter === 'InProduction' 
+                    ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg scale-105' 
+                    : 'bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300'}`}
+                >
+                  In Production
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('completed')}
+                  className={`transition-all duration-300 ${statusFilter === 'completed' 
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg scale-105' 
+                    : 'bg-orange-100 hover:bg-orange-200 text-orange-800 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-300'}`}
+                >
+                  Completed
+                </Button>
+                <Button
+                  onClick={() => setStatusFilter('released')}
+                  className={`transition-all duration-300 ${statusFilter === 'released' 
+                    ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg scale-105' 
+                    : 'bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300'}`}
+                >
+                  Released
+                </Button>
+                {statusFilter && (
+                  <Button
+                    onClick={() => setStatusFilter(null)}
+                    variant="ghost"
+                    className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200"
+                  >
+                    Clear Filter
+                  </Button>
+                )}
               </div>
 
               {/* Error Message */}
@@ -571,7 +676,7 @@ export default function AdminJobOrdersPage() {
                             jobOrder.order?.order_status === 'completed' &&
                             !jobOrder.released_date ? (
                               <Button
-                                onClick={() => handleReleaseJobOrder(jobOrder.id)}
+                                onClick={() => handleReleaseConfirm(jobOrder.id)}
                                 disabled={
                                   isReleasing === jobOrder.id || 
                                   jobOrder.order?.payment_status !== 'paid'
@@ -580,7 +685,7 @@ export default function AdminJobOrdersPage() {
                                   jobOrder.order?.payment_status !== 'paid'
                                     ? 'opacity-50 cursor-not-allowed'
                                     : ''
-                                } bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2`}
+                                } bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 transition-all duration-200`}
                                 title={jobOrder.order?.payment_status !== 'paid' ? 'Payment must be marked as paid before releasing' : ''}
                               >
                                 {isReleasing === jobOrder.id ? (
@@ -661,6 +766,42 @@ export default function AdminJobOrdersPage() {
         </main>
       </div>
 
+      {/* Release Confirmation Modal */}
+      <AlertDialog open={releaseConfirmOpen} onOpenChange={setReleaseConfirmOpen}>
+        <AlertDialogContent className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-neutral-900 dark:text-white">
+              Release Job Order?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
+              Are you sure you want to release this Job Order{' '}
+              <span className="font-semibold text-neutral-900 dark:text-white">
+                #{releaseJobOrderId && jobOrders.find(j => j.id === releaseJobOrderId)?.job_order_number}
+              </span>
+              ? This action will mark it as released and the customer can pick it up.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel className="hover:bg-neutral-100 dark:hover:bg-neutral-700">
+              No, Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleReleaseJobOrder()}
+              disabled={isReleasing === releaseJobOrderId}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {isReleasing === releaseJobOrderId ? (
+                <>
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                  Releasing...
+                </>
+              ) : (
+                'Yes, Release'
+              )}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
