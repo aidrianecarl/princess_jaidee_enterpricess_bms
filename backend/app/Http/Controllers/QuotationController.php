@@ -882,23 +882,19 @@ class QuotationController extends Controller
     // Admin update quotation pricing and send back to client
     public function updatePricing(Request $request, $id)
     {
-        $quotation = Quotation::find($id);
+        $quotation = Quotation::with('items')->find($id);
 
         if (!$quotation) {
             return response()->json(['error' => 'Quotation not found'], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'items' => 'required|array|min:1',
-            'items.*.id' => 'required|integer',
-            'items.*.unit_price' => 'nullable|numeric|min:0',
-            'items.*.line_total' => 'nullable|numeric|min:0',
-            'items.*.sublimation_prices' => 'nullable|array',
-            'subtotal' => 'required|numeric|min:0',
-            'discount' => 'nullable|numeric|min:0',
-            'discount_value' => 'nullable|numeric',
-            'discount_type' => 'nullable|string|in:percent,peso',
-            'total' => 'required|numeric|min:0',
+            'items' => 'required|array',
+            'items.*.id' => 'required|numeric',
+            'items.*.unit_price' => 'required|numeric',
+            'items.*.line_total' => 'required|numeric',
+            'discount_type' => 'required|in:percent,peso',
+            'discount_value' => 'required|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -907,41 +903,29 @@ class QuotationController extends Controller
 
         try {
             // Update quotation items with new pricing
-            // IMPORTANT: Only update pricing fields for non-Sublimation/non-Tarpaulin items
-            // For Sublimation items, store the sublimation pricing in notes
+            $subtotal = 0;
             foreach ($request->items as $itemData) {
                 $item = QuotationItem::find($itemData['id']);
                 if ($item) {
-                    // If this item has sublimation_prices, store them in the notes field
-                    if (!empty($itemData['sublimation_prices'])) {
-                        $existingNotes = $item->notes ? (is_array($item->notes) ? $item->notes : json_decode($item->notes, true) ?? []) : [];
-                        $existingNotes['sublimation_prices'] = $itemData['sublimation_prices'];
-                        $item->notes = json_encode($existingNotes);
-                        $item->save();
-                    } else {
-                        // For regular items (non-Sublimation), update unit_price and line_total
-                        // Only update if unit_price is provided and not zero
-                        if (isset($itemData['unit_price']) && isset($itemData['line_total'])) {
-                            $item->update([
-                                'unit_price' => $itemData['unit_price'],
-                                'line_total' => $itemData['line_total'],
-                            ]);
-                        }
-                    }
+                    $item->update([
+                        'unit_price' => $itemData['unit_price'],
+                        'line_total' => $itemData['line_total'],
+                    ]);
+                    $subtotal += $itemData['line_total'];
                 }
             }
 
-            // Use subtotal from frontend (which was calculated on frontend after pricing)
-            $subtotal = $request->subtotal ?? 0;
+            // Use discount and total from frontend if provided, otherwise calculate
+            // Frontend sends: subtotal, discount (already calculated), and total
             $discount = $request->discount ?? 0;
             $total = $request->total ?? 0;
             
-            // If discount_type is provided, recalculate discount and total
-            if ($request->has('discount_type') && $request->discount_type) {
+            // If neither is provided, calculate them
+            if ($request->discount_type) {
                 if ($request->discount_type === 'percent') {
                     $discount = ($subtotal * $request->discount_value) / 100;
                 } else {
-                    $discount = $request->discount_value ?? 0;
+                    $discount = $request->discount_value;
                 }
                 $total = $subtotal - $discount;
             }
@@ -959,7 +943,6 @@ class QuotationController extends Controller
                 'subtotal' => $subtotal,
                 'discount' => $discount,
                 'total' => $total,
-                'items_count' => count($request->items),
             ]);
 
             $quotation->load(['customer', 'items']);
@@ -972,7 +955,6 @@ class QuotationController extends Controller
             Log::error('Failed to update quotation pricing', [
                 'quotation_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
             return response()->json(['error' => 'Failed to update quotation pricing: ' . $e->getMessage()], 500);
         }

@@ -185,6 +185,8 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                 {/* Table Header - Responsive */}
                 <div className="hidden md:flex items-center gap-3 mb-3 pb-3 border-b-2 border-red-300 bg-gradient-to-r from-red-50 to-orange-50 p-3 rounded-lg font-semibold text-gray-700">
                   <div className="flex-1 text-base">Name</div>
+                  <div className="w-20 text-center text-base">Qty</div>
+                  <div className="w-24 text-right text-base">Amount</div>
                 </div>
 
                 {/* Table Body */}
@@ -242,13 +244,35 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                             </p>
                           </div>
                         </div>
+
+                        {/* Quantity Column */}
+                        <div className="w-16 md:w-20 flex items-center justify-center">
+                          <input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            disabled
+                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-center text-xs md:text-sm bg-gray-100 cursor-not-allowed"
+                          />
+                        </div>
+
+                        {/* Amount Column - Read Only */}
+                        <div className="w-24 flex items-center justify-end">
+                          <input
+                            type="number"
+                            value={item.unit_price || ""}
+                            disabled
+                            placeholder="0.00"
+                            className="w-full px-2 py-1 md:py-2 border border-gray-300 rounded text-right text-xs bg-gray-100 cursor-not-allowed"
+                          />
+                        </div>
                       </div>
 
                       {/* Collapsible Details */}
                       {expandedItems.has(item.id) && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
-                          {/* Team Roster Details - Only show for Sublimation */}
-                          {item.team_roster && !item.service?.name?.includes("Tarpaulin") && (
+                          {/* Team Roster Details */}
+                          {item.team_roster && (
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
                               <div className="space-y-3">
@@ -373,7 +397,7 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                 <span className="text-xs text-indigo-700 font-normal">(Click to expand)</span>
                               </h4>
                               <div
-                                className="relative w-full cursor-pointer group overflow-auto"
+                                className="relative inline-block cursor-pointer group"
                                 onClick={() => {
                                   if (item.design_file_url) {
                                     setExpandedImage(getApiImageUrl(item.design_file_url))
@@ -383,7 +407,7 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                 <img
                                   src={getApiImageUrl(item.design_file_url)}
                                   alt="Design"
-                                  className="w-full max-h-96 object-contain rounded bg-white hover:opacity-90 transition-opacity"
+                                  className="max-w-md max-h-64 rounded bg-white hover:opacity-90 transition-opacity"
                                   onError={(e) => {
                                     e.currentTarget.style.display = "none"
                                   }}
@@ -457,9 +481,7 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
             {quotation.notes && (
               <div className="p-8 border-t-2 border-gray-200 bg-white">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Notes</h3>
-                <p className="text-sm text-gray-900 whitespace-pre-line">
-                  {typeof quotation.notes === "string" ? quotation.notes : JSON.stringify(quotation.notes, null, 2)}
-                </p>
+                <p className="text-sm text-gray-900 whitespace-pre-line">{quotation.notes}</p>
               </div>
             )}
           </div>

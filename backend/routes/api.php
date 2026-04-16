@@ -33,10 +33,6 @@ Route::post('/contact', [ContactController::class, 'sendMessage']);
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{id}', [ServiceController::class, 'show']);
 
-// Public branches endpoint - no authentication required
-Route::get('/branches', [BranchController::class, 'index']);
-Route::get('/branches/{id}', [BranchController::class, 'show']);
-
 // Public ratings endpoint - no authentication required
 Route::get('/ratings', [RatingController::class, 'index']);
 
