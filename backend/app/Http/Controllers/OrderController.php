@@ -77,10 +77,7 @@ class OrderController extends Controller
                 'items_count' => $order->items ? count($order->items) : 0
             ]);
 
-            return response()->json([
-                'success' => true,
-                'data' => $order
-            ], 200);
+            return response()->json($order, 200);
         } catch (\Exception $e) {
             Log::error('Error fetching order: ' . $e->getMessage(), [
                 'order_id' => $id,

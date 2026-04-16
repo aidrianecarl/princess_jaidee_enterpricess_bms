@@ -227,10 +227,21 @@ export default function AdminJobOrdersPage() {
       const data = await response.json()
       let orders = Array.isArray(data) ? data : data.data || []
       
+      console.log('[v0] FETCHED JOB ORDERS:', {
+        orderCount: orders.length,
+        rawData: data,
+        orders: orders
+      })
+      
       // Fetch order details for each job order to check payment status
       const ordersWithDetails = await Promise.all(
         orders.map(async (jobOrder) => {
           try {
+            console.log('[v0] Fetching order details for job order:', {
+              jobOrderId: jobOrder.id,
+              orderId: jobOrder.order_id
+            })
+            
             const orderResponse = await fetch(`${apiUrl}/admin/orders/${jobOrder.order_id}`, {
               method: 'GET',
               headers: {
@@ -239,8 +250,24 @@ export default function AdminJobOrdersPage() {
               },
             })
             if (orderResponse.ok) {
-              const orderData = await orderResponse.json()
+              let orderData = await orderResponse.json()
+              // Handle wrapped response (data.data or data)
+              if (orderData.data && !orderData.order_status) {
+                orderData = orderData.data
+              }
+              console.log('[v0] Fetched order data:', {
+                jobOrderId: jobOrder.id,
+                orderData: orderData,
+                hasOrderStatus: !!orderData.order_status,
+                hasPaymentStatus: !!orderData.payment_status
+              })
               return { ...jobOrder, order: orderData }
+            } else {
+              console.warn('[v0] Failed to fetch order details:', {
+                jobOrderId: jobOrder.id,
+                orderId: jobOrder.order_id,
+                status: orderResponse.status
+              })
             }
           } catch (err) {
             console.error('[v0] Error fetching order details:', err)
@@ -248,6 +275,8 @@ export default function AdminJobOrdersPage() {
           return jobOrder
         })
       )
+      
+      console.log('[v0] ORDERS WITH DETAILS:', ordersWithDetails)
       
       setJobOrders(ordersWithDetails)
       
@@ -490,9 +519,34 @@ export default function AdminJobOrdersPage() {
                             </Button>
 
                             {/* Release Button - Show when status is completed, order status is completed, and not already released */}
-                            {jobOrder.status?.toLowerCase() === 'completed' && 
-                             jobOrder.order?.order_status === 'completed' &&
-                             !jobOrder.released_date ? (
+                            {(() => {
+                              const jobOrderStatus = jobOrder.status?.toLowerCase()
+                              const orderStatus = jobOrder.order?.order_status
+                              const hasReleasedDate = !!jobOrder.released_date
+                              const shouldShowRelease = jobOrderStatus === 'completed' && orderStatus === 'completed' && !hasReleasedDate
+                              
+                              console.log('[v0] RELEASE BUTTON DEBUG:', {
+                                jobOrderId: jobOrder.id,
+                                jobOrderNumber: jobOrder.job_order_number,
+                                jobOrderStatus: jobOrderStatus,
+                                rawJobOrderStatus: jobOrder.status,
+                                orderStatus: orderStatus,
+                                hasOrder: !!jobOrder.order,
+                                orderExists: jobOrder.order ? 'YES' : 'NO',
+                                hasReleasedDate: hasReleasedDate,
+                                releasedDate: jobOrder.released_date,
+                                shouldShowRelease: shouldShowRelease,
+                                allData: {
+                                  jobOrder,
+                                  order: jobOrder.order
+                                }
+                              })
+                              
+                              return shouldShowRelease
+                            })() && 
+                            jobOrder.status?.toLowerCase() === 'completed' && 
+                            jobOrder.order?.order_status === 'completed' &&
+                            !jobOrder.released_date ? (
                               <Button
                                 onClick={() => handleReleaseJobOrder(jobOrder.id)}
                                 disabled={
