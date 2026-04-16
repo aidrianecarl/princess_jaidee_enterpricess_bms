@@ -1396,7 +1396,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     type="text"
                     value={formData.businessName}
                     onChange={(e) => setFormData({ ...formData, businessName: e.target.value })}
-                    placeholder="Business Name"
+                    placeholder="Business Name/School Name"
                     className={`font-bold text-gray-900 w-full bg-transparent border-b ${errors.businessName ? "border-red-500" : "border-red-300"} focus:border-red-600 outline-none transition mb-2`}
                   />
                   {errors.businessName && <p className="text-xs text-red-500 mb-2">{errors.businessName}</p>}
@@ -1414,7 +1414,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         type="text"
                         value={formData.businessCity}
                         onChange={(e) => setFormData({ ...formData, businessCity: e.target.value })}
-                        placeholder="City"
+                        placeholder="City/Municipality"
                         className={`text-sm text-gray-700 w-full bg-transparent border-b ${errors.businessCity ? "border-red-500" : "border-red-200"} focus:border-red-600 outline-none transition`}
                       />
                       {errors.businessCity && <p className="text-xs text-red-500">{errors.businessCity}</p>}
@@ -1424,7 +1424,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         type="text"
                         value={formData.businessState}
                         onChange={(e) => setFormData({ ...formData, businessState: e.target.value })}
-                        placeholder="State"
+                        placeholder="Province"
                         className={`text-sm text-gray-700 w-full bg-transparent border-b ${errors.businessState ? "border-red-500" : "border-red-200"} focus:border-red-600 outline-none transition`}
                       />
                       {errors.businessState && <p className="text-xs text-red-500">{errors.businessState}</p>}
@@ -1446,7 +1446,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         type="tel"
                         value={formData.businessPhone}
                         onChange={(e) => setFormData({ ...formData, businessPhone: e.target.value })}
-                        placeholder="Phone"
+                        placeholder="Mobile Number"
                         className={`text-sm text-gray-700 w-full bg-transparent border-b ${errors.businessPhone ? "border-red-500" : "border-red-200"} focus:border-red-600 outline-none transition`}
                       />
                       {errors.businessPhone && <p className="text-xs text-red-500">{errors.businessPhone}</p>}
@@ -1526,7 +1526,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                       type="tel"
                       value={formData.clientPhone}
                       onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
-                      placeholder="Phone#"
+                      placeholder="Mobile Number"
                       className={`text-sm text-gray-700 w-full bg-transparent border-b ${errors.clientPhone ? "border-red-500" : "border-gray-200"} focus:border-red-600 outline-none transition`}
                     />
                     {errors.clientPhone && <p className="text-xs text-red-500">{errors.clientPhone}</p>}
