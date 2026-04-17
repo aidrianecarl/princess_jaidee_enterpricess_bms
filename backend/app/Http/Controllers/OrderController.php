@@ -15,10 +15,9 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         try {
-            // For admin users - fetch all orders
             Log::info('[v0] OrderController index - Fetching all orders', ['request' => $request->all()]);
             
-            $query = Order::with(['customer', 'items', 'quotation']);
+            $query = Order::with(['customer', 'items', 'quotation', 'branch', 'job_order']);
 
             if ($request->has('search')) {
                 Log::info('[v0] OrderController - Applying search filter:', ['search' => $request->search]);
@@ -59,11 +58,13 @@ class OrderController extends Controller
         try {
             Log::info('OrderController show - Fetching order ID: ' . $id);
             
-            // Load order with all relationships including items with service details
+            // Load order with all relationships including items with service details and branch
             $order = Order::with([
                 'customer',
                 'items.service',
-                'quotation.branch'
+                'quotation.branch',
+                'branch',
+                'job_order'
             ])->find($id);
 
             if (!$order) {
@@ -74,7 +75,9 @@ class OrderController extends Controller
             Log::info('Order found', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
-                'items_count' => $order->items ? count($order->items) : 0
+                'items_count' => $order->items ? count($order->items) : 0,
+                'branch_id' => $order->branch_id,
+                'has_job_order' => $order->job_order ? true : false
             ]);
 
             return response()->json($order, 200);

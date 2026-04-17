@@ -48,6 +48,21 @@ class Order extends Model
         return $this->hasMany(Payment::class);
     }
 
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function quotation(): BelongsTo
+    {
+        return $this->belongsTo(Quotation::class);
+    }
+
+    public function job_order(): HasMany
+    {
+        return $this->hasMany(JobOrder::class, 'order_id');
+    }
+
     public function jobOrders(): HasMany
     {
         return $this->hasMany(JobOrder::class);
@@ -56,16 +71,6 @@ class Order extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
-    }
-
-    public function quotation(): BelongsTo
-    {
-        return $this->belongsTo(Quotation::class);
-    }
-
-    public function branch(): BelongsTo
-    {
-        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function orderItems(): HasMany

@@ -323,26 +323,28 @@ export default function DashboardViewQuotationPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4 flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Bill To</h3>
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Bill To / Client</h3>
                     <div className="space-y-1 text-sm text-gray-900">
-                      <p className="font-semibold">{quotation.customer?.name || quotation.customer?.bill_to_name || "-"}</p>
+                      <p className="font-semibold text-lg">{quotation.customer?.name || quotation.customer?.bill_to_name || "-"}</p>
                       <p>{quotation.customer?.email || quotation.customer?.bill_to_email || "-"}</p>
+                      <p className="text-xs text-gray-500 mt-2">{quotation.customer?.bill_to_street || quotation.customer?.street || ""}</p>
+                      <p className="text-xs text-gray-500">{quotation.customer?.bill_to_city || quotation.customer?.city || ""} {quotation.customer?.bill_to_state || quotation.customer?.state || ""}</p>
                     </div>
                   </div>
-                </div>
 
-                <div className="text-right">
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">From</h3>
-                  <div className="space-y-1 text-sm text-gray-900">
-                    <p className="font-semibold">{quotation.business_name}</p>
-                    <p>{quotation.business_address}</p>
-                    <p>
-                      {quotation.business_city}, {quotation.business_state} {quotation.business_postal}
-                    </p>
-                    <p>{quotation.business_phone}</p>
-                    <p>{quotation.business_email}</p>
+                  <div className="text-left md:text-right">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">From</h3>
+                    <div className="space-y-1 text-sm text-gray-900">
+                      <p className="font-semibold">{quotation.business_name}</p>
+                      <p>{quotation.business_address}</p>
+                      <p>
+                        {quotation.business_city}, {quotation.business_state} {quotation.business_postal}
+                      </p>
+                      <p>{quotation.business_phone}</p>
+                      <p>{quotation.business_email}</p>
+                    </div>
                   </div>
                 </div>
               </div>

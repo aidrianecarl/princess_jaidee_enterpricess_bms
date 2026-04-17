@@ -286,7 +286,7 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                 <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
                                 <div className="space-y-3">
                                   {teamRosterData.map((player: any, idx: number) => (
-                                    <div key={idx} className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs md:text-sm bg-white p-3 rounded">
+                                    <div key={idx} className="grid grid-cols-2 md:grid-cols-6 gap-2 text-xs md:text-sm bg-white p-3 rounded">
                                       <div>
                                         <p className="text-xs text-gray-600 font-semibold">Name</p>
                                         <p className="text-gray-900">{player.name}</p>
@@ -310,10 +310,6 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                       <div>
                                         <p className="text-xs text-gray-600 font-semibold">Bottom Len (in)</p>
                                         <p className="text-gray-900">{player.lengthBottomInches || "-"}</p>
-                                      </div>
-                                      <div>
-                                        <p className="text-xs text-gray-600 font-semibold">Position</p>
-                                        <p className="text-gray-900">{player.position || "-"}</p>
                                       </div>
                                     </div>
                                   ))}
