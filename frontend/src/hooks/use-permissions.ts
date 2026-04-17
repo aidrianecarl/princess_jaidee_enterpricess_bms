@@ -25,19 +25,28 @@ export const usePermissions = () => {
         const token = localStorage.getItem('admin_token')
         const userData = localStorage.getItem('admin_user')
 
+        console.log('[v0] usePermissions: Token exists:', !!token)
+        console.log('[v0] usePermissions: User data exists:', !!userData)
+
         if (!token || !userData) {
+          console.log('[v0] usePermissions: No token or user data, setting empty permissions')
           setPermissions([])
           setRoles([])
+          setIsLoading(false)
           return
         }
 
         const user = JSON.parse(userData)
+        console.log('[v0] usePermissions: Fetching permissions for user ID:', user.id)
         
         // Fetch user's role and permissions from backend
         const response = await apiClient.get(`/admin/users/${user.id}/permissions`)
         
+        console.log('[v0] usePermissions: API Response:', response.data)
+        
         if (response.data.data) {
           const userType = response.data.data.user_type
+          console.log('[v0] usePermissions: User type:', userType)
           
           // Admins always get all permissions
           if (userType === 'admin') {
@@ -65,16 +74,22 @@ export const usePermissions = () => {
               'create_job_orders',
               'edit_job_orders',
             ]
+            console.log('[v0] usePermissions: Admin user - setting all permissions')
             setPermissions(allPermissions)
           } else {
+            console.log('[v0] usePermissions: Employee user - permissions from API:', response.data.data.permissions)
             setPermissions(response.data.data.permissions || [])
           }
           
+          console.log('[v0] usePermissions: Roles from API:', response.data.data.roles)
           setRoles(response.data.data.roles || [])
         }
       } catch (err) {
-        console.error('Error fetching permissions:', err)
-        setError(err instanceof Error ? err.message : 'Failed to fetch permissions')
+        console.error('[v0] usePermissions: Error fetching permissions:', err)
+        const errorMsg = err instanceof Error ? err.message : 'Failed to fetch permissions'
+        setError(errorMsg)
+        // Still set loading to false even on error
+        setIsLoading(false)
       } finally {
         setIsLoading(false)
       }

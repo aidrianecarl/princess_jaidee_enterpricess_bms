@@ -43,29 +43,46 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
   const [accessibleItems, setAccessibleItems] = useState(SIDEBAR_MENU_ITEMS)
 
   useEffect(() => {
+    console.log('[v0] Sidebar: useEffect triggered - permissions:', permissions, 'isLoading:', isLoading)
+    
     // Filter menu items based on user permissions
     if (permissions.length > 0) {
+      console.log('[v0] Sidebar: Permissions loaded, count:', permissions.length)
+      
       // Check if admin (has all permissions)
       const isAdmin = permissions.includes('manage_branches') && 
                      permissions.includes('manage_roles') && 
                      permissions.includes('view_users')
       
+      console.log('[v0] Sidebar: Is admin?', isAdmin)
+      
       if (isAdmin) {
         // Admin sees all items
+        console.log('[v0] Sidebar: Setting all items for admin')
         setAccessibleItems(SIDEBAR_MENU_ITEMS)
       } else {
         // Filter based on permissions
+        console.log('[v0] Sidebar: Filtering items based on permissions')
         const filtered = SIDEBAR_MENU_ITEMS.filter(item => {
           // Dashboard is always visible
-          if (item.permissions.length === 0) return true
+          if (item.permissions.length === 0) {
+            console.log('[v0] Sidebar: Item', item.label, 'always visible (no permissions required)')
+            return true
+          }
           // Check if user has any of the required permissions
-          return item.permissions.some(perm => permissions.includes(perm))
+          const hasPermission = item.permissions.some(perm => permissions.includes(perm))
+          console.log('[v0] Sidebar: Item', item.label, 'requires:', item.permissions, 'has permission?', hasPermission)
+          return hasPermission
         })
+        console.log('[v0] Sidebar: Filtered items count:', filtered.length)
         setAccessibleItems(filtered)
       }
     } else if (!isLoading) {
+      console.log('[v0] Sidebar: No permissions and not loading - showing only dashboard')
       // If no permissions and not loading, show only dashboard
       setAccessibleItems(SIDEBAR_MENU_ITEMS.filter(item => item.permissions.length === 0))
+    } else {
+      console.log('[v0] Sidebar: Still loading, not updating items')
     }
   }, [permissions, isLoading])
 
