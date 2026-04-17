@@ -68,7 +68,7 @@ export default function AdminJobOrdersPage() {
   const [isReleasing, setIsReleasing] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'InProduction' | 'completed' | 'released' | null>(null)
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'InProduction' | 'completed' | 'released' | null>('pending')
   const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false)
   const [releaseJobOrderId, setReleaseJobOrderId] = useState<number | null>(null)
   const itemsPerPage = 10
@@ -218,12 +218,18 @@ export default function AdminJobOrdersPage() {
     }
   }
 
-  const fetchJobOrders = async (token: string) => {
+  const fetchJobOrders = async (token: string, filter?: string) => {
     try {
       setIsLoading(true)
       setError('')
 
-      const response = await fetch(`${apiUrl}/admin/job-orders`, {
+      const url = new URL(`${apiUrl}/admin/job-orders`)
+      // Use provided filter or default to pending
+      if (filter || statusFilter) {
+        url.searchParams.append('status', filter || statusFilter)
+      }
+
+      const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -355,6 +361,9 @@ export default function AdminJobOrdersPage() {
       // Apply status filter
       if (statusFilter === 'released') {
         return searchMatches && !!order.released_date
+      } else if (statusFilter === 'completed') {
+        // Don't show completed jobs that have been released
+        return searchMatches && order.status === 'completed' && !order.released_date
       } else if (statusFilter) {
         return searchMatches && order.status === statusFilter
       }

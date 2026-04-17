@@ -18,6 +18,23 @@ class JobOrderController extends Controller
         try {
             $query = JobOrder::with(['assignedTo', 'customer', 'order.items']);
 
+            // Get current user
+            $currentUser = auth()->user();
+            $userType = $currentUser?->user_type;
+            $userId = $currentUser?->id;
+
+            Log::info('[v0] JobOrderController index - User access', [
+                'user_id' => $userId,
+                'user_type' => $userType,
+            ]);
+
+            // Filter by assigned employee - only employees see their assigned jobs
+            if ($userType === 'employee' && $userId) {
+                Log::info('[v0] Filtering job orders by assigned employee', ['user_id' => $userId]);
+                $query->where('assigned_to', $userId);
+            }
+            // Admins see all job orders
+
             if ($request->has('search')) {
                 $query->where('job_order_number', 'like', '%' . $request->search . '%');
             }
@@ -28,19 +45,29 @@ class JobOrderController extends Controller
                 if ($status === 'in_progress' || $status === 'in-progress') {
                     $status = 'InProduction';
                 }
-                $query->where('status', $status);
+                
+                // Released jobs should not appear in completed filter
+                if ($status === 'completed') {
+                    $query->where('status', 'completed')
+                          ->whereNull('released_date');
+                } else {
+                    $query->where('status', $status);
+                }
             }
 
             $jobOrders = $query->orderBy('created_at', 'desc')->get();
 
             \Log::info('[v0] Job Orders Index - Fetched', [
                 'count' => $jobOrders->count(),
+                'user_type' => $userType,
+                'user_id' => $userId,
                 'orders' => $jobOrders->map(function($order) {
                     return [
                         'id' => $order->id,
                         'number' => $order->job_order_number,
                         'status' => $order->status,
                         'assigned_to' => $order->assigned_to,
+                        'released_date' => $order->released_date,
                         'assignedTo' => $order->assignedTo ? [
                             'id' => $order->assignedTo->id,
                             'first_name' => $order->assignedTo->first_name,

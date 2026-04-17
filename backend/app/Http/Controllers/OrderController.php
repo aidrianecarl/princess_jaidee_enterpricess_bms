@@ -63,7 +63,7 @@ class OrderController extends Controller
             $order = Order::with([
                 'customer',
                 'items.service',
-                'quotation'
+                'quotation.branch'
             ])->find($id);
 
             if (!$order) {
@@ -162,7 +162,7 @@ class OrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Order created successfully',
-                'data' => $order->load('items'),
+                'data' => $order->load('items', 'quotation.branch'),
             ], 201);
         } catch (\Exception $e) {
             Log::error('[v0] Order creation error:', [
@@ -234,7 +234,7 @@ class OrderController extends Controller
         try {
             Log::info('[v0] OrderController adminIndex - Fetching all orders for admin');
             
-            $query = Order::with(['customer', 'items', 'quotation', 'creator', 'branch']);
+            $query = Order::with(['customer', 'items', 'quotation.branch', 'creator', 'branch']);
 
             // Get current user
             $currentUser = auth()->user();

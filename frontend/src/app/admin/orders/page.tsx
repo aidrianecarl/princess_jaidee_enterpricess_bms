@@ -666,6 +666,11 @@ export default function OrdersPage() {
                             <h3 className="text-xl font-bold text-neutral-900 dark:text-white">
                               {item.quotation_number}
                             </h3>
+                            {item.quotation?.branch && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                🗺️ {item.quotation.branch.name}
+                              </span>
+                            )}
                             <span className={`px-3 py-1 rounded-full text-sm font-semibold ${item.isOrder && item.payment_status ? getStatusColor(item.payment_status) : "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400"}`}>
                               {item.isOrder && item.payment_status 
                                 ? item.payment_status.charAt(0).toUpperCase() + item.payment_status.slice(1)
@@ -684,14 +689,6 @@ export default function OrdersPage() {
                               <div className="flex items-center gap-1">
                                 <FileText size={16} className="text-neutral-400 dark:text-neutral-500" />
                                 <span className="text-neutral-600 dark:text-neutral-400">{item.items?.length || 0} items</span>
-                              </div>
-                            )}
-                            {item.quotation?.branch && (
-                              <div className="flex items-center gap-1">
-                                <MapPin size={16} className="text-blue-400 dark:text-blue-400" />
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                                  {item.quotation.branch.name}
-                                </span>
                               </div>
                             )}
                             <div className="flex items-center gap-1">
