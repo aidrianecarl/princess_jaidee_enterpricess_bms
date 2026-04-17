@@ -465,7 +465,11 @@ export default function AdminJobOrdersPage() {
               {/* Status Filter Buttons */}
               <div className="mb-8 flex gap-3 flex-wrap">
                 <Button
-                  onClick={() => setStatusFilter('pending')}
+                  onClick={() => {
+                    setStatusFilter('pending')
+                    const token = localStorage.getItem('admin_token')
+                    if (token) fetchJobOrders(token, 'pending')
+                  }}
                   className={`transition-all duration-300 ${statusFilter === 'pending' 
                     ? 'bg-yellow-500 hover:bg-yellow-600 text-white shadow-lg scale-105' 
                     : 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:hover:bg-yellow-900/50 dark:text-yellow-300'}`}
@@ -473,7 +477,11 @@ export default function AdminJobOrdersPage() {
                   Pending
                 </Button>
                 <Button
-                  onClick={() => setStatusFilter('InProduction')}
+                  onClick={() => {
+                    setStatusFilter('InProduction')
+                    const token = localStorage.getItem('admin_token')
+                    if (token) fetchJobOrders(token, 'InProduction')
+                  }}
                   className={`transition-all duration-300 ${statusFilter === 'InProduction' 
                     ? 'bg-blue-500 hover:bg-blue-600 text-white shadow-lg scale-105' 
                     : 'bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300'}`}
@@ -481,7 +489,11 @@ export default function AdminJobOrdersPage() {
                   In Production
                 </Button>
                 <Button
-                  onClick={() => setStatusFilter('completed')}
+                  onClick={() => {
+                    setStatusFilter('completed')
+                    const token = localStorage.getItem('admin_token')
+                    if (token) fetchJobOrders(token, 'completed')
+                  }}
                   className={`transition-all duration-300 ${statusFilter === 'completed' 
                     ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg scale-105' 
                     : 'bg-orange-100 hover:bg-orange-200 text-orange-800 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-300'}`}
@@ -489,7 +501,11 @@ export default function AdminJobOrdersPage() {
                   Completed
                 </Button>
                 <Button
-                  onClick={() => setStatusFilter('released')}
+                  onClick={() => {
+                    setStatusFilter('released')
+                    const token = localStorage.getItem('admin_token')
+                    if (token) fetchJobOrders(token, 'released')
+                  }}
                   className={`transition-all duration-300 ${statusFilter === 'released' 
                     ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg scale-105' 
                     : 'bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300'}`}
@@ -498,7 +514,11 @@ export default function AdminJobOrdersPage() {
                 </Button>
                 {statusFilter && (
                   <Button
-                    onClick={() => setStatusFilter(null)}
+                    onClick={() => {
+                      setStatusFilter(null)
+                      const token = localStorage.getItem('admin_token')
+                      if (token) fetchJobOrders(token)
+                    }}
                     variant="ghost"
                     className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-white transition-colors duration-200"
                   >

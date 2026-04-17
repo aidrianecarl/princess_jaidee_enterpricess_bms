@@ -41,6 +41,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'getCurrentUser']);
 
+    // Profile Management - Authenticated User
+    Route::get('/profile', [UserController::class, 'getProfile']);
+    Route::put('/profile', [UserController::class, 'updateProfile']);
+    Route::post('/profile/change-password', [UserController::class, 'changePassword']);
+
     // Quotations - Client
     Route::get('/quotations/next-number', [QuotationController::class, 'getNextQuotationNumber']);
     Route::post('/quotations/upload-logo', [QuotationController::class, 'uploadLogo']);

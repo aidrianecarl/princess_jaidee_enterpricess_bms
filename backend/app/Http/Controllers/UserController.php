@@ -125,6 +125,116 @@ class UserController extends Controller
         }
     }
 
+    // Get authenticated user's profile
+    public function getProfile(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated'
+                ], 401);
+            }
+
+            $user->load(['branch', 'roles']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Update authenticated user's profile
+    public function updateProfile(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthenticated'
+                ], 401);
+            }
+
+            $validated = $request->validate([
+                'first_name' => 'nullable|string|max:255',
+                'last_name' => 'nullable|string|max:255',
+                'email' => 'nullable|email|unique:users,email,' . $user->id,
+                'phone_number' => 'nullable|string|max:20',
+                'address' => 'nullable|string|max:255',
+                'zip_code' => 'nullable|string|max:10',
+            ]);
+
+            // Only update provided fields
+            $user->update(array_filter($validated, fn($value) => $value !== null));
+
+            $user->load(['branch', 'roles']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'data' => $user
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    // Change password for authenticated user
+    // public function changePassword(Request $request)
+    // {
+    //     try {
+    //         $user = auth()->user();
+            
+    //         if (!$user) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Unauthenticated'
+    //             ], 401);
+    //         }
+
+    //         $validated = $request->validate([
+    //             'current_password' => 'required|string',
+    //             'new_password' => 'required|string|min:6|confirmed',
+    //         ]);
+
+    //         // Verify current password
+    //         if (!Hash::check($validated['current_password'], $user->password)) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Current password is incorrect'
+    //             ], 422);
+    //         }
+
+    //         // Update password
+    //         $user->update([
+    //             'password' => Hash::make($validated['new_password'])
+    //         ]);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Password changed successfully'
+    //         ], 200);
+    //     } catch (\Exception $e) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => $e->getMessage()
+    //         ], 422);
+    //     }
+    // }
+
     // Delete user
     public function destroy($id)
     {
@@ -284,10 +394,18 @@ class UserController extends Controller
             
             // Check if user is admin - admins get all permissions
             $permissions = [];
-            $roles = $user->roles()->get(['id', 'name', 'description'])->toArray();
             
-            if ($user->user_type === 'admin' || $user->hasRole('admin')) {
-                // Admin gets all permissions
+            // Get roles data from already loaded relationship
+            $roles = $user->roles->map(function($role) {
+                return [
+                    'id' => $role->id,
+                    'name' => $role->name,
+                    'description' => $role->description ?? null
+                ];
+            })->toArray();
+            
+            if ($user->user_type === 'admin') {
+                // Admin gets all permissions based on user_type
                 $permissions = [
                     'view_dashboard',
                     'manage_branches',
@@ -314,9 +432,7 @@ class UserController extends Controller
                 ];
             } else {
                 // Get permissions from assigned roles
-                $permissions = $user->roles()
-                    ->with('permissions')
-                    ->get()
+                $permissions = $user->roles
                     ->pluck('permissions')
                     ->flatten()
                     ->pluck('name')
@@ -337,7 +453,7 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found'
+                'message' => 'User not found: ' . $e->getMessage()
             ], 404);
         }
     }

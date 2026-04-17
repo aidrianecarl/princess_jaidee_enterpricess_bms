@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Menu, LogOut, User, Settings, Bell, ChevronDown, Moon, Sun } from "lucide-react"
+import { Menu, LogOut, User, ChevronDown, Moon, Sun } from "lucide-react"
 import Image from "next/image"
 import { useTheme } from "./theme-context"
 
@@ -52,17 +52,8 @@ export function AdminHeader({ user, onMenuClick }: HeaderProps) {
           </div>
         </div>
 
-        {/* Right - Notifications + Theme Toggle + User Dropdown */}
+        {/* Right - Theme Toggle + User Dropdown */}
         <div className="flex items-center gap-2 md:gap-4 ml-auto flex-shrink-0">
-          {/* Notifications */}
-          <button
-            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg relative transition text-neutral-600 dark:text-neutral-400 hover:text-red-600 group"
-            aria-label="Notifications"
-          >
-            <Bell size={18} className="md:w-5 md:h-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-gradient-to-br from-red-500 to-orange-500 rounded-full animate-pulse group-hover:scale-125 transition-transform" />
-          </button>
-
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
@@ -108,25 +99,20 @@ export function AdminHeader({ user, onMenuClick }: HeaderProps) {
                   <p className="text-xs md:text-sm text-neutral-600 dark:text-neutral-400 truncate">{user?.email}</p>
                 </div>
 
-                <a
-                  href="#"
-                  className="flex items-center gap-2 px-4 py-3 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600 transition text-sm"
+                <button
+                  onClick={() => {
+                    router.push('/admin/profile')
+                    setIsDropdownOpen(false)
+                  }}
+                  className="w-full flex items-center gap-2 px-4 py-3 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600 transition text-sm text-left"
                 >
                   <User size={16} className="flex-shrink-0" />
                   <span className="font-medium">My Profile</span>
-                </a>
-
-                <a
-                  href="#"
-                  className="flex items-center gap-2 px-4 py-3 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-red-600 transition text-sm"
-                >
-                  <Settings size={16} className="flex-shrink-0" />
-                  <span className="font-medium">Settings</span>
-                </a>
+                </button>
 
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition border-t border-neutral-200 dark:border-neutral-800 font-medium rounded-b-xl text-sm"
+                  className="w-full flex items-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20 transition border-t border-neutral-200 dark:border-neutral-800 font-medium rounded-b-xl text-sm text-left"
                 >
                   <LogOut size={16} className="flex-shrink-0" />
                   Logout
