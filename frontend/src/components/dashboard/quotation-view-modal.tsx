@@ -59,23 +59,6 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
 
   if (!isOpen || !quotation) return null
 
-  // Debug logging for team roster
-  quotation.items.forEach((item: any) => {
-    console.log("[v0] QuotationViewModal - Item:", {
-      itemId: item.id,
-      serviceName: item.service?.name,
-      hasTeamRoster: !!item.team_roster,
-      teamRosterType: typeof item.team_roster,
-      teamRosterLength: Array.isArray(item.team_roster) ? item.team_roster.length : 'N/A',
-      teamRosterData: item.team_roster,
-      hasSizeSpecs: !!item.size_specifications,
-      sizeSpecsType: typeof item.size_specifications,
-      sizeSpecsData: item.size_specifications,
-      notesType: typeof item.notes,
-      notesData: item.notes
-    })
-  })
-
   const toggleItemExpanded = (itemId: number) => {
     const newSet = new Set(expandedItems)
     if (newSet.has(itemId)) {
@@ -217,22 +200,42 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                       {/* Main Row - Collapsible */}
                       <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
                         {/* Expand Button - Show if there's any expandable content */}
-                        {(Array.isArray(item.team_roster) && item.team_roster.length > 0) ||
-                        (item.size_specifications &&
-                          typeof item.size_specifications === "object" &&
-                          Object.keys(item.size_specifications).length > 0) ||
-                        item.design_file_url ||
-                        item.notes ? (
-                          <button
-                            onClick={() => toggleItemExpanded(item.id)}
-                            className="p-1 hover:bg-gray-200 rounded transition self-start md:self-center"
-                          >
-                            <ChevronDown
-                              size={18}
-                              className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
-                            />
-                          </button>
-                        ) : null}
+                        {(() => {
+                          let teamRosterData = item.team_roster
+                          let sizeSpecsData = item.size_specifications
+                          
+                          if (typeof teamRosterData === 'string') {
+                            try {
+                              teamRosterData = JSON.parse(teamRosterData)
+                            } catch {
+                              teamRosterData = []
+                            }
+                          }
+                          
+                          if (typeof sizeSpecsData === 'string') {
+                            try {
+                              sizeSpecsData = JSON.parse(sizeSpecsData)
+                            } catch {
+                              sizeSpecsData = {}
+                            }
+                          }
+                          
+                          const hasTeamRoster = Array.isArray(teamRosterData) && teamRosterData.length > 0
+                          const hasSizeSpecs = sizeSpecsData && typeof sizeSpecsData === "object" && Object.keys(sizeSpecsData).length > 0
+                          const hasExpandable = hasTeamRoster || hasSizeSpecs || item.design_file_url || item.notes
+                          
+                          return hasExpandable ? (
+                            <button
+                              onClick={() => toggleItemExpanded(item.id)}
+                              className="p-1 hover:bg-gray-200 rounded transition self-start md:self-center"
+                            >
+                              <ChevronDown
+                                size={18}
+                                className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
+                              />
+                            </button>
+                          ) : null
+                        })()}
 
                         {/* Image & Name Column */}
                         <div className="flex-1 flex gap-2 min-w-0">
@@ -268,13 +271,21 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                       {/* Collapsible Details */}
                       {expandedItems.has(item.id) && (
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
-                          {/* Team Roster Details */}
-                          {item.team_roster && (
-                            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                              <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
-                              <div className="space-y-3">
-                                {Array.isArray(item.team_roster) && item.team_roster.length > 0 ? (
-                                  item.team_roster.map((player: any, idx: number) => (
+                          {/* Parse team_roster if it's a JSON string */}
+                          {(() => {
+                            let teamRosterData = item.team_roster
+                            if (typeof teamRosterData === 'string') {
+                              try {
+                                teamRosterData = JSON.parse(teamRosterData)
+                              } catch {
+                                teamRosterData = []
+                              }
+                            }
+                            return Array.isArray(teamRosterData) && teamRosterData.length > 0 ? (
+                              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
+                                <div className="space-y-3">
+                                  {teamRosterData.map((player: any, idx: number) => (
                                     <div key={idx} className="grid grid-cols-2 md:grid-cols-7 gap-2 text-xs md:text-sm bg-white p-3 rounded">
                                       <div>
                                         <p className="text-xs text-gray-600 font-semibold">Name</p>
@@ -305,31 +316,56 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                         <p className="text-gray-900">{player.position || "-"}</p>
                                       </div>
                                     </div>
-                                  ))
-                                ) : (
-                                  <div className="bg-white p-3 rounded text-sm text-gray-500">
-                                    <p>No team roster data available</p>
-                                  </div>
-                                )}
-                              </div>
-
-                              {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
-                                <div className="mt-4 pt-4 border-t border-blue-300">
-                                  <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
-                                  <p className="text-sm text-blue-900">{item.notes.teamNotes}</p>
+                                  ))}
                                 </div>
-                              )}
-                            </div>
-                          )}
+
+                                {item.notes && (() => {
+                                  let notesData = item.notes
+                                  if (typeof notesData === 'string') {
+                                    try {
+                                      notesData = JSON.parse(notesData)
+                                    } catch {
+                                      notesData = {}
+                                    }
+                                  }
+                                  return notesData && typeof notesData === 'object' && notesData.teamNotes ? (
+                                    <div className="mt-4 pt-4 border-t border-blue-300">
+                                      <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
+                                      <p className="text-sm text-blue-900">{notesData.teamNotes}</p>
+                                    </div>
+                                  ) : null
+                                })()}
+                              </div>
+                            ) : null
+                          })()}
 
                           {/* Size Specifications */}
-                          {item.size_specifications &&
-                            item.size_specifications !== null &&
-                            typeof item.size_specifications === "object" &&
-                            (Object.keys(item.size_specifications).length > 0 ||
-                              (item.notes &&
-                                typeof item.notes === "object" &&
-                                item.notes.sizeNotes)) && (
+                          {(() => {
+                            let sizeSpecsData = item.size_specifications
+                            let notesData = item.notes
+                            
+                            // Parse size_specifications if it's a JSON string
+                            if (typeof sizeSpecsData === 'string') {
+                              try {
+                                sizeSpecsData = JSON.parse(sizeSpecsData)
+                              } catch {
+                                sizeSpecsData = null
+                              }
+                            }
+                            
+                            // Parse notes if it's a JSON string
+                            if (typeof notesData === 'string') {
+                              try {
+                                notesData = JSON.parse(notesData)
+                              } catch {
+                                notesData = {}
+                              }
+                            }
+                            
+                            const hasSpecs = sizeSpecsData && typeof sizeSpecsData === 'object' && Object.keys(sizeSpecsData).length > 0
+                            const hasSizeNotes = notesData && typeof notesData === 'object' && notesData.sizeNotes
+                            
+                            return (hasSpecs || hasSizeNotes) ? (
                               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
                                 <h4 className="font-semibold text-purple-900 mb-3">
                                   {item.service?.name?.includes("Tarpaulin") ? "SIZE SPECIFICATION" : "UNIFORM CUSTOMIZATION"}
@@ -337,46 +373,46 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
                                   {item.service?.name?.includes("Tarpaulin") ? (
                                     <>
-                                      {item.size_specifications.width && (
+                                      {sizeSpecsData?.width && (
                                         <div>
                                           <p className="text-xs text-gray-600 font-semibold">Width</p>
-                                          <p className="text-gray-900">{item.size_specifications.width} ft</p>
+                                          <p className="text-gray-900">{sizeSpecsData.width} ft</p>
                                         </div>
                                       )}
-                                      {item.size_specifications.height && (
+                                      {sizeSpecsData?.height && (
                                         <div>
                                           <p className="text-xs text-gray-600 font-semibold">Height</p>
-                                          <p className="text-gray-900">{item.size_specifications.height} ft</p>
+                                          <p className="text-gray-900">{sizeSpecsData.height} ft</p>
                                         </div>
                                       )}
-                                      {item.size_specifications.totalSqft && (
+                                      {sizeSpecsData?.totalSqft && (
                                         <div>
                                           <p className="text-xs text-gray-600 font-semibold">Total Sq Ft</p>
-                                          <p className="text-gray-900 font-semibold">{item.size_specifications.totalSqft} sq ft</p>
+                                          <p className="text-gray-900 font-semibold">{sizeSpecsData.totalSqft} sq ft</p>
                                         </div>
                                       )}
-                                      {item.size_specifications.totalPrice && (
+                                      {sizeSpecsData?.totalPrice && (
                                         <div>
                                           <p className="text-xs text-gray-600 font-semibold">Total Price</p>
-                                          <p className="text-gray-900 font-bold">₱{item.size_specifications.totalPrice}</p>
+                                          <p className="text-gray-900 font-bold">₱{sizeSpecsData.totalPrice}</p>
                                         </div>
                                       )}
                                     </>
                                   ) : (
                                     <>
-                                      {item.size_specifications.top && (
+                                      {sizeSpecsData?.top && (
                                         <div>
                                           <p className="text-xs text-gray-600 font-semibold">Top/Shirt Size</p>
-                                          <p className="text-gray-900">{item.size_specifications.top}</p>
+                                          <p className="text-gray-900">{sizeSpecsData.top}</p>
                                         </div>
                                       )}
-                                      {item.size_specifications.bottom && (
+                                      {sizeSpecsData?.bottom && (
                                         <div>
                                           <p className="text-xs text-gray-600 font-semibold">Bottom/Short Size</p>
-                                          <p className="text-gray-900">{item.size_specifications.bottom}</p>
+                                          <p className="text-gray-900">{sizeSpecsData.bottom}</p>
                                         </div>
                                       )}
-                                      {!item.size_specifications.top && !item.size_specifications.bottom && (
+                                      {!sizeSpecsData?.top && !sizeSpecsData?.bottom && (
                                         <div>
                                           <p className="text-xs text-gray-600 font-semibold">Size</p>
                                           <p className="text-gray-900">Not specified</p>
@@ -385,14 +421,15 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                     </>
                                   )}
                                 </div>
-                                {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (
+                                {hasSizeNotes && (
                                   <div className="mt-4 pt-4 border-t border-purple-300">
                                     <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes</p>
-                                    <p className="text-sm text-purple-900">{item.notes.sizeNotes}</p>
+                                    <p className="text-sm text-purple-900">{notesData.sizeNotes}</p>
                                   </div>
                                 )}
                               </div>
-                            )}
+                            ) : null
+                          })()}
 
                           {/* Design File Preview */}
                           {item.design_file_url && (
@@ -421,22 +458,32 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                                   <ZoomIn className="w-8 h-8 text-white" />
                                 </div>
                               </div>
-                              {item.notes && (
-                                <div className="mt-4 pt-4 border-t border-indigo-300">
-                                  <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
-                                  <p className="text-sm text-indigo-900">
-                                    {typeof item.notes === "string" 
-                                      ? item.notes 
-                                      : typeof item.notes === "object" && item.notes.designNotes
-                                        ? item.notes.designNotes
-                                        : typeof item.notes === "object" && item.notes.additionalNotes
-                                          ? item.notes.additionalNotes
-                                          : typeof item.notes === "object"
-                                            ? Object.values(item.notes).filter(v => v && typeof v === "string").join(" | ")
-                                            : ""}
-                                  </p>
-                                </div>
-                              )}
+                              {(() => {
+                                let notesForDisplay = item.notes
+                                if (typeof notesForDisplay === 'string') {
+                                  try {
+                                    notesForDisplay = JSON.parse(notesForDisplay)
+                                  } catch {
+                                    // If parsing fails, treat it as plain text
+                                  }
+                                }
+                                
+                                let designNotesText = ''
+                                if (typeof notesForDisplay === 'string') {
+                                  designNotesText = notesForDisplay
+                                } else if (typeof notesForDisplay === 'object' && notesForDisplay) {
+                                  designNotesText = notesForDisplay.designNotes || 
+                                                   notesForDisplay.additionalNotes ||
+                                                   Object.values(notesForDisplay).filter(v => v && typeof v === "string").join(" | ")
+                                }
+                                
+                                return designNotesText ? (
+                                  <div className="mt-4 pt-4 border-t border-indigo-300">
+                                    <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Comments</p>
+                                    <p className="text-sm text-indigo-900">{designNotesText}</p>
+                                  </div>
+                                ) : null
+                              })()}
                             </div>
                           )}
                         </div>
