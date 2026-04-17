@@ -13,6 +13,7 @@ class Order extends Model
         'quotation_id',
         'customer_id',
         'created_by',
+        'branch_id',
         'order_date',
         'subtotal',
         'discount',
@@ -60,6 +61,11 @@ class Order extends Model
     public function quotation(): BelongsTo
     {
         return $this->belongsTo(Quotation::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     public function orderItems(): HasMany

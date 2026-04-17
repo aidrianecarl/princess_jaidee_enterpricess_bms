@@ -488,6 +488,7 @@ export default function OrdersPage() {
           subtotal: order.subtotal,
           discount: order.discount,
           payment_method: order.payment_method,
+          quotation: order.quotation,
           isOrder: true
         }))
     } else if (filterStatus === "paid") {
@@ -505,6 +506,7 @@ export default function OrdersPage() {
           subtotal: order.subtotal,
           discount: order.discount,
           payment_method: order.payment_method,
+          quotation: order.quotation,
           isOrder: true
         }))
     }
@@ -682,6 +684,14 @@ export default function OrdersPage() {
                               <div className="flex items-center gap-1">
                                 <FileText size={16} className="text-neutral-400 dark:text-neutral-500" />
                                 <span className="text-neutral-600 dark:text-neutral-400">{item.items?.length || 0} items</span>
+                              </div>
+                            )}
+                            {item.quotation?.branch && (
+                              <div className="flex items-center gap-1">
+                                <MapPin size={16} className="text-blue-400 dark:text-blue-400" />
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                  {item.quotation.branch.name}
+                                </span>
                               </div>
                             )}
                             <div className="flex items-center gap-1">

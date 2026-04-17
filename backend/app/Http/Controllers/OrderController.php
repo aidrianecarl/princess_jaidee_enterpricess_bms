@@ -127,12 +127,22 @@ class OrderController extends Controller
             if ($paymentStatus === 'paid') {
                 $remainingBalance = 0;
             }
+
+            // Get branch_id from quotation if quotation_id is provided
+            $branchId = null;
+            if ($request->quotation_id) {
+                $quotation = Quotation::find($request->quotation_id);
+                if ($quotation) {
+                    $branchId = $quotation->branch_id;
+                }
+            }
             
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'quotation_id' => $request->quotation_id,
                 'customer_id' => $request->customer_id,
                 'created_by' => auth()->id(),
+                'branch_id' => $branchId,
                 'order_date' => $request->order_date,
                 'subtotal' => $request->subtotal,
                 'discount' => $request->discount ?? 0,
@@ -144,7 +154,7 @@ class OrderController extends Controller
                 'notes' => $request->notes,
             ]);
             
-            Log::info('[v0] Order created successfully:', ['order_id' => $order->id, 'order_number' => $orderNumber]);
+            Log::info('[v0] Order created successfully:', ['order_id' => $order->id, 'order_number' => $orderNumber, 'branch_id' => $branchId]);
 
             // Note: Order items are created separately via the order-items endpoint
             // This prevents duplicate items when the frontend explicitly creates them
@@ -224,7 +234,26 @@ class OrderController extends Controller
         try {
             Log::info('[v0] OrderController adminIndex - Fetching all orders for admin');
             
-            $query = Order::with(['customer', 'items', 'quotation', 'creator']);
+            $query = Order::with(['customer', 'items', 'quotation', 'creator', 'branch']);
+
+            // Get current user
+            $currentUser = auth()->user();
+            $userType = $currentUser?->user_type;
+            $userBranchId = $currentUser?->branch_id;
+
+            Log::info('[v0] User info for order filtering', [
+                'user_type' => $userType,
+                'branch_id' => $userBranchId,
+            ]);
+
+            // Filter by branch for employees - only show orders from quotations in their branch
+            if ($userType === 'employee' && $userBranchId) {
+                Log::info('[v0] Filtering orders by employee branch', ['branch_id' => $userBranchId]);
+                $query->whereHas('quotation', function($q) use ($userBranchId) {
+                    $q->where('branch_id', $userBranchId);
+                });
+            }
+            // Admins see all orders regardless of branch
 
             if ($request->has('search')) {
                 Log::info('[v0] OrderController - Applying search filter:', ['search' => $request->search]);
