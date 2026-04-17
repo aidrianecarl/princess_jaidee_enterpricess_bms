@@ -45,13 +45,24 @@ export function AdminSidebar({ isOpen, onToggle }: SidebarProps) {
   useEffect(() => {
     // Filter menu items based on user permissions
     if (permissions.length > 0) {
-      const filtered = SIDEBAR_MENU_ITEMS.filter(item => {
-        // Dashboard is always visible
-        if (item.permissions.length === 0) return true
-        // Check if user has any of the required permissions
-        return item.permissions.some(perm => permissions.includes(perm))
-      })
-      setAccessibleItems(filtered)
+      // Check if admin (has all permissions)
+      const isAdmin = permissions.includes('manage_branches') && 
+                     permissions.includes('manage_roles') && 
+                     permissions.includes('view_users')
+      
+      if (isAdmin) {
+        // Admin sees all items
+        setAccessibleItems(SIDEBAR_MENU_ITEMS)
+      } else {
+        // Filter based on permissions
+        const filtered = SIDEBAR_MENU_ITEMS.filter(item => {
+          // Dashboard is always visible
+          if (item.permissions.length === 0) return true
+          // Check if user has any of the required permissions
+          return item.permissions.some(perm => permissions.includes(perm))
+        })
+        setAccessibleItems(filtered)
+      }
     } else if (!isLoading) {
       // If no permissions and not loading, show only dashboard
       setAccessibleItems(SIDEBAR_MENU_ITEMS.filter(item => item.permissions.length === 0))

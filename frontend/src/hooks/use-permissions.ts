@@ -37,7 +37,39 @@ export const usePermissions = () => {
         const response = await apiClient.get(`/admin/users/${user.id}/permissions`)
         
         if (response.data.data) {
-          setPermissions(response.data.data.permissions || [])
+          const userType = response.data.data.user_type
+          
+          // Admins always get all permissions
+          if (userType === 'admin') {
+            const allPermissions = [
+              'view_dashboard',
+              'manage_branches',
+              'manage_roles',
+              'view_users',
+              'create_users',
+              'edit_users',
+              'delete_users',
+              'view_services',
+              'create_services',
+              'edit_services',
+              'delete_services',
+              'view_quotations',
+              'create_quotations',
+              'edit_quotations',
+              'approve_quotations',
+              'view_orders',
+              'create_orders',
+              'edit_orders',
+              'manage_payments',
+              'view_job_orders',
+              'create_job_orders',
+              'edit_job_orders',
+            ]
+            setPermissions(allPermissions)
+          } else {
+            setPermissions(response.data.data.permissions || [])
+          }
+          
           setRoles(response.data.data.roles || [])
         }
       } catch (err) {

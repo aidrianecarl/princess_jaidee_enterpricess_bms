@@ -118,7 +118,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Roles & Permissions
     Route::get('/admin/roles', [RolePermissionController::class, 'getRoles']);
+    Route::post('/admin/roles', [RolePermissionController::class, 'createRole']);
     Route::get('/admin/permissions', [RolePermissionController::class, 'getPermissions']);
+    Route::put('/admin/roles/{id}', [RolePermissionController::class, 'updateRole']);
+    Route::delete('/admin/roles/{id}', [RolePermissionController::class, 'deleteRole']);
     Route::post('/admin/roles/assign-user', [RolePermissionController::class, 'assignRoleToUser']);
     Route::post('/admin/roles/remove-user', [RolePermissionController::class, 'removeRoleFromUser']);
     Route::post('/admin/roles/assign-permission', [RolePermissionController::class, 'assignPermissionToRole']);
@@ -126,6 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Users Management
     Route::get('/admin/users', [UserController::class, 'index']);
     Route::get('/admin/users/{id}', [UserController::class, 'show']);
+    Route::get('/admin/users/{id}/permissions', [UserController::class, 'getUserPermissions']);
     Route::post('/admin/users', [UserController::class, 'store']);
     Route::put('/admin/users/{id}', [UserController::class, 'update']);
     Route::delete('/admin/users/{id}', [UserController::class, 'destroy']);

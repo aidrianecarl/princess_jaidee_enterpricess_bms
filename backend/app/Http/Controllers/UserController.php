@@ -29,7 +29,7 @@ class UserController extends Controller
     public function show($id)
     {
         try {
-            $user = User::findOrFail($id);
+            $user = User::with(['roles', 'roles.permissions', 'branch'])->findOrFail($id);
             return response()->json([
                 'success' => true,
                 'data' => $user
@@ -54,17 +54,24 @@ class UserController extends Controller
                 'phone_number' => 'nullable|string',
                 'address' => 'nullable|string',
                 'zip_code' => 'nullable|string',
-                'user_type' => 'required|in:client,staff,manager,admin',
-                'status' => 'required|in:active,inactive',
+                'user_type' => 'required|in:client,employee,admin',
+                'status' => 'required|in:active,inactive,suspended',
+                'branch_id' => 'nullable|exists:branches,id',
+                'role_id' => 'nullable|exists:roles,id',
             ]);
 
             $validated['password'] = Hash::make($validated['password']);
             $user = User::create($validated);
 
+            // Assign role if provided
+            if ($request->has('role_id') && $request->role_id) {
+                $user->roles()->attach($request->role_id);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'User created successfully',
-                'data' => $user
+                'data' => $user->load('roles', 'branch')
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -87,9 +94,11 @@ class UserController extends Controller
                 'phone_number' => 'nullable|string',
                 'address' => 'nullable|string',
                 'zip_code' => 'nullable|string',
-                'user_type' => 'in:client,staff,manager,admin',
-                'status' => 'in:active,inactive',
+                'user_type' => 'in:client,employee,admin',
+                'status' => 'in:active,inactive,suspended',
                 'password' => 'nullable|min:6',
+                'branch_id' => 'nullable|exists:branches,id',
+                'role_id' => 'nullable|exists:roles,id',
             ]);
 
             if (isset($validated['password'])) {
@@ -98,10 +107,15 @@ class UserController extends Controller
 
             $user->update($validated);
 
+            // Update role if provided
+            if ($request->has('role_id')) {
+                $user->roles()->sync($request->role_id ? [$request->role_id] : []);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'User updated successfully',
-                'data' => $user
+                'data' => $user->load('roles', 'branch')
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -259,6 +273,72 @@ class UserController extends Controller
                 'success' => false,
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    // Get user permissions
+    public function getUserPermissions($id)
+    {
+        try {
+            $user = User::with(['roles.permissions'])->findOrFail($id);
+            
+            // Check if user is admin - admins get all permissions
+            $permissions = [];
+            $roles = $user->roles()->get(['id', 'name', 'description'])->toArray();
+            
+            if ($user->user_type === 'admin' || $user->hasRole('admin')) {
+                // Admin gets all permissions
+                $permissions = [
+                    'view_dashboard',
+                    'manage_branches',
+                    'manage_roles',
+                    'view_users',
+                    'create_users',
+                    'edit_users',
+                    'delete_users',
+                    'view_services',
+                    'create_services',
+                    'edit_services',
+                    'delete_services',
+                    'view_quotations',
+                    'create_quotations',
+                    'edit_quotations',
+                    'approve_quotations',
+                    'view_orders',
+                    'create_orders',
+                    'edit_orders',
+                    'manage_payments',
+                    'view_job_orders',
+                    'create_job_orders',
+                    'edit_job_orders',
+                ];
+            } else {
+                // Get permissions from assigned roles
+                $permissions = $user->roles()
+                    ->with('permissions')
+                    ->get()
+                    ->pluck('permissions')
+                    ->flatten()
+                    ->pluck('name')
+                    ->unique()
+                    ->values()
+                    ->toArray();
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'user_id' => $user->id,
+                    'user_type' => $user->user_type,
+                    'permissions' => $permissions,
+                    'roles' => $roles,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
         }
     }
 }
