@@ -89,6 +89,23 @@ export default function AdminQuotationsPage() {
         filtered = filtered.filter((q: any) => (q.has_price === 1 || q.has_price === "1"))
       }
       
+      // Sort quotations: Request Order (status = 'pending') first, then Ordered (status = 'ordered') last
+      filtered = filtered.sort((a: any, b: any) => {
+        const aStatus = a.status?.toLowerCase() || ''
+        const bStatus = b.status?.toLowerCase() || ''
+        
+        // Request Order (pending) comes first
+        if (aStatus === 'pending' && bStatus !== 'pending') return -1
+        if (aStatus !== 'pending' && bStatus === 'pending') return 1
+        
+        // Ordered comes last
+        if (aStatus === 'ordered' && bStatus !== 'ordered') return 1
+        if (aStatus !== 'ordered' && bStatus === 'ordered') return -1
+        
+        // Sort others by created_at descending
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      })
+      
       setQuotations(filtered)
     } catch (error: any) {
       const errorMessage = error?.response?.data?.error || error?.message || "Failed to fetch quotations"

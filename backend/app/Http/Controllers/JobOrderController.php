@@ -46,10 +46,14 @@ class JobOrderController extends Controller
                     $status = 'InProduction';
                 }
                 
-                // Released jobs should not appear in completed filter
+                // Handle different status filters
                 if ($status === 'completed') {
+                    // Exclude released jobs from completed
                     $query->where('status', 'completed')
                           ->whereNull('released_date');
+                } elseif ($status === 'released') {
+                    // Show only released jobs
+                    $query->whereNotNull('released_date');
                 } else {
                     $query->where('status', $status);
                 }

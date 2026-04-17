@@ -192,48 +192,6 @@ class UserController extends Controller
         }
     }
 
-    // Change password for authenticated user
-    // public function changePassword(Request $request)
-    // {
-    //     try {
-    //         $user = auth()->user();
-            
-    //         if (!$user) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Unauthenticated'
-    //             ], 401);
-    //         }
-
-    //         $validated = $request->validate([
-    //             'current_password' => 'required|string',
-    //             'new_password' => 'required|string|min:6|confirmed',
-    //         ]);
-
-    //         // Verify current password
-    //         if (!Hash::check($validated['current_password'], $user->password)) {
-    //             return response()->json([
-    //                 'success' => false,
-    //                 'message' => 'Current password is incorrect'
-    //             ], 422);
-    //         }
-
-    //         // Update password
-    //         $user->update([
-    //             'password' => Hash::make($validated['new_password'])
-    //         ]);
-
-    //         return response()->json([
-    //             'success' => true,
-    //             'message' => 'Password changed successfully'
-    //         ], 200);
-    //     } catch (\Exception $e) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => $e->getMessage()
-    //         ], 422);
-    //     }
-    // }
 
     // Delete user
     public function destroy($id)
