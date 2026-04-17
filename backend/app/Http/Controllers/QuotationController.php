@@ -50,8 +50,25 @@ class QuotationController extends Controller
                 'search_filter' => $request->get('search'),
             ]);
 
-            $query = Quotation::with(['customer', 'items.service', 'creator']);
+            $query = Quotation::with(['customer', 'items.service', 'creator', 'branch']);
             Log::info('Base query built');
+
+            // Get current user
+            $currentUser = auth()->user();
+            $userType = $currentUser?->user_type;
+            $userBranchId = $currentUser?->branch_id;
+
+            Log::info('User info for quotation filtering', [
+                'user_type' => $userType,
+                'branch_id' => $userBranchId,
+            ]);
+
+            // Filter by branch for employees - only show quotations from their branch
+            if ($userType === 'employee' && $userBranchId) {
+                Log::info('Filtering quotations by employee branch', ['branch_id' => $userBranchId]);
+                $query->where('branch_id', $userBranchId);
+            }
+            // Admins see all quotations regardless of branch
 
             if ($request->has('search') && !empty($request->get('search'))) {
                 $searchTerm = $request->get('search');
@@ -79,6 +96,7 @@ class QuotationController extends Controller
                         'id' => $quotation->id,
                         'quotation_number' => $quotation->quotation_number,
                         'customer_id' => $quotation->customer_id,
+                        'branch_id' => $quotation->branch_id,
                         'created_by' => $quotation->created_by,
                         'business_name' => $quotation->business_name,
                         'business_address' => $quotation->business_address,
@@ -134,6 +152,15 @@ class QuotationController extends Controller
                             'first_name' => $quotation->creator->first_name,
                             'last_name' => $quotation->creator->last_name,
                             'email' => $quotation->creator->email,
+                        ];
+                    }
+
+                    // Add branch data if exists
+                    if ($quotation->branch) {
+                        $quotationArray['branch'] = [
+                            'id' => $quotation->branch->id,
+                            'name' => $quotation->branch->name,
+                            'location' => $quotation->branch->location,
                         ];
                     }
 

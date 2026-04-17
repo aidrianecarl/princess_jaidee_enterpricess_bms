@@ -24,6 +24,9 @@ const QuotationSkeleton = () => (
       <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-20 animate-pulse" />
     </td>
     <td className="px-4 py-3">
+      <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-20 animate-pulse" />
+    </td>
+    <td className="px-4 py-3">
       <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded w-28 animate-pulse" />
     </td>
   </tr>
@@ -276,6 +279,9 @@ export default function AdminQuotationsPage() {
                       <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                         Email
                       </th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                        Branch
+                      </th>
                       {statusFilter === "priced" && (
                         <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                           Amount
@@ -310,6 +316,15 @@ export default function AdminQuotationsPage() {
                             </td>
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{customerName}</td>
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{customerEmail}</td>
+                            <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">
+                              {quotation.branch?.name ? (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                  {quotation.branch.name}
+                                </span>
+                              ) : (
+                                <span className="text-neutral-400 italic">-</span>
+                              )}
+                            </td>
                             {statusFilter === "priced" && (
                               <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">
                                 ₱
