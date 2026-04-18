@@ -394,7 +394,7 @@ export default function AdminQuotationsPage() {
                                       <Download size={16} />
                                       PDF
                                     </button>
-                                    {quotation.status === "sent" ? (
+                                    {quotation.status === "ordered" ? (
                                       <button
                                         disabled
                                         className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400 text-sm font-medium cursor-not-allowed opacity-60"
