@@ -29,6 +29,7 @@ interface SentQuotation {
   status: string
   created_at: string
   created_by?: number
+  branch_id?: number
   creator?: {
     id: number
     first_name: string
@@ -39,6 +40,11 @@ interface SentQuotation {
     name: string
     email: string
     phone: string
+  }
+  branch?: {
+    id: number
+    name: string
+    location?: string
   }
   items?: any[]
 }
@@ -197,24 +203,51 @@ export default function OrdersPage() {
 
   const fetchSentQuotations = async (token: string) => {
     try {
+      console.log("[v0] === FETCHING QUOTATIONS START ===")
+      
       // Use the existing adminIndex endpoint with status filter
-      const response = await fetch(`${apiUrl}/admin/quotations?status=sent`, {
+      const url = `${apiUrl}/admin/quotations?status=sent`
+      console.log("[v0] Fetching from URL:", url)
+      
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
+      console.log("[v0] Response status:", response.status, response.statusText)
+
       if (!response.ok) {
-        console.warn("[v0] Failed to fetch sent quotations, using empty array")
+        console.warn("[v0] Failed to fetch sent quotations, HTTP status:", response.status)
         setSentQuotations([])
         return
       }
 
       const data = await response.json()
+      console.log("[v0] Raw API response:", data)
+      console.log("[v0] Response is array?", Array.isArray(data))
+      
       // The adminIndex returns an array directly, not wrapped in data property
-      setSentQuotations(Array.isArray(data) ? data : (data.data || []))
+      const quotations = Array.isArray(data) ? data : (data.data || [])
+      console.log("[v0] Parsed quotations count:", quotations.length)
+      
+      quotations.forEach((q, index) => {
+        console.log(`[v0] Quotation #${index}:`, {
+          id: q.id,
+          number: q.quotation_number,
+          branch_id: q.branch_id,
+          has_branch_object: !!q.branch,
+          branch: q.branch,
+          total: q.total
+        })
+      })
+      
+      console.log("[v0] Setting state with", quotations.length, "quotations")
+      setSentQuotations(quotations)
+      console.log("[v0] === FETCHING QUOTATIONS END ===")
     } catch (err) {
       console.error("[v0] Error fetching quotations:", err)
+      console.error("[v0] Error stack:", err instanceof Error ? err.stack : "")
       setSentQuotations([])
     }
   }
@@ -466,11 +499,22 @@ export default function OrdersPage() {
   }
 
   const displayData = useMemo(() => {
+    console.log("[v0] === DISPLAYDATA CALCULATION START ===")
+    console.log("[v0] filterStatus:", filterStatus)
+    console.log("[v0] sentQuotations count:", sentQuotations.length)
+    console.log("[v0] sentQuotations data:", sentQuotations)
+    
     let filtered: any[] = []
 
     if (filterStatus === "pending") {
+      console.log("[v0] Using pending quotations")
       filtered = sentQuotations
+      console.log("[v0] Pending quotations after filter:", filtered)
+      filtered.forEach((item, idx) => {
+        console.log(`[v0] Item ${idx} has branch:`, item.branch)
+      })
     } else if (filterStatus === "partial") {
+      console.log("[v0] Using partial orders")
       filtered = allOrders
         .filter(o => o.payment_status === "partial")
         .map(order => ({
@@ -493,6 +537,7 @@ export default function OrdersPage() {
           isOrder: true
         }))
     } else if (filterStatus === "paid") {
+      console.log("[v0] Using paid orders")
       filtered = allOrders
         .filter(o => o.payment_status === "paid" && !o.released_date)
         .map(order => ({
@@ -526,6 +571,10 @@ export default function OrdersPage() {
       )
     }
 
+    console.log("[v0] Final displayData count:", filtered.length)
+    console.log("[v0] Final displayData:", filtered)
+    console.log("[v0] === DISPLAYDATA CALCULATION END ===")
+    
     return filtered
   }, [filterStatus, sentQuotations, allOrders, searchQuery])
 
@@ -1026,6 +1075,24 @@ export default function OrdersPage() {
                           </div>
                           <p className="font-bold text-neutral-900 dark:text-white text-lg">₱{Number.parseFloat(item.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
+
+                        {(!item.isOrder && item.branch) && (
+                          <div className="bg-teal-50 dark:bg-teal-900/20 rounded-lg p-4 border border-teal-200 dark:border-teal-800/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Building2 size={16} className="text-teal-600 dark:text-teal-400" />
+                              <p className="text-xs text-teal-600 dark:text-teal-300 font-bold uppercase">Branch</p>
+                            </div>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{item.branch.name}</p>
+                            {item.branch.location && (
+                              <p className="text-xs text-teal-600 dark:text-teal-400 mt-1">📍 {item.branch.location}</p>
+                            )}
+                          </div>
+                        )}
+                        {(!item.isOrder && !item.branch) && (
+                          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">[v0] No branch data - Check console logs</p>
+                          </div>
+                        )}
 
                         {item.isOrder && item.payment_method && (
                           <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-4 border border-pink-200 dark:border-pink-800/50">
