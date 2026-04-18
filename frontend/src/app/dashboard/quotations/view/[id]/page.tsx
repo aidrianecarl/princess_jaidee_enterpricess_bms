@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { generateQuotationHTML } from "@/lib/html-print-generator"
+import { generateQuotationPDF } from "@/lib/pdf-generator"
 
 interface PricingLineItem {
   id: number
@@ -186,19 +186,18 @@ export default function DashboardViewQuotationPage() {
     }
   }
 
-  const handlePrintQuotation = () => {
+  const handleDownloadPDF = async () => {
     if (!quotation) return
     try {
       setIsDownloading(true)
-      // Pass quotation data as URL parameter
-      const quotationParam = encodeURIComponent(JSON.stringify(quotation))
-      router.push(`/print-quotation?quotation=${quotationParam}`)
+      await generateQuotationPDF(quotation)
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to open print preview",
+        description: "Failed to generate PDF",
         variant: "destructive",
       })
+    } finally {
       setIsDownloading(false)
     }
   }
@@ -283,13 +282,13 @@ export default function DashboardViewQuotationPage() {
               </div>
               {quotation.has_price === 1 && (
                 <button
-                  onClick={handlePrintQuotation}
+                  onClick={handleDownloadPDF}
                   disabled={isDownloading}
                   className="flex items-center gap-1 md:gap-2 px-4 md:px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium transition disabled:opacity-50 text-sm md:text-base"
                 >
                   {isDownloading ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Download size={16} className="md:w-5 md:h-5" />}
-                  <span className="hidden md:inline">Print Quotation</span>
-                  <span className="md:hidden">Print</span>
+                  <span className="hidden md:inline">Download PDF</span>
+                  <span className="md:hidden">PDF</span>
                 </button>
               )}
             </div>
