@@ -7,7 +7,16 @@ import { AdminSidebar } from '@/components/admin/sidebar'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { ArrowRight, AlertCircle, Package, Eye, Calendar, Users, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { ArrowRight, Loader2, AlertCircle, Package, Eye, Calendar, Users, CheckCircle2, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { ordersApi, jobOrdersApi } from '@/lib/api'
 import { useToast } from '@/hooks/use-toast'
 import { OrderProgressBar } from '@/components/order/order-progress-bar'
@@ -56,14 +65,22 @@ export default function AdminJobOrdersPage() {
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
   const [selectedJobOrder, setSelectedJobOrder] = useState<JobOrder | null>(null)
   const [isApproving, setIsApproving] = useState(false)
+  const [isReleasing, setIsReleasing] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'InProduction' | null>('pending')
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'InProduction' | 'completed' | 'released' | null>('pending')
+  const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false)
+  const [releaseJobOrderId, setReleaseJobOrderId] = useState<number | null>(null)
   const itemsPerPage = 10
 
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://api.princessjaideeenterprises.com/api'
   
+  const handleApprovalClick = (jobOrder: JobOrder) => {
+    setSelectedJobOrder(jobOrder)
+    setApprovalDialogOpen(true)
+  }
+
   const handleApproveJobOrder = async () => {
     if (!selectedJobOrder) return
     
@@ -100,6 +117,55 @@ export default function AdminJobOrdersPage() {
       })
     } finally {
       setIsApproving(false)
+    }
+  }
+
+  const handleReleaseConfirm = (jobOrderId: number) => {
+    setReleaseJobOrderId(jobOrderId)
+    setReleaseConfirmOpen(true)
+  }
+
+  const handleReleaseJobOrder = async () => {
+    if (!releaseJobOrderId) return
+    
+    const token = localStorage.getItem('admin_token')
+    if (!token) return
+
+    try {
+      setIsReleasing(releaseJobOrderId)
+      
+      const response = await fetch(`${apiUrl}/admin/job-orders/${releaseJobOrderId}/release`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Success',
+          description: 'Job order released successfully',
+          variant: 'default',
+        })
+        setReleaseConfirmOpen(false)
+        fetchJobOrders(token)
+      } else {
+        const data = await response.json()
+        toast({
+          title: 'Error',
+          description: data.error || 'Failed to release job order',
+          variant: 'destructive',
+        })
+      }
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to release job order',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsReleasing(null)
     }
   }
 
@@ -292,8 +358,13 @@ export default function AdminJobOrdersPage() {
       const customerMatch = order.customer?.bill_to_name?.toLowerCase().includes(searchLower)
       const searchMatches = numberMatch || customerMatch
 
-      // Apply status filter - only show pending and InProduction statuses
-      if (statusFilter) {
+      // Apply status filter
+      if (statusFilter === 'released') {
+        return searchMatches && !!order.released_date
+      } else if (statusFilter === 'completed') {
+        // Don't show completed jobs that have been released
+        return searchMatches && order.status === 'completed' && !order.released_date
+      } else if (statusFilter) {
         return searchMatches && order.status === statusFilter
       }
       
@@ -416,6 +487,30 @@ export default function AdminJobOrdersPage() {
                     : 'bg-blue-100 hover:bg-blue-200 text-blue-800 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-300'}`}
                 >
                   In Production
+                </Button>
+                <Button
+                  onClick={() => {
+                    setStatusFilter('completed')
+                    const token = localStorage.getItem('admin_token')
+                    if (token) fetchJobOrders(token, 'completed')
+                  }}
+                  className={`transition-all duration-300 ${statusFilter === 'completed' 
+                    ? 'bg-orange-500 hover:bg-orange-600 text-white shadow-lg scale-105' 
+                    : 'bg-orange-100 hover:bg-orange-200 text-orange-800 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-300'}`}
+                >
+                  Completed
+                </Button>
+                <Button
+                  onClick={() => {
+                    setStatusFilter('released')
+                    const token = localStorage.getItem('admin_token')
+                    if (token) fetchJobOrders(token, 'released')
+                  }}
+                  className={`transition-all duration-300 ${statusFilter === 'released' 
+                    ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg scale-105' 
+                    : 'bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300'}`}
+                >
+                  Released
                 </Button>
                 {statusFilter && (
                   <Button
@@ -573,11 +668,77 @@ export default function AdminJobOrdersPage() {
                             {/* Update Order Button - Always shown, disabled when released */}
                             <Button
                               onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
-                              className="bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
+                              disabled={!!jobOrder.released_date}
+                              className={`${jobOrder.released_date ? 'opacity-50 cursor-not-allowed' : ''} bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2`}
                             >
                               <Eye size={18} />
                               Update Order
                             </Button>
+
+                            {/* Release Button - Show when status is completed, order status is completed, and not already released */}
+                            {(() => {
+                              const jobOrderStatus = jobOrder.status?.toLowerCase()
+                              const orderStatus = jobOrder.order?.order_status
+                              const hasReleasedDate = !!jobOrder.released_date
+                              const shouldShowRelease = jobOrderStatus === 'completed' && orderStatus === 'completed' && !hasReleasedDate
+                              
+                              console.log('[v0] RELEASE BUTTON DEBUG:', {
+                                jobOrderId: jobOrder.id,
+                                jobOrderNumber: jobOrder.job_order_number,
+                                jobOrderStatus: jobOrderStatus,
+                                rawJobOrderStatus: jobOrder.status,
+                                orderStatus: orderStatus,
+                                hasOrder: !!jobOrder.order,
+                                orderExists: jobOrder.order ? 'YES' : 'NO',
+                                hasReleasedDate: hasReleasedDate,
+                                releasedDate: jobOrder.released_date,
+                                shouldShowRelease: shouldShowRelease,
+                                allData: {
+                                  jobOrder,
+                                  order: jobOrder.order
+                                }
+                              })
+                              
+                              return shouldShowRelease
+                            })() && 
+                            jobOrder.status?.toLowerCase() === 'completed' && 
+                            jobOrder.order?.order_status === 'completed' &&
+                            !jobOrder.released_date ? (
+                              <Button
+                                onClick={() => handleReleaseConfirm(jobOrder.id)}
+                                disabled={
+                                  isReleasing === jobOrder.id || 
+                                  jobOrder.order?.payment_status !== 'paid'
+                                }
+                                className={`${
+                                  jobOrder.order?.payment_status !== 'paid'
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : ''
+                                } bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 transition-all duration-200`}
+                                title={jobOrder.order?.payment_status !== 'paid' ? 'Payment must be marked as paid before releasing' : ''}
+                              >
+                                {isReleasing === jobOrder.id ? (
+                                  <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    Releasing...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={18} />
+                                    Release
+                                  </>
+                                )}
+                              </Button>
+                            ) : jobOrder.released_date ? (
+                              /* Released Button - Show when already released */
+                              <Button
+                                disabled={true}
+                                className="bg-green-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
+                              >
+                                <CheckCircle2 size={18} />
+                                Released
+                              </Button>
+                            ) : null}
                           </div>
                         </div>
                       </div>
@@ -633,6 +794,43 @@ export default function AdminJobOrdersPage() {
           </div>
         </main>
       </div>
+
+      {/* Release Confirmation Modal */}
+      <AlertDialog open={releaseConfirmOpen} onOpenChange={setReleaseConfirmOpen}>
+        <AlertDialogContent className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-neutral-900 dark:text-white">
+              Release Job Order?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
+              Are you sure you want to release this Job Order{' '}
+              <span className="font-semibold text-neutral-900 dark:text-white">
+                #{releaseJobOrderId && jobOrders.find(j => j.id === releaseJobOrderId)?.job_order_number}
+              </span>
+              ? This action will mark it as released and the customer can pick it up.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-3">
+            <AlertDialogCancel className="hover:bg-neutral-100 dark:hover:bg-neutral-700">
+              No, Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleReleaseJobOrder()}
+              disabled={isReleasing === releaseJobOrderId}
+              className="bg-purple-600 hover:bg-purple-700 text-white"
+            >
+              {isReleasing === releaseJobOrderId ? (
+                <>
+                  <Loader2 size={16} className="animate-spin mr-2" />
+                  Releasing...
+                </>
+              ) : (
+                'Yes, Release'
+              )}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
