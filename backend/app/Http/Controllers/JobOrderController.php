@@ -16,7 +16,8 @@ class JobOrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = JobOrder::with(['assignedTo', 'customer', 'order.items', 'order.branch', 'branch']);
+            $query = JobOrder::with(['assignedTo', 'customer', 'order.items', 'order.branch'])
+                ->join('orders', 'job_orders.order_id', '=', 'orders.id');
 
             // Get current user
             $currentUser = auth()->user();
@@ -31,9 +32,10 @@ class JobOrderController extends Controller
             ]);
 
             // Filter by branch for employees - only show job orders from their branch
+            // Join allows us to access orders.branch_id through the join
             if ($userType === 'employee' && $userBranchId) {
                 Log::info('[v0] Filtering job orders by employee branch', ['branch_id' => $userBranchId]);
-                $query->where('branch_id', $userBranchId);
+                $query->where('orders.branch_id', $userBranchId);
             }
             // Admins see all job orders
 
@@ -51,17 +53,19 @@ class JobOrderController extends Controller
                 // Handle different status filters
                 if ($status === 'completed') {
                     // Exclude released jobs from completed
-                    $query->where('status', 'completed')
-                          ->whereNull('released_date');
+                    $query->where('job_orders.status', 'completed')
+                          ->whereNull('job_orders.released_date');
                 } elseif ($status === 'released') {
                     // Show only released jobs
-                    $query->whereNotNull('released_date');
+                    $query->whereNotNull('job_orders.released_date');
                 } else {
-                    $query->where('status', $status);
+                    $query->where('job_orders.status', $status);
                 }
             }
 
-            $jobOrders = $query->orderBy('created_at', 'desc')->get();
+            $jobOrders = $query->select('job_orders.*')
+                ->orderBy('job_orders.created_at', 'desc')
+                ->get();
 
             \Log::info('[v0] Job Orders Index - Fetched', [
                 'count' => $jobOrders->count(),
@@ -74,8 +78,8 @@ class JobOrderController extends Controller
                         'status' => $order->status,
                         'assigned_to' => $order->assigned_to,
                         'released_date' => $order->released_date,
-                        'branch_id' => $order->branch_id,
-                        'branch_name' => $order->branch ? $order->branch->name : ($order->order && $order->order->branch ? $order->order->branch->name : 'N/A'),
+                        'branch_id' => $order->order && $order->order->branch_id ? $order->order->branch_id : 'N/A',
+                        'branch_name' => $order->order && $order->order->branch ? $order->order->branch->name : 'N/A',
                         'assignedTo' => $order->assignedTo ? [
                             'id' => $order->assignedTo->id,
                             'first_name' => $order->assignedTo->first_name,
@@ -98,7 +102,7 @@ class JobOrderController extends Controller
     public function show($id)
     {
         try {
-            $jobOrder = JobOrder::with(['assignedTo', 'customer', 'order.items', 'order.branch', 'branch'])->find($id);
+            $jobOrder = JobOrder::with(['assignedTo', 'customer', 'order.items', 'order.branch'])->find($id);
 
             if (!$jobOrder) {
                 return response()->json(['error' => 'Job Order not found'], 404);
@@ -134,17 +138,12 @@ class JobOrderController extends Controller
 
             $jobNumber = 'JO-' . date('Ymd') . '-' . str_pad(JobOrder::count() + 1, 5, '0', STR_PAD_LEFT);
 
-            // Get branch_id from the related order
-            $order = \App\Models\Order::find($request->order_id);
-            $branchId = $order ? $order->branch_id : null;
-
             $jobOrder = JobOrder::create([
                 'job_order_number' => $jobNumber,
                 'quotation_id' => $request->quotation_id ?? null,
                 'order_id' => $request->order_id,
                 'customer_id' => $request->customer_id,
                 'assigned_to' => $request->assigned_to,
-                'branch_id' => $branchId,
                 'start_date' => $request->start_date,
                 'due_date' => $request->due_date,
                 'status' => 'pending',
@@ -156,13 +155,12 @@ class JobOrderController extends Controller
                 'job_order_id' => $jobOrder->id,
                 'job_order_number' => $jobOrder->job_order_number,
                 'order_id' => $request->order_id,
-                'branch_id' => $branchId,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Job order created successfully',
-                'data' => $jobOrder->load(['assignedTo', 'customer', 'order', 'branch'])
+                'data' => $jobOrder->load(['assignedTo', 'customer', 'order.branch'])
             ], 201);
         } catch (\Exception $e) {
             Log::error('Error creating job order', [
@@ -385,7 +383,7 @@ class JobOrderController extends Controller
     public function getOrderItems($id)
     {
         try {
-            $jobOrder = JobOrder::with(['order.items.service', 'customer', 'order.branch', 'branch'])->find($id);
+            $jobOrder = JobOrder::with(['order.items.service', 'customer', 'order.branch'])->find($id);
 
             if (!$jobOrder) {
                 return response()->json(['error' => 'Job Order not found'], 404);
@@ -412,7 +410,7 @@ class JobOrderController extends Controller
         try {
             \Log::info('[v0] Release Job Order - START', ['job_order_id' => $id]);
             
-            $jobOrder = JobOrder::with(['order.items', 'order.branch', 'assignedTo', 'customer', 'branch'])->find($id);
+            $jobOrder = JobOrder::with(['order.items', 'order.branch', 'assignedTo', 'customer'])->find($id);
 
             if (!$jobOrder) {
                 \Log::warning('[v0] Release Job Order - NOT FOUND', ['job_order_id' => $id]);
