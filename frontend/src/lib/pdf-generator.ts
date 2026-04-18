@@ -112,8 +112,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setFont(undefined, "bold")
   doc.text("Client Name:", leftColX, yPosition)
   doc.setFont(undefined, "normal")
-  const clientName = quotation.customer?.name || quotation.client_name || "N/A"
-  console.log("[v0] Client Name value:", clientName, "from:", quotation.customer?.name || quotation.client_name)
+  const clientName = quotation.customer?.bill_to_name || quotation.customer?.name || quotation.client_name || "N/A"
   doc.text(clientName, leftColX + 25, yPosition)
   
   doc.setFont(undefined, "bold")
@@ -137,8 +136,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setFont(undefined, "bold")
   doc.text("Contact No. :", leftColX, yPosition)
   doc.setFont(undefined, "normal")
-  const contactNumber = quotation.customer?.contact_number || quotation.customer?.phone || "N/A"
-  console.log("[v0] Contact Number value:", contactNumber, "from:", quotation.customer?.contact_number || quotation.customer?.phone)
+  const contactNumber = quotation.customer?.bill_to_phone || quotation.customer?.contact_number || quotation.customer?.phone || "N/A"
   doc.text(contactNumber, leftColX + 25, yPosition)
 
   yPosition += 10
@@ -152,7 +150,7 @@ export const generateQuotationPDF = async (quotation: any) => {
     const unitPrice = parseFloat(item.unit_price || 0)
     const totalPrice = quantity * unitPrice
 
-    // Main service row
+    // Main service row - show service name only (no price inline)
     const serviceName = item.service?.name || item.name || "Service"
     projectTableData.push([
       serviceName,
@@ -161,18 +159,69 @@ export const generateQuotationPDF = async (quotation: any) => {
       totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
     ])
 
-    // Add service details as sub-rows if available
-    if (item.service_details && Array.isArray(item.service_details)) {
-      item.service_details.forEach((detail: any) => {
-        const detailQty = detail.quantity || 0
-        const detailPrice = parseFloat(detail.price || 0)
-        projectTableData.push([
-          `${detailQty} ${detail.name || detail.description || "Detail"}`,
-          "",
-          detailPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-          (detailQty * detailPrice).toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
-      })
+    // Add service details from notes field
+    const notes = item.notes
+    if (notes) {
+      // Parse notes if it's a string
+      let notesData = notes
+      if (typeof notes === 'string') {
+        try {
+          notesData = JSON.parse(notes)
+        } catch {
+          notesData = null
+        }
+      }
+
+      if (notesData) {
+        // Handle tarpaulin size notes
+        if (notesData.width && notesData.height && notesData.pricePerSqFt) {
+          const sizeDetail = `${notesData.width}ft × ${notesData.height}ft. ${notesData.pricePerSqFt} pesos per sq ft`
+          projectTableData.push([`   ${sizeDetail}`, "", "", ""])
+        }
+
+        // Handle size specifications (sublimation)
+        if (notesData.sizeSpecifications && Array.isArray(notesData.sizeSpecifications)) {
+          notesData.sizeSpecifications.forEach((spec: any) => {
+            if (spec.quantity && spec.size) {
+              const sizeDetail = `   ${spec.quantity} ${spec.size}`
+              projectTableData.push([sizeDetail, "", "", ""])
+            }
+          })
+        }
+
+        // Handle sets, tops, bottoms for sublimation (no prices inline - only in summary)
+        if (notesData.sets || notesData.topOnly || notesData.bottomOnly) {
+          if (notesData.sets) {
+            projectTableData.push([`   ${notesData.sets} Sets`, "", "", ""])
+          }
+          if (notesData.topOnly) {
+            projectTableData.push([`   ${notesData.topOnly} Top Only`, "", "", ""])
+          }
+          if (notesData.bottomOnly) {
+            projectTableData.push([`   ${notesData.bottomOnly} Bottom Only`, "", "", ""])
+          }
+        }
+      }
+    }
+
+    // Handle size_specifications field directly
+    if (item.size_specifications) {
+      let sizeSpecs = item.size_specifications
+      if (typeof sizeSpecs === 'string') {
+        try {
+          sizeSpecs = JSON.parse(sizeSpecs)
+        } catch {
+          sizeSpecs = null
+        }
+      }
+
+      if (Array.isArray(sizeSpecs)) {
+        sizeSpecs.forEach((spec: any) => {
+          if (spec.quantity && spec.size) {
+            projectTableData.push([`   ${spec.quantity} ${spec.size}`, "", "", ""])
+          }
+        })
+      }
     }
   })
 
