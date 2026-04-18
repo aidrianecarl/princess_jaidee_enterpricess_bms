@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { AdminHeader } from "@/components/admin/header"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { useRouter } from "next/navigation"
-import { Plus, Edit2, Trash2, Mail, Phone, ToggleLeft as Toggle2, Users } from 'lucide-react'
+import { Plus, Edit2, Trash2, Mail, Phone, ToggleLeft as Toggle2, Users, Eye, EyeOff } from 'lucide-react'
 import { apiClient } from "@/lib/api-client"
 
 interface Member {
@@ -44,6 +44,8 @@ export default function MembersPage() {
   const [isEditMode, setIsEditMode] = useState(false)
   const router = useRouter()
   const [user, setUser] = useState(null)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showEditPassword, setShowEditPassword] = useState(false)
   
     useEffect(() => {
       checkAuth()
@@ -86,7 +88,9 @@ export default function MembersPage() {
         apiClient.get("/admin/branches"),
         apiClient.get("/admin/roles"),
       ])
-      setMembers(usersRes.data.data || [])
+      // Filter to only show employees
+      const employees = (usersRes.data.data || []).filter((user: Member) => user.user_type === "employee")
+      setMembers(employees)
       setBranches(branchesRes.data.data || [])
       setRoles(rolesRes.data.data || [])
     } catch (error) {
@@ -161,6 +165,8 @@ export default function MembersPage() {
     setIsAddModalOpen(false)
     setIsEditMode(false)
     setSelectedMember(null)
+    setShowPassword(false)
+    setShowEditPassword(false)
     setFormData({
       first_name: "",
       last_name: "",
@@ -190,7 +196,11 @@ export default function MembersPage() {
               <p className="text-neutral-600">Manage customer and member accounts</p>
             </div>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setIsEditMode(false)
+                setShowPassword(false)
+                setIsAddModalOpen(true)
+              }}
               className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-xl font-semibold hover:from-red-700 hover:to-orange-700 transition-all transform hover:scale-105 active:scale-95 shadow-lg"
             >
               <Plus size={20} />
@@ -204,29 +214,29 @@ export default function MembersPage() {
               {[...Array(6)].map((_, i) => (
                 <div
                   key={i}
-                  className="bg-white rounded-2xl p-6 shadow-sm border border-neutral-200 animate-pulse"
+                  className="bg-white dark:bg-neutral-800 rounded-2xl p-6 shadow-sm border border-neutral-200 dark:border-neutral-700 animate-pulse"
                 >
                   <div className="flex gap-3 mb-4">
-                    <div className="w-12 h-12 bg-neutral-200 rounded-full" />
+                    <div className="w-12 h-12 bg-neutral-200 dark:bg-neutral-700 rounded-full" />
                     <div className="flex-1">
-                      <div className="h-4 bg-neutral-200 rounded mb-2" />
-                      <div className="h-3 bg-neutral-200 rounded w-2/3" />
+                      <div className="h-4 bg-neutral-200 dark:bg-neutral-700 rounded mb-2" />
+                      <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-2/3" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <div className="h-3 bg-neutral-200 rounded" />
-                    <div className="h-3 bg-neutral-200 rounded w-2/3" />
+                    <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded" />
+                    <div className="h-3 bg-neutral-200 dark:bg-neutral-700 rounded w-2/3" />
                   </div>
                 </div>
               ))}
             </div>
           ) : members.length === 0 ? (
             <div className="text-center py-16">
-              <Users size={48} className="mx-auto text-neutral-300 mb-4" />
-              <p className="text-neutral-600 font-medium mb-4">No members yet</p>
+              <Users size={48} className="mx-auto text-neutral-300 dark:text-neutral-600 mb-4" />
+              <p className="text-neutral-600 dark:text-neutral-300 font-medium mb-4">No members yet</p>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="text-red-600 hover:text-red-700 font-semibold"
+                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-semibold"
               >
                 Add your first member
               </button>
@@ -236,10 +246,10 @@ export default function MembersPage() {
               {members.map((member) => (
                 <div
                   key={member.id}
-                  className="bg-white rounded-2xl shadow-sm border border-neutral-200 hover:shadow-xl hover:border-red-200 transition-all duration-300 overflow-hidden group"
+                  className="bg-white dark:bg-neutral-800 rounded-2xl shadow-sm border border-neutral-200 dark:border-neutral-700 hover:shadow-xl hover:border-red-200 dark:hover:border-red-700 transition-all duration-300 overflow-hidden group"
                 >
                   {/* Card header */}
-                  <div className="bg-gradient-to-r from-red-50 to-orange-50 p-6 border-b border-red-100/50">
+                  <div className="bg-gradient-to-r from-red-50 dark:from-red-950/40 to-orange-50 dark:to-orange-950/40 p-6 border-b border-red-100/50 dark:border-red-900/50">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3 flex-1">
                         <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-full flex items-center justify-center shadow-md">
@@ -248,17 +258,17 @@ export default function MembersPage() {
                           </span>
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-bold text-neutral-900 group-hover:text-red-600 transition-colors">
+                          <h3 className="font-bold text-neutral-900 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-400 transition-colors">
                             {member.first_name} {member.last_name}
                           </h3>
-                          <p className="text-xs text-neutral-600 capitalize">{member.user_type}</p>
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400 capitalize">{member.user_type}</p>
                         </div>
                       </div>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-semibold ${
                           member.status === "active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-neutral-100 text-neutral-700"
+                            ? "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400"
+                            : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300"
                         }`}
                       >
                         {member.status}
@@ -271,21 +281,21 @@ export default function MembersPage() {
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 text-sm">
                         <Mail size={16} className="text-red-500 flex-shrink-0" />
-                        <span className="text-neutral-700 truncate">{member.email}</span>
+                        <span className="text-neutral-700 dark:text-neutral-300 truncate">{member.email}</span>
                       </div>
                       {member.phone_number && (
                         <div className="flex items-center gap-3 text-sm">
                           <Phone size={16} className="text-red-500 flex-shrink-0" />
-                          <span className="text-neutral-700">{member.phone_number}</span>
+                          <span className="text-neutral-700 dark:text-neutral-300">{member.phone_number}</span>
                         </div>
                       )}
                       {member.address && (
-                        <div className="text-xs text-neutral-600">
+                        <div className="text-xs text-neutral-600 dark:text-neutral-400">
                           <span className="font-semibold">Address:</span> {member.address}
                         </div>
                       )}
                       {member.branch_id && formData.user_type === "employee" && (
-                        <div className="text-xs text-neutral-600">
+                        <div className="text-xs text-neutral-600 dark:text-neutral-400">
                           <span className="font-semibold">Branch:</span> {branches.find(b => b.id === member.branch_id)?.name || 'N/A'}
                         </div>
                       )}
@@ -293,13 +303,13 @@ export default function MembersPage() {
                   </div>
 
                   {/* Card footer with actions */}
-                  <div className="bg-neutral-50 border-t border-neutral-200 p-4 space-y-2">
+                  <div className="bg-neutral-50 dark:bg-neutral-700/50 border-t border-neutral-200 dark:border-neutral-700 p-4 space-y-2">
                     <button
                       onClick={() => handleToggleStatus(member)}
                       className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors ${
                         member.status === "active"
-                          ? "bg-yellow-50 hover:bg-yellow-100 text-yellow-600"
-                          : "bg-green-50 hover:bg-green-100 text-green-600"
+                          ? "bg-yellow-50 dark:bg-yellow-900/30 hover:bg-yellow-100 dark:hover:bg-yellow-900/50 text-yellow-600 dark:text-yellow-400"
+                          : "bg-green-50 dark:bg-green-900/30 hover:bg-green-100 dark:hover:bg-green-900/50 text-green-600 dark:text-green-400"
                       }`}
                     >
                       <Toggle2 size={16} />
@@ -308,14 +318,14 @@ export default function MembersPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleEdit(member)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium rounded-lg transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 font-medium rounded-lg transition-colors"
                       >
                         <Edit2 size={16} />
                         <span className="hidden sm:inline">Edit</span>
                       </button>
                       <button
                         onClick={() => handleDelete(member.id)}
-                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-medium rounded-lg transition-colors"
+                        className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 text-red-600 dark:text-red-400 font-medium rounded-lg transition-colors"
                       >
                         <Trash2 size={16} />
                         <span className="hidden sm:inline">Delete</span>
@@ -330,7 +340,7 @@ export default function MembersPage() {
           {/* Add/Edit Modal */}
           {isAddModalOpen && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn">
-              <div className="bg-white rounded-3xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto animate-slideUp">
+              <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto animate-slideUp">
                 <div className="bg-gradient-to-r from-red-600 to-orange-600 px-8 py-6 flex items-center justify-between sticky top-0">
                   <h2 className="text-2xl font-bold text-white">
                     {isEditMode ? "Edit Member" : "Add New Member"}
@@ -340,74 +350,74 @@ export default function MembersPage() {
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                <form onSubmit={handleSubmit} className="p-8 space-y-6 dark:bg-neutral-800">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         First Name *
                       </label>
                       <input
                         type="text"
                         value={formData.first_name}
                         onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         Last Name *
                       </label>
                       <input
                         type="text"
                         value={formData.last_name}
                         onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         Email *
                       </label>
                       <input
                         type="email"
                         value={formData.email}
                         onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         Phone Number
                       </label>
                       <input
                         type="tel"
                         value={formData.phone_number}
                         onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                       />
                     </div>
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         Address
                       </label>
                       <input
                         type="text"
                         value={formData.address}
                         onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         User Type *
                       </label>
                       <select
                         value={formData.user_type}
                         onChange={(e) => setFormData({ ...formData, user_type: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                         required
                       >
                         <option value="">Select User Type</option>
@@ -417,13 +427,13 @@ export default function MembersPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         Status *
                       </label>
                       <select
                         value={formData.status}
                         onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                         required
                       >
                         <option value="active">Active</option>
@@ -433,13 +443,13 @@ export default function MembersPage() {
                     </div>
                     {formData.user_type === "employee" && (
                       <div>
-                        <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                        <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                           Branch *
                         </label>
                         <select
                           value={formData.branch_id}
                           onChange={(e) => setFormData({ ...formData, branch_id: e.target.value })}
-                          className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                          className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                           required={formData.user_type === "employee"}
                         >
                           <option value="">Select Branch</option>
@@ -452,13 +462,13 @@ export default function MembersPage() {
                       </div>
                     )}
                     <div>
-                      <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                      <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                         Role
                       </label>
                       <select
                         value={formData.role_id}
                         onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
-                        className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
+                        className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
                       >
                         <option value="">Select Role</option>
                         {roles.map((role) => (
@@ -470,25 +480,56 @@ export default function MembersPage() {
                     </div>
                     {!isEditMode && (
                       <div className="md:col-span-2">
-                        <label className="block text-sm font-semibold text-neutral-900 mb-2">
+                        <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
                           Password *
                         </label>
-                        <input
-                          type="password"
-                          value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                          className="w-full px-4 py-2 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none"
-                          required={!isEditMode}
-                        />
+                        <div className="relative">
+                          <input
+                            type={showPassword ? "text" : "password"}
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            className="w-full px-4 py-2 pr-12 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
+                            required={!isEditMode}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-2.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition"
+                          >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {isEditMode && (
+                      <div className="md:col-span-2">
+                        <label className="block text-sm font-semibold text-neutral-900 dark:text-white mb-2">
+                          New Password (leave empty to keep current)
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showEditPassword ? "text" : "password"}
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                            className="w-full px-4 py-2 pr-12 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:border-red-500 focus:outline-none dark:bg-neutral-800 dark:text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowEditPassword(!showEditPassword)}
+                            className="absolute right-3 top-2.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition"
+                          >
+                            {showEditPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
 
-                  <div className="flex gap-3 pt-6 border-t border-neutral-200">
+                  <div className="flex gap-3 pt-6 border-t border-neutral-200 dark:border-neutral-700">
                     <button
                       type="button"
                       onClick={resetForm}
-                      className="flex-1 px-6 py-3 border-2 border-neutral-300 text-neutral-700 font-semibold rounded-lg hover:bg-neutral-50 transition"
+                      className="flex-1 px-6 py-3 border-2 border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 font-semibold rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-700 transition"
                     >
                       Cancel
                     </button>
