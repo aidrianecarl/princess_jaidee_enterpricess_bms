@@ -306,47 +306,51 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition = (doc as any).lastAutoTable.finalY + 8
 
   // ===== FINANCIAL SUMMARY (Right Aligned) =====
-  const total = parseFloat(quotation.total || quotation.subtotal || 0)
-  const downPayment = parseFloat(quotation.down_payment || 0)
-  const balance = total - downPayment
+const total = Number(quotation.total ?? quotation.subtotal ?? calculatedSubtotal ?? 0)
+const downPayment = Number(quotation.down_payment ?? 0)
+const balance = total - downPayment
 
-  const summaryRightX = pageWidth - 10
-  const summaryLabelX = pageWidth - 80
+const summaryRightX = pageWidth - 10
+const summaryLabelX = pageWidth - 80
 
-  // TOTAL PROJECT COST
-  doc.setFontSize(10)
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.text("TOTAL PROJECT COST:", summaryLabelX, yPosition, { align: "left" })
-  doc.setTextColor(0, 0, 0)
-  const totalText = total > 0 ? total.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
-  doc.text(totalText, summaryRightX, yPosition, { align: "right" })
+// Format values ONCE (no duplicates)
+const totalText = total.toLocaleString("en-PH", { minimumFractionDigits: 2 })
+const downPaymentText = downPayment.toLocaleString("en-PH", { minimumFractionDigits: 2 })
+const balanceText = balance.toLocaleString("en-PH", { minimumFractionDigits: 2 })
 
-  yPosition += 6
+// TOTAL PROJECT COST
+doc.setFontSize(10)
+doc.setFont(undefined, "bold")
+doc.setTextColor(139, 69, 19)
+doc.text("TOTAL PROJECT COST:", summaryLabelX, yPosition, { align: "left" })
 
-  // DOWN PAYMENT - Yellow highlight
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(139, 69, 19) // Burgundy text
-  
-  // Yellow background for entire down payment row
-  doc.setFillColor(255, 255, 0) // Yellow
-  doc.rect(summaryLabelX - 5, yPosition - 4, pageWidth - summaryLabelX + 3, 6, "F")
-  
-  doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
-  const downPaymentText = downPayment > 0 ? downPayment.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
-  doc.text(downPaymentText, summaryRightX, yPosition, { align: "right" })
+doc.setTextColor(0, 0, 0)
+doc.text(totalText, summaryRightX, yPosition, { align: "right" })
 
-  yPosition += 6
+yPosition += 6
 
-  // BALANCE
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.text("BALANCE:", summaryLabelX, yPosition, { align: "left" })
-  doc.setTextColor(0, 0, 0)
-  const balanceText = balance > 0 ? balance.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
-  doc.text(balanceText, summaryRightX, yPosition, { align: "right" })
+// DOWN PAYMENT (with highlight)
+doc.setFont(undefined, "bold")
+doc.setTextColor(139, 69, 19)
 
-  yPosition += 12
+// highlight box (fixed width)
+doc.setFillColor(255, 255, 0)
+doc.rect(summaryLabelX - 5, yPosition - 3.5, 75, 6, "F")
+
+doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
+doc.text(downPaymentText, summaryRightX, yPosition, { align: "right" })
+
+yPosition += 6
+
+// BALANCE
+doc.setFont(undefined, "bold")
+doc.setTextColor(139, 69, 19)
+doc.text("BALANCE:", summaryLabelX, yPosition, { align: "left" })
+
+doc.setTextColor(0, 0, 0)
+doc.text(balanceText, summaryRightX, yPosition, { align: "right" })
+
+yPosition += 12
 
   // ===== DISCLAIMER TEXT =====
   doc.setFontSize(7)
