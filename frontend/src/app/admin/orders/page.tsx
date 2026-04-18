@@ -8,7 +8,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X } from "lucide-react"
+import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X, AlertCircle } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +59,9 @@ interface Order {
     email: string
     phone: string
   }
+  completed_date?: string
+  released_date?: string
+  released_by?: number
 }
 
 interface Employee {
@@ -82,6 +85,9 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState<"pending" | "sales" | "partial" | "paid" | "completed" | "released">("pending")
   const [currentPage, setCurrentPage] = useState(1)
+  const [isReleasing, setIsReleasing] = useState<number | null>(null)
+  const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false)
+  const [releaseOrderId, setReleaseOrderId] = useState<number | null>(null)
   const itemsPerPage = 6
   
   // Modal states
@@ -90,9 +96,6 @@ export default function OrdersPage() {
   const [viewItemsModalOpen, setViewItemsModalOpen] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<SentQuotation | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false)
-  const [releaseOrderId, setReleaseOrderId] = useState<number | null>(null)
-  const [isReleasing, setIsReleasing] = useState<number | null>(null)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
@@ -464,6 +467,49 @@ export default function OrdersPage() {
     }
   }
 
+  const handleReleaseConfirm = (orderId: number) => {
+    setReleaseOrderId(orderId)
+    setReleaseConfirmOpen(true)
+  }
+
+  const handleReleaseOrder = async () => {
+    if (!releaseOrderId) return
+    
+    const token = localStorage.getItem("admin_token")
+    if (!token) return
+
+    try {
+      setIsReleasing(releaseOrderId)
+      
+      const response = await fetch(`${apiUrl}/admin/orders/${releaseOrderId}/release`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        // Update the local orders list with released date
+        setAllOrders(
+          allOrders.map(order =>
+            order.id === releaseOrderId
+              ? { ...order, released_date: new Date().toISOString(), order_status: 'released' }
+              : order
+          )
+        )
+        setReleaseConfirmOpen(false)
+      } else {
+        const data = await response.json()
+        setError(data.error || 'Failed to release order')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to release order')
+    } finally {
+      setIsReleasing(null)
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
@@ -505,7 +551,7 @@ export default function OrdersPage() {
         }))
     } else if (filterStatus === "paid") {
       filtered = allOrders
-        .filter(o => o.payment_status === "paid")
+        .filter(o => o.payment_status === "paid" && !o.released_date)
         .map(order => ({
           id: order.id,
           quotation_number: order.order_number,
@@ -519,11 +565,13 @@ export default function OrdersPage() {
           discount: order.discount,
           payment_method: order.payment_method,
           quotation: order.quotation,
-          isOrder: true
+          isOrder: true,
+          completed_date: order.completed_date,
+          released_date: order.released_date
         }))
     } else if (filterStatus === "completed") {
       filtered = allOrders
-        .filter(o => o.order_status === "completed" && o.payment_status === "paid")
+        .filter(o => o.order_status === "completed" && !o.released_date)
         .map(order => ({
           id: order.id,
           quotation_number: order.order_number,
@@ -537,11 +585,13 @@ export default function OrdersPage() {
           discount: order.discount,
           payment_method: order.payment_method,
           quotation: order.quotation,
-          isOrder: true
+          isOrder: true,
+          completed_date: order.completed_date,
+          released_date: order.released_date
         }))
     } else if (filterStatus === "released") {
       filtered = allOrders
-        .filter(o => o.order_status === "released")
+        .filter(o => !!o.released_date)
         .map(order => ({
           id: order.id,
           quotation_number: order.order_number,
@@ -555,7 +605,9 @@ export default function OrdersPage() {
           discount: order.discount,
           payment_method: order.payment_method,
           quotation: order.quotation,
-          isOrder: true
+          isOrder: true,
+          completed_date: order.completed_date,
+          released_date: order.released_date
         }))
     }
 
@@ -588,42 +640,6 @@ export default function OrdersPage() {
         return "bg-orange-100 text-orange-800"
       default:
         return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const handleReleaseConfirm = (orderId: number) => {
-    setReleaseOrderId(orderId)
-    setReleaseConfirmOpen(true)
-  }
-
-  const handleReleaseOrder = async () => {
-    if (!releaseOrderId) return
-    
-    const token = localStorage.getItem("admin_token")
-    if (!token) return
-
-    try {
-      setIsReleasing(releaseOrderId)
-      
-      const response = await fetch(`${apiUrl}/admin/orders/${releaseOrderId}/release`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      })
-
-      if (response.ok) {
-        setReleaseConfirmOpen(false)
-        fetchAllOrders(token)
-      } else {
-        const data = await response.json()
-        console.error("[v0] Release error:", data)
-      }
-    } catch (err) {
-      console.error("[v0] Error releasing order:", err)
-    } finally {
-      setIsReleasing(null)
     }
   }
 
@@ -719,39 +735,35 @@ export default function OrdersPage() {
               Fully Paid
             </button>
 
-            {/* Completed Button - Only for Cashier and Manager */}
-            {user && (user.user_type === 'cashier' || user.user_type === 'manager') && (
-              <button
-                onClick={() => {
-                  setFilterStatus("completed")
-                  setCurrentPage(1)
-                }}
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                  filterStatus === "completed"
-                    ? "bg-orange-500 text-white shadow-lg"
-                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                }`}
-              >
-                Completed
-              </button>
-            )}
+            {/* Completed Button */}
+            <button
+              onClick={() => {
+                setFilterStatus("completed")
+                setCurrentPage(1)
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                filterStatus === "completed"
+                  ? "bg-orange-500 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+              }`}
+            >
+              Completed
+            </button>
 
-            {/* Released Button - Only for Cashier and Manager */}
-            {user && (user.user_type === 'cashier' || user.user_type === 'manager') && (
-              <button
-                onClick={() => {
-                  setFilterStatus("released")
-                  setCurrentPage(1)
-                }}
-                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
-                  filterStatus === "released"
-                    ? "bg-emerald-600 text-white shadow-lg"
-                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
-                }`}
-              >
-                Released
-              </button>
-            )}
+            {/* Released Button */}
+            <button
+              onClick={() => {
+                setFilterStatus("released")
+                setCurrentPage(1)
+              }}
+              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                filterStatus === "released"
+                  ? "bg-purple-500 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+              }`}
+            >
+              Released
+            </button>
           </div>
 
           {isLoading ? (
@@ -873,15 +885,12 @@ export default function OrdersPage() {
                                 <span className="hidden sm:inline">Update</span>
                               </Button>
                             )}
-                            {/* Release Button - Only show for Cashier and Manager when payment is paid and order is completed */}
-                            {user && (user.user_type === 'cashier' || user.user_type === 'manager') && 
-                             item.payment_status === 'paid' && 
-                             item.order_status === 'completed' && (
+                            {item.order_status === "completed" && item.payment_status === "paid" && !item.released_date && (
                               <Button
                                 onClick={() => handleReleaseConfirm(item.id)}
                                 disabled={isReleasing === item.id}
-                                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white transition active:scale-95"
-                                title="Release Order to Customer"
+                                className="flex items-center justify-center gap-2 bg-purple-600 text-white hover:shadow-lg hover:bg-purple-700 transition active:scale-95"
+                                title="Release Order"
                               >
                                 {isReleasing === item.id ? (
                                   <>
@@ -894,6 +903,15 @@ export default function OrdersPage() {
                                     <span className="hidden sm:inline">Release</span>
                                   </>
                                 )}
+                              </Button>
+                            )}
+                            {item.released_date && (
+                              <Button
+                                disabled={true}
+                                className="flex items-center justify-center gap-2 bg-green-600 text-white opacity-60 cursor-not-allowed"
+                              >
+                                <CheckCircle size={18} />
+                                <span className="hidden sm:inline">Released</span>
                               </Button>
                             )}
                           </div>
@@ -1016,7 +1034,7 @@ export default function OrdersPage() {
             quotation={selectedQuotation}
           />
 
-          {/* Release Confirmation Dialog */}
+          {/* Release Confirmation Modal */}
           <AlertDialog open={releaseConfirmOpen} onOpenChange={setReleaseConfirmOpen}>
             <AlertDialogContent className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <AlertDialogHeader>
@@ -1024,7 +1042,7 @@ export default function OrdersPage() {
                   Release Order?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
-                  Are you sure you want to release order{' '}
+                  Are you sure you want to release this order{' '}
                   <span className="font-semibold text-neutral-900 dark:text-white">
                     #{releaseOrderId && allOrders.find(o => o.id === releaseOrderId)?.order_number}
                   </span>
@@ -1038,7 +1056,7 @@ export default function OrdersPage() {
                 <AlertDialogAction
                   onClick={() => handleReleaseOrder()}
                   disabled={isReleasing === releaseOrderId}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
                 >
                   {isReleasing === releaseOrderId ? (
                     <>
@@ -1057,3 +1075,4 @@ export default function OrdersPage() {
     </div>
   )
 }
+
