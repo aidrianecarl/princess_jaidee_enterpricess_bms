@@ -273,9 +273,35 @@ class OrderController extends Controller
                 $query->where('payment_status', $request->payment_status);
             }
 
-            $orders = $query->orderBy('created_at', 'desc')->get();
+            $orders = $query->orderBy('created_at', 'desc');
             
-            Log::info('[v0] Orders fetched successfully for admin:', ['count' => $orders->count()]);
+            // Handle limit parameter for dashboard
+            if ($request->has('limit')) {
+                $limit = $request->input('limit', 10);
+                Log::info('[v0] Applying limit to orders:', ['limit' => $limit]);
+                $orders = $orders->limit($limit);
+            }
+            
+            $orders = $orders->get();
+            
+            Log::info('[v0] Orders fetched successfully for admin:', [
+                'count' => $orders->count(),
+                'sample' => $orders->take(1)->map(function($order) {
+                    return [
+                        'id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'customer' => $order->customer ? [
+                            'id' => $order->customer->id,
+                            'name' => $order->customer->name,
+                            'bill_to_name' => $order->customer->bill_to_name
+                        ] : null,
+                        'branch' => $order->branch ? [
+                            'id' => $order->branch->id,
+                            'name' => $order->branch->name
+                        ] : null
+                    ];
+                })->toArray()
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -287,6 +313,7 @@ class OrderController extends Controller
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
             ]);
             return response()->json([
                 'success' => false,

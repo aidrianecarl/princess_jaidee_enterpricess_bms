@@ -719,7 +719,7 @@ export default function AdminJobOrdersPage() {
                                     ? 'opacity-50 cursor-not-allowed'
                                     : ''
                                 } bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 transition-all duration-200`}
-                                title={jobOrder.order?.payment_status !== 'paid' ? 'Payment must be marked as paid before releasing' : ''}
+                                title={jobOrder.order?.payment_status !== 'paid' ? `${jobOrder.customer?.bill_to_name || 'Customer'} is not yet fully paid. Order #${jobOrder.order?.order_number || 'N/A'} - Continue payment to release.` : ''}
                               >
                                 {isReleasing === jobOrder.id ? (
                                   <>

@@ -16,12 +16,19 @@ interface RecentOrder {
   quotation_number?: string
   customer?: {
     name: string
+    bill_to_name?: string
   }
   bill_to_name?: string
   total: number
   payment_status: string
   order_status: string
   created_at: string
+  branch?: {
+    id: number
+    name: string
+    location?: string
+  }
+  branch_id?: number
 }
 
 export function DashboardOverview() {
@@ -103,27 +110,54 @@ export function DashboardOverview() {
 
   const fetchRecentOrders = async () => {
     try {
+      console.log("[v0] === FETCHING RECENT ORDERS START ===")
       setOrdersLoading(true)
       const token = localStorage.getItem("admin_token")
       if (!token) return
 
-      const response = await fetch(`${apiUrl}/admin/orders?limit=10`, {
+      const url = `${apiUrl}/admin/orders?limit=10`
+      console.log("[v0] Fetching from URL:", url)
+      
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
 
+      console.log("[v0] Response status:", response.status, response.statusText)
+
       if (response.ok) {
         const data = await response.json()
+        console.log("[v0] Raw data:", data)
+        
         const orders = Array.isArray(data) ? data : data.data || []
+        console.log("[v0] Parsed orders count:", orders.length)
+        
         // Sort by created_at descending and limit to 10
         const sorted = orders
           .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 10)
+        
+        sorted.forEach((order: any, idx: number) => {
+          console.log(`[v0] Order #${idx}:`, {
+            order_number: order.order_number,
+            customer: order.customer,
+            bill_to_name: order.bill_to_name,
+            has_customer: !!order.customer,
+            branch_id: order.branch_id,
+            has_branch: !!order.branch,
+            branch_name: order.branch?.name
+          })
+        })
+        
+        console.log("[v0] Setting recent orders:", sorted)
         setRecentOrders(sorted)
+      } else {
+        console.error("[v0] Failed to fetch orders - HTTP:", response.status)
       }
     } catch (error) {
-      console.error("Failed to fetch recent orders:", error)
+      console.error("[v0] Error fetching recent orders:", error)
     } finally {
       setOrdersLoading(false)
+      console.log("[v0] === FETCHING RECENT ORDERS END ===")
     }
   }
 
@@ -244,7 +278,7 @@ export function DashboardOverview() {
                 <tr className="border-b border-neutral-200 dark:border-neutral-700">
                   <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-400">Order #</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-400">Customer</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-400">Amount</th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-400">Branch</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-400">Payment</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-400">Status</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-600 dark:text-neutral-400">Date</th>
@@ -261,8 +295,13 @@ export function DashboardOverview() {
                     }}
                   >
                     <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">{order.order_number}</td>
-                    <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{order.customer?.name || order.bill_to_name || 'N/A'}</td>
-                    <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">{formatCurrency(order.total || 0)}</td>
+                    <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">
+                      {order.customer?.name || order.customer?.bill_to_name || order.bill_to_name || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">
+                      {order.branch?.name || 'N/A'}
+                      {order.branch?.location && ` - ${order.branch.location}`}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(order.payment_status)}`}>
                         {order.payment_status?.charAt(0).toUpperCase() + order.payment_status?.slice(1)}
