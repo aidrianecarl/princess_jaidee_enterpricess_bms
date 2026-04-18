@@ -171,9 +171,21 @@ export default function AdminQuotationsPage() {
       setSendingId(quotationId)
       console.log("[v0] Request Order - Starting for quotation ID:", quotationId)
 
-      const token = localStorage.getItem("auth_token")
+      let token = localStorage.getItem("admin_token")
+      
+      // Fallback to auth_token if admin_token not found
       if (!token) {
-        throw new Error("No authentication token found")
+        token = localStorage.getItem("auth_token")
+      }
+      
+      console.log("[v0] Request Order - Token check:", {
+        hasToken: !!token,
+        tokenLength: token ? token.length : 0,
+        tokenPrefix: token ? token.substring(0, 20) : "NO TOKEN"
+      })
+      
+      if (!token) {
+        throw new Error("No authentication token found. Please log in again.")
       }
 
       const response = await fetch(`${apiUrl}/quotations/${quotationId}/send-production`, {

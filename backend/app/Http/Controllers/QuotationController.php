@@ -1238,32 +1238,17 @@ class QuotationController extends Controller
                     $sizeSpecifications = json_encode($sizeSpecifications);
                 }
                 
-                $tarpaulinSize = $item->tarpaulin_size;
-                if (is_array($tarpaulinSize)) {
-                    $tarpaulinSize = json_encode($tarpaulinSize);
-                }
-                
-                $customization = $item->customization;
-                if (is_array($customization)) {
-                    $customization = json_encode($customization);
-                }
-
                 \App\Models\OrderItem::create([
                     'order_id' => $order->id,
                     'service_id' => $item->service_id,
-                    'product_id' => $item->product_id,
-                    'name' => $item->name,
-                    'description' => $item->description,
+                    'quotation_items_id' => $item->id,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
-                    'design_cost' => $item->design_cost,
                     'line_total' => $item->line_total,
                     'design_file_url' => $item->design_file_url,
-                    'customization' => $customization,
                     'notes' => is_array($item->notes) ? json_encode($item->notes) : $item->notes,
                     'team_roster' => $teamRoster,
                     'size_specifications' => $sizeSpecifications,
-                    'tarpaulin_size' => $tarpaulinSize,
                     'status' => 'pending',
                 ]);
             }
@@ -1289,7 +1274,6 @@ class QuotationController extends Controller
                 'job_order_number' => $jobOrderNumber,
                 'order_id' => $order->id,
                 'customer_id' => $quotation->customer_id,
-                'branch_id' => $quotation->branch_id,
                 'assigned_to' => $request->assigned_to,
                 'status' => 'pending',
                 'start_date' => $request->start_date ? Carbon::parse($request->start_date) : Carbon::now(),
