@@ -72,8 +72,16 @@ export default function DashboardViewQuotationPage() {
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
   const [sublimationPrices, setSublimationPrices] = useState<Record<number, { setPrice: string; topPrice: string; bottomPrice: string }>>({})
+  const [user, setUser] = useState<any>(null)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
+
+  useEffect(() => {
+    const userData = localStorage.getItem("user")
+    if (userData) {
+      setUser(JSON.parse(userData))
+    }
+  }, [])
 
   useEffect(() => {
     fetchQuotation()
@@ -182,7 +190,7 @@ export default function DashboardViewQuotationPage() {
     if (!quotation) return
     try {
       setIsDownloading(true)
-      await generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)
+      await generateQuotationPDF(quotation)
     } catch (error) {
       toast({
         title: "Error",
@@ -256,7 +264,7 @@ export default function DashboardViewQuotationPage() {
 
   return (
     <>
-      <DashboardHeader />
+      <DashboardHeader user={user} />
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Toolbar */}
         <div className="sticky top-16 z-30 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg">
