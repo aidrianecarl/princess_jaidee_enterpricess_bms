@@ -298,27 +298,55 @@ export default function OrdersPage() {
 
   const fetchJobOrders = async (token: string) => {
     try {
-      const response = await fetch(`${apiUrl}/admin/job-orders`, {
+      console.log("[v0] === FETCHING JOB ORDERS START ===")
+      
+      const url = `${apiUrl}/admin/job-orders`
+      console.log("[v0] Fetching from URL:", url)
+      
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
       })
 
+      console.log("[v0] Job orders response status:", response.status, response.statusText)
+
       if (!response.ok) {
-        console.error('[v0] Failed to fetch job orders')
+        console.error('[v0] Failed to fetch job orders - HTTP:', response.status)
         return
       }
 
       const data = await response.json()
+      console.log("[v0] Raw job orders data:", data)
+      
       const orders = data.data || data || []
+      console.log("[v0] Parsed job orders count:", orders.length)
+      
+      orders.forEach((jobOrder: JobOrder, idx: number) => {
+        console.log(`[v0] Job Order #${idx}:`, {
+          id: jobOrder.id,
+          number: jobOrder.job_order_number,
+          status: jobOrder.status,
+          has_order: !!jobOrder.order,
+          order_id: jobOrder.order_id,
+          branch_id: jobOrder.order?.branch_id,
+          has_branch: !!jobOrder.order?.branch,
+          branch: jobOrder.order?.branch
+        })
+      })
+      
+      console.log("[v0] Setting state with", orders.length, "job orders")
       setJobOrders(orders)
       
       orders.forEach((jobOrder: JobOrder) => {
         fetchJobOrderItems(jobOrder.id, token)
       })
+      
+      console.log("[v0] === FETCHING JOB ORDERS END ===")
     } catch (err) {
       console.error('[v0] Error fetching job orders:', err)
+      console.error('[v0] Error stack:', err instanceof Error ? err.stack : "")
     }
   }
 
@@ -960,6 +988,23 @@ export default function OrdersPage() {
                                 })()}
                               </p>
                             </div>
+                            {jobOrder.order?.branch && (
+                              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800/50">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Building2 size={16} className="text-green-600 dark:text-green-400" />
+                                  <p className="text-xs text-green-600 dark:text-green-300 font-bold uppercase">Branch</p>
+                                </div>
+                                <p className="font-bold text-sm text-neutral-900 dark:text-white">
+                                  {jobOrder.order.branch.name}
+                                  {jobOrder.order.branch.location && ` - ${jobOrder.order.branch.location}`}
+                                </p>
+                              </div>
+                            )}
+                            {!jobOrder.order?.branch && (
+                              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
+                                <p className="text-xs text-gray-500 dark:text-gray-400">[v0] No branch - Check console</p>
+                              </div>
+                            )}
                           </div>
 
                           {jobOrder.notes && (
@@ -1158,25 +1203,6 @@ export default function OrdersPage() {
                               <p className="text-xs text-amber-600 dark:text-amber-300 font-bold uppercase">Remaining Balance</p>
                             </div>
                             <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.remaining_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                          </div>
-                        )}
-
-                        {item.isOrder && item.branch && (
-                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Building2 size={16} className="text-blue-600 dark:text-blue-400" />
-                              <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Branch</p>
-                            </div>
-                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{item.branch.name}</p>
-                            {item.branch.location && (
-                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">📍 {item.branch.location}</p>
-                            )}
-                          </div>
-                        )}
-
-                        {item.isOrder && !item.branch && item.remaining_balance !== undefined && (
-                          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">[v0] No branch data - Check console logs</p>
                           </div>
                         )}
                       </div>
