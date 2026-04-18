@@ -147,15 +147,10 @@ export default function OrdersPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true)
-        console.log('[v0] Starting data fetch for admin/orders page')
         await fetchEmployees(token)
-        console.log('[v0] Employees fetched')
         await fetchSentQuotations(token)
-        console.log('[v0] Sent quotations fetched')
         await fetchAllOrders(token)
-        console.log('[v0] All orders fetched')
         await fetchJobOrders(token)
-        console.log('[v0] Job orders fetched')
       } catch (err) {
         console.error("[v0] Error loading data:", err)
         setError(err instanceof Error ? err.message : "Failed to load data")
@@ -227,7 +222,6 @@ export default function OrdersPage() {
 
   const fetchJobOrders = async (token: string) => {
     try {
-      console.log('[v0] Fetching job orders from:', `${apiUrl}/admin/job-orders`)
       const response = await fetch(`${apiUrl}/admin/job-orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -235,16 +229,13 @@ export default function OrdersPage() {
         },
       })
 
-      console.log('[v0] Job orders response status:', response.status)
       if (!response.ok) {
-        console.error('[v0] Failed to fetch job orders, status:', response.status)
+        console.error('[v0] Failed to fetch job orders')
         return
       }
 
       const data = await response.json()
-      console.log('[v0] Raw job orders data:', data)
       const orders = data.data || data || []
-      console.log('[v0] Parsed job orders count:', orders.length)
       setJobOrders(orders)
       
       orders.forEach((jobOrder: JobOrder) => {
@@ -487,7 +478,7 @@ export default function OrdersPage() {
         }))
     } else if (filterStatus === "paid") {
       filtered = allOrders
-        .filter(o => o.payment_status === "paid")
+        .filter(o => o.payment_status === "paid" && !o.released_date)
         .map(order => ({
           id: order.id,
           quotation_number: order.order_number,
@@ -509,71 +500,6 @@ export default function OrdersPage() {
           completed_date: order.completed_date,
           released_date: order.released_date
         }))
-    } else if (filterStatus === "completed") {
-      console.log("[v0] Filtering for COMPLETED job orders")
-      console.log("[v0] Total job orders:", jobOrders.length)
-      filtered = jobOrders
-        .filter(jo => {
-          const isCompleted = jo.status?.toLowerCase() === "completed"
-          const notReleased = !jo.released_date
-          console.log(`[v0] Job Order ${jo.id}: status=${jo.status}, released_date=${jo.released_date}, isCompleted=${isCompleted}, notReleased=${notReleased}`)
-          return isCompleted && notReleased
-        })
-        .map(jobOrder => ({
-          id: jobOrder.id,
-          quotation_number: jobOrder.job_order_number,
-          total: 0,
-          customer: { 
-            name: jobOrder.customer?.bill_to_name || 'Unknown', 
-            email: jobOrder.customer?.bill_to_email || "", 
-            phone: jobOrder.customer?.bill_to_phone || "" 
-          },
-          created_at: jobOrder.completed_date,
-          payment_status: 'completed',
-          order_status: 'completed',
-          subtotal: 0,
-          discount: 0,
-          payment_method: 'N/A',
-          quotation: null,
-          isJobOrder: true,
-          released_date: jobOrder.released_date,
-          completed_date: jobOrder.completed_date,
-          job_order_number: jobOrder.job_order_number,
-          notes: jobOrder.notes
-        }))
-      console.log("[v0] Filtered completed job orders count:", filtered.length)
-    } else if (filterStatus === "released") {
-      console.log("[v0] Filtering for RELEASED job orders")
-      console.log("[v0] Total job orders:", jobOrders.length)
-      filtered = jobOrders
-        .filter(jo => {
-          const isReleased = !!jo.released_date
-          console.log(`[v0] Job Order ${jo.id}: released_date=${jo.released_date}, isReleased=${isReleased}`)
-          return isReleased
-        })
-        .map(jobOrder => ({
-          id: jobOrder.id,
-          quotation_number: jobOrder.job_order_number,
-          total: 0,
-          customer: { 
-            name: jobOrder.customer?.bill_to_name || 'Unknown', 
-            email: jobOrder.customer?.bill_to_email || "", 
-            phone: jobOrder.customer?.bill_to_phone || "" 
-          },
-          created_at: jobOrder.released_date,
-          payment_status: 'released',
-          order_status: 'released',
-          subtotal: 0,
-          discount: 0,
-          payment_method: 'N/A',
-          quotation: null,
-          isJobOrder: true,
-          released_date: jobOrder.released_date,
-          completed_date: jobOrder.completed_date,
-          job_order_number: jobOrder.job_order_number,
-          notes: jobOrder.notes
-        }))
-      console.log("[v0] Filtered released job orders count:", filtered.length)
     }
 
     if (searchQuery.trim()) {
@@ -584,16 +510,12 @@ export default function OrdersPage() {
       )
     }
 
-    console.log(`[v0] displayData for filter "${filterStatus}":`, filtered.length, "items")
     return filtered
-  }, [filterStatus, sentQuotations, allOrders, jobOrders, searchQuery])
+  }, [filterStatus, sentQuotations, allOrders, searchQuery])
 
   const paginatedData = useMemo(() => {
-    console.log("[v0] Calculating paginatedData - displayData length:", displayData.length, "currentPage:", currentPage, "itemsPerPage:", itemsPerPage)
     const startIdx = (currentPage - 1) * itemsPerPage
-    const paginated = displayData.slice(startIdx, startIdx + itemsPerPage)
-    console.log("[v0] Paginated result:", paginated.length, "items")
-    return paginated
+    return displayData.slice(startIdx, startIdx + itemsPerPage)
   }, [displayData, currentPage])
 
   const totalPages = Math.ceil(displayData.length / itemsPerPage)
@@ -822,7 +744,20 @@ export default function OrdersPage() {
               <p className="text-neutral-600 dark:text-neutral-400">Loading...</p>
             </div>
           ) : (filterStatus === "completed" || filterStatus === "released") ? (
-            displayData.length === 0 ? (
+            displayData.filter((item: any) => {
+              const searchLower = searchQuery.toLowerCase()
+              const numberMatch = item.quotation_number?.toLowerCase().includes(searchLower)
+              const customerMatch = item.customer?.name?.toLowerCase().includes(searchLower)
+              const customerEmailMatch = item.customer?.email?.toLowerCase().includes(searchLower)
+              const searchMatches = numberMatch || customerMatch || customerEmailMatch
+              
+              if (filterStatus === "completed") {
+                return searchMatches && item.payment_status === "paid" && !item.released_date
+              } else if (filterStatus === "released") {
+                return searchMatches && !!item.released_date
+              }
+              return false
+            }).length === 0 ? (
               <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                 <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
                 <p className="text-neutral-600 dark:text-neutral-300 font-medium">
@@ -831,7 +766,20 @@ export default function OrdersPage() {
               </Card>
             ) : (
               <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
-                {paginatedData.map((item: any, idx: number) => (
+                {displayData.filter((item: any) => {
+                  const searchLower = searchQuery.toLowerCase()
+                  const numberMatch = item.quotation_number?.toLowerCase().includes(searchLower)
+                  const customerMatch = item.customer?.name?.toLowerCase().includes(searchLower)
+                  const customerEmailMatch = item.customer?.email?.toLowerCase().includes(searchLower)
+                  const searchMatches = numberMatch || customerMatch || customerEmailMatch
+                  
+                  if (filterStatus === "completed") {
+                    return searchMatches && item.payment_status === "paid" && !item.released_date
+                  } else if (filterStatus === "released") {
+                    return searchMatches && !!item.released_date
+                  }
+                  return false
+                }).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item: any, idx: number) => (
                   <Card 
                     key={`${item.isOrder ? "order" : "quot"}-${item.id}`} 
                     className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.01] hover:-translate-y-1 animate-fade-in"
