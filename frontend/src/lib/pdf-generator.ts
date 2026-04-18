@@ -27,16 +27,10 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ===== HEADER SECTION =====
   // Load logos first
   const logoSize = 22
+  const logoStartY = 12
+  const companyInfoStartY = logoStartY + 8
 
-// Estimate header block height (4 lines)
-const headerLineHeight = 4
-const headerLines = 4
-const headerHeight = headerLineHeight * headerLines + 6 // spacing
-
-// Center logos vertically with header text block
-const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
-
-  // Left: Client Logo
+  // Left: Client Logo (aligned with company info)
   if (quotation.logo_url) {
     try {
       const logoFileName = quotation.logo_url.split('/').pop()
@@ -46,7 +40,7 @@ const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
       const logoBase64 = await imageUrlToBase64(clientLogoUrl)
       
       if (logoBase64) {
-        doc.addImage(logoBase64, "PNG", 15, logoY, logoSize, logoSize)
+        doc.addImage(logoBase64, "PNG", 15, companyInfoStartY, logoSize, logoSize)
         console.log("[v0] Client logo loaded successfully")
       }
     } catch (error) {
@@ -54,18 +48,18 @@ const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
     }
   }
 
-  // Right: Princess JD Logo
+  // Right: Princess JD Logo (aligned with company info)
   try {
     const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
     if (princessJDBase64) {
-      doc.addImage(princessJDBase64, "PNG", pageWidth - 15 - logoSize, logoY, logoSize, logoSize)
+      doc.addImage(princessJDBase64, "PNG", pageWidth - 15 - logoSize, companyInfoStartY, logoSize, logoSize)
       console.log("[v0] Princess JD logo loaded successfully")
     }
   } catch (error) {
     console.log("[v0] Error loading Princess JD logo:", error)
   }
 
-  yPosition += 28
+  yPosition = companyInfoStartY
 
   // Center: Company Info (Centered)
   doc.setFontSize(14)
@@ -118,7 +112,9 @@ const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
   doc.setFont(undefined, "bold")
   doc.text("Client Name:", leftColX, yPosition)
   doc.setFont(undefined, "normal")
-  doc.text(quotation.customer?.name || "N/A", leftColX + 25, yPosition)
+  const clientName = quotation.customer?.name || quotation.client_name || "N/A"
+  console.log("[v0] Client Name value:", clientName, "from:", quotation.customer?.name || quotation.client_name)
+  doc.text(clientName, leftColX + 25, yPosition)
   
   doc.setFont(undefined, "bold")
   doc.text("Date:", rightColX, yPosition)
@@ -141,7 +137,9 @@ const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
   doc.setFont(undefined, "bold")
   doc.text("Contact No. :", leftColX, yPosition)
   doc.setFont(undefined, "normal")
-  doc.text(quotation.customer?.contact_number || "N/A", leftColX + 25, yPosition)
+  const contactNumber = quotation.customer?.contact_number || quotation.customer?.phone || "N/A"
+  console.log("[v0] Contact Number value:", contactNumber, "from:", quotation.customer?.contact_number || quotation.customer?.phone)
+  doc.text(contactNumber, leftColX + 25, yPosition)
 
   yPosition += 10
 
@@ -154,12 +152,28 @@ const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
     const unitPrice = parseFloat(item.unit_price || 0)
     const totalPrice = quantity * unitPrice
 
+    // Main service row
+    const serviceName = item.service?.name || item.name || "Service"
     projectTableData.push([
-      item.service?.name || item.name || "Service",
+      serviceName,
       quantity.toString(),
       unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
       totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
     ])
+
+    // Add service details as sub-rows if available
+    if (item.service_details && Array.isArray(item.service_details)) {
+      item.service_details.forEach((detail: any) => {
+        const detailQty = detail.quantity || 0
+        const detailPrice = parseFloat(detail.price || 0)
+        projectTableData.push([
+          `${detailQty} ${detail.name || detail.description || "Detail"}`,
+          "",
+          detailPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+          (detailQty * detailPrice).toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        ])
+      })
+    }
   })
 
   // Add empty rows
@@ -284,12 +298,7 @@ const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
   doc.setFontSize(7)
   doc.setFont(undefined, "italic")
   doc.setTextColor(0, 0, 0)
-  doc.text(
-  "If you have any questions concerning this quotation, just contact and email us.",
-  pageWidth - 10,
-  yPosition,
-  { align: "right" }
-  )
+  doc.text("If you have any questions concerning this quotation, just contact and email us.", pageWidth / 2, yPosition, { align: "center" })
 
   yPosition += 10
 
