@@ -367,18 +367,23 @@ export function SetPaymentModal({
               className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
             >
               <option value="">-- Select Employee --</option>
-              {employees
-                .filter((emp) => {
-                  // Get main branch
-                  const mainBranch = branches.find(b => b.is_main_branch)
-                  // Only show employees from main branch
-                  return emp.branch_id === mainBranch?.id
+              {(() => {
+                console.log("[v0] SetPaymentModal - branches:", branches)
+                console.log("[v0] SetPaymentModal - employees:", employees)
+                const mainBranch = branches.find(b => b.is_main_branch)
+                console.log("[v0] SetPaymentModal - main branch found:", mainBranch)
+                const filteredEmployees = employees.filter((emp) => {
+                  const matches = emp.branch_id === mainBranch?.id
+                  console.log(`[v0] Employee ${emp.id} (${emp.first_name} ${emp.last_name}) - branch_id: ${emp.branch_id}, main_branch_id: ${mainBranch?.id}, matches: ${matches}`)
+                  return matches
                 })
-                .map((emp) => (
+                console.log("[v0] SetPaymentModal - filtered employees:", filteredEmployees)
+                return filteredEmployees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
                     {emp.first_name} {emp.last_name} ({emp.role})
                   </option>
-                ))}
+                ))
+              })()}
             </select>
             {selectedEmployeeId && (
               <p className="text-xs text-green-600 dark:text-green-400">

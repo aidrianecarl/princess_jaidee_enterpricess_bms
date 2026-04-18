@@ -282,7 +282,7 @@ class UserController extends Controller
             $users = User::where('user_type', 'employee')
                 ->where('status', 'active')
                 ->with('roles')
-                ->select('id', 'first_name', 'last_name', 'email', 'user_type')
+                ->select('id', 'first_name', 'last_name', 'email', 'user_type', 'branch_id')
                 ->get()
                 ->map(function ($user) {
                     return [
@@ -291,6 +291,7 @@ class UserController extends Controller
                         'last_name' => $user->last_name,
                         'email' => $user->email,
                         'user_type' => $user->user_type,
+                        'branch_id' => $user->branch_id,
                         'role' => $user->roles->first()?->name ?? 'employee'
                     ];
                 });

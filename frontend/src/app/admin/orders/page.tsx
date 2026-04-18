@@ -206,7 +206,11 @@ export default function OrdersPage() {
       if (!response.ok) throw new Error("Failed to fetch branches")
 
       const data = await response.json()
-      setBranches(data.data || data)
+      console.log("[v0] Branches data:", data)
+      const branchesData = data.data || data
+      console.log("[v0] Branches to set:", branchesData)
+      console.log("[v0] Main branch:", branchesData.find((b: any) => b.is_main_branch))
+      setBranches(branchesData)
     } catch (err) {
       console.error("[v0] Error fetching branches:", err)
     }
@@ -223,7 +227,11 @@ export default function OrdersPage() {
       if (!response.ok) throw new Error("Failed to fetch employees")
 
       const data = await response.json()
-      setEmployees(data.data || data)
+      console.log("[v0] Employees raw data:", data)
+      const employeesData = data.data || data
+      console.log("[v0] Employees to set:", employeesData)
+      console.log("[v0] Employee branch_ids:", employeesData.map((e: any) => ({ id: e.id, name: `${e.first_name} ${e.last_name}`, branch_id: e.branch_id })))
+      setEmployees(employeesData)
     } catch (err) {
       console.error("[v0] Error fetching employees:", err)
     }
