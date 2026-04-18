@@ -565,7 +565,7 @@ export default function OrdersPage() {
           </div>
 
           {/* Modern Filter Cards */}
-          <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+          <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
             {/* Pending Card */}
             <button
               onClick={() => {
@@ -708,7 +708,7 @@ export default function OrdersPage() {
                 setFilterStatus("released")
                 setCurrentPage(1)
               }}
-              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 col-span-2 sm:col-span-1 ${
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
                 filterStatus === "released"
                   ? "bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 text-white shadow-xl shadow-purple-500/30 ring-2 ring-purple-400/50"
                   : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-purple-500/10 border border-neutral-200 dark:border-neutral-700"
