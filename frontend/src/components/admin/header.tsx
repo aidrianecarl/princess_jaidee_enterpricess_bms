@@ -7,15 +7,30 @@ import Image from "next/image"
 import { useTheme } from "./theme-context"
 
 interface HeaderProps {
-  user: any
-  onMenuClick: () => void
+  user?: any
+  onMenuClick?: () => void
 }
 
-export function AdminHeader({ user, onMenuClick }: HeaderProps) {
+export function AdminHeader({ user: propUser, onMenuClick }: HeaderProps = {}) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [user, setUser] = useState<any>(propUser || null)
   const router = useRouter()
   const { theme, toggleTheme } = useTheme()
+
+  // Fetch user from localStorage if not provided as prop
+  useEffect(() => {
+    if (!propUser) {
+      const storedUser = localStorage.getItem("admin_user")
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser))
+        } catch (e) {
+          console.error("Failed to parse admin user")
+        }
+      }
+    }
+  }, [propUser])
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token")
@@ -33,13 +48,15 @@ export function AdminHeader({ user, onMenuClick }: HeaderProps) {
       <div className="flex items-center justify-between w-full gap-4">
         {/* Left - Menu Button + Logo */}
         <div className="flex items-center gap-2 md:gap-4 min-w-0">
-          <button
-            onClick={onMenuClick}
-            className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition lg:hidden text-neutral-600 dark:text-neutral-400 hover:text-red-600 flex-shrink-0"
-            aria-label="Toggle menu"
-          >
-            <Menu size={20} />
-          </button>
+          {onMenuClick && (
+            <button
+              onClick={onMenuClick}
+              className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition lg:hidden text-neutral-600 dark:text-neutral-400 hover:text-red-600 flex-shrink-0"
+              aria-label="Toggle menu"
+            >
+              <Menu size={20} />
+            </button>
+          )}
 
           {/* Logo - Desktop only */}
           <div className="hidden lg:flex items-center gap-2">
