@@ -49,6 +49,7 @@ interface Order {
   quotation_id: number
   customer_id: number
   created_by: number
+  branch_id?: number
   order_date: string
   subtotal: number
   discount: number
@@ -67,6 +68,11 @@ interface Order {
     phone?: string
   }
   quotation?: any
+  branch?: {
+    id: number
+    name: string
+    location?: string
+  }
   completed_date?: string
   released_date?: string
   released_by?: number
@@ -104,11 +110,21 @@ interface JobOrder {
     last_name: string
     email: string
   }
+  branch?: {
+    id: number
+    name: string
+    location?: string
+  }
   order?: {
     id: number
     order_status: string
     payment_status: string
     items?: any[]
+    branch?: {
+      id: number
+      name: string
+      location?: string
+    }
   }
 }
 
@@ -954,13 +970,16 @@ export default function OrdersPage() {
 
                       {/* Key Information Grid */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                        {item.isOrder && item.branch_id && (
+                        {item.isOrder && item.branch && (
                           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
                             <div className="flex items-center gap-2 mb-2">
                               <Building2 size={16} className="text-blue-600 dark:text-blue-400" />
-                              <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Branch ID</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Branch</p>
                             </div>
-                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{item.branch_id}</p>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{item.branch.name}</p>
+                            {item.branch.location && (
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">📍 {item.branch.location}</p>
+                            )}
                           </div>
                         )}
 

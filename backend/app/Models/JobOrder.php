@@ -13,6 +13,7 @@ class JobOrder extends Model
         'order_id',
         'customer_id',
         'assigned_to',
+        'branch_id',
         'start_date',
         'due_date',
         'completed_date',
@@ -54,4 +55,8 @@ class JobOrder extends Model
     {
         return $this->belongsTo(User::class, 'released_by');
     }
-}
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }

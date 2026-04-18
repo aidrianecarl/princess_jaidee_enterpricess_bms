@@ -16,7 +16,7 @@ class JobOrderController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = JobOrder::with(['assignedTo', 'customer', 'order.items']);
+            $query = JobOrder::with(['assignedTo', 'customer', 'order.items', 'order.branch', 'branch']);
 
             // Get current user
             $currentUser = auth()->user();
@@ -72,6 +72,8 @@ class JobOrderController extends Controller
                         'status' => $order->status,
                         'assigned_to' => $order->assigned_to,
                         'released_date' => $order->released_date,
+                        'branch_id' => $order->branch_id,
+                        'branch_name' => $order->branch ? $order->branch->name : ($order->order && $order->order->branch ? $order->order->branch->name : 'N/A'),
                         'assignedTo' => $order->assignedTo ? [
                             'id' => $order->assignedTo->id,
                             'first_name' => $order->assignedTo->first_name,
@@ -94,7 +96,7 @@ class JobOrderController extends Controller
     public function show($id)
     {
         try {
-            $jobOrder = JobOrder::with(['assignedTo', 'customer', 'order.items'])->find($id);
+            $jobOrder = JobOrder::with(['assignedTo', 'customer', 'order.items', 'order.branch', 'branch'])->find($id);
 
             if (!$jobOrder) {
                 return response()->json(['error' => 'Job Order not found'], 404);
@@ -130,12 +132,17 @@ class JobOrderController extends Controller
 
             $jobNumber = 'JO-' . date('Ymd') . '-' . str_pad(JobOrder::count() + 1, 5, '0', STR_PAD_LEFT);
 
+            // Get branch_id from the related order
+            $order = \App\Models\Order::find($request->order_id);
+            $branchId = $order ? $order->branch_id : null;
+
             $jobOrder = JobOrder::create([
                 'job_order_number' => $jobNumber,
                 'quotation_id' => $request->quotation_id ?? null,
                 'order_id' => $request->order_id,
                 'customer_id' => $request->customer_id,
                 'assigned_to' => $request->assigned_to,
+                'branch_id' => $branchId,
                 'start_date' => $request->start_date,
                 'due_date' => $request->due_date,
                 'status' => 'pending',
@@ -147,12 +154,13 @@ class JobOrderController extends Controller
                 'job_order_id' => $jobOrder->id,
                 'job_order_number' => $jobOrder->job_order_number,
                 'order_id' => $request->order_id,
+                'branch_id' => $branchId,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Job order created successfully',
-                'data' => $jobOrder->load(['assignedTo', 'customer', 'order'])
+                'data' => $jobOrder->load(['assignedTo', 'customer', 'order', 'branch'])
             ], 201);
         } catch (\Exception $e) {
             Log::error('Error creating job order', [
@@ -375,7 +383,7 @@ class JobOrderController extends Controller
     public function getOrderItems($id)
     {
         try {
-            $jobOrder = JobOrder::with(['order.items.service', 'customer'])->find($id);
+            $jobOrder = JobOrder::with(['order.items.service', 'customer', 'order.branch', 'branch'])->find($id);
 
             if (!$jobOrder) {
                 return response()->json(['error' => 'Job Order not found'], 404);
@@ -402,7 +410,7 @@ class JobOrderController extends Controller
         try {
             \Log::info('[v0] Release Job Order - START', ['job_order_id' => $id]);
             
-            $jobOrder = JobOrder::with(['order.items', 'assignedTo', 'customer'])->find($id);
+            $jobOrder = JobOrder::with(['order.items', 'order.branch', 'assignedTo', 'customer', 'branch'])->find($id);
 
             if (!$jobOrder) {
                 \Log::warning('[v0] Release Job Order - NOT FOUND', ['job_order_id' => $id]);
@@ -490,7 +498,7 @@ class JobOrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Job order released successfully',
-                'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo', 'releasedBy'])
+                'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo', 'releasedBy', 'branch', 'order.branch'])
             ], 200);
         } catch (\Exception $e) {
             \Log::error('[v0] Error releasing job order:', [

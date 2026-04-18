@@ -45,11 +45,21 @@ interface JobOrder {
     last_name: string
     email: string
   }
+  branch?: {
+    id: number
+    name: string
+    location?: string
+  }
   order?: {
     id: number
     order_status: string
     payment_status: string
     items?: any[]
+    branch?: {
+      id: number
+      name: string
+      location?: string
+    }
   }
 }
 
@@ -593,6 +603,24 @@ export default function AdminJobOrdersPage() {
                                 {jobOrder.customer?.bill_to_phone && (
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400">
                                     📞 {jobOrder.customer.bill_to_phone}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Branch Information */}
+                            <div className="mb-6 pb-6 border-b-2 border-neutral-200 dark:border-neutral-700">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-bold uppercase tracking-wider">Branch</p>
+                              </div>
+                              <div className="space-y-2 bg-neutral-50 dark:bg-neutral-700/30 rounded-lg p-3">
+                                <p className="text-sm md:text-base font-bold text-neutral-900 dark:text-white">
+                                  {jobOrder.branch?.name || (jobOrder.order?.branch?.name) || 'N/A'}
+                                </p>
+                                {(jobOrder.branch?.location || jobOrder.order?.branch?.location) && (
+                                  <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                    📍 {jobOrder.branch?.location || jobOrder.order?.branch?.location}
                                   </p>
                                 )}
                               </div>
