@@ -144,11 +144,13 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ===== PROJECT DETAILS TABLE =====
   const items = quotation.items || []
   const projectTableData: any[] = []
+  let calculatedSubtotal = 0
 
   items.forEach((item: any) => {
     const quantity = item.quantity || 0
     const unitPrice = parseFloat(item.unit_price || 0)
     const totalPrice = quantity * unitPrice
+    calculatedSubtotal += totalPrice
 
     // Main service row - show service name only (no price inline)
     const serviceName = item.service?.name || item.name || "Service"
@@ -230,8 +232,8 @@ export const generateQuotationPDF = async (quotation: any) => {
   projectTableData.push(["", "", "", "0"])
   projectTableData.push(["", "", "", "0"])
 
-  // Add subtotal row
-  const subtotal = parseFloat(quotation.subtotal || 0)
+  // Add subtotal row - use calculated subtotal from items
+  const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : calculatedSubtotal
   projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })])
 
   autoTable(doc, {
@@ -304,7 +306,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition = (doc as any).lastAutoTable.finalY + 8
 
   // ===== FINANCIAL SUMMARY (Right Aligned) =====
-  const total = parseFloat(quotation.total || 0)
+  const total = parseFloat(quotation.total || quotation.subtotal || 0)
   const downPayment = parseFloat(quotation.down_payment || 0)
   const balance = total - downPayment
 
@@ -317,7 +319,8 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setTextColor(139, 69, 19) // Burgundy text
   doc.text("TOTAL PROJECT COST:", summaryLabelX, yPosition, { align: "left" })
   doc.setTextColor(0, 0, 0)
-  doc.text(total.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+  const totalText = total > 0 ? total.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
+  doc.text(totalText, summaryRightX, yPosition, { align: "right" })
 
   yPosition += 6
 
@@ -330,7 +333,8 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.rect(summaryLabelX - 5, yPosition - 4, pageWidth - summaryLabelX + 3, 6, "F")
   
   doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
-  doc.text(downPayment.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+  const downPaymentText = downPayment > 0 ? downPayment.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
+  doc.text(downPaymentText, summaryRightX, yPosition, { align: "right" })
 
   yPosition += 6
 
@@ -339,7 +343,8 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setTextColor(139, 69, 19) // Burgundy text
   doc.text("BALANCE:", summaryLabelX, yPosition, { align: "left" })
   doc.setTextColor(0, 0, 0)
-  doc.text(balance.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+  const balanceText = balance > 0 ? balance.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
+  doc.text(balanceText, summaryRightX, yPosition, { align: "right" })
 
   yPosition += 12
 
