@@ -8,7 +8,7 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X, Calendar, CheckCircle2, Package } from "lucide-react"
+import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X, Calendar, CheckCircle2, Package, Building2, CreditCard, User, TrendingDown } from "lucide-react"
 import { OrderProgressBar } from "@/components/order/order-progress-bar"
 import {
   AlertDialog,
@@ -911,35 +911,126 @@ export default function OrdersPage() {
             </Card>
           ) : (
             <>
-              <div className="grid gap-4">
-                {paginatedData.map((item: any) => (
-                  <Card key={`${item.isOrder ? "order" : "quot"}-${item.id}`} className="overflow-hidden hover:shadow-lg transition-all bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                    <div className="p-4 md:p-6">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex-1">
-                          <h3 className="text-lg md:text-xl font-bold text-neutral-900 dark:text-white mb-2">
+              <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
+                {paginatedData.map((item: any, idx: number) => (
+                  <Card 
+                    key={`${item.isOrder ? "order" : "quot"}-${item.id}`} 
+                    className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.01] hover:-translate-y-1 animate-fade-in"
+                    style={{ animationDelay: `${idx * 50}ms` }}
+                  >
+                    <div className="p-6 sm:p-8">
+                      {/* Header */}
+                      <div className="flex items-start justify-between gap-4 mb-6 pb-6 border-b-2 border-neutral-200 dark:border-neutral-700">
+                        <div>
+                          <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
                             {item.quotation_number}
                           </h3>
-                          <span className={`${getStatusColor(item.payment_status)}`}>
+                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+                            {item.isOrder ? `Order ID: ${item.id}` : `Quotation ID: ${item.id}`}
+                          </p>
+                        </div>
+                        <div>
+                          <span className={`px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5 ${getStatusColor(item.payment_status)}`}>
                             {item.isOrder && item.payment_status 
-                              ? item.payment_status.charAt(0).toUpperCase() + item.payment_status.slice(1)
+                              ? (
+                                <>
+                                  {item.payment_status === 'paid' && <CheckCircle size={14} />}
+                                  {item.payment_status === 'partial' && <TrendingDown size={14} />}
+                                  {item.payment_status === 'pending' && <Clock size={14} />}
+                                  {item.payment_status.charAt(0).toUpperCase() + item.payment_status.slice(1)}
+                                </>
+                              )
                               : "Pending"}
                           </span>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-2">
-                            Customer: <span className="font-semibold text-neutral-900 dark:text-white">{item.customer?.name}</span>
-                          </p>
-                          <div className="flex flex-wrap gap-4 text-sm mt-2">
-                            <div className="flex items-center gap-1">
-                              <Clock size={16} className="text-neutral-400" />
-                              <span className="text-neutral-600 dark:text-neutral-400">{formatDate(item.created_at)}</span>
+                        </div>
+                      </div>
+
+                      {/* Customer Info */}
+                      <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-700">
+                        <p className="text-xs text-neutral-600 dark:text-neutral-400 font-bold uppercase tracking-wider mb-3">Customer</p>
+                        <p className="font-bold text-neutral-900 dark:text-white text-lg mb-2">{item.customer?.name || item.customer?.bill_to_name || 'Unknown'}</p>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{item.customer?.email || item.customer?.bill_to_email || '-'}</p>
+                      </div>
+
+                      {/* Key Information Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                        {item.isOrder && item.branch_id && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Building2 size={16} className="text-blue-600 dark:text-blue-400" />
+                              <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Branch ID</p>
                             </div>
-                            <div className="flex items-center gap-1">
-                              <DollarSign size={16} className="text-neutral-400" />
-                              <span className="font-semibold text-neutral-900 dark:text-white">{formatCurrency(item.total)}</span>
-                            </div>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{item.branch_id}</p>
                           </div>
+                        )}
+
+                        {item.isOrder && item.created_by && (
+                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <User size={16} className="text-purple-600 dark:text-purple-400" />
+                              <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase">Created By</p>
+                            </div>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm">#{item.created_by}</p>
+                          </div>
+                        )}
+
+                        {item.isOrder && item.order_date && (
+                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
+                              <p className="text-xs text-orange-600 dark:text-orange-300 font-bold uppercase">Order Date</p>
+                            </div>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{formatDate(item.order_date || item.created_at)}</p>
+                          </div>
+                        )}
+
+                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <DollarSign size={16} className="text-green-600 dark:text-green-400" />
+                            <p className="text-xs text-green-600 dark:text-green-300 font-bold uppercase">Subtotal</p>
+                          </div>
+                          <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                         </div>
 
+                        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <TrendingDown size={16} className="text-red-600 dark:text-red-400" />
+                            <p className="text-xs text-red-600 dark:text-red-300 font-bold uppercase">Discount</p>
+                          </div>
+                          <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.discount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        </div>
+
+                        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800/50">
+                          <div className="flex items-center gap-2 mb-2">
+                            <DollarSign size={16} className="text-indigo-600 dark:text-indigo-400" />
+                            <p className="text-xs text-indigo-600 dark:text-indigo-300 font-bold uppercase">Total</p>
+                          </div>
+                          <p className="font-bold text-neutral-900 dark:text-white text-lg">₱{Number.parseFloat(item.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        </div>
+
+                        {item.isOrder && item.payment_method && (
+                          <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-4 border border-pink-200 dark:border-pink-800/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CreditCard size={16} className="text-pink-600 dark:text-pink-400" />
+                              <p className="text-xs text-pink-600 dark:text-pink-300 font-bold uppercase">Payment Method</p>
+                            </div>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm capitalize">{item.payment_method || 'N/A'}</p>
+                          </div>
+                        )}
+
+                        {item.isOrder && item.remaining_balance !== undefined && (
+                          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <CreditCard size={16} className="text-amber-600 dark:text-amber-400" />
+                              <p className="text-xs text-amber-600 dark:text-amber-300 font-bold uppercase">Remaining Balance</p>
+                            </div>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.remaining_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-3 flex-wrap">
                         {!item.isOrder && (
                           <Button
                             onClick={() => {
@@ -949,10 +1040,10 @@ export default function OrdersPage() {
                                 setViewItemsModalOpen(true)
                               }
                             }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
                           >
-                            <Eye size={18} className="mr-2" />
-                            View Items
+                            <Eye size={18} />
+                            <span>View Items</span>
                           </Button>
                         )}
 
@@ -962,10 +1053,10 @@ export default function OrdersPage() {
                               setSelectedOrder(item)
                               setUpdatePaymentModalOpen(true)
                             }}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
                           >
-                            <Settings size={18} className="mr-2" />
-                            Update
+                            <Settings size={18} />
+                            <span>Update</span>
                           </Button>
                         )}
 
@@ -975,10 +1066,10 @@ export default function OrdersPage() {
                               setSelectedQuotation(item)
                               setPaymentModalOpen(true)
                             }}
-                            className="bg-green-600 hover:bg-green-700 text-white"
+                            className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
                           >
-                            <CheckCircle size={18} className="mr-2" />
-                            Create Order
+                            <CheckCircle size={18} />
+                            <span>Create Order</span>
                           </Button>
                         )}
                       </div>
