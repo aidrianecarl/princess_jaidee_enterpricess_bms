@@ -26,7 +26,8 @@ interface SetPaymentModalProps {
       phone: string
     }
   } | null
-  employees: Array<{ id: number; first_name: string; last_name: string; email: string; role?: string; user_type?: string }>
+  employees: Array<{ id: number; first_name: string; last_name: string; email: string; role?: string; user_type?: string; branch_id?: number }>
+  branches?: Array<{ id: number; name: string; is_main_branch: boolean }>
   onConfirm: (paymentType: "downpayment" | "fullpayment", employeeId: number, formData: any) => Promise<void>
   isSaving?: boolean
 }
@@ -36,6 +37,7 @@ export function SetPaymentModal({
   onOpenChange,
   quotation,
   employees,
+  branches = [],
   onConfirm,
   isSaving = false,
 }: SetPaymentModalProps) {
@@ -366,7 +368,12 @@ export function SetPaymentModal({
             >
               <option value="">-- Select Employee --</option>
               {employees
-                .filter((emp) => emp.role && emp.role !== "admin" && emp.role !== "manager")
+                .filter((emp) => {
+                  // Get main branch
+                  const mainBranch = branches.find(b => b.is_main_branch)
+                  // Only show employees from main branch
+                  return emp.branch_id === mainBranch?.id
+                })
                 .map((emp) => (
                   <option key={emp.id} value={emp.id}>
                     {emp.first_name} {emp.last_name} ({emp.role})

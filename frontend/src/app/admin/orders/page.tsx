@@ -90,6 +90,15 @@ interface Employee {
   last_name: string
   email: string
   user_type: string
+  branch_id?: number
+  role?: string
+}
+
+interface Branch {
+  id: number
+  name: string
+  is_main_branch: boolean
+  location?: string
 }
 
 interface JobOrder {
@@ -142,6 +151,7 @@ export default function OrdersPage() {
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
   const [jobOrdersStats, setJobOrdersStats] = useState<{[key: number]: {completed: number; total: number}}>({})
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [branches, setBranches] = useState<Branch[]>([])
   const [savingId, setSavingId] = useState<number | null>(null)
   const [selectedQuotation, setSelectedQuotation] = useState<SentQuotation | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -169,6 +179,7 @@ export default function OrdersPage() {
     const fetchData = async () => {
       try {
         setIsLoading(true)
+        await fetchBranches(token)
         await fetchEmployees(token)
         await fetchSentQuotations(token)
         await fetchAllOrders(token)
@@ -183,6 +194,23 @@ export default function OrdersPage() {
 
     fetchData()
   }, [router])
+
+  const fetchBranches = async (token: string) => {
+    try {
+      const response = await fetch(`${apiUrl}/admin/branches`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) throw new Error("Failed to fetch branches")
+
+      const data = await response.json()
+      setBranches(data.data || data)
+    } catch (err) {
+      console.error("[v0] Error fetching branches:", err)
+    }
+  }
 
   const fetchEmployees = async (token: string) => {
     try {
@@ -1323,6 +1351,7 @@ export default function OrdersPage() {
             onOpenChange={setPaymentModalOpen}
             quotation={selectedQuotation}
             employees={employees}
+            branches={branches}
             onConfirm={handleSaveOrder}
             isSaving={savingId !== null}
           />
