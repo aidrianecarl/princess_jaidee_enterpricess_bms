@@ -58,10 +58,15 @@ interface Order {
   payment_method: string
   remaining_balance: number
   customer?: {
-    name: string
-    email: string
-    phone: string
+    id?: number
+    bill_to_name?: string
+    bill_to_email?: string
+    bill_to_phone?: string
+    name?: string // fallback
+    email?: string
+    phone?: string
   }
+  quotation?: any
   completed_date?: string
   released_date?: string
   released_by?: number
@@ -457,7 +462,11 @@ export default function OrdersPage() {
           quotation_number: order.order_number,
           total: order.total,
           remaining_balance: order.remaining_balance,
-          customer: { name: order.customer?.name || `Customer ${order.customer_id}`, email: "", phone: "" },
+          customer: { 
+            name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
+            email: order.customer?.bill_to_email || order.customer?.email || "", 
+            phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
+          },
           created_at: order.order_date,
           payment_status: order.payment_status,
           order_status: order.order_status,
@@ -475,7 +484,11 @@ export default function OrdersPage() {
           quotation_number: order.order_number,
           total: order.total,
           remaining_balance: order.remaining_balance,
-          customer: { name: order.customer?.name || `Customer ${order.customer_id}`, email: "", phone: "" },
+          customer: { 
+            name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
+            email: order.customer?.bill_to_email || order.customer?.email || "", 
+            phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
+          },
           created_at: order.order_date,
           payment_status: order.payment_status,
           order_status: order.order_status,
@@ -551,76 +564,176 @@ export default function OrdersPage() {
             )}
           </div>
 
-          {/* Filter Buttons */}
-          <div className="mb-6 flex flex-wrap gap-2">
+          {/* Modern Filter Cards */}
+          <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
+            {/* Pending Card */}
             <button
               onClick={() => {
                 setFilterStatus("pending")
                 setCurrentPage(1)
               }}
-              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
                 filterStatus === "pending"
-                  ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg"
-                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                  ? "bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 text-white shadow-xl shadow-orange-500/30 ring-2 ring-orange-400/50"
+                  : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-orange-500/10 border border-neutral-200 dark:border-neutral-700"
               }`}
             >
-              Pending
+              <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "pending" ? "opacity-100" : ""}`} />
+              <div className="relative flex flex-col items-center gap-2">
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
+                  filterStatus === "pending" 
+                    ? "bg-white/20 shadow-inner" 
+                    : "bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50"
+                }`}>
+                  <Clock className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
+                    filterStatus === "pending" ? "text-white" : "text-orange-600 dark:text-orange-400"
+                  }`} />
+                </div>
+                <span className="font-bold text-sm md:text-base">Pending</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
+                  filterStatus === "pending" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
+                }`}>
+                  {sentQuotations.length}
+                </span>
+              </div>
             </button>
 
+            {/* Partial Payment Card */}
             <button
               onClick={() => {
                 setFilterStatus("partial")
                 setCurrentPage(1)
               }}
-              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
                 filterStatus === "partial"
-                  ? "bg-blue-500 text-white shadow-lg"
-                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                  ? "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30 ring-2 ring-blue-400/50"
+                  : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-blue-500/10 border border-neutral-200 dark:border-neutral-700"
               }`}
             >
-              Partial Payment
+              <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "partial" ? "opacity-100" : ""}`} />
+              <div className="relative flex flex-col items-center gap-2">
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
+                  filterStatus === "partial" 
+                    ? "bg-white/20 shadow-inner" 
+                    : "bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50"
+                }`}>
+                  <DollarSign className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
+                    filterStatus === "partial" ? "text-white" : "text-blue-600 dark:text-blue-400"
+                  }`} />
+                </div>
+                <span className="font-bold text-sm md:text-base text-center">Partial</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
+                  filterStatus === "partial" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                }`}>
+                  {allOrders.filter(o => o.payment_status === "partial").length}
+                </span>
+              </div>
             </button>
 
+            {/* Fully Paid Card */}
             <button
               onClick={() => {
                 setFilterStatus("paid")
                 setCurrentPage(1)
               }}
-              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
                 filterStatus === "paid"
-                  ? "bg-green-500 text-white shadow-lg"
-                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                  ? "bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 text-white shadow-xl shadow-green-500/30 ring-2 ring-green-400/50"
+                  : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-green-500/10 border border-neutral-200 dark:border-neutral-700"
               }`}
             >
-              Fully Paid
+              <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "paid" ? "opacity-100" : ""}`} />
+              <div className="relative flex flex-col items-center gap-2">
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
+                  filterStatus === "paid" 
+                    ? "bg-white/20 shadow-inner" 
+                    : "bg-green-100 dark:bg-green-900/30 group-hover:bg-green-200 dark:group-hover:bg-green-900/50"
+                }`}>
+                  <CheckCircle className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
+                    filterStatus === "paid" ? "text-white" : "text-green-600 dark:text-green-400"
+                  }`} />
+                </div>
+                <span className="font-bold text-sm md:text-base text-center">Fully Paid</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
+                  filterStatus === "paid" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
+                }`}>
+                  {allOrders.filter(o => o.payment_status === "paid" && !o.released_date).length}
+                </span>
+              </div>
             </button>
 
+            {/* Completed Card */}
             <button
               onClick={() => {
                 setFilterStatus("completed")
                 setCurrentPage(1)
               }}
-              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
                 filterStatus === "completed"
-                  ? "bg-orange-500 text-white shadow-lg"
-                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                  ? "bg-gradient-to-br from-amber-500 via-orange-500 to-orange-600 text-white shadow-xl shadow-orange-500/30 ring-2 ring-amber-400/50"
+                  : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-amber-500/10 border border-neutral-200 dark:border-neutral-700"
               }`}
             >
-              Completed
+              <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "completed" ? "opacity-100" : ""}`} />
+              <div className="relative flex flex-col items-center gap-2">
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
+                  filterStatus === "completed" 
+                    ? "bg-white/20 shadow-inner" 
+                    : "bg-amber-100 dark:bg-amber-900/30 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50"
+                }`}>
+                  <Package className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
+                    filterStatus === "completed" ? "text-white" : "text-amber-600 dark:text-amber-400"
+                  }`} />
+                </div>
+                <span className="font-bold text-sm md:text-base">Completed</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
+                  filterStatus === "completed" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
+                }`}>
+                  {jobOrders.filter(jo => jo.status?.toLowerCase() === "completed" && !jo.released_date).length}
+                </span>
+              </div>
             </button>
 
+            {/* Released Card */}
             <button
               onClick={() => {
                 setFilterStatus("released")
                 setCurrentPage(1)
               }}
-              className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all ${
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 col-span-2 sm:col-span-1 ${
                 filterStatus === "released"
-                  ? "bg-purple-500 text-white shadow-lg"
-                  : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                  ? "bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 text-white shadow-xl shadow-purple-500/30 ring-2 ring-purple-400/50"
+                  : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-purple-500/10 border border-neutral-200 dark:border-neutral-700"
               }`}
             >
-              Released
+              <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "released" ? "opacity-100" : ""}`} />
+              <div className="relative flex flex-col items-center gap-2">
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
+                  filterStatus === "released" 
+                    ? "bg-white/20 shadow-inner" 
+                    : "bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50"
+                }`}>
+                  <CheckCircle2 className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
+                    filterStatus === "released" ? "text-white" : "text-purple-600 dark:text-purple-400"
+                  }`} />
+                </div>
+                <span className="font-bold text-sm md:text-base">Released</span>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
+                  filterStatus === "released" 
+                    ? "bg-white/20 text-white" 
+                    : "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                }`}>
+                  {jobOrders.filter(jo => !!jo.released_date).length}
+                </span>
+              </div>
             </button>
           </div>
 
