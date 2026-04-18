@@ -25,30 +25,13 @@ export const generateQuotationPDF = async (quotation: any) => {
   let yPosition = 12
 
   // ===== HEADER SECTION =====
-  // Left: Company Info
-  doc.setFontSize(14)
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(0, 0, 0)
-  doc.text("PRINCESS JAIDEE ENTERPRISES", 15, yPosition)
-
-  yPosition += 6
-  doc.setFontSize(8)
-  doc.setFont(undefined, "normal")
-  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", 15, yPosition)
-
-  yPosition += 4
-  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", 15, yPosition)
-
-  yPosition += 4
-  doc.text("Email: piesorsogonsportswear@gmail.com", 15, yPosition)
-
-  // Right: Client Logo
+  // Load logos first
   const logoSize = 22
-  const logoY = yPosition - 14
-  
+  const logoY = yPosition
+
+  // Left: Client Logo
   if (quotation.logo_url) {
     try {
-      // Extract filename from logo_url
       const logoFileName = quotation.logo_url.split('/').pop()
       const clientLogoUrl = `https://api.princessjaideeenterprises.com/api/storage/app/public/quotations/logos/${logoFileName}`
       
@@ -56,17 +39,45 @@ export const generateQuotationPDF = async (quotation: any) => {
       const logoBase64 = await imageUrlToBase64(clientLogoUrl)
       
       if (logoBase64) {
-        doc.addImage(logoBase64, "PNG", pageWidth - 15 - logoSize, logoY, logoSize, logoSize)
+        doc.addImage(logoBase64, "PNG", 15, logoY, logoSize, logoSize)
         console.log("[v0] Client logo loaded successfully")
-      } else {
-        console.log("[v0] Failed to convert logo to base64")
       }
     } catch (error) {
       console.log("[v0] Error loading client logo:", error)
     }
   }
 
-  yPosition += 12
+  // Right: Princess JD Logo
+  try {
+    const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
+    if (princessJDBase64) {
+      doc.addImage(princessJDBase64, "PNG", pageWidth - 15 - logoSize, logoY, logoSize, logoSize)
+      console.log("[v0] Princess JD logo loaded successfully")
+    }
+  } catch (error) {
+    console.log("[v0] Error loading Princess JD logo:", error)
+  }
+
+  yPosition += 28
+
+  // Center: Company Info (Centered)
+  doc.setFontSize(14)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(0, 0, 0)
+  doc.text("PRINCESS JAIDEE ENTERPRISES", pageWidth / 2, yPosition, { align: "center" })
+
+  yPosition += 6
+  doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", pageWidth / 2, yPosition, { align: "center" })
+
+  yPosition += 4
+  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", pageWidth / 2, yPosition, { align: "center" })
+
+  yPosition += 4
+  doc.text("Email: piesorsogonsportswear@gmail.com", pageWidth / 2, yPosition, { align: "center" })
+
+  yPosition += 8
 
   // Horizontal line separator
   doc.setDrawColor(0, 0, 0)
@@ -92,8 +103,12 @@ export const generateQuotationPDF = async (quotation: any) => {
   const rightColX = 130
 
   doc.text("Team Name:", leftColX, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.business_name || "N/A", leftColX + 25, yPosition)
+
   yPosition += 5
 
+  doc.setFont(undefined, "bold")
   doc.text("Client Name:", leftColX, yPosition)
   doc.setFont(undefined, "normal")
   doc.text(quotation.customer?.name || "N/A", leftColX + 25, yPosition)
@@ -118,6 +133,8 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition += 5
   doc.setFont(undefined, "bold")
   doc.text("Contact No. :", leftColX, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.customer?.contact_number || "N/A", leftColX + 25, yPosition)
 
   yPosition += 10
 
@@ -167,11 +184,12 @@ export const generateQuotationPDF = async (quotation: any) => {
       cellPadding: 2,
     },
     columnStyles: {
-      0: { halign: "left", cellWidth: 70 },
-      1: { halign: "center", cellWidth: 18 },
-      2: { halign: "center", cellWidth: 30 },
-      3: { halign: "right", cellWidth: 28 },
+      0: { halign: "left" },
+      1: { halign: "center" },
+      2: { halign: "center" },
+      3: { halign: "right" },
     },
+    tableWidth: "100%",
     margin: { left: 10, right: 10 },
   })
 
@@ -206,26 +224,30 @@ export const generateQuotationPDF = async (quotation: any) => {
       cellPadding: 2,
     },
     columnStyles: {
-      0: { halign: "left", cellWidth: 130 },
-      1: { halign: "right", cellWidth: 28 },
+      0: { halign: "left" },
+      1: { halign: "right" },
     },
+    tableWidth: "100%",
     margin: { left: 10, right: 10 },
   })
 
   yPosition = (doc as any).lastAutoTable.finalY + 8
 
-  // ===== FINANCIAL SUMMARY =====
+  // ===== FINANCIAL SUMMARY (Right Aligned) =====
   const total = parseFloat(quotation.total || 0)
   const downPayment = parseFloat(quotation.down_payment || 0)
   const balance = total - downPayment
+
+  const summaryRightX = pageWidth - 10
+  const summaryLabelX = pageWidth - 80
 
   // TOTAL PROJECT COST
   doc.setFontSize(10)
   doc.setFont(undefined, "bold")
   doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.text("TOTAL PROJECT COST:", pageWidth / 2, yPosition, { align: "right" })
+  doc.text("TOTAL PROJECT COST:", summaryLabelX, yPosition, { align: "left" })
   doc.setTextColor(0, 0, 0)
-  doc.text(total.toLocaleString("en-PH", { minimumFractionDigits: 0 }), pageWidth - 10, yPosition, { align: "right" })
+  doc.text(total.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
 
   yPosition += 6
 
@@ -235,19 +257,19 @@ export const generateQuotationPDF = async (quotation: any) => {
   
   // Yellow background for entire down payment row
   doc.setFillColor(255, 255, 0) // Yellow
-  doc.rect(pageWidth / 2 - 5, yPosition - 4, pageWidth / 2 + 3, 6, "F")
+  doc.rect(summaryLabelX - 5, yPosition - 4, pageWidth - summaryLabelX + 3, 6, "F")
   
-  doc.text("DOWN PAYMENT:", pageWidth / 2, yPosition, { align: "right" })
-  doc.text(downPayment.toLocaleString("en-PH", { minimumFractionDigits: 0 }), pageWidth - 10, yPosition, { align: "right" })
+  doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
+  doc.text(downPayment.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
 
   yPosition += 6
 
   // BALANCE
   doc.setFont(undefined, "bold")
   doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.text("BALANCE:", pageWidth / 2, yPosition, { align: "right" })
+  doc.text("BALANCE:", summaryLabelX, yPosition, { align: "left" })
   doc.setTextColor(0, 0, 0)
-  doc.text(balance.toLocaleString("en-PH", { minimumFractionDigits: 0 }), pageWidth - 10, yPosition, { align: "right" })
+  doc.text(balance.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
 
   yPosition += 12
 
@@ -260,22 +282,39 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition += 10
 
   // ===== SIGNATURE SECTION =====
+  const signatureX = pageWidth / 2 + 50
+  const signatureWidth = 40
+  const signatureHeight = 20
+
+  // Load and place signature image
+  try {
+    const signatureBase64 = await imageUrlToBase64("/jhonie_signature.png")
+    if (signatureBase64) {
+      doc.addImage(signatureBase64, "PNG", signatureX - signatureWidth / 2, yPosition, signatureWidth, signatureHeight)
+      console.log("[v0] Signature image loaded successfully")
+    }
+  } catch (error) {
+    console.log("[v0] Error loading signature image:", error)
+  }
+
+  yPosition += signatureHeight + 3
+
   // Signature line
   doc.setLineWidth(0.5)
-  doc.line(pageWidth / 2 + 30, yPosition, pageWidth - 15, yPosition)
+  doc.line(signatureX - signatureWidth / 2 - 5, yPosition, signatureX + signatureWidth / 2 + 5, yPosition)
 
-  yPosition += 8
+  yPosition += 6
 
   // Signature name and title
   doc.setFontSize(9)
   doc.setFont(undefined, "bold")
   doc.setTextColor(0, 0, 0)
-  doc.text("JHONIE DETERA", pageWidth / 2 + 50, yPosition, { align: "center" })
+  doc.text("JHONIE DETERA", signatureX, yPosition, { align: "center" })
 
   yPosition += 5
   doc.setFont(undefined, "normal")
   doc.setFontSize(8)
-  doc.text("Owner", pageWidth / 2 + 50, yPosition, { align: "center" })
+  doc.text("Owner", signatureX, yPosition, { align: "center" })
 
   yPosition += 12
 
