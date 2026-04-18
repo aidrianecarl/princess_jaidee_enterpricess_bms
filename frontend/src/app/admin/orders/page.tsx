@@ -428,28 +428,59 @@ export default function OrdersPage() {
   }
 
   const handleSaveOrder = async (paymentMethod: string, paymentStatus: string, remainingBalance: number) => {
-    if (!selectedQuotation) return
+    if (!selectedQuotation) {
+      console.log("[v0] handleSaveOrder - No selectedQuotation")
+      return
+    }
+
+    console.log("[v0] handleSaveOrder - Starting order creation", {
+      quotationId: selectedQuotation.id,
+      quotationNumber: selectedQuotation.quotation_number,
+      paymentMethod,
+      paymentStatus,
+      remainingBalance
+    })
 
     try {
       setSavingId(selectedQuotation.id)
       const token = localStorage.getItem("admin_token")
 
-      const response = await fetch(`${apiUrl}/admin/quotations/${selectedQuotation.id}/convert-to-order`, {
+      const requestUrl = `${apiUrl}/admin/quotations/${selectedQuotation.id}/convert-to-order`
+      console.log("[v0] handleSaveOrder - Request URL:", requestUrl)
+
+      const requestBody = {
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        remaining_balance: remainingBalance,
+      }
+      console.log("[v0] handleSaveOrder - Request body:", requestBody)
+
+      const response = await fetch(requestUrl, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          payment_method: paymentMethod,
-          payment_status: paymentStatus,
-          remaining_balance: remainingBalance,
-        }),
+        body: JSON.stringify(requestBody),
       })
+
+      console.log("[v0] handleSaveOrder - Response status:", response.status, response.statusText)
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.message || "Failed to create order")
+        console.error("[v0] handleSaveOrder - Error response:", errorData)
+        throw new Error(errorData.message || errorData.error || "Failed to create order")
+      }
+
+      const successData = await response.json()
+      console.log("[v0] handleSaveOrder - Success response:", successData)
+
+      // Refresh the data after successful conversion
+      const refreshToken = localStorage.getItem("admin_token")
+      if (refreshToken) {
+        await fetchSentQuotations(refreshToken)
+        await fetchAllOrders(refreshToken)
+        await fetchJobOrders(refreshToken)
       }
 
       setSentQuotations(sentQuotations.filter(q => q.id !== selectedQuotation.id))
@@ -458,6 +489,7 @@ export default function OrdersPage() {
       setError("")
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to create order"
+      console.error("[v0] handleSaveOrder - Error:", errorMsg)
       setError(errorMsg)
     } finally {
       setSavingId(null)

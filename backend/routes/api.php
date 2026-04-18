@@ -85,6 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/quotations/{id}', [QuotationController::class, 'adminShow']);
     Route::put('/admin/quotations/{id}/status', [QuotationController::class, 'updateStatus']);
     Route::post('/admin/quotations/{id}/pricing', [QuotationController::class, 'updatePricing']);
+    Route::post('/admin/quotations/{id}/convert-to-order', [QuotationController::class, 'convertToOrder']);
     Route::put('/admin/quotations/{id}/reject', [QuotationController::class, 'rejectQuotation']);
     Route::delete('/admin/quotations/{id}', [QuotationController::class, 'destroy']);
 

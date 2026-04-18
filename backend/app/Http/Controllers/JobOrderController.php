@@ -22,16 +22,18 @@ class JobOrderController extends Controller
             $currentUser = auth()->user();
             $userType = $currentUser?->user_type;
             $userId = $currentUser?->id;
+            $userBranchId = $currentUser?->branch_id;
 
             Log::info('[v0] JobOrderController index - User access', [
                 'user_id' => $userId,
                 'user_type' => $userType,
+                'branch_id' => $userBranchId,
             ]);
 
-            // Filter by assigned employee - only employees see their assigned jobs
-            if ($userType === 'employee' && $userId) {
-                Log::info('[v0] Filtering job orders by assigned employee', ['user_id' => $userId]);
-                $query->where('assigned_to', $userId);
+            // Filter by branch for employees - only show job orders from their branch
+            if ($userType === 'employee' && $userBranchId) {
+                Log::info('[v0] Filtering job orders by employee branch', ['branch_id' => $userBranchId]);
+                $query->where('branch_id', $userBranchId);
             }
             // Admins see all job orders
 

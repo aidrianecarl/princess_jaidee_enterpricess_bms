@@ -1161,6 +1161,117 @@ class QuotationController extends Controller
         }
     }
 
+    // Convert quotation to order
+    public function convertToOrder(Request $request, $id)
+    {
+        try {
+            Log::info('[v0] Converting quotation to order', [
+                'quotation_id' => $id,
+                'request_data' => $request->all()
+            ]);
+
+            $quotation = Quotation::with(['customer', 'items.service', 'branch'])->find($id);
+
+            if (!$quotation) {
+                Log::error('[v0] Quotation not found for conversion', ['quotation_id' => $id]);
+                return response()->json(['error' => 'Quotation not found'], 404);
+            }
+
+            // Check if quotation is already ordered
+            if ($quotation->status === 'ordered') {
+                Log::warning('[v0] Quotation already converted to order', ['quotation_id' => $id]);
+                return response()->json(['error' => 'Quotation has already been converted to an order'], 400);
+            }
+
+            // Generate order number
+            $today = Carbon::today()->format('Ymd');
+            $lastOrder = \App\Models\Order::whereDate('created_at', Carbon::today())
+                ->orderBy('id', 'desc')
+                ->first();
+            
+            if ($lastOrder) {
+                preg_match('/ORD-\d+-(\d+)$/', $lastOrder->order_number, $matches);
+                $sequenceNumber = isset($matches[1]) ? intval($matches[1]) + 1 : 1;
+            } else {
+                $sequenceNumber = 1;
+            }
+            
+            $orderNumber = 'ORD-' . $today . '-' . str_pad($sequenceNumber, 5, '0', STR_PAD_LEFT);
+
+            Log::info('[v0] Creating order with number', ['order_number' => $orderNumber]);
+
+            // Create the order
+            $order = \App\Models\Order::create([
+                'order_number' => $orderNumber,
+                'quotation_id' => $quotation->id,
+                'customer_id' => $quotation->customer_id,
+                'created_by' => auth()->id(),
+                'branch_id' => $quotation->branch_id,
+                'order_date' => Carbon::now(),
+                'subtotal' => $quotation->subtotal,
+                'discount' => $quotation->discount,
+                'total' => $quotation->total,
+                'payment_status' => $request->payment_status ?? 'partial',
+                'order_status' => 'pending',
+                'payment_method' => $request->payment_method ?? 'cash',
+                'remaining_balance' => $request->remaining_balance ?? $quotation->total,
+                'notes' => $quotation->notes,
+            ]);
+
+            Log::info('[v0] Order created successfully', ['order_id' => $order->id]);
+
+            // Create order items from quotation items
+            foreach ($quotation->items as $item) {
+                \App\Models\OrderItem::create([
+                    'order_id' => $order->id,
+                    'service_id' => $item->service_id,
+                    'product_id' => $item->product_id,
+                    'name' => $item->name,
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'design_cost' => $item->design_cost,
+                    'line_total' => $item->line_total,
+                    'design_file_url' => $item->design_file_url,
+                    'customization' => $item->customization,
+                    'notes' => $item->notes,
+                    'team_roster' => $item->team_roster,
+                    'size_specifications' => $item->size_specifications,
+                    'tarpaulin_size' => $item->tarpaulin_size,
+                    'status' => 'pending',
+                ]);
+            }
+
+            Log::info('[v0] Order items created', ['count' => count($quotation->items)]);
+
+            // Update quotation status to 'ordered'
+            $quotation->status = 'ordered';
+            $quotation->save();
+
+            Log::info('[v0] Quotation status updated to ordered');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Quotation successfully converted to order',
+                'order' => $order->load(['customer', 'items', 'branch']),
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('[v0] Convert to order error', [
+                'quotation_id' => $id,
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Failed to convert quotation to order',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
     // Get all active branches for sending quotations
     public function getActiveBranches()
     {
