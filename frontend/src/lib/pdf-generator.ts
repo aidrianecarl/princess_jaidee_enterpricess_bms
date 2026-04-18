@@ -22,82 +22,106 @@ export const generateQuotationPDF = async (quotation: any) => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
-  let yPosition = 15
+  let yPosition = 12
 
-  // Header with logos
-  const logoSize = 20
-  const logoY = yPosition + 5
+  // ===== HEADER SECTION =====
+  // Left: Company Info
+  doc.setFontSize(14)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(0, 0, 0)
+  doc.text("PRINCESS JAIDEE ENTERPRISES", 15, yPosition)
 
-  // Left logo - Client Logo
+  yPosition += 6
+  doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", 15, yPosition)
+
+  yPosition += 4
+  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", 15, yPosition)
+
+  yPosition += 4
+  doc.text("Email: piesorsogonsportswear@gmail.com", 15, yPosition)
+
+  // Right: Client Logo
+  const logoSize = 22
+  const logoY = yPosition - 14
+  
   if (quotation.logo_url) {
     try {
-      const logoBase64 = await imageUrlToBase64(`/api/proxy?url=${encodeURIComponent(quotation.logo_url)}`)
+      // Extract filename from logo_url
+      const logoFileName = quotation.logo_url.split('/').pop()
+      const clientLogoUrl = `https://api.princessjaideeenterprises.com/api/storage/app/public/quotations/logos/${logoFileName}`
+      
+      console.log("[v0] Loading client logo from:", clientLogoUrl)
+      const logoBase64 = await imageUrlToBase64(clientLogoUrl)
+      
       if (logoBase64) {
-        doc.addImage(logoBase64, "PNG", 15, logoY, logoSize, logoSize)
+        doc.addImage(logoBase64, "PNG", pageWidth - 15 - logoSize, logoY, logoSize, logoSize)
+        console.log("[v0] Client logo loaded successfully")
+      } else {
+        console.log("[v0] Failed to convert logo to base64")
       }
     } catch (error) {
       console.log("[v0] Error loading client logo:", error)
     }
   }
 
-  // Center title
-  doc.setFontSize(16)
-  doc.setTextColor(139, 69, 19) // Burgundy color
+  yPosition += 12
+
+  // Horizontal line separator
+  doc.setDrawColor(0, 0, 0)
+  doc.setLineWidth(0.8)
+  doc.line(10, yPosition, pageWidth - 10, yPosition)
+
+  yPosition += 6
+
+  // TITLE
+  doc.setFontSize(13)
   doc.setFont(undefined, "bold")
-  const centerX = pageWidth / 2
-  doc.text("REQUEST FOR QUOTATION", centerX, logoY + 8, { align: "center" })
-
-  // Right logo - Princess JD Logo
-  try {
-    const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
-    if (princessJDBase64) {
-      doc.addImage(princessJDBase64, "PNG", pageWidth - 15 - logoSize, logoY, logoSize, logoSize)
-    }
-  } catch (error) {
-    console.log("[v0] Error loading Princess JD logo:", error)
-  }
-
-  yPosition += 35
-
-  // Date and Quotation No
-  doc.setFontSize(10)
   doc.setTextColor(0, 0, 0)
-  doc.setFont(undefined, "normal")
-
-  const currentDate = new Date(quotation.created_at).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  })
-
-  doc.text(`Date: ${currentDate}`, 120, yPosition)
-  doc.text(`Quotation No: ${quotation.quotation_number}`, 120, yPosition + 7)
-
-  yPosition += 20
-
-  // Supplier/Customer Information
-  doc.setFontSize(9)
-  doc.setFont(undefined, "bold")
-  doc.text("Supplier Name:", 15, yPosition)
-  doc.setFont(undefined, "normal")
-  doc.text(quotation.business_name || "N/A", 50, yPosition)
-
-  yPosition += 6
-  doc.setFont(undefined, "bold")
-  doc.text("Customer:", 15, yPosition)
-  doc.setFont(undefined, "normal")
-  doc.text(quotation.customer?.name || "N/A", 50, yPosition)
-
-  yPosition += 6
-  doc.setFont(undefined, "bold")
-  doc.text("Address:", 15, yPosition)
-  doc.setFont(undefined, "normal")
-  const address = `${quotation.business_address || ""}, ${quotation.business_city || ""} ${quotation.business_postal || ""}`
-  doc.text(address, 50, yPosition)
+  doc.text("STATEMENT OF ACCOUNT", pageWidth / 2, yPosition, { align: "center" })
 
   yPosition += 12
 
-  // PROJECT DETAILS TABLE
+  // ===== CLIENT DETAILS SECTION =====
+  doc.setFontSize(9)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(0, 0, 0)
+
+  const leftColX = 15
+  const rightColX = 130
+
+  doc.text("Team Name:", leftColX, yPosition)
+  yPosition += 5
+
+  doc.text("Client Name:", leftColX, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.customer?.name || "N/A", leftColX + 25, yPosition)
+  
+  doc.setFont(undefined, "bold")
+  doc.text("Date:", rightColX, yPosition)
+  doc.setFont(undefined, "normal")
+  const currentDate = new Date(quotation.created_at).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  })
+  doc.text(currentDate, rightColX + 15, yPosition)
+
+  yPosition += 5
+  doc.setFont(undefined, "bold")
+  doc.text("Address:", leftColX, yPosition)
+  doc.setFont(undefined, "normal")
+  const address = quotation.customer?.bill_to_city || quotation.customer?.city || "N/A"
+  doc.text(address, leftColX + 25, yPosition)
+
+  yPosition += 5
+  doc.setFont(undefined, "bold")
+  doc.text("Contact No. :", leftColX, yPosition)
+
+  yPosition += 10
+
+  // ===== PROJECT DETAILS TABLE =====
   const items = quotation.items || []
   const projectTableData: any[] = []
 
@@ -109,19 +133,19 @@ export const generateQuotationPDF = async (quotation: any) => {
     projectTableData.push([
       item.service?.name || item.name || "Service",
       quantity.toString(),
-      `₱${unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`,
-      `₱${totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`,
+      unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
+      totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
     ])
   })
 
   // Add empty rows
-  projectTableData.push(["", "", "", "₱0.00"])
-  projectTableData.push(["", "", "", "₱0.00"])
-  projectTableData.push(["", "", "", "₱0.00"])
+  projectTableData.push(["", "", "", "0"])
+  projectTableData.push(["", "", "", "0"])
+  projectTableData.push(["", "", "", "0"])
 
   // Add subtotal row
   const subtotal = parseFloat(quotation.subtotal || 0)
-  projectTableData.push(["", "", "Sub Total:", `₱${subtotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`])
+  projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })])
 
   autoTable(doc, {
     head: [["PROJECT TYPE:", "QTY", "UNIT PRICE", "PRICE"]],
@@ -132,37 +156,34 @@ export const generateQuotationPDF = async (quotation: any) => {
       fillColor: [139, 69, 19], // Burgundy
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 10,
+      fontSize: 9,
       halign: "center",
       valign: "middle",
+      cellPadding: 2,
     },
     bodyStyles: {
-      fontSize: 9,
+      fontSize: 8,
       textColor: [0, 0, 0],
-      cellPadding: 3,
+      cellPadding: 2,
     },
     columnStyles: {
-      0: { halign: "left", cellWidth: 80 },
-      1: { halign: "center", cellWidth: 20 },
-      2: { halign: "right", cellWidth: 35 },
-      3: { halign: "right", cellWidth: 35 },
+      0: { halign: "left", cellWidth: 70 },
+      1: { halign: "center", cellWidth: 18 },
+      2: { halign: "center", cellWidth: 30 },
+      3: { halign: "right", cellWidth: 28 },
     },
     margin: { left: 10, right: 10 },
-    didDrawPage: (data: any) => {
-      // This runs after the table is drawn
-    },
   })
 
-  yPosition = (doc as any).lastAutoTable.finalY + 10
+  yPosition = (doc as any).lastAutoTable.finalY + 5
 
-  // DESCRIPTION / CHARGES TABLE
+  // ===== DESCRIPTION / CHARGES TABLE =====
   const chargesTableData = [
     ["Service Fee", ""],
     ["Layout Fee", ""],
     ["Labor and Installation", ""],
     ["Mobilization Fee", ""],
     ["Project", ""],
-    ["", ""],
   ]
 
   autoTable(doc, {
@@ -174,84 +195,111 @@ export const generateQuotationPDF = async (quotation: any) => {
       fillColor: [139, 69, 19], // Burgundy
       textColor: [255, 255, 255],
       fontStyle: "bold",
-      fontSize: 10,
+      fontSize: 9,
       halign: "center",
       valign: "middle",
+      cellPadding: 2,
     },
     bodyStyles: {
-      fontSize: 9,
+      fontSize: 8,
       textColor: [0, 0, 0],
-      cellPadding: 3,
+      cellPadding: 2,
     },
     columnStyles: {
       0: { halign: "left", cellWidth: 130 },
-      1: { halign: "right", cellWidth: 40 },
+      1: { halign: "right", cellWidth: 28 },
     },
     margin: { left: 10, right: 10 },
   })
 
-  yPosition = (doc as any).lastAutoTable.finalY + 10
+  yPosition = (doc as any).lastAutoTable.finalY + 8
+
+  // ===== FINANCIAL SUMMARY =====
+  const total = parseFloat(quotation.total || 0)
+  const downPayment = parseFloat(quotation.down_payment || 0)
+  const balance = total - downPayment
 
   // TOTAL PROJECT COST
-  doc.setFontSize(11)
+  doc.setFontSize(10)
   doc.setFont(undefined, "bold")
   doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.text("TOTAL PROJECT COST:", 15, yPosition)
+  doc.text("TOTAL PROJECT COST:", pageWidth / 2, yPosition, { align: "right" })
   doc.setTextColor(0, 0, 0)
-  const total = parseFloat(quotation.total || 0)
-  doc.text(
-    `₱${total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`,
-    pageWidth - 15,
-    yPosition,
-    { align: "right" }
-  )
+  doc.text(total.toLocaleString("en-PH", { minimumFractionDigits: 0 }), pageWidth - 10, yPosition, { align: "right" })
 
-  yPosition += 8
+  yPosition += 6
 
   // DOWN PAYMENT - Yellow highlight
-  doc.setTextColor(0, 0, 0)
   doc.setFont(undefined, "bold")
-  doc.text("DOWN PAYMENT:", 15, yPosition)
+  doc.setTextColor(139, 69, 19) // Burgundy text
   
-  // Yellow background for down payment value
-  const downPayment = parseFloat(quotation.down_payment || 0)
-  const downPaymentText = `₱${downPayment.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`
-  
-  // Draw yellow rectangle for down payment
+  // Yellow background for entire down payment row
   doc.setFillColor(255, 255, 0) // Yellow
-  doc.rect(pageWidth - 95, yPosition - 5, 80, 7, "F")
+  doc.rect(pageWidth / 2 - 5, yPosition - 4, pageWidth / 2 + 3, 6, "F")
   
+  doc.text("DOWN PAYMENT:", pageWidth / 2, yPosition, { align: "right" })
+  doc.text(downPayment.toLocaleString("en-PH", { minimumFractionDigits: 0 }), pageWidth - 10, yPosition, { align: "right" })
+
+  yPosition += 6
+
+  // BALANCE
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(139, 69, 19) // Burgundy text
+  doc.text("BALANCE:", pageWidth / 2, yPosition, { align: "right" })
   doc.setTextColor(0, 0, 0)
-  doc.text(downPaymentText, pageWidth - 15, yPosition, { align: "right" })
+  doc.text(balance.toLocaleString("en-PH", { minimumFractionDigits: 0 }), pageWidth - 10, yPosition, { align: "right" })
+
+  yPosition += 12
+
+  // ===== DISCLAIMER TEXT =====
+  doc.setFontSize(7)
+  doc.setFont(undefined, "italic")
+  doc.setTextColor(0, 0, 0)
+  doc.text("If you have any questions concerning this quotation, just contact and email us.", pageWidth / 2, yPosition, { align: "center" })
+
+  yPosition += 10
+
+  // ===== SIGNATURE SECTION =====
+  // Signature line
+  doc.setLineWidth(0.5)
+  doc.line(pageWidth / 2 + 30, yPosition, pageWidth - 15, yPosition)
 
   yPosition += 8
 
-  // BALANCE
-  doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.setFont(undefined, "bold")
-  doc.text("BALANCE:", 15, yPosition)
-  doc.setTextColor(0, 0, 0)
-  const balance = total - downPayment
-  doc.text(
-    `₱${balance.toLocaleString("en-PH", { minimumFractionDigits: 2 })}`,
-    pageWidth - 15,
-    yPosition,
-    { align: "right" }
-  )
-
-  yPosition += 15
-
-  // Terms and conditions section
-  doc.setFontSize(8)
+  // Signature name and title
+  doc.setFontSize(9)
   doc.setFont(undefined, "bold")
   doc.setTextColor(0, 0, 0)
-  doc.text("TERMS & CONDITIONS:", 15, yPosition)
+  doc.text("JHONIE DETERA", pageWidth / 2 + 50, yPosition, { align: "center" })
+
   yPosition += 5
   doc.setFont(undefined, "normal")
-  doc.setFontSize(7)
-  const termsText = quotation.terms_conditions || "General terms and conditions apply. Payment due upon receipt unless otherwise agreed. All work is warranted for 30 days from installation."
-  const termsLines = doc.splitTextToSize(termsText, 170)
-  doc.text(termsLines, 15, yPosition)
+  doc.setFontSize(8)
+  doc.text("Owner", pageWidth / 2 + 50, yPosition, { align: "center" })
+
+  yPosition += 12
+
+  // ===== SERVICES OFFERED SECTION =====
+  doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  doc.setTextColor(0, 0, 0)
+  doc.text("Services offered:", 15, yPosition)
+
+  yPosition += 4
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(139, 69, 19) // Burgundy
+  doc.text("FULL SUBLIMATION JERSEY", 15, yPosition)
+  doc.setTextColor(0, 0, 0)
+  doc.setFont(undefined, "normal")
+  doc.text("*CUSTOMIZED POLO SHIRT", pageWidth / 2, yPosition)
+
+  yPosition += 4
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(139, 69, 19)
+  doc.text("PVC ID AND LANYARDS", 15, yPosition)
+  doc.setTextColor(0, 0, 0)
+  doc.setFont(undefined, "normal")
+  doc.text("LARGE FORMAT PRINTING", pageWidth / 2, yPosition)
 
   // Generate PDF
   const fileName = `Quotation_${quotation.quotation_number}_${new Date().toISOString().split("T")[0]}.pdf`
