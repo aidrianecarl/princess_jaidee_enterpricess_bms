@@ -396,11 +396,31 @@ class JobOrderController extends Controller
 
     /**
      * Release a completed job order
+     * Only Cashier and Manager roles can release job orders
      */
     public function releaseJobOrder(Request $request, $id)
     {
         try {
             \Log::info('[v0] Release Job Order - START', ['job_order_id' => $id]);
+            
+            // Get current authenticated user
+            $currentUser = auth()->user();
+            $userId = $currentUser?->id;
+            $userType = $currentUser?->user_type;
+            
+            // Check role-based access: only Cashier and Manager can release
+            if (!$currentUser || !in_array($userType, ['manager', 'cashier'])) {
+                \Log::warning('[v0] Release Job Order - UNAUTHORIZED ACCESS', [
+                    'job_order_id' => $id,
+                    'user_id' => $userId,
+                    'user_type' => $userType,
+                    'allowed_roles' => ['manager', 'cashier']
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Only managers and cashiers can release job orders'
+                ], 403);
+            }
             
             $jobOrder = JobOrder::with(['order.items', 'assignedTo', 'customer'])->find($id);
 
@@ -465,16 +485,6 @@ class JobOrderController extends Controller
                 ], 400);
             }
 
-            // Get current authenticated user
-            $userId = auth()->id();
-            if (!$userId) {
-                \Log::warning('[v0] Release Job Order - NO AUTHENTICATED USER');
-                return response()->json([
-                    'success' => false,
-                    'error' => 'Unauthenticated user'
-                ], 401);
-            }
-
             // Update job order with release information
             $jobOrder->update([
                 'released_date' => now(),
@@ -484,6 +494,7 @@ class JobOrderController extends Controller
             \Log::info('[v0] Release Job Order - SUCCESS', [
                 'job_order_id' => $id,
                 'released_by' => $userId,
+                'released_by_role' => $userType,
                 'released_date' => $jobOrder->released_date
             ]);
 

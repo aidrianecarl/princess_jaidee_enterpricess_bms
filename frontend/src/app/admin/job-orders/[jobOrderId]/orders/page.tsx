@@ -19,6 +19,8 @@ interface TeamMember {
   number: string | number
   sizeTop?: string
   sizeBottom?: string
+  topLength?: string | number
+  bottomLength?: string | number
 }
 
 interface SizeSpecifications {
@@ -574,31 +576,41 @@ export default function JobOrderDetailPage() {
                               </div>
                             )}
 
-                            {/* Team Roster Table */}
+                            {/* Team Roster */}
                             {teamRoster && teamRoster.length > 0 && (
                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster</h4>
-                                <div className="overflow-x-auto">
-                                  <table className="w-full text-sm">
-                                    <thead>
-                                      <tr className="border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/50">
-                                        <th className="px-4 py-3 text-left font-semibold text-blue-900 dark:text-blue-300">Player Name</th>
-                                        <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
-                                        <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top Size</th>
-                                        <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom Size</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                      {teamRoster.map((player, idx) => (
-                                        <tr key={idx} className="border-b border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
-                                          <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">{player.name}</td>
-                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
-                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '—'}</td>
-                                          <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</td>
-                                        </tr>
-                                      ))}
-                                    </tbody>
-                                  </table>
+                                <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-6 text-lg">Team Roster</h4>
+                                <div className="space-y-6">
+                                  {teamRoster.map((player, idx) => (
+                                    <div key={idx} className="p-4 bg-white dark:bg-neutral-800 rounded-lg border border-blue-100 dark:border-blue-700">
+                                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Name</p>
+                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.name}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Jersey #</p>
+                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.number}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Top Size</p>
+                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.sizeTop || '—'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Top Length (in)</p>
+                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.topLength || '—'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Bottom Size</p>
+                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Bottom Length (in)</p>
+                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.bottomLength || '—'}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               </div>
                             )}
