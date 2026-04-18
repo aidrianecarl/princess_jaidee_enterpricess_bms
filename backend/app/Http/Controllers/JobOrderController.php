@@ -466,9 +466,16 @@ class JobOrderController extends Controller
                     'job_order_id' => $id,
                     'payment_status' => $jobOrder->order ? $jobOrder->order->payment_status : 'N/A'
                 ]);
+                
+                // Get customer name and order number for the error message
+                $customerName = $jobOrder->customer ? $jobOrder->customer->bill_to_name : 'Unknown Customer';
+                $orderNumber = $jobOrder->order ? $jobOrder->order->order_number : $jobOrder->job_order_number;
+                
                 return response()->json([
                     'success' => false,
-                    'error' => 'Payment must be marked as paid before releasing the job order',
+                    'error' => $customerName . ' is not yet fully paid. Order number: ' . $orderNumber . '. Payment must be marked as paid before releasing the job order.',
+                    'customer_name' => $customerName,
+                    'order_number' => $orderNumber,
                     'canRelease' => false
                 ], 400);
             }

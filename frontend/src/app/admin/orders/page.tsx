@@ -884,30 +884,37 @@ export default function OrdersPage() {
               <p className="text-neutral-600 dark:text-neutral-400">Loading...</p>
             </div>
           ) : (filterStatus === "completed" || filterStatus === "released") ? (
-            jobOrders.filter((jo: JobOrder) => {
-              if (filterStatus === "completed") {
-                return jo.status?.toLowerCase() === "completed" && !jo.released_date
-              } else if (filterStatus === "released") {
-                return !!jo.released_date
+            (() => {
+              // Filter job orders by status first
+              let filteredJobOrders = jobOrders.filter((jo: JobOrder) => {
+                if (filterStatus === "completed") {
+                  return jo.status?.toLowerCase() === "completed" && !jo.released_date
+                } else if (filterStatus === "released") {
+                  return !!jo.released_date
+                }
+                return false
+              })
+              
+              // Apply search filter for Completed and Released tabs
+              if (searchQuery.trim()) {
+                const query = searchQuery.toLowerCase()
+                filteredJobOrders = filteredJobOrders.filter((jo: JobOrder) => 
+                  jo.job_order_number?.toLowerCase().includes(query) ||
+                  jo.customer?.bill_to_name?.toLowerCase().includes(query) ||
+                  jo.customer?.bill_to_email?.toLowerCase().includes(query)
+                )
               }
-              return false
-            }).length === 0 ? (
-              <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-                <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-600 dark:text-neutral-300 font-medium">
-                  No {filterStatus} job orders found
-                </p>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:gap-6">
-                {jobOrders.filter((jo: JobOrder) => {
-                  if (filterStatus === "completed") {
-                    return jo.status?.toLowerCase() === "completed" && !jo.released_date
-                  } else if (filterStatus === "released") {
-                    return !!jo.released_date
-                  }
-                  return false
-                }).map((jobOrder: JobOrder) => (
+              
+              return filteredJobOrders.length === 0 ? (
+                <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+                  <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
+                  <p className="text-neutral-600 dark:text-neutral-300 font-medium">
+                    {searchQuery.trim() ? `No ${filterStatus} job orders match your search` : `No ${filterStatus} job orders found`}
+                  </p>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:gap-6">
+                  {filteredJobOrders.map((jobOrder: JobOrder) => (
                   <Card
                     key={jobOrder.id}
                     className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700"
@@ -1059,6 +1066,7 @@ export default function OrdersPage() {
                 ))}
               </div>
             )
+            })()
           ) : displayData.length === 0 ? (
             <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <FileText className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
@@ -1314,7 +1322,7 @@ export default function OrdersPage() {
                   <span className="font-semibold text-neutral-900 dark:text-white">
                     #{releaseOrderId && jobOrders.find(jo => jo.id === releaseOrderId)?.job_order_number}
                   </span>
-                  ? The customer will be notified to pick it up.
+                  ? This Action cannot be undone.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="flex gap-3">

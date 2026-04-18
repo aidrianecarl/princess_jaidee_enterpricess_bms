@@ -89,20 +89,22 @@ export default function AdminQuotationsPage() {
         filtered = filtered.filter((q: any) => (q.has_price === 1 || q.has_price === "1"))
       }
       
-      // Sort quotations: Request Order (status = 'pending') first, then Ordered (status = 'ordered') last
+      // Sort quotations: "sent" status (Request Order available) first, then "ordered" status last
+      // For priced filter: items with status 'sent' should show first (can Request Order), 
+      // items with status 'ordered' should show last (already ordered)
       filtered = filtered.sort((a: any, b: any) => {
         const aStatus = a.status?.toLowerCase() || ''
         const bStatus = b.status?.toLowerCase() || ''
         
-        // Request Order (pending) comes first
-        if (aStatus === 'pending' && bStatus !== 'pending') return -1
-        if (aStatus !== 'pending' && bStatus === 'pending') return 1
+        // "sent" status (can Request Order) comes first - these are quotations ready for ordering
+        if (aStatus === 'sent' && bStatus !== 'sent') return -1
+        if (aStatus !== 'sent' && bStatus === 'sent') return 1
         
-        // Ordered comes last
+        // "ordered" status comes last - these are already converted to orders
         if (aStatus === 'ordered' && bStatus !== 'ordered') return 1
         if (aStatus !== 'ordered' && bStatus === 'ordered') return -1
         
-        // Sort others by created_at descending
+        // Sort others by created_at descending (newest first)
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
       
