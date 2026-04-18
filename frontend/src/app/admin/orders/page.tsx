@@ -565,7 +565,7 @@ export default function OrdersPage() {
           </div>
 
           {/* Modern Filter Cards */}
-          <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
+          <div className="mb-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
             {/* Pending Card */}
             <button
               onClick={() => {
@@ -708,7 +708,7 @@ export default function OrdersPage() {
                 setFilterStatus("released")
                 setCurrentPage(1)
               }}
-              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 col-span-2 sm:col-span-1 ${
                 filterStatus === "released"
                   ? "bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 text-white shadow-xl shadow-purple-500/30 ring-2 ring-purple-400/50"
                   : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-purple-500/10 border border-neutral-200 dark:border-neutral-700"
@@ -744,201 +744,158 @@ export default function OrdersPage() {
               <p className="text-neutral-600 dark:text-neutral-400">Loading...</p>
             </div>
           ) : (filterStatus === "completed" || filterStatus === "released") ? (
-            displayData.filter((item: any) => {
-              const searchLower = searchQuery.toLowerCase()
-              const numberMatch = item.quotation_number?.toLowerCase().includes(searchLower)
-              const customerMatch = item.customer?.name?.toLowerCase().includes(searchLower)
-              const customerEmailMatch = item.customer?.email?.toLowerCase().includes(searchLower)
-              const searchMatches = numberMatch || customerMatch || customerEmailMatch
-              
+            jobOrders.filter((jo: JobOrder) => {
               if (filterStatus === "completed") {
-                return searchMatches && item.payment_status === "paid" && !item.released_date
+                return jo.status?.toLowerCase() === "completed" && !jo.released_date
               } else if (filterStatus === "released") {
-                return searchMatches && !!item.released_date
+                return !!jo.released_date
               }
               return false
             }).length === 0 ? (
               <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                 <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
                 <p className="text-neutral-600 dark:text-neutral-300 font-medium">
-                  {searchQuery ? `No ${filterStatus} results match "${searchQuery}"` : `No ${filterStatus} orders found`}
+                  No {filterStatus} job orders found
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
-                {displayData.filter((item: any) => {
-                  const searchLower = searchQuery.toLowerCase()
-                  const numberMatch = item.quotation_number?.toLowerCase().includes(searchLower)
-                  const customerMatch = item.customer?.name?.toLowerCase().includes(searchLower)
-                  const customerEmailMatch = item.customer?.email?.toLowerCase().includes(searchLower)
-                  const searchMatches = numberMatch || customerMatch || customerEmailMatch
-                  
+              <div className="grid gap-4 md:gap-6">
+                {jobOrders.filter((jo: JobOrder) => {
                   if (filterStatus === "completed") {
-                    return searchMatches && item.payment_status === "paid" && !item.released_date
+                    return jo.status?.toLowerCase() === "completed" && !jo.released_date
                   } else if (filterStatus === "released") {
-                    return searchMatches && !!item.released_date
+                    return !!jo.released_date
                   }
                   return false
-                }).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((item: any, idx: number) => (
-                  <Card 
-                    key={`${item.isOrder ? "order" : "quot"}-${item.id}`} 
-                    className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.01] hover:-translate-y-1 animate-fade-in"
-                    style={{ animationDelay: `${idx * 50}ms` }}
+                }).map((jobOrder: JobOrder) => (
+                  <Card
+                    key={jobOrder.id}
+                    className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700"
                   >
                     <div className="p-6 sm:p-8">
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-4 mb-6 pb-6 border-b-2 border-neutral-200 dark:border-neutral-700">
-                        <div>
-                          <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
-                            {item.quotation_number}
-                          </h3>
-                          <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
-                            {item.isOrder ? `Order ID: ${item.id}` : `Quotation ID: ${item.id}`}
-                          </p>
-                        </div>
-                        <div>
-                          <span className={`px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5 ${getStatusColor(item.payment_status)}`}>
-                            {item.isOrder && item.payment_status 
-                              ? (
-                                <>
-                                  {item.payment_status === 'paid' && <CheckCircle size={14} />}
-                                  {item.payment_status === 'partial' && <TrendingDown size={14} />}
-                                  {item.payment_status === 'pending' && <Clock size={14} />}
-                                  {item.payment_status.charAt(0).toUpperCase() + item.payment_status.slice(1)}
-                                </>
-                              )
-                              : "Pending"}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Customer Info */}
-                      <div className="mb-6 pb-6 border-b border-neutral-200 dark:border-neutral-700">
-                        <p className="text-xs text-neutral-600 dark:text-neutral-400 font-bold uppercase tracking-wider mb-3">Customer</p>
-                        <p className="font-bold text-neutral-900 dark:text-white text-lg mb-2">{item.customer?.name || item.customer?.bill_to_name || 'Unknown'}</p>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">{item.customer?.email || item.customer?.bill_to_email || '-'}</p>
-                      </div>
-
-                      {/* Key Information Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                        {item.isOrder && item.branch_id && (
-                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Building2 size={16} className="text-blue-600 dark:text-blue-400" />
-                              <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Branch ID</p>
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-6 flex-wrap">
+                            <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+                              {jobOrder.job_order_number}
+                            </h3>
+                            <div className="flex gap-2 flex-wrap items-center">
+                              <span className={`${getStatusColor(jobOrder.status)}`}>
+                                {getStatusLabel(jobOrder.status)}
+                              </span>
+                              {jobOrder.is_priority && (
+                                <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                                  Priority
+                                </span>
+                              )}
                             </div>
-                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{item.branch_id}</p>
                           </div>
-                        )}
 
-                        {item.isOrder && item.created_by && (
-                          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800/50">
-                            <div className="flex items-center gap-2 mb-2">
-                              <User size={16} className="text-purple-600 dark:text-purple-400" />
-                              <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase">Created By</p>
+                          {jobOrdersStats[jobOrder.id] && jobOrdersStats[jobOrder.id].total > 0 && (
+                            <div className="mb-4 w-full p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
+                              <OrderProgressBar items={Array.from({ length: jobOrdersStats[jobOrder.id].total }, (_, i) => ({
+                                id: i,
+                                status: i < jobOrdersStats[jobOrder.id].completed ? 'completed' : 'pending'
+                              }))} />
                             </div>
-                            <p className="font-bold text-neutral-900 dark:text-white text-sm">#{item.created_by}</p>
-                          </div>
-                        )}
+                          )}
 
-                        {item.isOrder && item.order_date && (
-                          <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-4 border border-orange-200 dark:border-orange-800/50">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
-                              <p className="text-xs text-orange-600 dark:text-orange-300 font-bold uppercase">Order Date</p>
+                          <div className="mb-6 pb-6 border-b-2 border-neutral-200 dark:border-neutral-700">
+                            <div className="flex items-center gap-2 mb-3">
+                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                              <p className="text-xs text-neutral-600 dark:text-neutral-400 font-bold uppercase tracking-wider">Customer</p>
                             </div>
-                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{formatDate(item.order_date || item.created_at)}</p>
+                            <div className="space-y-2 bg-neutral-50 dark:bg-neutral-700/30 rounded-lg p-3">
+                              <p className="text-sm md:text-base font-bold text-neutral-900 dark:text-white">
+                                {jobOrder.customer?.bill_to_name || 'N/A'}
+                              </p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                {jobOrder.customer?.bill_to_email || 'N/A'}
+                              </p>
+                            </div>
                           </div>
-                        )}
 
-                        <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800/50">
-                          <div className="flex items-center gap-2 mb-2">
-                            <DollarSign size={16} className="text-green-600 dark:text-green-400" />
-                            <p className="text-xs text-green-600 dark:text-green-300 font-bold uppercase">Subtotal</p>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
+                                <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Start Date</p>
+                              </div>
+                              <p className="font-bold text-neutral-900 dark:text-white text-sm">
+                                {formatDate(jobOrder.start_date)}
+                              </p>
+                            </div>
+                            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-800/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
+                                <p className="text-xs text-orange-600 dark:text-orange-300 font-bold uppercase">Due Date</p>
+                              </div>
+                              <p className="font-bold text-neutral-900 dark:text-white text-sm">
+                                {formatDate(jobOrder.due_date)}
+                              </p>
+                            </div>
+                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800/50">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Users size={16} className="text-purple-600 dark:text-purple-400" />
+                                <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase">Assigned</p>
+                              </div>
+                              <p className="font-bold text-sm text-neutral-900 dark:text-white">
+                                {(() => {
+                                  const assignedToObj = jobOrder.assignedTo || (typeof jobOrder.assigned_to === 'object' ? jobOrder.assigned_to : null)
+                                  const firstName = assignedToObj?.first_name
+                                  const lastName = assignedToObj?.last_name
+                                  return (firstName || lastName) ? `${firstName || ''} ${lastName || ''}`.trim() : 'Unassigned'
+                                })()}
+                              </p>
+                            </div>
                           </div>
-                          <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.subtotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                        </div>
 
-                        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 border border-red-200 dark:border-red-800/50">
-                          <div className="flex items-center gap-2 mb-2">
-                            <TrendingDown size={16} className="text-red-600 dark:text-red-400" />
-                            <p className="text-xs text-red-600 dark:text-red-300 font-bold uppercase">Discount</p>
-                          </div>
-                          <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.discount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                        </div>
-
-                        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-lg p-4 border border-indigo-200 dark:border-indigo-800/50">
-                          <div className="flex items-center gap-2 mb-2">
-                            <DollarSign size={16} className="text-indigo-600 dark:text-indigo-400" />
-                            <p className="text-xs text-indigo-600 dark:text-indigo-300 font-bold uppercase">Total</p>
-                          </div>
-                          <p className="font-bold text-neutral-900 dark:text-white text-lg">₱{Number.parseFloat(item.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          {jobOrder.notes && (
+                            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                              <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase mb-2">Notes</p>
+                              <p className="text-sm text-neutral-700 dark:text-neutral-300">{jobOrder.notes}</p>
+                            </div>
+                          )}
                         </div>
 
-                        {item.isOrder && item.payment_method && (
-                          <div className="bg-pink-50 dark:bg-pink-900/20 rounded-lg p-4 border border-pink-200 dark:border-pink-800/50">
-                            <div className="flex items-center gap-2 mb-2">
-                              <CreditCard size={16} className="text-pink-600 dark:text-pink-400" />
-                              <p className="text-xs text-pink-600 dark:text-pink-300 font-bold uppercase">Payment Method</p>
-                            </div>
-                            <p className="font-bold text-neutral-900 dark:text-white text-sm capitalize">{item.payment_method || 'N/A'}</p>
-                          </div>
-                        )}
-
-                        {item.isOrder && item.remaining_balance !== undefined && (
-                          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-4 border border-amber-200 dark:border-amber-800/50">
-                            <div className="flex items-center gap-2 mb-2">
-                              <CreditCard size={16} className="text-amber-600 dark:text-amber-400" />
-                              <p className="text-xs text-amber-600 dark:text-amber-300 font-bold uppercase">Remaining Balance</p>
-                            </div>
-                            <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.remaining_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-3 flex-wrap">
-                        {!item.isOrder && (
+                        <div className="flex gap-2 w-full md:w-auto flex-col md:flex-row">
                           <Button
-                            onClick={() => {
-                              const quotation = sentQuotations.find(q => q.id === item.id)
-                              if (quotation) {
-                                setSelectedQuotation(quotation)
-                                setViewItemsModalOpen(true)
-                              }
-                            }}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
+                            onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
+                            disabled={!!jobOrder.released_date}
+                            className={`${jobOrder.released_date ? 'opacity-50 cursor-not-allowed' : ''} bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2`}
                           >
                             <Eye size={18} />
-                            <span>View Items</span>
+                            <span className="hidden sm:inline">View</span>
                           </Button>
-                        )}
 
-                        {item.isOrder && item.payment_status === "partial" && (
-                          <Button
-                            onClick={() => {
-                              setSelectedOrder(item)
-                              setUpdatePaymentModalOpen(true)
-                            }}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
-                          >
-                            <Settings size={18} />
-                            <span>Update</span>
-                          </Button>
-                        )}
-
-                        {!item.isOrder && (
-                          <Button
-                            onClick={() => {
-                              setSelectedQuotation(item)
-                              setPaymentModalOpen(true)
-                            }}
-                            className="flex-1 bg-green-600 hover:bg-green-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
-                          >
-                            <CheckCircle size={18} />
-                            <span>Create Order</span>
-                          </Button>
-                        )}
+                          {jobOrder.status?.toLowerCase() === 'completed' && !jobOrder.released_date ? (
+                            <Button
+                              onClick={() => handleReleaseConfirm(jobOrder.id)}
+                              disabled={isReleasing === jobOrder.id}
+                              className="bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
+                            >
+                              {isReleasing === jobOrder.id ? (
+                                <>
+                                  <Loader2 size={18} className="animate-spin" />
+                                  <span className="hidden sm:inline">Releasing...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 size={18} />
+                                  <span className="hidden sm:inline">Release</span>
+                                </>
+                              )}
+                            </Button>
+                          ) : jobOrder.released_date ? (
+                            <Button
+                              disabled={true}
+                              className="bg-green-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
+                            >
+                              <CheckCircle2 size={18} />
+                              <span className="hidden sm:inline">Released</span>
+                            </Button>
+                          ) : null}
+                        </div>
                       </div>
                     </div>
                   </Card>
