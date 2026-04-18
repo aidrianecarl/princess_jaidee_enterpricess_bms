@@ -1,6 +1,52 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
 
+// Helper: Calculate sublimation breakdown
+function calculateSublimationBreakdown(teamRoster: any[], unitPrice: number) {
+  const breakdown = {
+    setsCount: 0,
+    topOnlyCount: 0,
+    bottomOnlyCount: 0,
+    setsAmount: 0,
+    topAmount: 0,
+    bottomAmount: 0,
+    subtotal: 0,
+  }
+
+  if (!Array.isArray(teamRoster) || !teamRoster.length) return breakdown
+
+  const setPrice = unitPrice * 2 // Set = 2x unit price
+  const topPrice = unitPrice
+  const bottomPrice = unitPrice
+
+  teamRoster.forEach((player: any) => {
+    const hasTop = player.sizeTop && player.sizeTop !== "None"
+    const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+
+    if (hasTop && hasBottom) {
+      breakdown.setsCount++
+      breakdown.setsAmount += setPrice
+      breakdown.subtotal += setPrice
+    } else if (hasTop) {
+      breakdown.topOnlyCount++
+      breakdown.topAmount += topPrice
+      breakdown.subtotal += topPrice
+    } else if (hasBottom) {
+      breakdown.bottomOnlyCount++
+      breakdown.bottomAmount += bottomPrice
+      breakdown.subtotal += bottomPrice
+    }
+  })
+
+  return breakdown
+}
+
+// Helper: Calculate tarpaulin subtotal
+function calculateTarpaulinSubtotal(sizeSpecs: any, quantity: number) {
+  if (!sizeSpecs) return 0
+  return (sizeSpecs.totalPrice || 0) * quantity
+}
+
 // Convert image URL to base64 for embedding in PDF
 async function imageUrlToBase64(url: string): Promise<string> {
   try {
@@ -149,92 +195,114 @@ export const generateQuotationPDF = async (quotation: any) => {
   items.forEach((item: any) => {
     const quantity = item.quantity || 0
     const unitPrice = parseFloat(item.unit_price || 0)
-    const totalPrice = quantity * unitPrice
-    calculatedSubtotal += totalPrice
-
-    // Main service row - show service name only (no price inline)
+    const teamRoster = item.team_roster
+    const sizeSpecs = item.size_specifications
     const serviceName = item.service?.name || item.name || "Service"
-    projectTableData.push([
-      serviceName,
-      quantity.toString(),
-      unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
-      totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
-    ])
 
-    // Add service details from notes field
-    const notes = item.notes
-    if (notes) {
-      // Parse notes if it's a string
-      let notesData = notes
-      if (typeof notes === 'string') {
-        try {
-          notesData = JSON.parse(notes)
-        } catch {
-          notesData = null
-        }
+    let servicePrice = parseFloat(item.line_total || unitPrice)
+    let subtotalForService = 0
+
+    // For Sublimation: Show breakdown with Sets, Top Only, Bottom Only
+    if (serviceName.includes('Sublimation') && teamRoster && Array.isArray(teamRoster)) {
+      const breakdown = calculateSublimationBreakdown(teamRoster, unitPrice)
+      subtotalForService = breakdown.subtotal
+
+      // Main service row with player count
+      projectTableData.push([
+        `${serviceName} (${teamRoster.length} Players)`,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        "",
+      ])
+
+      // Breakdown rows
+      if (breakdown.setsCount > 0) {
+        projectTableData.push([
+          `  ↳ ${breakdown.setsCount} Sets`,
+          "",
+          "",
+          breakdown.setsAmount.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        ])
+      }
+      if (breakdown.topOnlyCount > 0) {
+        projectTableData.push([
+          `  ↳ ${breakdown.topOnlyCount} Top Only`,
+          "",
+          "",
+          breakdown.topAmount.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        ])
+      }
+      if (breakdown.bottomOnlyCount > 0) {
+        projectTableData.push([
+          `  ↳ ${breakdown.bottomOnlyCount} Bottom Only`,
+          "",
+          "",
+          breakdown.bottomAmount.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        ])
       }
 
-      if (notesData) {
-        // Handle tarpaulin size notes
-        if (notesData.width && notesData.height && notesData.pricePerSqFt) {
-          const sizeDetail = `${notesData.width}ft × ${notesData.height}ft. ${notesData.pricePerSqFt} pesos per sq ft`
-          projectTableData.push([`   ${sizeDetail}`, "", "", ""])
-        }
+      // Subtotal for this service
+      projectTableData.push([
+        "  ✓ Subtotal",
+        "",
+        "",
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
 
-        // Handle size specifications (sublimation)
-        if (notesData.sizeSpecifications && Array.isArray(notesData.sizeSpecifications)) {
-          notesData.sizeSpecifications.forEach((spec: any) => {
-            if (spec.quantity && spec.size) {
-              const sizeDetail = `   ${spec.quantity} ${spec.size}`
-              projectTableData.push([sizeDetail, "", "", ""])
-            }
-          })
-        }
-
-        // Handle sets, tops, bottoms for sublimation (no prices inline - only in summary)
-        if (notesData.sets || notesData.topOnly || notesData.bottomOnly) {
-          if (notesData.sets) {
-            projectTableData.push([`   ${notesData.sets} Sets`, "", "", ""])
-          }
-          if (notesData.topOnly) {
-            projectTableData.push([`   ${notesData.topOnly} Top Only`, "", "", ""])
-          }
-          if (notesData.bottomOnly) {
-            projectTableData.push([`   ${notesData.bottomOnly} Bottom Only`, "", "", ""])
-          }
-        }
-      }
+      calculatedSubtotal += subtotalForService
     }
+    // For Tarpaulin: Show size specifications
+    else if (serviceName.includes('Tarpaulin') && sizeSpecs) {
+      subtotalForService = calculateTarpaulinSubtotal(sizeSpecs, quantity)
 
-    // Handle size_specifications field directly
-    if (item.size_specifications) {
-      let sizeSpecs = item.size_specifications
-      if (typeof sizeSpecs === 'string') {
-        try {
-          sizeSpecs = JSON.parse(sizeSpecs)
-        } catch {
-          sizeSpecs = null
-        }
-      }
+      // Main service row with size info
+      projectTableData.push([
+        `${serviceName} (${sizeSpecs.width}ft × ${sizeSpecs.height}ft)`,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        "",
+      ])
 
-      if (Array.isArray(sizeSpecs)) {
-        sizeSpecs.forEach((spec: any) => {
-          if (spec.quantity && spec.size) {
-            projectTableData.push([`   ${spec.quantity} ${spec.size}`, "", "", ""])
-          }
-        })
-      }
+      // Size details
+      projectTableData.push([
+        `  ↳ ${sizeSpecs.totalSqft} sq ft × ${quantity} qty`,
+        "",
+        "",
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
+
+      // Subtotal
+      projectTableData.push([
+        "  ✓ Subtotal",
+        "",
+        "",
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
+
+      calculatedSubtotal += subtotalForService
+    }
+    // For other services
+    else {
+      subtotalForService = servicePrice
+      calculatedSubtotal += subtotalForService
+
+      projectTableData.push([
+        serviceName,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
     }
   })
 
   // Add empty rows
-  projectTableData.push(["", "", "", "0"])
-  projectTableData.push(["", "", "", "0"])
-  projectTableData.push(["", "", "", "0"])
+  projectTableData.push(["", "", "", ""])
+  projectTableData.push(["", "", "", ""])
+  projectTableData.push(["", "", "", ""])
 
-  // Add subtotal row - use calculated subtotal from items
+  // Add subtotal row
   const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : calculatedSubtotal
-  projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })])
+  projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 })])
 
   autoTable(doc, {
     head: [["PROJECT TYPE:", "QTY", "UNIT PRICE", "PRICE"]],
@@ -266,89 +334,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   })
 
   // Safe Y position calculation with fallback
-  yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 5
-
-  // ===== DESCRIPTION / CHARGES TABLE =====
-  const chargesTableData = [
-    ["Service Fee", ""],
-    ["Layout Fee", ""],
-    ["Labor and Installation", ""],
-    ["Mobilization Fee", ""],
-    ["Project", ""],
-  ]
-
-  autoTable(doc, {
-    head: [["DESCRIPTION", "AMOUNT"]],
-    body: chargesTableData,
-    startY: yPosition,
-    theme: "grid",
-    headerStyles: {
-      fillColor: [220, 20, 60], // Crimson Red
-      textColor: [255, 255, 255],
-      fontStyle: "bold",
-      fontSize: 9,
-      halign: "center",
-      valign: "middle",
-      cellPadding: 2,
-    },
-    bodyStyles: {
-      fontSize: 8,
-      textColor: [0, 0, 0],
-      cellPadding: 2,
-    },
-    columnStyles: {
-      0: { halign: "left" },
-      1: { halign: "right" },
-    },
-    tableWidth: "100%",
-    margin: { left: 10, right: 10 },
-  })
-
-  // Safe Y position calculation with fallback
-  yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 25, yPosition + 25) + 8
-
-  // ===== FINANCIAL SUMMARY (Right Aligned) =====
-  const total = parseFloat(quotation.total || quotation.subtotal || 0)
-  const downPayment = parseFloat(quotation.down_payment || 0)
-  const balance = total - downPayment
-
-  const summaryRightX = pageWidth - 10
-  const summaryLabelX = pageWidth - 80
-
-  // TOTAL PROJECT COST
-  doc.setFontSize(10)
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.text("TOTAL PROJECT COST:", summaryLabelX, yPosition, { align: "left" })
-  doc.setTextColor(0, 0, 0)
-  const totalText = total > 0 ? total.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
-  doc.text(totalText, summaryRightX, yPosition, { align: "right" })
-
-  yPosition += 6
-
-  // DOWN PAYMENT - Yellow highlight
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(139, 69, 19) // Burgundy text
-  
-  // Yellow background for entire down payment row
-  doc.setFillColor(255, 255, 0) // Yellow
-  doc.rect(summaryLabelX - 5, yPosition - 4, pageWidth - summaryLabelX + 3, 6, "F")
-  
-  doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
-  const downPaymentText = downPayment > 0 ? downPayment.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
-  doc.text(downPaymentText, summaryRightX, yPosition, { align: "right" })
-
-  yPosition += 6
-
-  // BALANCE
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(139, 69, 19) // Burgundy text
-  doc.text("BALANCE:", summaryLabelX, yPosition, { align: "left" })
-  doc.setTextColor(0, 0, 0)
-  const balanceText = balance > 0 ? balance.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
-  doc.text(balanceText, summaryRightX, yPosition, { align: "right" })
-
-  yPosition += 12
+  yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
 
   // ===== DISCLAIMER TEXT =====
   doc.setFontSize(7)
