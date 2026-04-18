@@ -500,18 +500,6 @@ export default function AdminJobOrdersPage() {
                 >
                   Completed
                 </Button>
-                <Button
-                  onClick={() => {
-                    setStatusFilter('released')
-                    const token = localStorage.getItem('admin_token')
-                    if (token) fetchJobOrders(token, 'released')
-                  }}
-                  className={`transition-all duration-300 ${statusFilter === 'released' 
-                    ? 'bg-green-500 hover:bg-green-600 text-white shadow-lg scale-105' 
-                    : 'bg-green-100 hover:bg-green-200 text-green-800 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300'}`}
-                >
-                  Released
-                </Button>
                 {statusFilter && (
                   <Button
                     onClick={() => {
@@ -656,9 +644,14 @@ export default function AdminJobOrdersPage() {
                             </div>
 
                             {jobOrder.notes && (
-                              <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase tracking-wide mb-2">Notes</p>
-                                <p className="text-sm text-neutral-700 dark:text-neutral-300">{jobOrder.notes}</p>
+                              <div className="mt-6 pt-6 border-t border-neutral-200 dark:border-neutral-700">
+                                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50 hover:shadow-lg hover:shadow-blue-200/30 dark:hover:shadow-blue-900/20 transition-all duration-300 animate-in fade-in slide-in-from-bottom-2">
+                                  <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600"></div>
+                                    <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase tracking-wider">Notes</p>
+                                  </div>
+                                  <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed italic">{jobOrder.notes}</p>
+                                </div>
                               </div>
                             )}
                           </div>
@@ -675,29 +668,12 @@ export default function AdminJobOrdersPage() {
                               Update Order
                             </Button>
 
-                            {/* Release Button - Show when status is completed, order status is completed, and not already released */}
-                            {(() => {
+                            {/* Release Button - Show when status is completed, order status is completed, and not already released - ONLY when not in completed filter view */}
+                            {statusFilter !== 'completed' && (() => {
                               const jobOrderStatus = jobOrder.status?.toLowerCase()
                               const orderStatus = jobOrder.order?.order_status
                               const hasReleasedDate = !!jobOrder.released_date
                               const shouldShowRelease = jobOrderStatus === 'completed' && orderStatus === 'completed' && !hasReleasedDate
-                              
-                              console.log('[v0] RELEASE BUTTON DEBUG:', {
-                                jobOrderId: jobOrder.id,
-                                jobOrderNumber: jobOrder.job_order_number,
-                                jobOrderStatus: jobOrderStatus,
-                                rawJobOrderStatus: jobOrder.status,
-                                orderStatus: orderStatus,
-                                hasOrder: !!jobOrder.order,
-                                orderExists: jobOrder.order ? 'YES' : 'NO',
-                                hasReleasedDate: hasReleasedDate,
-                                releasedDate: jobOrder.released_date,
-                                shouldShowRelease: shouldShowRelease,
-                                allData: {
-                                  jobOrder,
-                                  order: jobOrder.order
-                                }
-                              })
                               
                               return shouldShowRelease
                             })() && 
@@ -729,8 +705,8 @@ export default function AdminJobOrdersPage() {
                                   </>
                                 )}
                               </Button>
-                            ) : jobOrder.released_date ? (
-                              /* Released Button - Show when already released */
+                            ) : statusFilter !== 'completed' && jobOrder.released_date ? (
+                              /* Released Button - Show when already released and not in completed filter */
                               <Button
                                 disabled={true}
                                 className="bg-green-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
