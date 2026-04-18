@@ -1200,6 +1200,11 @@ class QuotationController extends Controller
 
             Log::info('[v0] Creating order with number', ['order_number' => $orderNumber]);
 
+            // Parse and validate the remaining_balance as a float
+            $remainingBalance = floatval($request->remaining_balance ?? $quotation->total);
+            $paymentStatus = $request->payment_status ?? 'partial';
+            $paymentMethod = $request->payment_method ?? 'cash';
+
             // Create the order
             $order = \App\Models\Order::create([
                 'order_number' => $orderNumber,
@@ -1211,10 +1216,10 @@ class QuotationController extends Controller
                 'subtotal' => $quotation->subtotal,
                 'discount' => $quotation->discount,
                 'total' => $quotation->total,
-                'payment_status' => $request->payment_status ?? 'partial',
+                'payment_status' => $paymentStatus,
                 'order_status' => 'pending',
-                'payment_method' => $request->payment_method ?? 'cash',
-                'remaining_balance' => $request->remaining_balance ?? $quotation->total,
+                'payment_method' => $paymentMethod,
+                'remaining_balance' => $remainingBalance,
                 'notes' => $quotation->notes,
             ]);
 
@@ -1222,6 +1227,27 @@ class QuotationController extends Controller
 
             // Create order items from quotation items
             foreach ($quotation->items as $item) {
+                // Handle JSON fields properly - convert to JSON string if they are arrays
+                $teamRoster = $item->team_roster;
+                if (is_array($teamRoster)) {
+                    $teamRoster = json_encode($teamRoster);
+                }
+                
+                $sizeSpecifications = $item->size_specifications;
+                if (is_array($sizeSpecifications)) {
+                    $sizeSpecifications = json_encode($sizeSpecifications);
+                }
+                
+                $tarpaulinSize = $item->tarpaulin_size;
+                if (is_array($tarpaulinSize)) {
+                    $tarpaulinSize = json_encode($tarpaulinSize);
+                }
+                
+                $customization = $item->customization;
+                if (is_array($customization)) {
+                    $customization = json_encode($customization);
+                }
+
                 \App\Models\OrderItem::create([
                     'order_id' => $order->id,
                     'service_id' => $item->service_id,
@@ -1233,16 +1259,46 @@ class QuotationController extends Controller
                     'design_cost' => $item->design_cost,
                     'line_total' => $item->line_total,
                     'design_file_url' => $item->design_file_url,
-                    'customization' => $item->customization,
-                    'notes' => $item->notes,
-                    'team_roster' => $item->team_roster,
-                    'size_specifications' => $item->size_specifications,
-                    'tarpaulin_size' => $item->tarpaulin_size,
+                    'customization' => $customization,
+                    'notes' => is_array($item->notes) ? json_encode($item->notes) : $item->notes,
+                    'team_roster' => $teamRoster,
+                    'size_specifications' => $sizeSpecifications,
+                    'tarpaulin_size' => $tarpaulinSize,
                     'status' => 'pending',
                 ]);
             }
 
             Log::info('[v0] Order items created', ['count' => count($quotation->items)]);
+
+            // Generate job order number
+            $lastJobOrder = \App\Models\JobOrder::whereDate('created_at', Carbon::today())
+                ->orderBy('id', 'desc')
+                ->first();
+            
+            if ($lastJobOrder) {
+                preg_match('/JO-\d+-(\d+)$/', $lastJobOrder->job_order_number, $joMatches);
+                $joSequence = isset($joMatches[1]) ? intval($joMatches[1]) + 1 : 1;
+            } else {
+                $joSequence = 1;
+            }
+            
+            $jobOrderNumber = 'JO-' . $today . '-' . str_pad($joSequence, 5, '0', STR_PAD_LEFT);
+
+            // Create job order
+            $jobOrder = \App\Models\JobOrder::create([
+                'job_order_number' => $jobOrderNumber,
+                'order_id' => $order->id,
+                'customer_id' => $quotation->customer_id,
+                'branch_id' => $quotation->branch_id,
+                'assigned_to' => $request->assigned_to,
+                'status' => 'pending',
+                'start_date' => $request->start_date ? Carbon::parse($request->start_date) : Carbon::now(),
+                'due_date' => $request->due_date ? Carbon::parse($request->due_date) : Carbon::now()->addDays(7),
+                'is_priority' => $request->is_priority ?? 0,
+                'notes' => $request->notes ?? $quotation->notes,
+            ]);
+
+            Log::info('[v0] Job order created', ['job_order_id' => $jobOrder->id, 'job_order_number' => $jobOrderNumber]);
 
             // Update quotation status to 'ordered'
             $quotation->status = 'ordered';
@@ -1254,6 +1310,7 @@ class QuotationController extends Controller
                 'success' => true,
                 'message' => 'Quotation successfully converted to order',
                 'order' => $order->load(['customer', 'items', 'branch']),
+                'job_order' => $jobOrder,
             ], 201);
 
         } catch (\Exception $e) {

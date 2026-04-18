@@ -427,33 +427,36 @@ export default function OrdersPage() {
     }
   }
 
-  const handleSaveOrder = async (paymentMethod: string, paymentStatus: string, remainingBalance: number) => {
+  const handleSaveOrder = async (paymentType: "downpayment" | "fullpayment", employeeId: number, formData: any) => {
     if (!selectedQuotation) {
-      console.log("[v0] handleSaveOrder - No selectedQuotation")
       return
     }
-
-    console.log("[v0] handleSaveOrder - Starting order creation", {
-      quotationId: selectedQuotation.id,
-      quotationNumber: selectedQuotation.quotation_number,
-      paymentMethod,
-      paymentStatus,
-      remainingBalance
-    })
 
     try {
       setSavingId(selectedQuotation.id)
       const token = localStorage.getItem("admin_token")
 
+      // Calculate payment status and remaining balance based on payment type
+      const paymentAmount = paymentType === "fullpayment" 
+        ? selectedQuotation.total 
+        : parseFloat(formData.downPaymentInput) || (selectedQuotation.total * 0.5)
+      
+      const remainingBalance = selectedQuotation.total - paymentAmount
+      const paymentStatus = paymentType === "fullpayment" ? "paid" : "partial"
+
       const requestUrl = `${apiUrl}/admin/quotations/${selectedQuotation.id}/convert-to-order`
-      console.log("[v0] handleSaveOrder - Request URL:", requestUrl)
 
       const requestBody = {
-        payment_method: paymentMethod,
+        payment_method: formData.paymentMethod || "cash",
         payment_status: paymentStatus,
+        payment_amount: paymentAmount,
         remaining_balance: remainingBalance,
+        assigned_to: employeeId,
+        start_date: formData.startDate,
+        due_date: formData.dueDate,
+        notes: formData.notes || "",
+        is_priority: formData.isPriority || 0,
       }
-      console.log("[v0] handleSaveOrder - Request body:", requestBody)
 
       const response = await fetch(requestUrl, {
         method: "POST",
@@ -464,16 +467,10 @@ export default function OrdersPage() {
         body: JSON.stringify(requestBody),
       })
 
-      console.log("[v0] handleSaveOrder - Response status:", response.status, response.statusText)
-
       if (!response.ok) {
         const errorData = await response.json()
-        console.error("[v0] handleSaveOrder - Error response:", errorData)
         throw new Error(errorData.message || errorData.error || "Failed to create order")
       }
-
-      const successData = await response.json()
-      console.log("[v0] handleSaveOrder - Success response:", successData)
 
       // Refresh the data after successful conversion
       const refreshToken = localStorage.getItem("admin_token")
@@ -489,8 +486,8 @@ export default function OrdersPage() {
       setError("")
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : "Failed to create order"
-      console.error("[v0] handleSaveOrder - Error:", errorMsg)
       setError(errorMsg)
+      throw err
     } finally {
       setSavingId(null)
     }
