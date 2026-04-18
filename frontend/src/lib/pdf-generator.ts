@@ -149,67 +149,59 @@ export const generateQuotationPDF = async (quotation: any) => {
   items.forEach((item: any) => {
     const quantity = item.quantity || 0
     const unitPrice = parseFloat(item.unit_price || 0)
+    // Use line_total as the PRICE (already includes all calculations)
+    const servicePrice = parseFloat(item.line_total || unitPrice)
+    calculatedSubtotal += servicePrice
 
     // Build service name with requirements info
     let serviceName = item.service?.name || item.name || "Service"
-    const notes = item.notes
-    let serviceSubtotal = unitPrice // Default to unit price
+    const teamRoster = item.team_roster
+    const sizeSpecs = item.size_specifications
 
-    if (notes) {
-      let notesData = notes
-      if (typeof notes === 'string') {
-        try {
-          notesData = JSON.parse(notes)
-        } catch {
-          notesData = null
+    // Build requirements string from team_roster and size_specifications
+    const requirements: string[] = []
+
+    // For sublimation - extract from team_roster (array of player objects)
+    if (teamRoster && Array.isArray(teamRoster) && teamRoster.length > 0) {
+      // Count sets (full uniforms), tops, and bottoms
+      let sets = 0
+      let tops = 0
+      let bottoms = 0
+
+      teamRoster.forEach((player: any) => {
+        // A "set" is when they have both top and bottom with same or different sizes
+        if (player.sizeTop && player.sizeBottom) {
+          sets++
+        } else if (player.sizeTop && !player.sizeBottom) {
+          tops++
+        } else if (player.sizeBottom && !player.sizeTop) {
+          bottoms++
         }
-      }
+      })
 
-      if (notesData) {
-        // Build requirements string
-        const requirements: string[] = []
+      if (sets > 0) requirements.push(`${sets}Sets`)
+      if (tops > 0) requirements.push(`${tops}Top`)
+      if (bottoms > 0) requirements.push(`${bottoms}Bottom`)
+    }
 
-        // For sublimation - collect sets, tops, bottoms
-        if (notesData.sets) requirements.push(`${notesData.sets}Sets`)
-        if (notesData.topOnly) requirements.push(`${notesData.topOnly}Top`)
-        if (notesData.bottomOnly) requirements.push(`${notesData.bottomOnly}Bottom`)
-
-        // For tarpaulin - collect size specs
-        if (notesData.width && notesData.height) {
-          requirements.push(`${notesData.width}ft × ${notesData.height}ft`)
-        }
-
-        // For size specifications
-        if (notesData.sizeSpecifications && Array.isArray(notesData.sizeSpecifications)) {
-          notesData.sizeSpecifications.forEach((spec: any) => {
-            if (spec.quantity && spec.size) {
-              requirements.push(`${spec.quantity}${spec.size}`)
-            }
-          })
-        }
-
-        // Add requirements to service name
-        if (requirements.length > 0) {
-          serviceName = `${serviceName} (${requirements.join(',')})`
-        }
-
-        // Use subtotal from notes if available
-        if (notesData.subtotal) {
-          serviceSubtotal = parseFloat(notesData.subtotal)
-        }
+    // For tarpaulin - extract from size_specifications (object with width/height)
+    if (sizeSpecs && typeof sizeSpecs === 'object' && !Array.isArray(sizeSpecs)) {
+      if (sizeSpecs.width && sizeSpecs.height) {
+        requirements.push(`${sizeSpecs.width}ft × ${sizeSpecs.height}ft`)
       }
     }
 
-    // Calculate total price (quantity × serviceSubtotal OR just serviceSubtotal if it's the final price)
-    const totalPrice = serviceSubtotal
-    calculatedSubtotal += totalPrice
+    // Add requirements to service name in parentheses
+    if (requirements.length > 0) {
+      serviceName = `${serviceName} (${requirements.join(',')})`
+    }
 
-    // Main service row
+    // Main service row - PRICE uses line_total, not quantity × unit_price
     projectTableData.push([
       serviceName,
       quantity.toString(),
       unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-      totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      servicePrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
     ])
   })
 
