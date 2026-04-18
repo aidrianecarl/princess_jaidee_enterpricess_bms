@@ -576,37 +576,37 @@ export default function JobOrderDetailPage() {
                               </div>
                             )}
 
-                            {/* Team Roster */}
+                            {/* Team Roster Table */}
                             {teamRoster && teamRoster.length > 0 && (
                               <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-6 text-lg">Team Roster</h4>
-                                <div className="space-y-6">
+                                <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster</h4>
+                                <div className="space-y-4">
                                   {teamRoster.map((player, idx) => (
-                                    <div key={idx} className="p-4 bg-white dark:bg-neutral-800 rounded-lg border border-blue-100 dark:border-blue-700">
-                                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div key={idx} className="bg-white dark:bg-neutral-800 p-4 rounded border border-blue-100 dark:border-blue-900/50">
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div>
-                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Name</p>
-                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.name}</p>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Name</p>
+                                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">{player.name}</p>
                                         </div>
                                         <div>
-                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Jersey #</p>
-                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.number}</p>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Jersey #</p>
+                                          <p className="text-sm font-semibold text-neutral-900 dark:text-white">{player.number}</p>
                                         </div>
                                         <div>
-                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Top Size</p>
-                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.sizeTop || '—'}</p>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Top Size</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{player.sizeTop || '—'}</p>
                                         </div>
                                         <div>
-                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Top Length (in)</p>
-                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.topLength || '—'}</p>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Top Length (in)</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{player.topLength || '—'}</p>
                                         </div>
                                         <div>
-                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Bottom Size</p>
-                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</p>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Size</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</p>
                                         </div>
                                         <div>
-                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase tracking-wide mb-1">Bottom Length (in)</p>
-                                          <p className="text-lg font-semibold text-neutral-900 dark:text-white">{player.bottomLength || '—'}</p>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Length (in)</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{player.bottomLength || '—'}</p>
                                         </div>
                                       </div>
                                     </div>

@@ -9,6 +9,15 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 interface SentQuotation {
   id: number
@@ -71,7 +80,7 @@ export default function OrdersPage() {
   const [user, setUser] = useState(null)
   const [error, setError] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
-  const [filterStatus, setFilterStatus] = useState<"pending" | "sales" | "partial" | "paid">("pending")
+  const [filterStatus, setFilterStatus] = useState<"pending" | "sales" | "partial" | "paid" | "completed" | "released">("pending")
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 6
   
@@ -81,6 +90,9 @@ export default function OrdersPage() {
   const [viewItemsModalOpen, setViewItemsModalOpen] = useState(false)
   const [selectedQuotation, setSelectedQuotation] = useState<SentQuotation | null>(null)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false)
+  const [releaseOrderId, setReleaseOrderId] = useState<number | null>(null)
+  const [isReleasing, setIsReleasing] = useState<number | null>(null)
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
@@ -509,6 +521,42 @@ export default function OrdersPage() {
           quotation: order.quotation,
           isOrder: true
         }))
+    } else if (filterStatus === "completed") {
+      filtered = allOrders
+        .filter(o => o.order_status === "completed" && o.payment_status === "paid")
+        .map(order => ({
+          id: order.id,
+          quotation_number: order.order_number,
+          total: order.total,
+          remaining_balance: order.remaining_balance,
+          customer: { name: order.customer?.name || `Customer ${order.customer_id}`, email: "", phone: "" },
+          created_at: order.order_date,
+          payment_status: order.payment_status,
+          order_status: order.order_status,
+          subtotal: order.subtotal,
+          discount: order.discount,
+          payment_method: order.payment_method,
+          quotation: order.quotation,
+          isOrder: true
+        }))
+    } else if (filterStatus === "released") {
+      filtered = allOrders
+        .filter(o => o.order_status === "released")
+        .map(order => ({
+          id: order.id,
+          quotation_number: order.order_number,
+          total: order.total,
+          remaining_balance: order.remaining_balance,
+          customer: { name: order.customer?.name || `Customer ${order.customer_id}`, email: "", phone: "" },
+          created_at: order.order_date,
+          payment_status: order.payment_status,
+          order_status: order.order_status,
+          subtotal: order.subtotal,
+          discount: order.discount,
+          payment_method: order.payment_method,
+          quotation: order.quotation,
+          isOrder: true
+        }))
     }
 
     // Apply search filter
@@ -540,6 +588,42 @@ export default function OrdersPage() {
         return "bg-orange-100 text-orange-800"
       default:
         return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const handleReleaseConfirm = (orderId: number) => {
+    setReleaseOrderId(orderId)
+    setReleaseConfirmOpen(true)
+  }
+
+  const handleReleaseOrder = async () => {
+    if (!releaseOrderId) return
+    
+    const token = localStorage.getItem("admin_token")
+    if (!token) return
+
+    try {
+      setIsReleasing(releaseOrderId)
+      
+      const response = await fetch(`${apiUrl}/admin/orders/${releaseOrderId}/release`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        setReleaseConfirmOpen(false)
+        fetchAllOrders(token)
+      } else {
+        const data = await response.json()
+        console.error("[v0] Release error:", data)
+      }
+    } catch (err) {
+      console.error("[v0] Error releasing order:", err)
+    } finally {
+      setIsReleasing(null)
     }
   }
 
@@ -634,6 +718,40 @@ export default function OrdersPage() {
             >
               Fully Paid
             </button>
+
+            {/* Completed Button - Only for Cashier and Manager */}
+            {user && (user.user_type === 'cashier' || user.user_type === 'manager') && (
+              <button
+                onClick={() => {
+                  setFilterStatus("completed")
+                  setCurrentPage(1)
+                }}
+                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                  filterStatus === "completed"
+                    ? "bg-orange-500 text-white shadow-lg"
+                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                }`}
+              >
+                Completed
+              </button>
+            )}
+
+            {/* Released Button - Only for Cashier and Manager */}
+            {user && (user.user_type === 'cashier' || user.user_type === 'manager') && (
+              <button
+                onClick={() => {
+                  setFilterStatus("released")
+                  setCurrentPage(1)
+                }}
+                className={`px-4 py-2 rounded-lg font-semibold whitespace-nowrap transition-all duration-300 transform hover:scale-105 active:scale-95 ${
+                  filterStatus === "released"
+                    ? "bg-emerald-600 text-white shadow-lg"
+                    : "bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                }`}
+              >
+                Released
+              </button>
+            )}
           </div>
 
           {isLoading ? (
@@ -755,6 +873,29 @@ export default function OrdersPage() {
                                 <span className="hidden sm:inline">Update</span>
                               </Button>
                             )}
+                            {/* Release Button - Only show for Cashier and Manager when payment is paid and order is completed */}
+                            {user && (user.user_type === 'cashier' || user.user_type === 'manager') && 
+                             item.payment_status === 'paid' && 
+                             item.order_status === 'completed' && (
+                              <Button
+                                onClick={() => handleReleaseConfirm(item.id)}
+                                disabled={isReleasing === item.id}
+                                className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white transition active:scale-95"
+                                title="Release Order to Customer"
+                              >
+                                {isReleasing === item.id ? (
+                                  <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    <span className="hidden sm:inline">Releasing...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle size={18} />
+                                    <span className="hidden sm:inline">Release</span>
+                                  </>
+                                )}
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
@@ -874,6 +1015,43 @@ export default function OrdersPage() {
             onOpenChange={setViewItemsModalOpen}
             quotation={selectedQuotation}
           />
+
+          {/* Release Confirmation Dialog */}
+          <AlertDialog open={releaseConfirmOpen} onOpenChange={setReleaseConfirmOpen}>
+            <AlertDialogContent className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-neutral-900 dark:text-white">
+                  Release Order?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
+                  Are you sure you want to release order{' '}
+                  <span className="font-semibold text-neutral-900 dark:text-white">
+                    #{releaseOrderId && allOrders.find(o => o.id === releaseOrderId)?.order_number}
+                  </span>
+                  ? This action will mark it as released and the customer can pick it up.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="flex gap-3">
+                <AlertDialogCancel className="hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                  No, Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => handleReleaseOrder()}
+                  disabled={isReleasing === releaseOrderId}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {isReleasing === releaseOrderId ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin mr-2" />
+                      Releasing...
+                    </>
+                  ) : (
+                    'Yes, Release'
+                  )}
+                </AlertDialogAction>
+              </div>
+            </AlertDialogContent>
+          </AlertDialog>
         </main>
       </div>
     </div>
