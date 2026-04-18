@@ -220,13 +220,15 @@ export const generateQuotationPDF = async (quotation: any) => {
     let servicePrice = parseFloat(item.line_total || unitPrice)
     let subtotalForService = 0
 
-    // For Sublimation: Show with player count in name
+    // For Sublimation: Show with SET/TOP/BOTTOM counts in name
     if (serviceName.includes('Sublimation') && teamRoster && Array.isArray(teamRoster)) {
       const breakdown = calculateSublimationBreakdown(teamRoster, unitPrice)
       subtotalForService = breakdown.subtotal
 
+      const requirementsStr = `${breakdown.setsCount} SET${breakdown.setsCount !== 1 ? 'S' : ''} - ${breakdown.topOnlyCount} TOP - ${breakdown.bottomOnlyCount} BOTTOM`
+
       projectTableData.push([
-        `${serviceName} (${teamRoster.length} Players)`,
+        `${serviceName} (${requirementsStr})`,
         quantity.toString(),
         unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
         subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
@@ -234,14 +236,14 @@ export const generateQuotationPDF = async (quotation: any) => {
 
       calculatedSubtotal += subtotalForService
     }
-    // For Tarpaulin: Show size in name
+    // For Tarpaulin: Show size in name with uppercase FT
     else if (serviceName.includes('Tarpaulin') && sizeSpecs) {
       subtotalForService = calculateTarpaulinSubtotal(sizeSpecs, quantity)
       const width = sizeSpecs.width || "?"
       const height = sizeSpecs.height || "?"
 
       projectTableData.push([
-        `${serviceName} (${width}ft × ${height}ft)`,
+        `${serviceName} (${width}FT × ${height}FT)`,
         quantity.toString(),
         unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
         subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
@@ -302,6 +304,85 @@ export const generateQuotationPDF = async (quotation: any) => {
 
   // Safe Y position calculation with fallback
   yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
+
+  // ===== CHARGES/DESCRIPTION TABLE =====
+  const chargesTableData = [
+    ["Service Fee", ""],
+    ["Layout Fee", ""],
+    ["Labor and Installation", ""],
+    ["Mobilization Fee", ""],
+    ["Project", ""],
+  ]
+
+  autoTable(doc, {
+    head: [["DESCRIPTION", "AMOUNT"]],
+    body: chargesTableData,
+    startY: yPosition,
+    theme: "grid",
+    headerStyles: {
+      fillColor: [220, 20, 60], // Crimson Red
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 9,
+      halign: "center",
+      valign: "middle",
+      cellPadding: 2,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      textColor: [0, 0, 0],
+      cellPadding: 2,
+    },
+    columnStyles: {
+      0: { halign: "left" },
+      1: { halign: "right" },
+    },
+    tableWidth: "100%",
+    margin: { left: 10, right: 10 },
+  })
+
+  yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
+
+  // ===== FINANCIAL SUMMARY =====
+  const total = parseFloat(quotation.total || quotation.subtotal || 0)
+  const downPayment = parseFloat(quotation.down_payment || 0)
+  const balance = total - downPayment
+
+  const summaryRightX = pageWidth - 10
+  const summaryLabelX = pageWidth - 80
+
+  // TOTAL PROJECT COST
+  doc.setFontSize(10)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(220, 20, 60) // Red
+  doc.text("TOTAL PROJECT COST:", summaryLabelX, yPosition, { align: "left" })
+  doc.setTextColor(0, 0, 0)
+  doc.text(total.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+
+  yPosition += 6
+
+  // DOWN PAYMENT - Yellow highlight
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(220, 20, 60) // Red
+  
+  // Yellow background for entire down payment row
+  doc.setFillColor(255, 255, 0) // Yellow
+  doc.rect(summaryLabelX - 5, yPosition - 4, pageWidth - summaryLabelX + 3, 6, "F")
+  
+  doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
+  doc.setTextColor(0, 0, 0)
+  doc.text(downPayment.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+
+  yPosition += 6
+
+  // BALANCE
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(220, 20, 60) // Red
+  doc.text("BALANCE:", summaryLabelX, yPosition, { align: "left" })
+  doc.setTextColor(0, 0, 0)
+  doc.text(balance.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+
+  yPosition += 12
 
   // ===== DISCLAIMER TEXT =====
   doc.setFontSize(7)
