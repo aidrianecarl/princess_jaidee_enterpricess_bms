@@ -404,6 +404,6 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.text("LARGE FORMAT PRINTING", pageWidth / 2, yPosition)
 
   // Generate PDF
-  const fileName = `Quotation_${quotation.quotation_number}_${new Date().toISOString().split("T")[0]}.html`
+  const fileName = `Quotation_${quotation.quotation_number}_${new Date().toISOString().split("T")[0]}.pdf`
   doc.save(fileName)
 }
