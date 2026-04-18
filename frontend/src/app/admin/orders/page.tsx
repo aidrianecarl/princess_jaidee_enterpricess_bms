@@ -254,18 +254,45 @@ export default function OrdersPage() {
 
   const fetchAllOrders = async (token: string) => {
     try {
-      const response = await fetch(`${apiUrl}/admin/orders`, {
+      console.log("[v0] === FETCHING ALL ORDERS START ===")
+      
+      const url = `${apiUrl}/admin/orders`
+      console.log("[v0] Fetching from URL:", url)
+      
+      const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
+      console.log("[v0] Orders response status:", response.status, response.statusText)
+
       if (!response.ok) throw new Error("Failed to fetch orders")
 
       const data = await response.json()
-      setAllOrders(data.data || data)
+      console.log("[v0] Raw orders data:", data)
+      
+      const orders = data.data || data
+      console.log("[v0] Parsed orders count:", orders.length)
+      
+      orders.forEach((order: any, idx: number) => {
+        console.log(`[v0] Order #${idx}:`, {
+          id: order.id,
+          number: order.order_number,
+          branch_id: order.branch_id,
+          has_branch_object: !!order.branch,
+          branch: order.branch,
+          payment_status: order.payment_status,
+          remaining_balance: order.remaining_balance
+        })
+      })
+      
+      console.log("[v0] Setting state with", orders.length, "orders")
+      setAllOrders(orders)
+      console.log("[v0] === FETCHING ALL ORDERS END ===")
     } catch (err) {
       console.error("[v0] Error fetching orders:", err)
+      console.error("[v0] Error stack:", err instanceof Error ? err.stack : "")
     }
   }
 
@@ -517,50 +544,70 @@ export default function OrdersPage() {
       console.log("[v0] Using partial orders")
       filtered = allOrders
         .filter(o => o.payment_status === "partial")
-        .map(order => ({
-          id: order.id,
-          quotation_number: order.order_number,
-          total: order.total,
-          remaining_balance: order.remaining_balance,
-          customer: { 
-            name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
-            email: order.customer?.bill_to_email || order.customer?.email || "", 
-            phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
-          },
-          created_at: order.order_date,
-          payment_status: order.payment_status,
-          order_status: order.order_status,
-          subtotal: order.subtotal,
-          discount: order.discount,
-          payment_method: order.payment_method,
-          quotation: order.quotation,
-          isOrder: true
-        }))
+        .map(order => {
+          console.log("[v0] Mapping partial order:", {
+            order_id: order.id,
+            order_number: order.order_number,
+            branch_id: order.branch_id,
+            has_branch_object: !!order.branch,
+            branch: order.branch
+          })
+          return {
+            id: order.id,
+            quotation_number: order.order_number,
+            total: order.total,
+            remaining_balance: order.remaining_balance,
+            customer: { 
+              name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
+              email: order.customer?.bill_to_email || order.customer?.email || "", 
+              phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
+            },
+            created_at: order.order_date,
+            payment_status: order.payment_status,
+            order_status: order.order_status,
+            subtotal: order.subtotal,
+            discount: order.discount,
+            payment_method: order.payment_method,
+            quotation: order.quotation,
+            branch: order.branch,
+            isOrder: true
+          }
+        })
     } else if (filterStatus === "paid") {
       console.log("[v0] Using paid orders")
       filtered = allOrders
         .filter(o => o.payment_status === "paid" && !o.released_date)
-        .map(order => ({
-          id: order.id,
-          quotation_number: order.order_number,
-          total: order.total,
-          remaining_balance: order.remaining_balance,
-          customer: { 
-            name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
-            email: order.customer?.bill_to_email || order.customer?.email || "", 
-            phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
-          },
-          created_at: order.order_date,
-          payment_status: order.payment_status,
-          order_status: order.order_status,
-          subtotal: order.subtotal,
-          discount: order.discount,
-          payment_method: order.payment_method,
-          quotation: order.quotation,
-          isOrder: true,
-          completed_date: order.completed_date,
-          released_date: order.released_date
-        }))
+        .map(order => {
+          console.log("[v0] Mapping paid order:", {
+            order_id: order.id,
+            order_number: order.order_number,
+            branch_id: order.branch_id,
+            has_branch_object: !!order.branch,
+            branch: order.branch
+          })
+          return {
+            id: order.id,
+            quotation_number: order.order_number,
+            total: order.total,
+            remaining_balance: order.remaining_balance,
+            customer: { 
+              name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
+              email: order.customer?.bill_to_email || order.customer?.email || "", 
+              phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
+            },
+            created_at: order.order_date,
+            payment_status: order.payment_status,
+            order_status: order.order_status,
+            subtotal: order.subtotal,
+            discount: order.discount,
+            payment_method: order.payment_method,
+            quotation: order.quotation,
+            branch: order.branch,
+            isOrder: true,
+            completed_date: order.completed_date,
+            released_date: order.released_date
+          }
+        })
     }
 
     if (searchQuery.trim()) {
@@ -1111,6 +1158,25 @@ export default function OrdersPage() {
                               <p className="text-xs text-amber-600 dark:text-amber-300 font-bold uppercase">Remaining Balance</p>
                             </div>
                             <p className="font-bold text-neutral-900 dark:text-white text-sm">₱{Number.parseFloat(item.remaining_balance || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                          </div>
+                        )}
+
+                        {item.isOrder && item.branch && (
+                          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 border border-blue-200 dark:border-blue-800/50">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Building2 size={16} className="text-blue-600 dark:text-blue-400" />
+                              <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Branch</p>
+                            </div>
+                            <p className="font-bold text-neutral-900 dark:text-white text-sm">{item.branch.name}</p>
+                            {item.branch.location && (
+                              <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">📍 {item.branch.location}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {item.isOrder && !item.branch && item.remaining_balance !== undefined && (
+                          <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4 text-center">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">[v0] No branch data - Check console logs</p>
                           </div>
                         )}
                       </div>
