@@ -176,18 +176,23 @@ export default function OrdersPage() {
 
   const fetchSentQuotations = async (token: string) => {
     try {
-      const response = await fetch(`${apiUrl}/admin/sent-quotations`, {
+      const response = await fetch(`${apiUrl}/admin/quotations/sent`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       })
 
-      if (!response.ok) throw new Error("Failed to fetch quotations")
+      if (!response.ok) {
+        console.warn("[v0] Failed to fetch sent quotations, using empty array")
+        setSentQuotations([])
+        return
+      }
 
       const data = await response.json()
       setSentQuotations(data.data || data)
     } catch (err) {
       console.error("[v0] Error fetching quotations:", err)
+      setSentQuotations([])
     }
   }
 
@@ -918,10 +923,14 @@ export default function OrdersPage() {
             <AlertDialogContent className="bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
               <AlertDialogHeader>
                 <AlertDialogTitle className="text-neutral-900 dark:text-white">
-                  Release Job Order?
+                  Release Job Order #{releaseOrderId && jobOrders.find(jo => jo.id === releaseOrderId)?.job_order_number}?
                 </AlertDialogTitle>
                 <AlertDialogDescription className="text-neutral-600 dark:text-neutral-400">
-                  Are you sure you want to release this job order? The customer will be notified to pick it up.
+                  Are you sure you want to release job order{' '}
+                  <span className="font-semibold text-neutral-900 dark:text-white">
+                    #{releaseOrderId && jobOrders.find(jo => jo.id === releaseOrderId)?.job_order_number}
+                  </span>
+                  ? The customer will be notified to pick it up.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <div className="flex gap-3">
