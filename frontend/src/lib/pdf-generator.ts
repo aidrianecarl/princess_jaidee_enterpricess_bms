@@ -284,7 +284,12 @@ const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
   doc.setFontSize(7)
   doc.setFont(undefined, "italic")
   doc.setTextColor(0, 0, 0)
-  doc.text("If you have any questions concerning this quotation, just contact and email us.", pageWidth / 2, yPosition, { align: "center" })
+  doc.text(
+  "If you have any questions concerning this quotation, just contact and email us.",
+  pageWidth - 10,
+  yPosition,
+  { align: "right" }
+  )
 
   yPosition += 10
 
