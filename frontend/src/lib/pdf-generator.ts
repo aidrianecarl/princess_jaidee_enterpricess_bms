@@ -27,7 +27,14 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ===== HEADER SECTION =====
   // Load logos first
   const logoSize = 22
-  const logoY = yPosition
+
+// Estimate header block height (4 lines)
+const headerLineHeight = 4
+const headerLines = 4
+const headerHeight = headerLineHeight * headerLines + 6 // spacing
+
+// Center logos vertically with header text block
+const logoY = yPosition + (headerHeight / 2) - (logoSize / 2)
 
   // Left: Client Logo
   if (quotation.logo_url) {
