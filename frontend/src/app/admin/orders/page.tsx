@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
 interface SentQuotation {
   id: number
@@ -176,7 +176,8 @@ export default function OrdersPage() {
 
   const fetchSentQuotations = async (token: string) => {
     try {
-      const response = await fetch(`${apiUrl}/admin/quotations/sent`, {
+      // Use the existing adminIndex endpoint with status filter
+      const response = await fetch(`${apiUrl}/admin/quotations?status=sent`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -189,7 +190,8 @@ export default function OrdersPage() {
       }
 
       const data = await response.json()
-      setSentQuotations(data.data || data)
+      // The adminIndex returns an array directly, not wrapped in data property
+      setSentQuotations(Array.isArray(data) ? data : (data.data || []))
     } catch (err) {
       console.error("[v0] Error fetching quotations:", err)
       setSentQuotations([])
