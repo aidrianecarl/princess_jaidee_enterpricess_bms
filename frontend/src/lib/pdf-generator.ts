@@ -192,26 +192,18 @@ export const generateQuotationPDF = async (quotation: any) => {
   const projectTableData: any[] = []
   let calculatedSubtotal = 0
 
-  console.log("[v0] Quotation items:", items)
-
-  items.forEach((item: any, index: number) => {
+  items.forEach((item: any) => {
     const quantity = item.quantity || 0
     const unitPrice = parseFloat(item.unit_price || 0)
     let teamRoster = item.team_roster
     let sizeSpecs = item.size_specifications
     const serviceName = item.service?.name || item.name || "Service"
 
-    console.log(`[v0] Item ${index} - Service: ${serviceName}`)
-    console.log(`[v0] Item ${index} - teamRoster type:`, typeof teamRoster, "value:", teamRoster)
-    console.log(`[v0] Item ${index} - sizeSpecs type:`, typeof sizeSpecs, "value:", sizeSpecs)
-
     // Parse teamRoster if it's a string
     if (typeof teamRoster === 'string') {
       try {
         teamRoster = JSON.parse(teamRoster)
-        console.log(`[v0] Item ${index} - Parsed teamRoster:`, teamRoster)
       } catch (e) {
-        console.log(`[v0] Item ${index} - Failed to parse teamRoster:`, e)
         teamRoster = null
       }
     }
@@ -220,9 +212,7 @@ export const generateQuotationPDF = async (quotation: any) => {
     if (typeof sizeSpecs === 'string') {
       try {
         sizeSpecs = JSON.parse(sizeSpecs)
-        console.log(`[v0] Item ${index} - Parsed sizeSpecs:`, sizeSpecs)
       } catch (e) {
-        console.log(`[v0] Item ${index} - Failed to parse sizeSpecs:`, e)
         sizeSpecs = null
       }
     }
@@ -230,93 +220,30 @@ export const generateQuotationPDF = async (quotation: any) => {
     let servicePrice = parseFloat(item.line_total || unitPrice)
     let subtotalForService = 0
 
-    // For Sublimation: Show breakdown with Sets, Top Only, Bottom Only
+    // For Sublimation: Show with player count in name
     if (serviceName.includes('Sublimation') && teamRoster && Array.isArray(teamRoster)) {
-      console.log(`[v0] Processing Sublimation for item ${index}`)
       const breakdown = calculateSublimationBreakdown(teamRoster, unitPrice)
       subtotalForService = breakdown.subtotal
-      console.log(`[v0] Sublimation breakdown:`, breakdown)
 
-      // Main service row with player count
       projectTableData.push([
         `${serviceName} (${teamRoster.length} Players)`,
         quantity.toString(),
         unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        "",
-      ])
-
-      // Breakdown rows
-      if (breakdown.setsCount > 0) {
-        projectTableData.push([
-          `  ↳ ${breakdown.setsCount} Sets`,
-          "",
-          "",
-          breakdown.setsAmount.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
-      }
-      if (breakdown.topOnlyCount > 0) {
-        projectTableData.push([
-          `  ↳ ${breakdown.topOnlyCount} Top Only`,
-          "",
-          "",
-          breakdown.topAmount.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
-      }
-      if (breakdown.bottomOnlyCount > 0) {
-        projectTableData.push([
-          `  ↳ ${breakdown.bottomOnlyCount} Bottom Only`,
-          "",
-          "",
-          breakdown.bottomAmount.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
-      }
-
-      // Subtotal for this service
-      projectTableData.push([
-        "  ✓ Subtotal",
-        "",
-        "",
         subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
       ])
 
       calculatedSubtotal += subtotalForService
     }
-    // For Tarpaulin: Show size specifications
+    // For Tarpaulin: Show size in name
     else if (serviceName.includes('Tarpaulin') && sizeSpecs) {
-      console.log(`[v0] Processing Tarpaulin for item ${index}`)
-      console.log(`[v0] sizeSpecs object:`, sizeSpecs)
-      console.log(`[v0] sizeSpecs.width:`, sizeSpecs.width)
-      console.log(`[v0] sizeSpecs.height:`, sizeSpecs.height)
-      console.log(`[v0] sizeSpecs.totalSqft:`, sizeSpecs.totalSqft)
-      console.log(`[v0] sizeSpecs.totalPrice:`, sizeSpecs.totalPrice)
-
       subtotalForService = calculateTarpaulinSubtotal(sizeSpecs, quantity)
-      console.log(`[v0] Tarpaulin subtotalForService:`, subtotalForService)
-
-      // Main service row with size info
       const width = sizeSpecs.width || "?"
       const height = sizeSpecs.height || "?"
+
       projectTableData.push([
         `${serviceName} (${width}ft × ${height}ft)`,
         quantity.toString(),
         unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        "",
-      ])
-
-      // Size details
-      const totalSqft = sizeSpecs.totalSqft || "?"
-      projectTableData.push([
-        `  ↳ ${totalSqft} sq ft × ${quantity} qty`,
-        "",
-        "",
-        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-      ])
-
-      // Subtotal
-      projectTableData.push([
-        "  ✓ Subtotal",
-        "",
-        "",
         subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
       ])
 
@@ -324,7 +251,6 @@ export const generateQuotationPDF = async (quotation: any) => {
     }
     // For other services
     else {
-      console.log(`[v0] Processing other service for item ${index}: ${serviceName}`)
       subtotalForService = servicePrice
       calculatedSubtotal += subtotalForService
 
@@ -337,8 +263,13 @@ export const generateQuotationPDF = async (quotation: any) => {
     }
   })
 
-  console.log("[v0] Final projectTableData:", projectTableData)
-  console.log("[v0] Calculated subtotal:", calculatedSubtotal)
+  // Add empty rows
+  projectTableData.push(["", "", "", ""])
+  projectTableData.push(["", "", "", ""])
+
+  // Add subtotal row
+  const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : calculatedSubtotal
+  projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 })])
 
   autoTable(doc, {
     head: [["PROJECT TYPE:", "QTY", "UNIT PRICE", "PRICE"]],
