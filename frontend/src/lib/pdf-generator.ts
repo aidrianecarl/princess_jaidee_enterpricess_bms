@@ -149,60 +149,82 @@ export const generateQuotationPDF = async (quotation: any) => {
   items.forEach((item: any) => {
     const quantity = item.quantity || 0
     const unitPrice = parseFloat(item.unit_price || 0)
-    // Use line_total as the PRICE (already includes all calculations)
-    const servicePrice = parseFloat(item.line_total || unitPrice)
-    calculatedSubtotal += servicePrice
+    const totalPrice = quantity * unitPrice
+    calculatedSubtotal += totalPrice
 
-    // Build service name with requirements info
-    let serviceName = item.service?.name || item.name || "Service"
-    const teamRoster = item.team_roster
-    const sizeSpecs = item.size_specifications
-
-    // Build requirements string from team_roster and size_specifications
-    const requirements: string[] = []
-
-    // For sublimation - extract from team_roster (array of player objects)
-    if (teamRoster && Array.isArray(teamRoster) && teamRoster.length > 0) {
-      // Count sets (full uniforms), tops, and bottoms
-      let sets = 0
-      let tops = 0
-      let bottoms = 0
-
-      teamRoster.forEach((player: any) => {
-        // A "set" is when they have both top and bottom with same or different sizes
-        if (player.sizeTop && player.sizeBottom) {
-          sets++
-        } else if (player.sizeTop && !player.sizeBottom) {
-          tops++
-        } else if (player.sizeBottom && !player.sizeTop) {
-          bottoms++
-        }
-      })
-
-      if (sets > 0) requirements.push(`${sets}Sets`)
-      if (tops > 0) requirements.push(`${tops}Top`)
-      if (bottoms > 0) requirements.push(`${bottoms}Bottom`)
-    }
-
-    // For tarpaulin - extract from size_specifications (object with width/height)
-    if (sizeSpecs && typeof sizeSpecs === 'object' && !Array.isArray(sizeSpecs)) {
-      if (sizeSpecs.width && sizeSpecs.height) {
-        requirements.push(`${sizeSpecs.width}ft × ${sizeSpecs.height}ft`)
-      }
-    }
-
-    // Add requirements to service name in parentheses
-    if (requirements.length > 0) {
-      serviceName = `${serviceName} (${requirements.join(',')})`
-    }
-
-    // Main service row - PRICE uses line_total, not quantity × unit_price
+    // Main service row - show service name only (no price inline)
+    const serviceName = item.service?.name || item.name || "Service"
     projectTableData.push([
       serviceName,
       quantity.toString(),
-      unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-      servicePrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
+      totalPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 }),
     ])
+
+    // Add service details from notes field
+    const notes = item.notes
+    if (notes) {
+      // Parse notes if it's a string
+      let notesData = notes
+      if (typeof notes === 'string') {
+        try {
+          notesData = JSON.parse(notes)
+        } catch {
+          notesData = null
+        }
+      }
+
+      if (notesData) {
+        // Handle tarpaulin size notes
+        if (notesData.width && notesData.height && notesData.pricePerSqFt) {
+          const sizeDetail = `${notesData.width}ft × ${notesData.height}ft. ${notesData.pricePerSqFt} pesos per sq ft`
+          projectTableData.push([`   ${sizeDetail}`, "", "", ""])
+        }
+
+        // Handle size specifications (sublimation)
+        if (notesData.sizeSpecifications && Array.isArray(notesData.sizeSpecifications)) {
+          notesData.sizeSpecifications.forEach((spec: any) => {
+            if (spec.quantity && spec.size) {
+              const sizeDetail = `   ${spec.quantity} ${spec.size}`
+              projectTableData.push([sizeDetail, "", "", ""])
+            }
+          })
+        }
+
+        // Handle sets, tops, bottoms for sublimation (no prices inline - only in summary)
+        if (notesData.sets || notesData.topOnly || notesData.bottomOnly) {
+          if (notesData.sets) {
+            projectTableData.push([`   ${notesData.sets} Sets`, "", "", ""])
+          }
+          if (notesData.topOnly) {
+            projectTableData.push([`   ${notesData.topOnly} Top Only`, "", "", ""])
+          }
+          if (notesData.bottomOnly) {
+            projectTableData.push([`   ${notesData.bottomOnly} Bottom Only`, "", "", ""])
+          }
+        }
+      }
+    }
+
+    // Handle size_specifications field directly
+    if (item.size_specifications) {
+      let sizeSpecs = item.size_specifications
+      if (typeof sizeSpecs === 'string') {
+        try {
+          sizeSpecs = JSON.parse(sizeSpecs)
+        } catch {
+          sizeSpecs = null
+        }
+      }
+
+      if (Array.isArray(sizeSpecs)) {
+        sizeSpecs.forEach((spec: any) => {
+          if (spec.quantity && spec.size) {
+            projectTableData.push([`   ${spec.quantity} ${spec.size}`, "", "", ""])
+          }
+        })
+      }
+    }
   })
 
   // Add empty rows
@@ -210,9 +232,9 @@ export const generateQuotationPDF = async (quotation: any) => {
   projectTableData.push(["", "", "", "0"])
   projectTableData.push(["", "", "", "0"])
 
-  // Add subtotal row
+  // Add subtotal row - use calculated subtotal from items
   const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : calculatedSubtotal
-  projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 })])
+  projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 2 })])
 
   autoTable(doc, {
     head: [["PROJECT TYPE:", "QTY", "UNIT PRICE", "PRICE"]],
@@ -244,7 +266,89 @@ export const generateQuotationPDF = async (quotation: any) => {
   })
 
   // Safe Y position calculation with fallback
-  yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
+  yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 5
+
+  // ===== DESCRIPTION / CHARGES TABLE =====
+  const chargesTableData = [
+    ["Service Fee", ""],
+    ["Layout Fee", ""],
+    ["Labor and Installation", ""],
+    ["Mobilization Fee", ""],
+    ["Project", ""],
+  ]
+
+  autoTable(doc, {
+    head: [["DESCRIPTION", "AMOUNT"]],
+    body: chargesTableData,
+    startY: yPosition,
+    theme: "grid",
+    headerStyles: {
+      fillColor: [220, 20, 60], // Crimson Red
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 9,
+      halign: "center",
+      valign: "middle",
+      cellPadding: 2,
+    },
+    bodyStyles: {
+      fontSize: 8,
+      textColor: [0, 0, 0],
+      cellPadding: 2,
+    },
+    columnStyles: {
+      0: { halign: "left" },
+      1: { halign: "right" },
+    },
+    tableWidth: "100%",
+    margin: { left: 10, right: 10 },
+  })
+
+  // Safe Y position calculation with fallback
+  yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 25, yPosition + 25) + 8
+
+  // ===== FINANCIAL SUMMARY (Right Aligned) =====
+  const total = parseFloat(quotation.total || quotation.subtotal || 0)
+  const downPayment = parseFloat(quotation.down_payment || 0)
+  const balance = total - downPayment
+
+  const summaryRightX = pageWidth - 10
+  const summaryLabelX = pageWidth - 80
+
+  // TOTAL PROJECT COST
+  doc.setFontSize(10)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(139, 69, 19) // Burgundy text
+  doc.text("TOTAL PROJECT COST:", summaryLabelX, yPosition, { align: "left" })
+  doc.setTextColor(0, 0, 0)
+  const totalText = total > 0 ? total.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
+  doc.text(totalText, summaryRightX, yPosition, { align: "right" })
+
+  yPosition += 6
+
+  // DOWN PAYMENT - Yellow highlight
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(139, 69, 19) // Burgundy text
+  
+  // Yellow background for entire down payment row
+  doc.setFillColor(255, 255, 0) // Yellow
+  doc.rect(summaryLabelX - 5, yPosition - 4, pageWidth - summaryLabelX + 3, 6, "F")
+  
+  doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
+  const downPaymentText = downPayment > 0 ? downPayment.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
+  doc.text(downPaymentText, summaryRightX, yPosition, { align: "right" })
+
+  yPosition += 6
+
+  // BALANCE
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(139, 69, 19) // Burgundy text
+  doc.text("BALANCE:", summaryLabelX, yPosition, { align: "left" })
+  doc.setTextColor(0, 0, 0)
+  const balanceText = balance > 0 ? balance.toLocaleString("en-PH", { minimumFractionDigits: 2 }) : "0.00"
+  doc.text(balanceText, summaryRightX, yPosition, { align: "right" })
+
+  yPosition += 12
 
   // ===== DISCLAIMER TEXT =====
   doc.setFontSize(7)
