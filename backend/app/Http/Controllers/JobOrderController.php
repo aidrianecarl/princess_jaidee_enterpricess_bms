@@ -31,11 +31,11 @@ class JobOrderController extends Controller
                 'branch_id' => $userBranchId,
             ]);
 
-            // Filter by branch for employees - only show job orders from their branch
-            // Join allows us to access orders.branch_id through the join
-            if ($userType === 'employee' && $userBranchId) {
-                Log::info('[v0] Filtering job orders by employee branch', ['branch_id' => $userBranchId]);
-                $query->where('orders.branch_id', $userBranchId);
+            // Filter based on user type
+            if ($userType === 'employee') {
+                // Employees only see job orders assigned to them
+                Log::info('[v0] Filtering job orders for employee', ['user_id' => $userId]);
+                $query->where('job_orders.assigned_to', $userId);
             }
             // Admins see all job orders
 

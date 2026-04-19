@@ -368,16 +368,10 @@ export function SetPaymentModal({
             >
               <option value="">-- Select Employee --</option>
               {(() => {
-                console.log("[v0] SetPaymentModal - branches:", branches)
-                console.log("[v0] SetPaymentModal - employees:", employees)
                 const mainBranch = branches.find(b => b.is_main_branch)
-                console.log("[v0] SetPaymentModal - main branch found:", mainBranch)
                 const filteredEmployees = employees.filter((emp) => {
-                  const matches = emp.branch_id === mainBranch?.id
-                  console.log(`[v0] Employee ${emp.id} (${emp.first_name} ${emp.last_name}) - branch_id: ${emp.branch_id}, main_branch_id: ${mainBranch?.id}, matches: ${matches}`)
-                  return matches
+                  return emp.branch_id === mainBranch?.id
                 })
-                console.log("[v0] SetPaymentModal - filtered employees:", filteredEmployees)
                 return filteredEmployees.map((emp) => (
                   <option key={emp.id} value={emp.id}>
                     {emp.first_name} {emp.last_name} ({emp.role})

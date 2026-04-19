@@ -2727,11 +2727,13 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                   className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-red-600 outline-none transition"
                 >
                   <option value="" disabled>Select a branch</option>
-                  {branches.map((branch) => (
-                    <option key={branch.id} value={branch.id}>
-                      {branch.name} {branch.is_main_branch ? "(Main Branch)" : ""} - {branch.location}
-                    </option>
-                  ))}
+                  {branches
+                    .filter((branch) => !branch.is_main_branch)
+                    .map((branch) => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name} - {branch.location}
+                      </option>
+                    ))}
                 </select>
               )}
               <p className="text-xs text-gray-500 mt-1">
