@@ -45,6 +45,11 @@ interface JobOrder {
     last_name: string
     email: string
   }
+  branch?: {
+    id: number
+    name: string
+    location?: string
+  }
   order?: {
     id: number
     order_status: string
