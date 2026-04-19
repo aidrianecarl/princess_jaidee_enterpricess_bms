@@ -306,25 +306,7 @@ export default function AdminJobOrdersPage() {
       
       console.log('[v0] ORDERS WITH DETAILS:', ordersWithDetails)
       
-      // Filter job orders: employees only see orders assigned to them, admins see all
-      const currentUser = user as any
-      let filteredOrders = ordersWithDetails
-      if (currentUser && currentUser.user_type === 'employee') {
-        console.log('[v0] Filtering job orders for employee:', currentUser.id)
-        filteredOrders = ordersWithDetails.filter((jobOrder) => {
-          const assignedToId = jobOrder.assigned_to || jobOrder.assignedTo?.id
-          console.log('[v0] Checking job order:', {
-            jobOrderId: jobOrder.id,
-            assignedToId: assignedToId,
-            currentUserId: currentUser.id,
-            matches: assignedToId === currentUser.id
-          })
-          return assignedToId === currentUser.id
-        })
-        console.log('[v0] Filtered job orders count:', filteredOrders.length)
-      }
-      
-      setJobOrders(filteredOrders)
+      setJobOrders(ordersWithDetails)
       
       // Fetch items for each job order to get stats
       for (const order of ordersWithDetails) {
