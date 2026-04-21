@@ -550,7 +550,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       const isTarpaulin = item.name?.includes("Tarpaulin")
       let itemTotal = 0
       
-      if (isSublimation && item.serviceRequirements?.teamRoster) {
+      if (isSublimation && item.serviceRequirements?.teamRoster && item.serviceRequirements.teamRoster.length > 0) {
         // Calculate Sublimation pricing based on sets and top/bottom only
         const basePrice = item.unitPrice
         const teamRoster = item.serviceRequirements.teamRoster
@@ -574,7 +574,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
         itemTotal = item.amount
       }
       
-      // Add Design Consultation fee if it exists (only once per service)
+      // Add Design Consultation fee if it exists
       if (item.serviceRequirements?.designConsultation?.needed) {
         itemTotal += item.serviceRequirements.designConsultation.price || 0
       }
@@ -2372,7 +2372,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                       serviceSubtotal += basePrice
                                     }
                                   })
-                                } else if (isTarpaulin) {
+                                } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) {
                                   serviceSubtotal = (item.serviceRequirements?.sizeSpecifications?.totalPrice || 0) * item.quantity
                                 } else {
                                   serviceSubtotal = item.amount
@@ -2387,7 +2387,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   <div className="mt-3 pt-3 border-t border-blue-300">
                                     <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded border-2 border-blue-400">
                                       <span className="font-bold text-blue-900">Subtotal</span>
-                                      <span className="text-lg font-bold text-blue-700">₱{serviceSubtotal.toLocaleString()}</span>
+                                      <span className="text-lg font-bold text-blue-700">₱{serviceSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
                                   </div>
                                 )
