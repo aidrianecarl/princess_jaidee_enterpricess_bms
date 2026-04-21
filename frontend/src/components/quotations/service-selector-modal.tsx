@@ -134,8 +134,8 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
   }
 
   const handleDesignConsultationYes = () => {
-    // Use the Design Consultation Service fetched from backend
-    if (!designConsultationService) return
+    // Add design consultation to the selected service, not replace with it
+    if (!selectedService || !designConsultationService) return
     
     const updatedServiceData = {
       ...serviceData,
@@ -150,7 +150,8 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
     }
     setServiceData(updatedServiceData)
     setShowDesignConsultationModal(false)
-    onSelect(designConsultationService, updatedServiceData)
+    // Pass the selected service, with design consultation as additional data
+    onSelect(selectedService, updatedServiceData)
     handleClose()
   }
 
@@ -217,18 +218,28 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
       if (!response.ok) throw new Error("Failed to fetch services")
 
       const data = await response.json()
-      const servicesData = data.data || data
-      setServices(servicesData)
-      setFilteredServices(servicesData)
+      const servicesData = (data.data || data) as Service[]
       
-      // Find and set the Design Consultation Service
-      const consultationService = servicesData.find((s: Service) => 
+      // Filter only active services
+      const activeServices = servicesData.filter((s) => s.status === 'active' || s.is_active === true)
+      
+      // Find Design Consultation Service
+      const consultationService = activeServices.find((s: Service) => 
         s.name.toLowerCase().includes("design consultation") ||
         s.category === "design-consultation"
       )
       if (consultationService) {
         setDesignConsultationService(consultationService)
       }
+      
+      // Set only non-Design-Consultation services in the list
+      const displayServices = activeServices.filter((s: Service) => 
+        !s.name.toLowerCase().includes("design consultation") &&
+        s.category !== "design-consultation"
+      )
+      
+      setServices(displayServices)
+      setFilteredServices(displayServices)
     } catch (err) {
       console.error("Error fetching services:", err)
       setError(err instanceof Error ? err.message : "Failed to load services")

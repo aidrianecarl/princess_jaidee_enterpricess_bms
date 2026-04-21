@@ -2341,37 +2341,28 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 Qty: <span className="font-semibold">{item.quantity}</span>
                               </div>
                             )}
+                              
+                              {/* Design Consultation Sub-item (if added) */}
+                              {hasDesignConsultation && item.serviceRequirements?.designConsultation && (
+                                <div className="mt-4 pt-4 border-t border-blue-300">
+                                  <div className="p-3 bg-cyan-50 rounded border-l-4 border-cyan-500">
+                                    <p className="text-xs font-semibold text-cyan-900 mb-2">+ Design Consultation</p>
+                                    {item.serviceRequirements.designConsultation.notes && (
+                                      <div className="mb-2 p-2 bg-white rounded border border-cyan-200">
+                                        <p className="text-xs font-semibold text-cyan-700 mb-1">Design Details:</p>
+                                        <p className="text-xs text-gray-600 whitespace-pre-wrap break-words">{item.serviceRequirements.designConsultation.notes}</p>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-cyan-100 to-blue-100 rounded border border-cyan-400">
+                                      <span className="text-xs font-semibold text-cyan-900">Consultation Fee:</span>
+                                      <span className="text-sm font-bold text-cyan-700">₱{(item.serviceRequirements.designConsultation.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
-                        
-                        {/* Design Consultation Card (if added) */}
-                        {hasDesignConsultation && item.serviceRequirements?.designConsultation && (
-                          <div className="p-4 md:p-5 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border-2 border-cyan-200 shadow-sm hover:shadow-md transition">
-                            <div className="flex items-start gap-3">
-                              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-cyan-200 to-blue-200 flex items-center justify-center flex-shrink-0 border border-cyan-300">
-                                <span className="text-lg">✏️</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-semibold text-gray-900 text-sm md:text-base mb-2 break-words">
-                                  Design Consultation
-                                </h4>
-                                <div className="space-y-2 text-xs md:text-sm text-gray-700">
-                                  {item.serviceRequirements.designConsultation.notes && (
-                                    <div className="p-2 bg-white rounded border border-cyan-200">
-                                      <p className="font-semibold text-cyan-700 mb-1">Design Details / Notes:</p>
-                                      <p className="text-gray-600 whitespace-pre-wrap break-words">{item.serviceRequirements.designConsultation.notes}</p>
-                                    </div>
-                                  )}
-                                  <div className="flex items-center justify-between p-2 bg-gradient-to-r from-cyan-100 to-blue-100 rounded border-2 border-cyan-400">
-                                    <span className="font-bold text-cyan-900">Price</span>
-                                    <span className="text-lg font-bold text-cyan-700">₱{(item.serviceRequirements.designConsultation.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     )
                   })}
