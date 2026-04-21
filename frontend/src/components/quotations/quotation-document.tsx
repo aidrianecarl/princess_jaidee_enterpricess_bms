@@ -548,10 +548,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
     return lineItems.reduce((sum, item) => {
       const isSublimation = item.name?.includes("Sublimation")
       const isTarpaulin = item.name?.includes("Tarpaulin")
+      let itemTotal = 0
       
       if (isSublimation && item.serviceRequirements?.teamRoster) {
         // Calculate Sublimation pricing based on sets and top/bottom only
-        let total = 0
         const basePrice = item.unitPrice
         const teamRoster = item.serviceRequirements.teamRoster
         
@@ -560,21 +560,26 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
           
           if (hasTop && hasBottom) {
-            total += basePrice * 2 // Sets: double the base price
+            itemTotal += basePrice * 2 // Sets: double the base price
           } else if (hasTop || hasBottom) {
-            total += basePrice // Top only or Bottom only: single price
+            itemTotal += basePrice // Top only or Bottom only: single price
           }
         })
-        
-        return sum + total
       } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) {
         // Calculate Tarpaulin pricing: detail price × quantity
         const detailPrice = item.serviceRequirements.sizeSpecifications.totalPrice || 0
-        return sum + (detailPrice * item.quantity)
+        itemTotal = detailPrice * item.quantity
       } else {
         // Regular items: quantity × unit price
-        return sum + item.amount
+        itemTotal = item.amount
       }
+      
+      // Add Design Consultation fee if it exists (only once per service)
+      if (item.serviceRequirements?.designConsultation?.needed) {
+        itemTotal += item.serviceRequirements.designConsultation.price || 0
+      }
+      
+      return sum + itemTotal
     }, 0)
   }
 
@@ -2314,12 +2319,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   </div>
                                 )}
 
-                                {sublimationTotal > 0 && (
-                                  <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded border-2 border-blue-400">
-                                    <span className="font-bold text-blue-900">Subtotal</span>
-                                    <span className="text-lg font-bold text-blue-700">₱{sublimationTotal.toLocaleString()}</span>
-                                  </div>
-                                )}
                               </div>
                             ) : isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height ? (
                               <div className="space-y-2">
@@ -2331,10 +2330,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     {item.serviceRequirements.sizeSpecifications.totalSqft} sq ft × {item.quantity} qty
                                   </p>
                                 </div>
-                                <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded border-2 border-blue-400">
-                                  <span className="font-bold text-blue-900">Subtotal</span>
-                                  <span className="text-lg font-bold text-blue-700">₱{tarpaulinTotal.toLocaleString()}</span>
-                                </div>
                               </div>
                             ) : (
                               <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm text-gray-600">
@@ -2344,7 +2339,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               
                               {/* Design Consultation Sub-item (if added) */}
                               {hasDesignConsultation && item.serviceRequirements?.designConsultation && (
-                                <div className="mt-4 pt-4 border-t border-blue-300">
+                                <div className="mt-3 pt-3 border-t border-gray-300">
                                   <div className="p-3 bg-cyan-50 rounded border-l-4 border-cyan-500">
                                     <p className="text-xs font-semibold text-cyan-900 mb-2">+ Design Consultation</p>
                                     {item.serviceRequirements.designConsultation.notes && (
@@ -2360,6 +2355,43 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   </div>
                                 </div>
                               )}
+                              
+                              {/* Service Subtotal (at the end) */}
+                              {(() => {
+                                let serviceSubtotal = 0
+                                const basePrice = item.unitPrice
+                                const teamRoster = item.serviceRequirements?.teamRoster || []
+                                
+                                if (isSublimation && teamRoster.length > 0) {
+                                  teamRoster.forEach((player: any) => {
+                                    const hasTop = player.sizeTop && player.sizeTop !== "None"
+                                    const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+                                    if (hasTop && hasBottom) {
+                                      serviceSubtotal += basePrice * 2
+                                    } else if (hasTop || hasBottom) {
+                                      serviceSubtotal += basePrice
+                                    }
+                                  })
+                                } else if (isTarpaulin) {
+                                  serviceSubtotal = (item.serviceRequirements?.sizeSpecifications?.totalPrice || 0) * item.quantity
+                                } else {
+                                  serviceSubtotal = item.amount
+                                }
+                                
+                                // Add design consultation to service subtotal
+                                if (hasDesignConsultation) {
+                                  serviceSubtotal += item.serviceRequirements?.designConsultation?.price || 0
+                                }
+                                
+                                return (
+                                  <div className="mt-3 pt-3 border-t border-blue-300">
+                                    <div className="flex items-center justify-between p-2 bg-gradient-to-r from-blue-100 to-indigo-100 rounded border-2 border-blue-400">
+                                      <span className="font-bold text-blue-900">Subtotal</span>
+                                      <span className="text-lg font-bold text-blue-700">₱{serviceSubtotal.toLocaleString()}</span>
+                                    </div>
+                                  </div>
+                                )
+                              })()}
                             </div>
                           </div>
                         </div>
