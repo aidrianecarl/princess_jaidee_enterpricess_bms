@@ -64,6 +64,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [designConsultationService, setDesignConsultationService] = useState<Service | null>(null)
   
   // Step-by-step state
   const [currentStep, setCurrentStep] = useState(1)
@@ -133,8 +134,9 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
   }
 
   const handleDesignConsultationYes = () => {
-    // Add design consultation to service data
-    const consultationPrice = 500 // Design consultation fee
+    // Use the Design Consultation Service fetched from backend
+    if (!designConsultationService) return
+    
     const updatedServiceData = {
       ...serviceData,
       designNotes: serviceData.designNotes,
@@ -143,12 +145,12 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
       designConsultation: {
         needed: true,
         notes: designConsultationNotes,
-        price: consultationPrice,
+        price: designConsultationService.base_price,
       },
     }
     setServiceData(updatedServiceData)
     setShowDesignConsultationModal(false)
-    onSelect(selectedService!, updatedServiceData)
+    onSelect(designConsultationService, updatedServiceData)
     handleClose()
   }
 
@@ -198,40 +200,38 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
     setIsLoading(true)
     setError(null)
     try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
       const token = localStorage.getItem("auth_token")
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/services?status=active`, {
+
+      if (!token) {
+        setError("Authentication token not found")
+        return
+      }
+
+      const response = await fetch(`${apiUrl}/quotation/services`, {
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
       })
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
+      if (!response.ok) throw new Error("Failed to fetch services")
 
       const data = await response.json()
-      console.log("Services API response:", data)
-
-      let servicesList = []
-      if (data.data && Array.isArray(data.data)) {
-        servicesList = data.data
-      } else if (Array.isArray(data)) {
-        servicesList = data
+      const servicesData = data.data || data
+      setServices(servicesData)
+      setFilteredServices(servicesData)
+      
+      // Find and set the Design Consultation Service
+      const consultationService = servicesData.find((s: Service) => 
+        s.name.toLowerCase().includes("design consultation") ||
+        s.category === "design-consultation"
+      )
+      if (consultationService) {
+        setDesignConsultationService(consultationService)
       }
-
-      setServices(servicesList)
-      setFilteredServices(servicesList)
-
-      if (servicesList.length === 0) {
-        setError("No services found. Please create services first.")
-      }
-    } catch (error) {
-      console.error("Failed to fetch services:", error)
-      setError("Failed to load services. Please try again.")
-      setServices([])
-      setFilteredServices([])
+    } catch (err) {
+      console.error("Error fetching services:", err)
+      setError(err instanceof Error ? err.message : "Failed to load services")
     } finally {
       setIsLoading(false)
     }
@@ -521,23 +521,24 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
       </div>
 
       {/* Design Consultation Modal */}
-      {showDesignConsultationModal && (
+      {showDesignConsultationModal && designConsultationService && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl">
             {/* Header */}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <h3 className="text-xl font-bold text-gray-900">Design Consultation</h3>
+              <h3 className="text-xl font-bold text-gray-900">{designConsultationService.name}</h3>
+              <p className="text-sm text-gray-600 mt-1">{designConsultationService.description}</p>
             </div>
 
             {/* Content */}
             <div className="p-6 space-y-4">
               <p className="text-gray-700">
-                You haven't provided a design file. Would you like us to create a design for you?
+                You haven't provided a design file. Would you like to add {designConsultationService.name} to your quotation?
               </p>
               
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-900">
-                  Design Details & Requirements
+                  Design Details / Notes (Optional)
                 </label>
                 <textarea
                   value={designConsultationNotes}
@@ -550,7 +551,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
 
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm font-medium text-blue-900">
-                  Design Consultation Fee: <span className="text-lg font-bold text-blue-600">₱500</span>
+                  Service Fee: <span className="text-lg font-bold text-blue-600">₱{(designConsultationService.base_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </p>
                 <p className="text-xs text-blue-700 mt-1">
                   This will be added to your quotation
@@ -570,7 +571,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                 onClick={handleDesignConsultationYes}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-lg hover:shadow-lg transition font-semibold"
               >
-                Yes, Add Consultation
+                Yes, Add {designConsultationService.name}
               </button>
             </div>
           </div>

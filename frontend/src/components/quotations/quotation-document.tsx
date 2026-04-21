@@ -2252,26 +2252,30 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     const sublimationTotal = setsPrice + topOnlyPrice + bottomOnlyPrice
                     const tarpaulinTotal = (item.serviceRequirements?.sizeSpecifications?.totalPrice || 0) * item.quantity
 
+                    // Check if item has Design Consultation
+                    const hasDesignConsultation = item.serviceRequirements?.designConsultation?.needed
+                    
                     return (
-                      <div
-                        key={item.id}
-                        className="p-4 md:p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition"
-                      >
-                        <div className="flex items-start gap-3">
-                          {item.image && (
-                            <img
-                              src={item.image}
-                              alt={item.name}
-                              className="w-16 h-16 rounded-lg object-cover border border-blue-300 flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none"
-                              }}
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-gray-900 text-sm md:text-base mb-2 break-words">
-                              {item.name}
-                            </h4>
+                      <div key={item.id} className="flex flex-col gap-4">
+                        {/* Main Service Card */}
+                        <div
+                          className="p-4 md:p-5 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-blue-200 shadow-sm hover:shadow-md transition"
+                        >
+                          <div className="flex items-start gap-3">
+                            {item.image && (
+                              <img
+                                src={item.image}
+                                alt={item.name}
+                                className="w-16 h-16 rounded-lg object-cover border border-blue-300 flex-shrink-0"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none"
+                                }}
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-gray-900 text-sm md:text-base mb-2 break-words">
+                                {item.name}
+                              </h4>
 
                             {isSublimation && Array.isArray(teamRoster) && teamRoster.length > 0 ? (
                               <div className="space-y-2 text-xs md:text-sm text-gray-700">
@@ -2337,8 +2341,37 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 Qty: <span className="font-semibold">{item.quantity}</span>
                               </div>
                             )}
+                            </div>
                           </div>
                         </div>
+                        
+                        {/* Design Consultation Card (if added) */}
+                        {hasDesignConsultation && item.serviceRequirements?.designConsultation && (
+                          <div className="p-4 md:p-5 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-lg border-2 border-cyan-200 shadow-sm hover:shadow-md transition">
+                            <div className="flex items-start gap-3">
+                              <div className="w-16 h-16 rounded-lg bg-gradient-to-br from-cyan-200 to-blue-200 flex items-center justify-center flex-shrink-0 border border-cyan-300">
+                                <span className="text-lg">✏️</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-semibold text-gray-900 text-sm md:text-base mb-2 break-words">
+                                  Design Consultation
+                                </h4>
+                                <div className="space-y-2 text-xs md:text-sm text-gray-700">
+                                  {item.serviceRequirements.designConsultation.notes && (
+                                    <div className="p-2 bg-white rounded border border-cyan-200">
+                                      <p className="font-semibold text-cyan-700 mb-1">Design Details / Notes:</p>
+                                      <p className="text-gray-600 whitespace-pre-wrap break-words">{item.serviceRequirements.designConsultation.notes}</p>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center justify-between p-2 bg-gradient-to-r from-cyan-100 to-blue-100 rounded border-2 border-cyan-400">
+                                    <span className="font-bold text-cyan-900">Price</span>
+                                    <span className="text-lg font-bold text-cyan-700">₱{(item.serviceRequirements.designConsultation.price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
