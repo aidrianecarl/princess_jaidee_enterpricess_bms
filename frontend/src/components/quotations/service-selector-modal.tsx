@@ -208,7 +208,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
         return
       }
 
-      const response = await fetch(`${apiUrl}/quotation/services`, {
+      const response = await fetch(`${apiUrl}/services`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
