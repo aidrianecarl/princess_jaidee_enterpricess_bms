@@ -131,6 +131,7 @@ export function AdminQuotationPricing() {
         if (typeof item.size_specifications === 'string' && item.size_specifications) {
           try {
             sizeSpecs = JSON.parse(item.size_specifications)
+            console.log("[v0] Fetching services size specification requirements:", sizeSpecs)
           } catch (e) {
             sizeSpecs = null
           }
@@ -144,11 +145,22 @@ export function AdminQuotationPricing() {
             notesData = null
           }
         }
+
+        let designConsultation = item.design_consultation
+        if (typeof item.design_consultation === 'string' && item.design_consultation) {
+          try {
+            designConsultation = JSON.parse(item.design_consultation)
+            console.log("[v0] Design consultation data:", designConsultation)
+          } catch (e) {
+            designConsultation = null
+          }
+        }
         
         return {
           ...item,
           team_roster: teamRoster,
           size_specifications: sizeSpecs,
+          design_consultation: designConsultation,
           notes: notesData,
         }
       }) || []
@@ -630,6 +642,33 @@ export function AdminQuotationPricing() {
                             </div>
                           </div>
                         )}
+
+                        {/* Design Consultation for Sublimation */}
+                        {item.design_consultation && typeof item.design_consultation === "object" && (
+                          <div className="mt-4 pt-4 border-t border-blue-200">
+                            <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Design Consultation</p>
+                            <div className="bg-blue-50 p-3 rounded border border-blue-300 space-y-2 text-sm">
+                              {item.design_consultation.needed && (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-700">Required:</span>
+                                  <span className="text-green-600 font-bold">Yes</span>
+                                </div>
+                              )}
+                              {item.design_consultation.price && (
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-gray-700">Price:</span>
+                                  <span className="text-gray-900">₱{Number(item.design_consultation.price).toLocaleString()}</span>
+                                </div>
+                              )}
+                              {item.design_consultation.notes && (
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-semibold text-gray-700">Notes:</span>
+                                  <p className="text-gray-900">{item.design_consultation.notes}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   } else if (item.service?.name?.includes('Tarpaulin')) {
@@ -681,6 +720,7 @@ export function AdminQuotationPricing() {
                         {(Array.isArray(item.team_roster) && item.team_roster.length > 0) ||
                           (item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0) ||
                           item.design_file_url ||
+                          (item.design_consultation && typeof item.design_consultation === "object") ||
                           item.notes ? (
                           <button
                             onClick={() => {
@@ -937,6 +977,33 @@ export function AdminQuotationPricing() {
                                   <ZoomIn size={16} />
                                   View
                                 </button>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Design Consultation */}
+                          {item.design_consultation && typeof item.design_consultation === "object" && (
+                            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                              <h4 className="font-semibold text-amber-900 mb-3">DESIGN CONSULTATION</h4>
+                              <div className="space-y-3 text-sm">
+                                {item.design_consultation.needed && (
+                                  <div className="flex items-center justify-between p-2 bg-white rounded border border-amber-300">
+                                    <span className="font-semibold text-gray-700">Design Consultation Required:</span>
+                                    <span className="text-green-600 font-bold">Yes</span>
+                                  </div>
+                                )}
+                                {item.design_consultation.price && (
+                                  <div className="flex items-center justify-between p-2 bg-white rounded border border-amber-300">
+                                    <span className="font-semibold text-gray-700">Consultation Price:</span>
+                                    <span className="text-amber-700 font-bold">₱{Number(item.design_consultation.price).toLocaleString()}</span>
+                                  </div>
+                                )}
+                                {item.design_consultation.notes && (
+                                  <div className="p-2 bg-white rounded border border-amber-300">
+                                    <p className="font-semibold text-gray-700 mb-1">Consultation Notes:</p>
+                                    <p className="text-gray-900 text-xs leading-relaxed">{item.design_consultation.notes}</p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
