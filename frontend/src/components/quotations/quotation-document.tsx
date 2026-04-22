@@ -2299,7 +2299,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                         if (hasTop && hasBottom) {
                           setsCount++
-                          setsPrice += basePrice // Base price for set (top + bottom together)
+                          setsPrice += basePrice * 2 // Double the base price for sets (top + bottom)
                         } else if (hasTop) {
                           topOnlyCount++
                           topOnlyPrice += basePrice // Single price for top only
@@ -2395,7 +2395,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
                                   const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
                                   const itemQty = sizeItem.qty || 0
-                                  const itemPrice = basePrice
+                                  const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
                                   const itemTotal = itemQty * itemPrice
 
                                   return (
@@ -2446,7 +2446,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     const hasTop = player.sizeTop && player.sizeTop !== "None"
                                     const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
                                     if (hasTop && hasBottom) {
-                                      serviceSubtotal += basePrice // Base price for set (top + bottom)
+                                      serviceSubtotal += basePrice * 2 // Double price for set (top + bottom)
                                     } else if (hasTop || hasBottom) {
                                       serviceSubtotal += basePrice // Base price for single (top only or bottom only)
                                     }
@@ -2456,8 +2456,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 } else if (sizeSpecItems.length > 0) {
                                   // Calculate for size specification items
                                   sizeSpecItems.forEach((sizeItem: any) => {
+                                    const hasTopSize = sizeItem.sizeTop && sizeItem.sizeTop.trim() !== ""
+                                    const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
+                                    const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
                                     const itemQty = sizeItem.qty || 0
-                                    const itemPrice = basePrice
+                                    const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
                                     serviceSubtotal += itemQty * itemPrice
                                   })
                                 } else {
