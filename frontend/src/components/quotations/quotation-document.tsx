@@ -2631,10 +2631,8 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             unitPrice = serviceData.sizeSpecifications.totalPrice
           }
 
-          // Add design consultation price
-          if (serviceData.designConsultation?.needed) {
-            unitPrice += serviceData.designConsultation.price
-          }
+          // DO NOT add design consultation price to unitPrice
+          // Design consultation fee is added separately in the subtotal calculation
 
           const lineItemData = {
             type: "service",
