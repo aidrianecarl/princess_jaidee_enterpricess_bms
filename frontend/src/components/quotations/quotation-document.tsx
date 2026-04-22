@@ -2299,7 +2299,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                         if (hasTop && hasBottom) {
                           setsCount++
-                          setsPrice += basePrice // Double the base price for sets (top + bottom)
+                          setsPrice += basePrice * 2 // Double the base price for sets (top + bottom)
                         } else if (hasTop) {
                           topOnlyCount++
                           topOnlyPrice += basePrice // Single price for top only
@@ -2391,11 +2391,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                               <div className="space-y-2 text-xs md:text-sm text-gray-700">
                                 <p className="font-semibold text-gray-900 mb-2">Size Specifications - Items List</p>
                                 {item.serviceRequirements.sizeSpecifications.items.map((sizeItem: any, idx: number) => {
-                                  const hasTopSize = sizeItem.sizeTop && sizeItem.sizeTop.trim() !== ""
-                                  const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
-                                  const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
+                                  const hasTopSize = sizeItem.sizeTop && typeof sizeItem.sizeTop === 'string' && sizeItem.sizeTop.trim() !== ""
+                                  const hasBottomSize = sizeItem.sizeBottom && typeof sizeItem.sizeBottom === 'string' && sizeItem.sizeBottom.trim() !== ""
+                                  const isBothSelected = hasTopSize && hasBottomSize
+                                  const itemUnit = isBothSelected ? "SET" : "PCS"
                                   const itemQty = sizeItem.qty || 0
-                                  const itemPrice = itemUnit === "SET" ? basePrice : basePrice
+                                  const itemPrice = isBothSelected ? basePrice * 2 : basePrice
                                   const itemTotal = itemQty * itemPrice
 
                                   return (
@@ -2446,7 +2447,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     const hasTop = player.sizeTop && player.sizeTop !== "None"
                                     const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
                                     if (hasTop && hasBottom) {
-                                      serviceSubtotal += basePrice // Double price for set (top + bottom)
+                                      serviceSubtotal += basePrice * 2 // Double price for set (top + bottom)
                                     } else if (hasTop || hasBottom) {
                                       serviceSubtotal += basePrice // Base price for single (top only or bottom only)
                                     }
@@ -2456,11 +2457,11 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 } else if (sizeSpecItems.length > 0) {
                                   // Calculate for size specification items
                                   sizeSpecItems.forEach((sizeItem: any) => {
-                                    const hasTopSize = sizeItem.sizeTop && sizeItem.sizeTop.trim() !== ""
-                                    const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
-                                    const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
+                                    const hasTopSize = sizeItem.sizeTop && typeof sizeItem.sizeTop === 'string' && sizeItem.sizeTop.trim() !== ""
+                                    const hasBottomSize = sizeItem.sizeBottom && typeof sizeItem.sizeBottom === 'string' && sizeItem.sizeBottom.trim() !== ""
+                                    const isBothSelected = hasTopSize && hasBottomSize
                                     const itemQty = sizeItem.qty || 0
-                                    const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
+                                    const itemPrice = isBothSelected ? basePrice * 2 : basePrice
                                     serviceSubtotal += itemQty * itemPrice
                                   })
                                 } else {
