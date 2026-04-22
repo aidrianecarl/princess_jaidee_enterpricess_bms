@@ -238,7 +238,9 @@ class ServiceController extends Controller
             // Store in public/services directory
             $path = Storage::disk('public')->putFileAs('services', $file, $filename);
             
-            $imageUrl = asset('storage/' . $path);
+            // Build full URL - using public URL structure matching your API domain
+            $baseUrl = config('app.url');
+            $imageUrl = $baseUrl . '/storage/' . $path;
 
             return response()->json([
                 'message' => 'Image uploaded successfully',

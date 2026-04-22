@@ -1,8 +1,19 @@
 "use client"
 
 import React, { useState } from "react"
-import { Ruler } from "lucide-react"
+import { Plus, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+
+interface SizeItem {
+  id: string
+  qty?: number
+  qtyUnit?: string
+  width?: number
+  height?: number
+  name?: string
+  additionalName?: string
+}
 
 interface SizeSpecs {
   top?: string
@@ -11,6 +22,7 @@ interface SizeSpecs {
   height?: number
   totalSqft?: number
   totalPrice?: number
+  items?: SizeItem[]
 }
 
 interface SizeSpecificationRequirementProps {
@@ -32,17 +44,43 @@ export function SizeSpecificationRequirement({
   isRequired = true,
   topLabel = "Top/Shirt Size",
   bottomLabel = "Bottom/Short Size",
+  sizeType = "generic",
 }: SizeSpecificationRequirementProps) {
-  const [specs, setSpecs] = useState<SizeSpecs>({
-    top: initialSpecs.top || "",
-    bottom: initialSpecs.bottom || "",
-  })
+  const [items, setItems] = useState<SizeItem[]>(
+    initialSpecs.items && initialSpecs.items.length > 0
+      ? initialSpecs.items
+      : [{ id: Date.now().toString(), qty: 0, qtyUnit: "PCS", width: 0, height: 0, additionalName: "" }]
+  )
   const [sizeNotes, setSizeNotes] = useState(initialNotes)
 
-  const handleChange = (field: keyof SizeSpecs, value: string) => {
-    const updated = { ...specs, [field]: value }
-    setSpecs(updated)
-    onSizeSpecChange(updated)
+  const addItem = () => {
+    const newItem: SizeItem = {
+      id: Date.now().toString(),
+      qty: 0,
+      qtyUnit: "PCS",
+      width: 0,
+      height: 0,
+      additionalName: "",
+    }
+    const updated = [...items, newItem]
+    setItems(updated)
+    onSizeSpecChange({ ...initialSpecs, items: updated })
+  }
+
+  const removeItem = (id: string) => {
+    if (items.length > 1) {
+      const updated = items.filter((item) => item.id !== id)
+      setItems(updated)
+      onSizeSpecChange({ ...initialSpecs, items: updated })
+    }
+  }
+
+  const updateItem = (id: string, field: keyof SizeItem, value: any) => {
+    const updated = items.map((item) =>
+      item.id === id ? { ...item, [field]: value } : item
+    )
+    setItems(updated)
+    onSizeSpecChange({ ...initialSpecs, items: updated })
   }
 
   const handleNotesChange = (notes: string) => {
@@ -50,102 +88,160 @@ export function SizeSpecificationRequirement({
     onSizeNotesChange?.(notes)
   }
 
-  const commonSizes = ["XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL"]
+  const filledItems = items.filter((item) => item.qty && item.qty > 0)
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Ruler size={20} className="text-neutral-600" />
-        <h3 className="text-lg font-semibold text-neutral-900">
-          Size Specifications {isRequired && <span className="text-red-500">*</span>}
-        </h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-neutral-900">
+            Size Specifications {isRequired && <span className="text-red-500">*</span>}
+          </h3>
+        </div>
+        <Button
+          type="button"
+          onClick={addItem}
+          variant="outline"
+          size="sm"
+          className="gap-1 bg-transparent"
+        >
+          <Plus size={16} />
+          Add Item
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Top Size */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-neutral-900">
-            {topLabel}
-          </label>
-          <div className="space-y-2">
-            <Input
-              type="text"
-              placeholder="e.g., Large, XL, 42"
-              value={specs.top || ""}
-              onChange={(e) => handleChange("top", e.target.value)}
-              className="w-full"
-            />
-            <div className="flex flex-wrap gap-1">
-              {commonSizes.map((size) => (
-                <button
-                  key={`top-${size}`}
-                  type="button"
-                  onClick={() => handleChange("top", size)}
-                  className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                    specs.top === size
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white border-neutral-300 text-neutral-700 hover:border-primary"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
-            </div>
-          </div>
-          {specs.top && (
-            <p className="text-xs text-green-600 font-medium">
-              ✓ Selected: {specs.top}
-            </p>
-          )}
-        </div>
+      <div className="space-y-3 max-h-96 overflow-y-auto p-2">
+        {items.map((item, index) => (
+          <div
+            key={item.id}
+            className="flex flex-col gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+              {/* Qty */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Qty <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-1">
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="4"
+                    value={item.qty || ""}
+                    onChange={(e) =>
+                      updateItem(item.id, "qty", parseInt(e.target.value) || 0)
+                    }
+                    className="h-9 text-sm flex-1"
+                  />
+                  <select
+                    value={item.qtyUnit || "PCS"}
+                    onChange={(e) =>
+                      updateItem(item.id, "qtyUnit", e.target.value)
+                    }
+                    className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="PCS">PCS</option>
+                    <option value="SETS">SETS</option>
+                    <option value="UNITS">UNITS</option>
+                  </select>
+                </div>
+              </div>
 
-        {/* Bottom Size */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-neutral-900">
-            {bottomLabel}
-          </label>
-          <div className="space-y-2">
-            <Input
-              type="text"
-              placeholder="e.g., Medium, M, 30"
-              value={specs.bottom || ""}
-              onChange={(e) => handleChange("bottom", e.target.value)}
-              className="w-full"
-            />
-            <div className="flex flex-wrap gap-1">
-              {commonSizes.map((size) => (
-                <button
-                  key={`bottom-${size}`}
-                  type="button"
-                  onClick={() => handleChange("bottom", size)}
-                  className={`px-3 py-1 text-xs rounded-full border transition-all ${
-                    specs.bottom === size
-                      ? "bg-primary text-white border-primary"
-                      : "bg-white border-neutral-300 text-neutral-700 hover:border-primary"
-                  }`}
-                >
-                  {size}
-                </button>
-              ))}
+              {/* Width */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Width (inches) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="0"
+                  value={item.width || ""}
+                  onChange={(e) =>
+                    updateItem(item.id, "width", parseFloat(e.target.value) || 0)
+                  }
+                  className="h-9 text-sm"
+                />
+              </div>
+
+              {/* Height */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Height (inches) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="0"
+                  value={item.height || ""}
+                  onChange={(e) =>
+                    updateItem(item.id, "height", parseFloat(e.target.value) || 0)
+                  }
+                  className="h-9 text-sm"
+                />
+              </div>
+
+              {/* Jersey# (Number only) */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Jersey # <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="Jersey #"
+                  value={item.name || ""}
+                  onChange={(e) =>
+                    updateItem(item.id, "name", e.target.value)
+                  }
+                  className="h-9 text-sm"
+                />
+              </div>
+
+              {/* Additional Name */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Additional Name
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Additional details"
+                  value={item.additionalName || ""}
+                  onChange={(e) =>
+                    updateItem(item.id, "additionalName", e.target.value)
+                  }
+                  className="h-9 text-sm"
+                />
+              </div>
             </div>
+
+            {/* Remove Button */}
+            {items.length > 1 && (
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.id)}
+                  className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
           </div>
-          {specs.bottom && (
-            <p className="text-xs text-green-600 font-medium">
-              ✓ Selected: {specs.bottom}
-            </p>
-          )}
-        </div>
+        ))}
       </div>
 
-      <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-        <p className="text-sm text-purple-900">
-          {specs.top && specs.bottom
-            ? "✓ All sizes specified"
-            : "Please specify both top and bottom sizes"}
+      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-900">
+          {filledItems.length > 0
+            ? `✓ ${filledItems.length} item(s) specified`
+            : "Please specify at least one item with quantity and dimensions"}
         </p>
       </div>
 
-      {specs.top && specs.bottom && (
+      {filledItems.length > 0 && (
         <div className="space-y-2 pt-4 border-t border-neutral-200">
           <label className="block text-sm font-medium text-neutral-900">
             Size Notes <span className="text-neutral-500 text-xs">(Optional)</span>
