@@ -2288,9 +2288,6 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                     let setsCount = 0
                     let topOnlyCount = 0
                     let bottomOnlyCount = 0
-                    let setsPrice = 0
-                    let topOnlyPrice = 0
-                    let bottomOnlyPrice = 0
 
                     if (isSublimation && Array.isArray(teamRoster)) {
                       teamRoster.forEach((player: any) => {
@@ -2299,16 +2296,18 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                         if (hasTop && hasBottom) {
                           setsCount++
-                          setsPrice += basePrice * 2 // Double the base price for sets (top + bottom)
                         } else if (hasTop) {
                           topOnlyCount++
-                          topOnlyPrice += basePrice // Single price for top only
                         } else if (hasBottom) {
                           bottomOnlyCount++
-                          bottomOnlyPrice += basePrice // Single price for bottom only
                         }
                       })
                     }
+
+                    // Calculate prices AFTER counting
+                    const setsPrice = setsCount * basePrice * 2 // Double the base price for sets (top + bottom)
+                    const topOnlyPrice = topOnlyCount * basePrice // Single price for top only
+                    const bottomOnlyPrice = bottomOnlyCount * basePrice // Single price for bottom only
 
                     const sublimationTotal = setsPrice + topOnlyPrice + bottomOnlyPrice
                     const tarpaulinTotal = (item.serviceRequirements?.sizeSpecifications?.totalPrice || 0) * item.quantity
