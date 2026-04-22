@@ -121,6 +121,23 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
       // Check if design is required but not provided
       if (selectedService.requires_design && !serviceData.designPreview) {
         setShowDesignConsultationModal(true)
+      } else if (serviceData.designConsultation?.needed) {
+        // Design consultation is needed (from tarpaulin or other service)
+        if (!designConsultationService) return
+        
+        const updatedServiceData = {
+          ...serviceData,
+          designNotes: serviceData.designNotes,
+          teamNotes: serviceData.teamNotes,
+          sizeNotes: serviceData.sizeNotes,
+          designConsultation: {
+            needed: true,
+            notes: serviceData.designConsultation.notes,
+            price: designConsultationService.base_price,
+          },
+        }
+        onSelect(selectedService, updatedServiceData)
+        handleClose()
       } else {
         onSelect(selectedService, {
           ...serviceData,
@@ -373,7 +390,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                         <img
                           src={service.image_url || "/placeholder.svg"}
                           alt={service.name}
-                          className="w-full h-40 object-cover rounded-lg mb-3 group-hover:scale-105 transition"
+                          className="w-full h-48 object-contain bg-gray-50 rounded-lg mb-3 group-hover:scale-105 transition p-2"
                           onError={(e) => {
                             ;(e.target as HTMLImageElement).style.display = "none"
                             ;(e.target as HTMLImageElement).parentElement?.classList.add("hidden")
@@ -381,7 +398,7 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                         />
                       ) : null}
                       {!service.image_url && (
-                        <div className="w-full h-40 bg-gradient-to-br from-red-100 to-orange-100 rounded-lg mb-3 flex items-center justify-center">
+                        <div className="w-full h-48 bg-gradient-to-br from-red-100 to-orange-100 rounded-lg mb-3 flex items-center justify-center">
                           <Briefcase size={32} className="text-gray-400" />
                         </div>
                       )}
@@ -490,6 +507,12 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                         }}
                         onSizeNotesChange={(notes) => {
                           setServiceData({ ...serviceData, sizeNotes: notes })
+                        }}
+                        onDesignConsultationChange={(needed, notes) => {
+                          setServiceData({ 
+                            ...serviceData, 
+                            designConsultation: { needed, notes }
+                          })
                         }}
                       />
                     )}

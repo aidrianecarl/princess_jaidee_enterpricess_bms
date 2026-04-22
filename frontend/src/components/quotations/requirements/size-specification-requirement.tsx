@@ -85,6 +85,13 @@ export function SizeSpecificationRequirement({
 
   return (
     <div className="space-y-4">
+      {/* Important Note */}
+      <div className="p-4 bg-blue-50 border-l-4 border-blue-500 rounded-lg">
+        <p className="text-sm text-blue-900">
+          <span className="font-semibold">Note:</span> Fill up only the <strong>Top Size</strong> and <strong>Top Length</strong> if you are quotating for T-shirt/Polo shirt/Long sleeve-hoodie. Fill up all fields if you want a complete set.
+        </p>
+      </div>
+
       {/* Sizing Guide Tables */}
       <div className="space-y-4 bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-lg border-2 border-amber-200">
         <div>

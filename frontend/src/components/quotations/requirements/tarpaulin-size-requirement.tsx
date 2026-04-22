@@ -13,16 +13,20 @@ interface TarpaulinSize {
 interface TarpaulinSizeRequirementProps {
   onSizeSpecChange: (specs: TarpaulinSize) => void
   onSizeNotesChange?: (notes: string) => void
+  onDesignConsultationChange?: (needed: boolean, notes: string) => void
   initialSpecs?: TarpaulinSize
   initialNotes?: string
+  initialDesignConsultation?: { needed: boolean; notes: string }
   isRequired?: boolean
 }
 
 export function TarpaulinSizeRequirement({
   onSizeSpecChange,
   onSizeNotesChange,
+  onDesignConsultationChange,
   initialSpecs = {},
   initialNotes = "",
+  initialDesignConsultation = { needed: false, notes: "" },
   isRequired = true,
 }: TarpaulinSizeRequirementProps) {
   const [width, setWidth] = useState<number | string>(initialSpecs.width || "")
@@ -30,6 +34,8 @@ export function TarpaulinSizeRequirement({
   const [totalSqft, setTotalSqft] = useState<number>(0)
   const [totalPrice, setTotalPrice] = useState<number>(0)
   const [sizeNotes, setSizeNotes] = useState(initialNotes)
+  const [needsDesignConsultation, setNeedsDesignConsultation] = useState(initialDesignConsultation.needed)
+  const [designConsultationNotes, setDesignConsultationNotes] = useState(initialDesignConsultation.notes || "")
 
   const WIDTH_MIN = 3
   const WIDTH_MAX = 10
@@ -46,6 +52,16 @@ export function TarpaulinSizeRequirement({
   const handleNotesChange = (notes: string) => {
     setSizeNotes(notes)
     onSizeNotesChange?.(notes)
+  }
+
+  const handleDesignConsultationChange = (needed: boolean) => {
+    setNeedsDesignConsultation(needed)
+    onDesignConsultationChange?.(needed, needed ? designConsultationNotes : "")
+  }
+
+  const handleDesignConsultationNotesChange = (notes: string) => {
+    setDesignConsultationNotes(notes)
+    onDesignConsultationChange?.(needsDesignConsultation, notes)
   }
 
   useEffect(() => {
@@ -184,6 +200,55 @@ export function TarpaulinSizeRequirement({
             className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             rows={3}
           />
+        </div>
+      )}
+
+      {/* Design Consultation Section */}
+      {width && height && (
+        <div className="space-y-4 pt-4 border-t border-neutral-200">
+          <h4 className="text-sm font-semibold text-neutral-900">Do you have a design ready?</h4>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="hasDesign"
+                  checked={!needsDesignConsultation}
+                  onChange={() => handleDesignConsultationChange(false)}
+                  className="w-4 h-4 text-green-600"
+                />
+                <span className="text-sm text-neutral-900">Yes, I have a design ready</span>
+              </label>
+            </div>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="hasDesign"
+                  checked={needsDesignConsultation}
+                  onChange={() => handleDesignConsultationChange(true)}
+                  className="w-4 h-4 text-red-600"
+                />
+                <span className="text-sm text-neutral-900">No, I need design consultation</span>
+              </label>
+            </div>
+          </div>
+
+          {needsDesignConsultation && (
+            <div className="space-y-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <label className="block text-sm font-medium text-neutral-900">
+                Design Consultation Notes
+              </label>
+              <textarea
+                placeholder="Describe what you need for your tarpaulin design (size, colors, images, text, etc.)..."
+                value={designConsultationNotes}
+                onChange={(e) => handleDesignConsultationNotesChange(e.target.value)}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-sm bg-white"
+                rows={3}
+              />
+              <p className="text-xs text-red-600">Our design team will contact you with design consultation fee and timeline</p>
+            </div>
+          )}
         </div>
       )}
     </div>
