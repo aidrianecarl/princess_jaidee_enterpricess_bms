@@ -615,19 +615,65 @@ export default function DashboardViewQuotationPage() {
                             </div>
                           )}
 
-                          {/* Size Specifications */}
-                          {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
-                            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                              <h4 className="font-bold text-green-900 mb-3">SIZE SPECIFICATIONS</h4>
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                                {Object.entries(item.size_specifications).map(([key, value]: [string, any]) => (
-                                  <div key={key} className="p-2 bg-white rounded border border-green-100">
-                                    <p className="text-green-700 font-semibold capitalize text-xs">{key}</p>
-                                    <p className="text-gray-900">{value || "-"}</p>
+                          {/* Size Specifications - Items List for Uniforms */}
+                          {item.size_specifications && typeof item.size_specifications === "object" && (
+                            <>
+                              {/* If it has items array (uniform sizes) */}
+                              {Array.isArray(item.size_specifications.items) && item.size_specifications.items.length > 0 ? (
+                                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                  <h4 className="font-bold text-green-900 mb-3">SIZE SPECIFICATION ITEMS</h4>
+                                  <div className="space-y-2">
+                                    {item.size_specifications.items.map((sizeItem: any, idx: number) => {
+                                      const hasTopSize = sizeItem.sizeTop && typeof sizeItem.sizeTop === 'string' && sizeItem.sizeTop.trim() !== ""
+                                      const hasBottomSize = sizeItem.sizeBottom && typeof sizeItem.sizeBottom === 'string' && sizeItem.sizeBottom.trim() !== ""
+                                      const itemQty = sizeItem.qty || 1
+                                      
+                                      const displayItems = []
+                                      if (hasTopSize) {
+                                        displayItems.push({
+                                          label: `TOP - ${sizeItem.sizeTop.toUpperCase()}`,
+                                          qty: itemQty
+                                        })
+                                      }
+                                      if (hasBottomSize) {
+                                        displayItems.push({
+                                          label: `BOTTOM - ${sizeItem.sizeBottom.toUpperCase()}`,
+                                          qty: itemQty
+                                        })
+                                      }
+                                      
+                                      return (
+                                        <div key={idx} className="space-y-1">
+                                          {displayItems.map((displayItem, dispIdx) => (
+                                            <div key={dispIdx} className="flex items-center justify-between p-2 bg-white rounded border border-green-100 text-sm">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-semibold text-green-700">{displayItem.qty}</span>
+                                                <span className="text-gray-600">{displayItem.label}</span>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      )
+                                    })}
                                   </div>
-                                ))}
-                              </div>
-                            </div>
+                                </div>
+                              ) : (
+                                /* Regular tarpaulin or other size specs */
+                                Object.keys(item.size_specifications).length > 0 && (
+                                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                    <h4 className="font-bold text-green-900 mb-3">SIZE SPECIFICATIONS</h4>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                                      {Object.entries(item.size_specifications).map(([key, value]: [string, any]) => (
+                                        <div key={key} className="p-2 bg-white rounded border border-green-100">
+                                          <p className="text-green-700 font-semibold capitalize text-xs">{key}</p>
+                                          <p className="text-gray-900">{value || "-"}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )
+                              )}
+                            </>
                           )}
 
                           {/* Design File */}

@@ -18,6 +18,7 @@ class QuotationItem extends Model
         'design_file_url',
         'team_roster',
         'size_specifications',
+        'tarpaulin_details',
         'design_consultation',
         'notes',
     ];
@@ -27,6 +28,7 @@ class QuotationItem extends Model
         'line_total' => 'decimal:2',
         'team_roster' => 'array',
         'size_specifications' => 'array',
+        'tarpaulin_details' => 'array', // Cast tarpaulin_details JSON to array automatically
         'design_consultation' => 'array', // Cast design_consultation JSON to array automatically
         'notes' => 'array', // Cast notes JSON to array automatically
     ];

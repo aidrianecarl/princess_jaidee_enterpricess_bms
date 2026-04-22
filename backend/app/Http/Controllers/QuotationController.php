@@ -472,6 +472,18 @@ class QuotationController extends Controller
                     }
                 }
 
+                // Handle tarpaulin details (same as size_specifications for tarpaulin services)
+                $tarpaulinDetailsData = null;
+                if (!empty($item['size_specifications']) && !empty($item['service_id'])) {
+                    $service = \App\Models\Service::find($item['service_id']);
+                    if ($service) {
+                        $specs = json_decode($service->specifications, true);
+                        if ($specs && isset($specs['size_type']) && $specs['size_type'] === 'tarpaulin') {
+                            $tarpaulinDetailsData = $sizeSpecsData;
+                        }
+                    }
+                }
+
                 // Handle design consultation
                 $designConsultationData = null;
                 if (!empty($item['design_consultation'])) {
@@ -494,6 +506,7 @@ class QuotationController extends Controller
                     'design_file_url' => $designFileUrl,
                     'team_roster' => $teamRosterData,
                     'size_specifications' => $sizeSpecsData,
+                    'tarpaulin_details' => $tarpaulinDetailsData,
                     'design_consultation' => $designConsultationData,
                     'notes' => $notesData,
                 ]);
@@ -738,6 +751,18 @@ class QuotationController extends Controller
                         }
                     }
 
+                    // Handle tarpaulin details (same as size_specifications for tarpaulin services)
+                    $tarpaulinDetailsData = null;
+                    if (!empty($item['size_specifications']) && !empty($item['service_id'])) {
+                        $service = \App\Models\Service::find($item['service_id']);
+                        if ($service) {
+                            $specs = json_decode($service->specifications, true);
+                            if ($specs && isset($specs['size_type']) && $specs['size_type'] === 'tarpaulin') {
+                                $tarpaulinDetailsData = $sizeSpecsData;
+                            }
+                        }
+                    }
+
                     // Handle design consultation
                     $designConsultationData = null;
                     if (!empty($item['design_consultation'])) {
@@ -765,6 +790,7 @@ class QuotationController extends Controller
                         'design_file_url' => $designFileUrl,
                         'team_roster' => $teamRosterData,
                         'size_specifications' => $sizeSpecsData,
+                        'tarpaulin_details' => $tarpaulinDetailsData,
                         'design_consultation' => $designConsultationData,
                         'notes' => $notesData,
                     ]);

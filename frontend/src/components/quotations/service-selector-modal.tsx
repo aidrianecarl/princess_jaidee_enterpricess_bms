@@ -508,12 +508,6 @@ export function ServiceSelectorModal({ isOpen, onClose, onSelect }: ServiceSelec
                         onSizeNotesChange={(notes) => {
                           setServiceData({ ...serviceData, sizeNotes: notes })
                         }}
-                        onDesignConsultationChange={(needed, notes) => {
-                          setServiceData({ 
-                            ...serviceData, 
-                            designConsultation: { needed, notes }
-                          })
-                        }}
                       />
                     )}
 
