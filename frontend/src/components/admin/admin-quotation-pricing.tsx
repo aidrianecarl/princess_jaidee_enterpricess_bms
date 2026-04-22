@@ -597,6 +597,39 @@ export function AdminQuotationPricing() {
                             <span className="text-blue-700">₱{calculateSublimationSubtotal(item.id).toLocaleString()}</span>
                           </div>
                         </div>
+                        
+                        {/* Size Specifications for Sublimation */}
+                        {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-blue-200">
+                            <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Size Specifications</p>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                              {item.size_specifications.top && (
+                                <div className="bg-blue-50 p-2 rounded">
+                                  <p className="text-gray-600 font-semibold">Top</p>
+                                  <p className="text-gray-900">{item.size_specifications.top}</p>
+                                </div>
+                              )}
+                              {item.size_specifications.bottom && (
+                                <div className="bg-blue-50 p-2 rounded">
+                                  <p className="text-gray-600 font-semibold">Bottom</p>
+                                  <p className="text-gray-900">{item.size_specifications.bottom}</p>
+                                </div>
+                              )}
+                              {item.size_specifications.width && (
+                                <div className="bg-blue-50 p-2 rounded">
+                                  <p className="text-gray-600 font-semibold">Width</p>
+                                  <p className="text-gray-900">{item.size_specifications.width}</p>
+                                </div>
+                              )}
+                              {item.size_specifications.height && (
+                                <div className="bg-blue-50 p-2 rounded">
+                                  <p className="text-gray-600 font-semibold">Height</p>
+                                  <p className="text-gray-900">{item.size_specifications.height}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   } else if (item.service?.name?.includes('Tarpaulin')) {
@@ -741,6 +774,39 @@ export function AdminQuotationPricing() {
                                 </div>
                               </div>
                               <p className="text-xs text-gray-600 mb-4 italic">Pricing fields are disabled for Sublimation Printing Service. Existing prices will be preserved.</p>
+
+                              {/* Size Specifications for Sublimation */}
+                              {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
+                                <div className="mb-4 p-3 bg-white rounded border border-blue-300">
+                                  <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Specifications</h5>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                                    {item.size_specifications.top && (
+                                      <div className="bg-blue-50 p-2 rounded">
+                                        <p className="text-gray-600 font-semibold">Top</p>
+                                        <p className="text-gray-900">{item.size_specifications.top}</p>
+                                      </div>
+                                    )}
+                                    {item.size_specifications.bottom && (
+                                      <div className="bg-blue-50 p-2 rounded">
+                                        <p className="text-gray-600 font-semibold">Bottom</p>
+                                        <p className="text-gray-900">{item.size_specifications.bottom}</p>
+                                      </div>
+                                    )}
+                                    {item.size_specifications.width && (
+                                      <div className="bg-blue-50 p-2 rounded">
+                                        <p className="text-gray-600 font-semibold">Width</p>
+                                        <p className="text-gray-900">{item.size_specifications.width}</p>
+                                      </div>
+                                    )}
+                                    {item.size_specifications.height && (
+                                      <div className="bg-blue-50 p-2 rounded">
+                                        <p className="text-gray-600 font-semibold">Height</p>
+                                        <p className="text-gray-900">{item.size_specifications.height}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
 
                               {/* Team Roster Table */}
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
