@@ -2387,6 +2387,28 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   </p>
                                 </div>
                               </div>
+                            ) : item.serviceRequirements?.sizeSpecifications?.items && Array.isArray(item.serviceRequirements.sizeSpecifications.items) && item.serviceRequirements.sizeSpecifications.items.length > 0 ? (
+                              <div className="space-y-2 text-xs md:text-sm text-gray-700">
+                                <p className="font-semibold text-gray-900 mb-2">Size Specifications - Items List</p>
+                                {item.serviceRequirements.sizeSpecifications.items.map((sizeItem: any, idx: number) => {
+                                  const hasTopSize = sizeItem.sizeTop && sizeItem.sizeTop.trim() !== ""
+                                  const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
+                                  const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
+                                  const itemQty = sizeItem.qty || 0
+                                  const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
+                                  const itemTotal = itemQty * itemPrice
+
+                                  return (
+                                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border border-indigo-200">
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-semibold text-indigo-700">{itemQty}</span>
+                                        <span className="text-gray-600">{itemUnit}</span>
+                                      </div>
+                                      <span className="text-indigo-700 font-bold">₱{itemTotal.toLocaleString()}</span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
                             ) : (
                               <div className="p-2 bg-white rounded border border-blue-200 text-xs md:text-sm text-gray-600">
                                 Qty: <span className="font-semibold">{item.quantity}</span>
@@ -2417,6 +2439,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 let serviceSubtotal = 0
                                 const basePrice = item.unitPrice
                                 const teamRoster = item.serviceRequirements?.teamRoster || []
+                                const sizeSpecItems = item.serviceRequirements?.sizeSpecifications?.items || []
                                 
                                 if (isSublimation && teamRoster.length > 0) {
                                   teamRoster.forEach((player: any) => {
@@ -2430,6 +2453,16 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   })
                                 } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) {
                                   serviceSubtotal = (item.serviceRequirements?.sizeSpecifications?.totalPrice || 0) * item.quantity
+                                } else if (sizeSpecItems.length > 0) {
+                                  // Calculate for size specification items
+                                  sizeSpecItems.forEach((sizeItem: any) => {
+                                    const hasTopSize = sizeItem.sizeTop && sizeItem.sizeTop.trim() !== ""
+                                    const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
+                                    const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
+                                    const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
+                                    const itemQty = sizeItem.qty || 0
+                                    serviceSubtotal += itemQty * itemPrice
+                                  })
                                 } else {
                                   serviceSubtotal = item.amount
                                 }

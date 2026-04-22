@@ -210,7 +210,13 @@ export function SizeSpecificationRequirement({
       </div>
 
       <div className="space-y-3 max-h-96 overflow-y-auto p-2">
-        {items.map((item) => (
+        {items.map((item) => {
+          // Determine if this is a SET or PCS based on size selections
+          const hasTopSize = item.sizeTop && item.sizeTop.trim() !== ""
+          const hasBottomSize = item.sizeBottom && item.sizeBottom.trim() !== ""
+          const qtyUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
+
+          return (
           <div
             key={item.id}
             className="p-3 bg-neutral-50 rounded-lg border border-neutral-200 space-y-2"
@@ -233,17 +239,9 @@ export function SizeSpecificationRequirement({
                     }
                     className="h-9 text-sm flex-1"
                   />
-                  <select
-                    value={item.qtyUnit || "PCS"}
-                    onChange={(e) =>
-                      updateItem(item.id, "qtyUnit", e.target.value)
-                    }
-                    className="h-9 px-1 rounded-md border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="PCS">PCS</option>
-                    <option value="SETS">SETS</option>
-                    <option value="UNITS">UNITS</option>
-                  </select>
+                  <div className="h-9 px-3 rounded-md border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center bg-neutral-100 font-medium text-neutral-700">
+                    {qtyUnit}
+                  </div>
                 </div>
               </div>
 
@@ -352,7 +350,8 @@ export function SizeSpecificationRequirement({
               )}
             </div>
           </div>
-        ))}
+        )
+        })}
       </div>
 
       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
