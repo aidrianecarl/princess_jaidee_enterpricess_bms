@@ -21,7 +21,8 @@ class QuotationController extends Controller
         $userId = auth()->id();
         
         $query = Quotation::with(['customer', 'items.service'])
-            ->where('created_by', $userId);
+            ->where('created_by', $userId)
+            ->withoutTrashed();
 
         if ($request->has('search')) {
             $query->where('quotation_number', 'like', '%' . $request->search . '%');
@@ -50,7 +51,8 @@ class QuotationController extends Controller
                 'search_filter' => $request->get('search'),
             ]);
 
-            $query = Quotation::with(['customer', 'items.service', 'creator', 'branch']);
+            $query = Quotation::with(['customer', 'items.service', 'creator', 'branch'])
+                ->withoutTrashed();
             Log::info('Base query built');
 
             // Get current user
@@ -1284,11 +1286,11 @@ class QuotationController extends Controller
 
             Log::info('[v0] Job order created', ['job_order_id' => $jobOrder->id, 'job_order_number' => $jobOrderNumber]);
 
-            // Update quotation status to 'ordered'
-            $quotation->status = 'ordered';
+            // Update quotation status to 'approved' (since it has been converted to an order)
+            $quotation->status = 'approved';
             $quotation->save();
 
-            Log::info('[v0] Quotation status updated to ordered');
+            Log::info('[v0] Quotation status updated to approved');
 
             return response()->json([
                 'success' => true,

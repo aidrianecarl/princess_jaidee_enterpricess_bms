@@ -326,13 +326,13 @@ export default function ServicesPage() {
                     className="bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-neutral-800 overflow-hidden hover:shadow-lg hover:shadow-red-200 dark:hover:shadow-red-950/30 transition-all duration-300 flex flex-col hover:border-red-400"
                   >
                     {/* Image */}
-                    <div className="relative h-40 sm:h-48 bg-gradient-to-br from-red-50 to-red-100">
+                    <div className="relative h-48 sm:h-56 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
                       {service.image_url ? (
                         <Image
                           src={service.image_url || "/placeholder.svg"}
                           alt={service.name}
                           fill
-                          className="object-cover"
+                          className="object-contain p-2"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-red-300">
@@ -636,12 +636,12 @@ export default function ServicesPage() {
             <div className="p-4 md:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
               {/* Image */}
               {selectedService.image_url && (
-                <div className="relative h-48 w-full rounded-lg overflow-hidden">
+                <div className="relative h-64 w-full rounded-lg overflow-hidden bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center">
                   <Image
                     src={selectedService.image_url || "/placeholder.svg"}
                     alt={selectedService.name}
                     fill
-                    className="object-cover"
+                    className="object-contain p-4"
                   />
                 </div>
               )}

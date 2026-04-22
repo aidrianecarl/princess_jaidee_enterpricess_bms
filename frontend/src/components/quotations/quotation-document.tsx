@@ -941,6 +941,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: designFileUrl || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
+            design_consultation: item.serviceRequirements?.designConsultation ? JSON.stringify(item.serviceRequirements.designConsultation) : null,
             notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
           }
         })
@@ -1125,6 +1126,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: designFileUrl || null,
             team_roster: item.serviceRequirements?.teamRoster ? JSON.stringify(item.serviceRequirements.teamRoster) : null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
+            design_consultation: item.serviceRequirements?.designConsultation ? JSON.stringify(item.serviceRequirements.designConsultation) : null,
             notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
           }
         })
@@ -2392,19 +2394,39 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 {item.serviceRequirements.sizeSpecifications.items.map((sizeItem: any, idx: number) => {
                                   const hasTopSize = sizeItem.sizeTop && typeof sizeItem.sizeTop === 'string' && sizeItem.sizeTop.trim() !== ""
                                   const hasBottomSize = sizeItem.sizeBottom && typeof sizeItem.sizeBottom === 'string' && sizeItem.sizeBottom.trim() !== ""
-                                  const isBothSelected = hasTopSize && hasBottomSize
-                                  const itemUnit = isBothSelected ? "SET" : "PCS"
-                                  const itemQty = sizeItem.qty || 0
-                                  const itemPrice = isBothSelected ? basePrice * 2 : basePrice
-                                  const itemTotal = itemQty * itemPrice
+                                  const itemQty = sizeItem.qty || 1
+                                  const basePrice = item.unitPrice
+                                  
+                                  // Display array of items if both top and bottom, otherwise single item
+                                  const displayItems = []
+                                  if (hasTopSize) {
+                                    displayItems.push({
+                                      label: `TOP - ${sizeItem.sizeTop.toUpperCase()}`,
+                                      qty: itemQty,
+                                      price: basePrice,
+                                      total: itemQty * basePrice
+                                    })
+                                  }
+                                  if (hasBottomSize) {
+                                    displayItems.push({
+                                      label: `BOTTOM - ${sizeItem.sizeBottom.toUpperCase()}`,
+                                      qty: itemQty,
+                                      price: basePrice,
+                                      total: itemQty * basePrice
+                                    })
+                                  }
 
                                   return (
-                                    <div key={idx} className="flex items-center justify-between p-2 bg-white rounded border border-indigo-200">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-semibold text-indigo-700">{itemQty}</span>
-                                        <span className="text-gray-600">{itemUnit}</span>
-                                      </div>
-                                      <span className="text-indigo-700 font-bold">₱{itemTotal.toLocaleString()}</span>
+                                    <div key={idx} className="space-y-1">
+                                      {displayItems.map((displayItem, dispIdx) => (
+                                        <div key={dispIdx} className="flex items-center justify-between p-2 bg-white rounded border border-indigo-200">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-semibold text-indigo-700">{displayItem.qty}</span>
+                                            <span className="text-gray-600">{displayItem.label}</span>
+                                          </div>
+                                          <span className="text-indigo-700 font-bold">₱{displayItem.total.toLocaleString()}</span>
+                                        </div>
+                                      ))}
                                     </div>
                                   )
                                 })}
