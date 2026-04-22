@@ -2299,7 +2299,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                         if (hasTop && hasBottom) {
                           setsCount++
-                          setsPrice += basePrice * 2 // Double the base price for sets (top + bottom)
+                          setsPrice += basePrice // Double the base price for sets (top + bottom)
                         } else if (hasTop) {
                           topOnlyCount++
                           topOnlyPrice += basePrice // Single price for top only
@@ -2395,7 +2395,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
                                   const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
                                   const itemQty = sizeItem.qty || 0
-                                  const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
+                                  const itemPrice = itemUnit === "SET" ? basePrice : basePrice
                                   const itemTotal = itemQty * itemPrice
 
                                   return (
@@ -2446,7 +2446,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     const hasTop = player.sizeTop && player.sizeTop !== "None"
                                     const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
                                     if (hasTop && hasBottom) {
-                                      serviceSubtotal += basePrice * 2 // Double price for set (top + bottom)
+                                      serviceSubtotal += basePrice // Double price for set (top + bottom)
                                     } else if (hasTop || hasBottom) {
                                       serviceSubtotal += basePrice // Base price for single (top only or bottom only)
                                     }
