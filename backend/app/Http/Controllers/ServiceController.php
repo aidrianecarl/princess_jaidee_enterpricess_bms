@@ -235,17 +235,15 @@ class ServiceController extends Controller
             $file = $request->file('image');
             $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
             
-            // Store in public/services directory
+            // Store in storage/app/public/services directory
             $path = Storage::disk('public')->putFileAs('services', $file, $filename);
             
-            // Build full URL - using public URL structure matching your API domain
-            $baseUrl = config('app.url');
-            $imageUrl = $baseUrl . '/storage/' . $path;
-
+            // Return just the filename - it will be saved in database as is
+            // The frontend will construct the full URL when fetching
             return response()->json([
                 'message' => 'Image uploaded successfully',
-                'image_url' => $imageUrl,
-                'url' => $imageUrl,
+                'image_url' => 'api/storage/app/public/services/' . $filename,
+                'url' => 'api/storage/app/public/services/' . $filename,
             ], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

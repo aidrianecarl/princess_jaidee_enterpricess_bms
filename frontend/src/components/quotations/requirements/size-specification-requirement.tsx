@@ -9,19 +9,14 @@ interface SizeItem {
   id: string
   qty?: number
   qtyUnit?: string
-  width?: number
-  height?: number
-  name?: string
+  sizeTop?: string
+  lengthTopInches?: string
+  sizeBottom?: string
+  lengthBottomInches?: string
   additionalName?: string
 }
 
 interface SizeSpecs {
-  top?: string
-  bottom?: string
-  width?: number
-  height?: number
-  totalSqft?: number
-  totalPrice?: number
   items?: SizeItem[]
 }
 
@@ -31,10 +26,9 @@ interface SizeSpecificationRequirementProps {
   initialSpecs?: SizeSpecs
   initialNotes?: string
   isRequired?: boolean
-  topLabel?: string
-  bottomLabel?: string
-  sizeType?: "generic" | "tarpaulin"
 }
+
+const commonSizes = ["5TS", "4TS", "3TS", "2TS", "TS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"]
 
 export function SizeSpecificationRequirement({
   onSizeSpecChange,
@@ -42,14 +36,11 @@ export function SizeSpecificationRequirement({
   initialSpecs = {},
   initialNotes = "",
   isRequired = true,
-  topLabel = "Top/Shirt Size",
-  bottomLabel = "Bottom/Short Size",
-  sizeType = "generic",
 }: SizeSpecificationRequirementProps) {
   const [items, setItems] = useState<SizeItem[]>(
     initialSpecs.items && initialSpecs.items.length > 0
       ? initialSpecs.items
-      : [{ id: Date.now().toString(), qty: 0, qtyUnit: "PCS", width: 0, height: 0, additionalName: "" }]
+      : [{ id: Date.now().toString(), qty: 0, qtyUnit: "PCS", sizeTop: "", lengthTopInches: "", sizeBottom: "", lengthBottomInches: "", additionalName: "" }]
   )
   const [sizeNotes, setSizeNotes] = useState(initialNotes)
 
@@ -58,20 +49,22 @@ export function SizeSpecificationRequirement({
       id: Date.now().toString(),
       qty: 0,
       qtyUnit: "PCS",
-      width: 0,
-      height: 0,
+      sizeTop: "",
+      lengthTopInches: "",
+      sizeBottom: "",
+      lengthBottomInches: "",
       additionalName: "",
     }
     const updated = [...items, newItem]
     setItems(updated)
-    onSizeSpecChange({ ...initialSpecs, items: updated })
+    onSizeSpecChange({ items: updated })
   }
 
   const removeItem = (id: string) => {
     if (items.length > 1) {
       const updated = items.filter((item) => item.id !== id)
       setItems(updated)
-      onSizeSpecChange({ ...initialSpecs, items: updated })
+      onSizeSpecChange({ items: updated })
     }
   }
 
@@ -80,7 +73,7 @@ export function SizeSpecificationRequirement({
       item.id === id ? { ...item, [field]: value } : item
     )
     setItems(updated)
-    onSizeSpecChange({ ...initialSpecs, items: updated })
+    onSizeSpecChange({ items: updated })
   }
 
   const handleNotesChange = (notes: string) => {
@@ -114,10 +107,10 @@ export function SizeSpecificationRequirement({
         {items.map((item, index) => (
           <div
             key={item.id}
-            className="flex flex-col gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-200"
+            className="flex flex-col gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-200"
           >
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-              {/* Qty */}
+            {/* Qty Row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
                   Qty <span className="text-red-500">*</span>
@@ -146,75 +139,98 @@ export function SizeSpecificationRequirement({
                   </select>
                 </div>
               </div>
+            </div>
 
-              {/* Width */}
+            {/* Top Size and Length Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* Top Size */}
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
-                  Width (inches) <span className="text-red-500">*</span>
+                  Top Size <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  placeholder="0"
-                  value={item.width || ""}
-                  onChange={(e) =>
-                    updateItem(item.id, "width", parseFloat(e.target.value) || 0)
-                  }
-                  className="h-9 text-sm"
-                />
+                <select
+                  value={item.sizeTop || ""}
+                  onChange={(e) => updateItem(item.id, "sizeTop", e.target.value)}
+                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select size</option>
+                  {commonSizes.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Height */}
+              {/* Top Length */}
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
-                  Height (inches) <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  placeholder="0"
-                  value={item.height || ""}
-                  onChange={(e) =>
-                    updateItem(item.id, "height", parseFloat(e.target.value) || 0)
-                  }
-                  className="h-9 text-sm"
-                />
-              </div>
-
-              {/* Jersey# (Number only) */}
-              <div>
-                <label className="block text-xs font-medium text-neutral-600 mb-1">
-                  Jersey # <span className="text-red-500">*</span>
-                </label>
-                <Input
-                  type="number"
-                  min="0"
-                  placeholder="Jersey #"
-                  value={item.name || ""}
-                  onChange={(e) =>
-                    updateItem(item.id, "name", e.target.value)
-                  }
-                  className="h-9 text-sm"
-                />
-              </div>
-
-              {/* Additional Name */}
-              <div>
-                <label className="block text-xs font-medium text-neutral-600 mb-1">
-                  Additional Name
+                  Top Length (in) <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
-                  placeholder="Additional details"
-                  value={item.additionalName || ""}
+                  placeholder="e.g., 25"
+                  value={item.lengthTopInches || ""}
                   onChange={(e) =>
-                    updateItem(item.id, "additionalName", e.target.value)
+                    updateItem(item.id, "lengthTopInches", e.target.value)
                   }
                   className="h-9 text-sm"
                 />
               </div>
+            </div>
+
+            {/* Bottom Size and Length Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {/* Bottom Size */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Bottom Size <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={item.sizeBottom || ""}
+                  onChange={(e) => updateItem(item.id, "sizeBottom", e.target.value)}
+                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select size</option>
+                  {commonSizes.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Bottom Length */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Bottom Length (in) <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g., 20"
+                  value={item.lengthBottomInches || ""}
+                  onChange={(e) =>
+                    updateItem(item.id, "lengthBottomInches", e.target.value)
+                  }
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Additional Name */}
+            <div>
+              <label className="block text-xs font-medium text-neutral-600 mb-1">
+                Additional Name
+              </label>
+              <Input
+                type="text"
+                placeholder="Additional details"
+                value={item.additionalName || ""}
+                onChange={(e) =>
+                  updateItem(item.id, "additionalName", e.target.value)
+                }
+                className="h-9 text-sm"
+              />
             </div>
 
             {/* Remove Button */}
@@ -237,7 +253,7 @@ export function SizeSpecificationRequirement({
         <p className="text-sm text-blue-900">
           {filledItems.length > 0
             ? `✓ ${filledItems.length} item(s) specified`
-            : "Please specify at least one item with quantity and dimensions"}
+            : "Please specify at least one item with quantity and sizes"}
         </p>
       </div>
 
