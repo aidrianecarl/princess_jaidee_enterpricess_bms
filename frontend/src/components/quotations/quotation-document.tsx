@@ -929,6 +929,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           const unitPrice = Number(item.unitPrice) || 0
           const lineTotal = quantity * unitPrice
 
+          // Convert notes to JSON string if it's an object
+          let notesData = null
+          if (item.notes) {
+            notesData = typeof item.notes === 'object' ? JSON.stringify(item.notes) : item.notes
+          }
+
           return {
             product_id: item.type === "product" ? item.productId || null : null,
             service_id: item.type === "service" ? item.serviceId || null : null,
@@ -942,7 +948,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
             design_consultation: item.serviceRequirements?.designConsultation || null,
-            notes: item.notes || null,
+            notes: notesData,
             name: item.name,
             description: item.description,
           }
@@ -1117,6 +1123,12 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             }
           }
 
+          // Convert notes to JSON string if it's an object
+          let notesData = null
+          if (item.notes) {
+            notesData = typeof item.notes === 'object' ? JSON.stringify(item.notes) : item.notes
+          }
+
           return {
             product_id: item.type === "product" ? item.productId || null : null,
             service_id: item.type === "service" ? item.serviceId || null : null,
@@ -1129,7 +1141,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
             design_consultation: item.serviceRequirements?.designConsultation || null,
-            notes: item.notes || null,
+            notes: notesData,
             name: item.name,
             description: item.description,
           }

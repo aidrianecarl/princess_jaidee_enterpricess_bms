@@ -288,7 +288,7 @@ class QuotationController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.customization' => 'nullable|string',
             'items.*.design_cost' => 'nullable|numeric|min:0',
-            'items.*.notes' => 'nullable|string',
+            'items.*.notes' => 'nullable', // Accept any type - will be handled in the controller
             'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'discount' => 'nullable|numeric|min:0',
             'paid_amount' => 'nullable|numeric|min:0',
