@@ -85,12 +85,118 @@ export function SizeSpecificationRequirement({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h3 className="text-lg font-semibold text-neutral-900">
-            Size Specifications {isRequired && <span className="text-red-500">*</span>}
-          </h3>
+      {/* Sizing Guide Tables */}
+      <div className="space-y-4 bg-gradient-to-br from-amber-50 to-orange-50 p-5 rounded-lg border-2 border-amber-200">
+        <div>
+          <h4 className="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs">!</span>
+            Size Specifications Guide - SANDO & T-SHIRT
+          </h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-amber-200">
+                  <th rowSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SIZE</th>
+                  <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SANDO</th>
+                  <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">T-SHIRT</th>
+                </tr>
+                <tr className="bg-amber-200">
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { size: '5TS', sandoW: 26, sandoL: 18, tshirtW: 26, tshirtL: 17 },
+                  { size: '4TS', sandoW: 28, sandoL: 20, tshirtW: 28, tshirtL: 19 },
+                  { size: '3TS', sandoW: 30, sandoL: 24, tshirtW: 30, tshirtL: 23 },
+                  { size: '2TS', sandoW: 32, sandoL: 25, tshirtW: 32, tshirtL: 24 },
+                  { size: 'TS', sandoW: 34, sandoL: 26, tshirtW: 34, tshirtL: 25 },
+                  { size: 'XS', sandoW: 36, sandoL: 27, tshirtW: 36, tshirtL: 26 },
+                  { size: 'S', sandoW: 38, sandoL: 28, tshirtW: 38, tshirtL: 27 },
+                  { size: 'M', sandoW: 40, sandoL: 29, tshirtW: 40, tshirtL: 28 },
+                  { size: 'L', sandoW: 42, sandoL: 30, tshirtW: 42, tshirtL: 29 },
+                  { size: 'XL', sandoW: 44, sandoL: 30, tshirtW: 44, tshirtL: 30 },
+                  { size: '2XL', sandoW: 46, sandoL: 31, tshirtW: 46, tshirtL: 31 },
+                  { size: '3XL', sandoW: 48, sandoL: 31, tshirtW: 48, tshirtL: 31 },
+                  { size: '4XL', sandoW: 50, sandoL: 32, tshirtW: 50, tshirtL: 31 },
+                  { size: '5XL', sandoW: 52, sandoL: 32, tshirtW: 52, tshirtL: 32 },
+                ].map((row, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-amber-50'}>
+                    <td className="border border-amber-200 px-2 py-1 font-semibold text-amber-900">{row.size}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.sandoW}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.sandoL}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.tshirtW}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.tshirtL}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        {/* Shorts Sizes Guide */}
+        <div>
+          <h4 className="text-sm font-bold text-amber-900 mb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-amber-500 text-white flex items-center justify-center text-xs">!</span>
+            Size Specifications Guide - SHORTS
+          </h4>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-amber-200">
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">SIZE</th>
+                  <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">FINISH</th>
+                  <th colSpan={2} className="border border-amber-300 px-2 py-1 font-bold text-amber-900">BOX TYPE</th>
+                </tr>
+                <tr className="bg-amber-200">
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900"></th>
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">WIDTH</th>
+                  <th className="border border-amber-300 px-2 py-1 font-bold text-amber-900">LENGTH</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { size: '5TS', finishW: 26, finishL: 13, boxW: 22, boxL: 17.5 },
+                  { size: '4TS', finishW: 28, finishL: 13, boxW: 23, boxL: 17.5 },
+                  { size: '3TS', finishW: 30, finishL: 14, boxW: 24, boxL: 18.5 },
+                  { size: '2TS', finishW: 32, finishL: 15, boxW: 25, boxL: 19.5 },
+                  { size: 'TS', finishW: 34, finishL: 17, boxW: 26, boxL: 21.5 },
+                  { size: 'XS', finishW: 36, finishL: 18, boxW: 27, boxL: 22.5 },
+                  { size: 'S', finishW: 38, finishL: 19, boxW: 28, boxL: 23.5 },
+                  { size: 'M', finishW: 40, finishL: 20, boxW: 29, boxL: 24.5 },
+                  { size: 'L', finishW: 42, finishL: 21, boxW: 30, boxL: 25.5 },
+                  { size: 'XL', finishW: 44, finishL: 21, boxW: 31, boxL: 25.5 },
+                  { size: '2XL', finishW: 46, finishL: 21, boxW: 32, boxL: 25.5 },
+                  { size: '3XL', finishW: 48, finishL: 22, boxW: 33, boxL: 26.5 },
+                  { size: '4XL', finishW: 50, finishL: 22, boxW: 34, boxL: 26.5 },
+                  { size: '5XL', finishW: 52, finishL: 22, boxW: 35, boxL: 26.5 },
+                ].map((row, idx) => (
+                  <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-amber-50'}>
+                    <td className="border border-amber-200 px-2 py-1 font-semibold text-amber-900">{row.size}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.finishW}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.finishL}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.boxW}</td>
+                    <td className="border border-amber-200 px-2 py-1 text-center text-amber-800">{row.boxL}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p className="text-xs text-amber-800 bg-white p-2 rounded border border-amber-200 mt-3">
+          <strong>Note:</strong> All measurements are in inches. Please refer to these specifications when selecting sizes. Contact us if you need custom sizing.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-neutral-900">
+          Size Specifications {isRequired && <span className="text-red-500">*</span>}
+        </h3>
         <Button
           type="button"
           onClick={addItem}
@@ -104,13 +210,14 @@ export function SizeSpecificationRequirement({
       </div>
 
       <div className="space-y-3 max-h-96 overflow-y-auto p-2">
-        {items.map((item, index) => (
+        {items.map((item) => (
           <div
             key={item.id}
-            className="flex flex-col gap-3 p-3 bg-neutral-50 rounded-lg border border-neutral-200"
+            className="p-3 bg-neutral-50 rounded-lg border border-neutral-200"
           >
-            {/* Qty Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {/* Single Row: All Fields in Straight Line */}
+            <div className="grid grid-cols-1 md:grid-cols-7 lg:grid-cols-7 gap-2">
+              {/* Qty */}
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
                   Qty <span className="text-red-500">*</span>
@@ -131,7 +238,7 @@ export function SizeSpecificationRequirement({
                     onChange={(e) =>
                       updateItem(item.id, "qtyUnit", e.target.value)
                     }
-                    className="h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-9 px-1 rounded-md border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="PCS">PCS</option>
                     <option value="SETS">SETS</option>
@@ -139,10 +246,7 @@ export function SizeSpecificationRequirement({
                   </select>
                 </div>
               </div>
-            </div>
 
-            {/* Top Size and Length Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {/* Top Size */}
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
@@ -151,13 +255,11 @@ export function SizeSpecificationRequirement({
                 <select
                   value={item.sizeTop || ""}
                   onChange={(e) => updateItem(item.id, "sizeTop", e.target.value)}
-                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select size</option>
+                  <option value="">Select</option>
                   {commonSizes.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
+                    <option key={size} value={size}>{size}</option>
                   ))}
                 </select>
               </div>
@@ -167,20 +269,21 @@ export function SizeSpecificationRequirement({
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
                   Top Length (in) <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  placeholder="e.g., 25"
+                <select
                   value={item.lengthTopInches || ""}
                   onChange={(e) =>
                     updateItem(item.id, "lengthTopInches", e.target.value)
                   }
-                  className="h-9 text-sm"
-                />
+                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select</option>
+                  <option value="Standard">Standard</option>
+                  {Array.from({ length: 21 }, (_, i) => 16 + i).map((len) => (
+                    <option key={len} value={len}>{len}</option>
+                  ))}
+                </select>
               </div>
-            </div>
 
-            {/* Bottom Size and Length Row */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {/* Bottom Size */}
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
@@ -189,13 +292,11 @@ export function SizeSpecificationRequirement({
                 <select
                   value={item.sizeBottom || ""}
                   onChange={(e) => updateItem(item.id, "sizeBottom", e.target.value)}
-                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="">Select size</option>
+                  <option value="">Select</option>
                   {commonSizes.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
+                    <option key={size} value={size}>{size}</option>
                   ))}
                 </select>
               </div>
@@ -205,46 +306,50 @@ export function SizeSpecificationRequirement({
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
                   Bottom Length (in) <span className="text-red-500">*</span>
                 </label>
-                <Input
-                  type="text"
-                  placeholder="e.g., 20"
+                <select
                   value={item.lengthBottomInches || ""}
                   onChange={(e) =>
                     updateItem(item.id, "lengthBottomInches", e.target.value)
                   }
-                  className="h-9 text-sm"
+                  className="w-full h-9 px-2 rounded-md border border-neutral-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select</option>
+                  <option value="Standard">Standard</option>
+                  {Array.from({ length: 21 }, (_, i) => 13 + i).map((len) => (
+                    <option key={len} value={len}>{len}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Additional Name */}
+              <div>
+                <label className="block text-xs font-medium text-neutral-600 mb-1">
+                  Additional Name
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Details"
+                  value={item.additionalName || ""}
+                  onChange={(e) =>
+                    updateItem(item.id, "additionalName", e.target.value)
+                  }
+                  className="h-9 text-xs"
                 />
               </div>
-            </div>
 
-            {/* Additional Name */}
-            <div>
-              <label className="block text-xs font-medium text-neutral-600 mb-1">
-                Additional Name
-              </label>
-              <Input
-                type="text"
-                placeholder="Additional details"
-                value={item.additionalName || ""}
-                onChange={(e) =>
-                  updateItem(item.id, "additionalName", e.target.value)
-                }
-                className="h-9 text-sm"
-              />
-            </div>
-
-            {/* Remove Button */}
-            {items.length > 1 && (
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => removeItem(item.id)}
-                  className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition"
-                >
-                  <X size={16} />
-                </button>
+              {/* Remove Button */}
+              <div className="flex items-end">
+                {items.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="w-full h-9 p-2 text-red-500 hover:bg-red-100 rounded-lg transition text-xs flex items-center justify-center"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
-            )}
+            </div>
           </div>
         ))}
       </div>
