@@ -213,10 +213,10 @@ export function SizeSpecificationRequirement({
         {items.map((item) => (
           <div
             key={item.id}
-            className="p-3 bg-neutral-50 rounded-lg border border-neutral-200"
+            className="p-3 bg-neutral-50 rounded-lg border border-neutral-200 space-y-2"
           >
-            {/* Single Row: All Fields in Straight Line */}
-            <div className="grid grid-cols-1 md:grid-cols-7 lg:grid-cols-7 gap-2">
+            {/* Row 1: Qty, Top Size, Top Length, Bottom Size, Bottom Length */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
               {/* Qty */}
               <div>
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
@@ -320,9 +320,12 @@ export function SizeSpecificationRequirement({
                   ))}
                 </select>
               </div>
+            </div>
 
-              {/* Additional Name */}
-              <div>
+            {/* Row 2: Additional Name and Remove Button */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 items-end">
+              {/* Additional Name - spans 2 cols */}
+              <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-neutral-600 mb-1">
                   Additional Name
                 </label>
@@ -333,22 +336,20 @@ export function SizeSpecificationRequirement({
                   onChange={(e) =>
                     updateItem(item.id, "additionalName", e.target.value)
                   }
-                  className="h-9 text-xs"
+                  className="h-9 text-xs w-full"
                 />
               </div>
 
               {/* Remove Button */}
-              <div className="flex items-end">
-                {items.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => removeItem(item.id)}
-                    className="w-full h-9 p-2 text-red-500 hover:bg-red-100 rounded-lg transition text-xs flex items-center justify-center"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
+              {items.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeItem(item.id)}
+                  className="h-9 px-3 text-red-500 hover:bg-red-100 rounded-lg transition text-xs flex items-center justify-center border border-red-300"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
           </div>
         ))}

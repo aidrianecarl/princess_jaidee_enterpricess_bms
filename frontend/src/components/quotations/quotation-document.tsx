@@ -54,6 +54,16 @@ interface LineItem {
       height?: number
       totalSqft?: number
       totalPrice?: number
+      items?: Array<{
+        id: string
+        qty?: number
+        qtyUnit?: string
+        sizeTop?: string
+        lengthTopInches?: string
+        sizeBottom?: string
+        lengthBottomInches?: string
+        additionalName?: string
+      }>
     }
     designConsultation?: {
       needed: boolean
@@ -2082,6 +2092,52 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                         </div>
                       )}
 
+                    {/* Size Specification Items Details */}
+                    {expandedItems.has(item.id) && item.serviceRequirements?.sizeSpecifications?.items && item.serviceRequirements.sizeSpecifications.items.length > 0 && (
+                      <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200">
+                        <div className="bg-gradient-to-br from-green-50 to-teal-100 rounded-lg p-4 border border-green-200">
+                          <p className="text-xs font-bold text-green-700 uppercase mb-4">Size Specifications - Items List</p>
+                          
+                          {/* Items Table */}
+                          <div className="overflow-x-auto mb-4">
+                            <table className="w-full text-xs border-collapse">
+                              <thead>
+                                <tr className="bg-green-200">
+                                  <th className="border border-green-300 px-2 py-2 font-bold text-green-700 text-left">Qty</th>
+                                  <th className="border border-green-300 px-2 py-2 font-bold text-green-700 text-left">Top Size</th>
+                                  <th className="border border-green-300 px-2 py-2 font-bold text-green-700 text-left">Top Length (in)</th>
+                                  <th className="border border-green-300 px-2 py-2 font-bold text-green-700 text-left">Bottom Size</th>
+                                  <th className="border border-green-300 px-2 py-2 font-bold text-green-700 text-left">Bottom Length (in)</th>
+                                  <th className="border border-green-300 px-2 py-2 font-bold text-green-700 text-left">Additional Name</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {item.serviceRequirements.sizeSpecifications.items.map((sizeItem, idx) => (
+                                  <tr key={sizeItem.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-green-50'}>
+                                    <td className="border border-green-200 px-2 py-2 text-gray-800">{sizeItem.qty} {sizeItem.qtyUnit}</td>
+                                    <td className="border border-green-200 px-2 py-2 text-gray-800">{sizeItem.sizeTop || '-'}</td>
+                                    <td className="border border-green-200 px-2 py-2 text-gray-800">{sizeItem.lengthTopInches || '-'}</td>
+                                    <td className="border border-green-200 px-2 py-2 text-gray-800">{sizeItem.sizeBottom || '-'}</td>
+                                    <td className="border border-green-200 px-2 py-2 text-gray-800">{sizeItem.lengthBottomInches || '-'}</td>
+                                    <td className="border border-green-200 px-2 py-2 text-gray-800">{sizeItem.additionalName || '-'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Size Notes */}
+                          {item.notes && typeof item.notes === 'object' && item.notes.sizeNotes && (
+                            <div className="pt-4 border-t border-green-300">
+                              <p className="text-xs font-semibold text-green-700 uppercase mb-2">Size Notes</p>
+                              <div className="p-3 bg-white border border-green-200 rounded text-sm text-gray-800 whitespace-pre-wrap">
+                                {item.notes.sizeNotes}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Design File Details (Collapsible) */}
                     {expandedItems.has(item.id) && item.serviceRequirements && (item.serviceRequirements?.designPreview || item.serviceRequirements?.designImageUrl) && (
