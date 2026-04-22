@@ -941,8 +941,10 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
             design_file_url: designFileUrl || null,
             team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
-            design_consultation: item.serviceRequirements?.designConsultation ? JSON.stringify(item.serviceRequirements.designConsultation) : null,
-            notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
+            design_consultation: item.serviceRequirements?.designConsultation || null,
+            notes: item.notes || null,
+            name: item.name,
+            description: item.description,
           }
         })
       )
@@ -1116,18 +1118,20 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
           }
 
           return {
-            product_id: item.productId || null,
-            service_id: item.serviceId || null,
+            product_id: item.type === "product" ? item.productId || null : null,
+            service_id: item.type === "service" ? item.serviceId || null : null,
             customization: item.description || "",
             quantity: Number(item.quantity) || 1,
             unit_price: Number(item.unitPrice) || 0,
             design_cost: Number(item.designCost) || 0,
             sort_order: index,
             design_file_url: designFileUrl || null,
-            team_roster: item.serviceRequirements?.teamRoster ? JSON.stringify(item.serviceRequirements.teamRoster) : null,
+            team_roster: item.serviceRequirements?.teamRoster || null,
             size_specifications: item.serviceRequirements?.sizeSpecifications || null,
-            design_consultation: item.serviceRequirements?.designConsultation ? JSON.stringify(item.serviceRequirements.designConsultation) : null,
-            notes: typeof item.notes === 'object' ? JSON.stringify(item.notes) : (item.notes || null),
+            design_consultation: item.serviceRequirements?.designConsultation || null,
+            notes: item.notes || null,
+            name: item.name,
+            description: item.description,
           }
         })
       )

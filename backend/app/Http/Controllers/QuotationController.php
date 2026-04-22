@@ -387,6 +387,7 @@ class QuotationController extends Controller
                 'bill_to_postal' => $request->bill_to_postal,
                 'bill_to_phone' => $request->bill_to_phone,
                 'bill_to_email' => $request->bill_to_email,
+                'quotation_id' => null, // Will be set after quotation creation
             ]);
 
             // Now create quotation linked to the customer
@@ -413,9 +414,8 @@ class QuotationController extends Controller
                 'valid_until' => $request->valid_until,
             ]);
 
-            // Update customer to link back to quotation
-            $customer->quotation_id = $quotation->id;
-            $customer->save();
+            // Update customer to link back to quotation using raw query to avoid mass assignment issues
+            Customer::where('id', $customer->id)->update(['quotation_id' => $quotation->id]);
 
             foreach ($request->items as $item) {
                 Log::info('[v0] Processing quotation item', [
@@ -444,9 +444,11 @@ class QuotationController extends Controller
                     if (is_array($item['notes'])) {
                         $notesData = json_encode($item['notes']);
                     } else if (is_string($item['notes'])) {
-                        // Try to decode if it's already a JSON string
+                        // Check if it's already valid JSON
                         $decoded = json_decode($item['notes'], true);
-                        $notesData = $decoded !== null ? json_encode($decoded) : json_encode(['additionalNotes' => $item['notes']]);
+                        $notesData = ($decoded !== null && json_last_error() === JSON_ERROR_NONE) 
+                            ? $item['notes'] 
+                            : json_encode(['additionalNotes' => $item['notes']]);
                     }
                 }
 
@@ -456,8 +458,11 @@ class QuotationController extends Controller
                     if (is_array($item['team_roster'])) {
                         $teamRosterData = json_encode($item['team_roster']);
                     } else if (is_string($item['team_roster'])) {
+                        // Check if it's already valid JSON
                         $decoded = json_decode($item['team_roster'], true);
-                        $teamRosterData = $decoded !== null ? json_encode($decoded) : $item['team_roster'];
+                        $teamRosterData = ($decoded !== null && json_last_error() === JSON_ERROR_NONE) 
+                            ? $item['team_roster'] 
+                            : json_encode($item['team_roster']);
                     }
                 }
 
@@ -467,8 +472,11 @@ class QuotationController extends Controller
                     if (is_array($item['size_specifications'])) {
                         $sizeSpecsData = json_encode($item['size_specifications']);
                     } else if (is_string($item['size_specifications'])) {
+                        // Check if it's already valid JSON
                         $decoded = json_decode($item['size_specifications'], true);
-                        $sizeSpecsData = $decoded !== null ? json_encode($decoded) : $item['size_specifications'];
+                        $sizeSpecsData = ($decoded !== null && json_last_error() === JSON_ERROR_NONE) 
+                            ? $item['size_specifications'] 
+                            : json_encode($item['size_specifications']);
                     }
                 }
 
@@ -477,7 +485,9 @@ class QuotationController extends Controller
                 if (!empty($item['size_specifications']) && !empty($item['service_id'])) {
                     $service = \App\Models\Service::find($item['service_id']);
                     if ($service) {
-                        $specs = json_decode($service->specifications, true);
+                        $specs = is_string($service->specifications) 
+                            ? json_decode($service->specifications, true) 
+                            : $service->specifications;
                         if ($specs && isset($specs['size_type']) && $specs['size_type'] === 'tarpaulin') {
                             $tarpaulinDetailsData = $sizeSpecsData;
                         }
@@ -490,8 +500,11 @@ class QuotationController extends Controller
                     if (is_array($item['design_consultation'])) {
                         $designConsultationData = json_encode($item['design_consultation']);
                     } else if (is_string($item['design_consultation'])) {
+                        // Check if it's already valid JSON
                         $decoded = json_decode($item['design_consultation'], true);
-                        $designConsultationData = $decoded !== null ? json_encode($decoded) : $item['design_consultation'];
+                        $designConsultationData = ($decoded !== null && json_last_error() === JSON_ERROR_NONE) 
+                            ? $item['design_consultation'] 
+                            : json_encode($item['design_consultation']);
                     }
                 }
 

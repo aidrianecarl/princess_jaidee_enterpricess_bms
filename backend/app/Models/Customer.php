@@ -17,6 +17,8 @@ class Customer extends Model
         'bill_to_postal',
         'bill_to_phone',
         'bill_to_email',
+        'created_at',
+        'updated_at',
     ];
 
     public function user(): BelongsTo
