@@ -28,6 +28,7 @@ interface PricingLineItem {
   notes?: any
   team_roster?: any
   size_specifications?: any
+  design_consultation?: any
   service?: {
     id: number
     name: string
@@ -126,6 +127,15 @@ export default function DashboardViewQuotationPage() {
           }
         }
 
+        let designConsultation = item.design_consultation
+        if (typeof item.design_consultation === 'string' && item.design_consultation) {
+          try {
+            designConsultation = JSON.parse(item.design_consultation)
+          } catch (e) {
+            designConsultation = null
+          }
+        }
+
         let notesData = item.notes
         if (typeof item.notes === 'string' && item.notes) {
           try {
@@ -139,6 +149,7 @@ export default function DashboardViewQuotationPage() {
           itemId: item.id,
           teamRoster: teamRoster,
           sizeSpecs: sizeSpecs,
+          designConsultation: designConsultation,
           notes: notesData
         })
 
@@ -146,6 +157,7 @@ export default function DashboardViewQuotationPage() {
           ...item,
           team_roster: teamRoster,
           size_specifications: sizeSpecs,
+          design_consultation: designConsultation,
           notes: notesData,
         }
       }) || []

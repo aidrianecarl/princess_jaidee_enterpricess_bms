@@ -112,9 +112,74 @@ export function QuotationList() {
   const startIndex = (currentPage - 1) * itemsPerPage
   const paginatedQuotations = filteredQuotations.slice(startIndex, startIndex + itemsPerPage)
 
-  const handleViewQuotation = (quotation: Quotation) => {
-    setSelectedQuotation(quotation)
-    setIsModalOpen(true)
+  const handleViewQuotation = async (quotation: Quotation) => {
+    try {
+      const token = localStorage.getItem("auth_token")
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quotations/${quotation.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const detailedQuotation = data.data || data
+
+        // Parse JSON fields in items
+        const processedItems = (detailedQuotation.items || []).map((item: any) => {
+          let sizeSpecs = item.size_specifications
+          if (typeof sizeSpecs === 'string' && sizeSpecs) {
+            try {
+              sizeSpecs = JSON.parse(sizeSpecs)
+            } catch (e) {
+              sizeSpecs = null
+            }
+          }
+
+          let designConsultation = item.design_consultation
+          if (typeof designConsultation === 'string' && designConsultation) {
+            try {
+              designConsultation = JSON.parse(designConsultation)
+            } catch (e) {
+              designConsultation = null
+            }
+          }
+
+          let teamRoster = item.team_roster
+          if (typeof teamRoster === 'string' && teamRoster) {
+            try {
+              teamRoster = JSON.parse(teamRoster)
+            } catch (e) {
+              teamRoster = null
+            }
+          }
+
+          let notes = item.notes
+          if (typeof notes === 'string' && notes) {
+            try {
+              notes = JSON.parse(notes)
+            } catch (e) {
+              notes = null
+            }
+          }
+
+          return {
+            ...item,
+            size_specifications: sizeSpecs,
+            design_consultation: designConsultation,
+            team_roster: teamRoster,
+            notes: notes,
+          }
+        })
+
+        setSelectedQuotation({ ...detailedQuotation, items: processedItems })
+        setIsModalOpen(true)
+      }
+    } catch (error) {
+      console.error("Error fetching quotation details:", error)
+      setSelectedQuotation(quotation)
+      setIsModalOpen(true)
+    }
   }
   const getStatusColor = (status: string) => {
     switch (status) {

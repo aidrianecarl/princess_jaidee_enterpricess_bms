@@ -16,6 +16,7 @@ interface PricingLineItem {
   notes?: any
   team_roster?: any
   size_specifications?: any
+  design_consultation?: any
   service?: {
     id: number
     name: string

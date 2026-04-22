@@ -472,6 +472,17 @@ class QuotationController extends Controller
                     }
                 }
 
+                // Handle design consultation
+                $designConsultationData = null;
+                if (!empty($item['design_consultation'])) {
+                    if (is_array($item['design_consultation'])) {
+                        $designConsultationData = json_encode($item['design_consultation']);
+                    } else if (is_string($item['design_consultation'])) {
+                        $decoded = json_decode($item['design_consultation'], true);
+                        $designConsultationData = $decoded !== null ? json_encode($decoded) : $item['design_consultation'];
+                    }
+                }
+
                 $quotationItem = QuotationItem::create([
                     'quotation_id' => $quotation->id,
                     'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
@@ -483,6 +494,7 @@ class QuotationController extends Controller
                     'design_file_url' => $designFileUrl,
                     'team_roster' => $teamRosterData,
                     'size_specifications' => $sizeSpecsData,
+                    'design_consultation' => $designConsultationData,
                     'notes' => $notesData,
                 ]);
 
@@ -726,6 +738,22 @@ class QuotationController extends Controller
                         }
                     }
 
+                    // Handle design consultation
+                    $designConsultationData = null;
+                    if (!empty($item['design_consultation'])) {
+                        if (is_array($item['design_consultation'])) {
+                            $designConsultationData = json_encode($item['design_consultation']);
+                        } else if (is_string($item['design_consultation'])) {
+                            $decoded = json_decode($item['design_consultation'], true);
+                            $designConsultationData = $decoded !== null ? json_encode($decoded) : $item['design_consultation'];
+                        }
+                    }
+
+                    $lineTotal = ($item['quantity'] ?? 0) * ($item['unit_price'] ?? 0);
+                    if (isset($item['design_cost'])) {
+                        $lineTotal += $item['design_cost'];
+                    }
+
                     QuotationItem::create([
                         'quotation_id' => $quotation->id,
                         'service_id' => !empty($item['service_id']) ? $item['service_id'] : null,
@@ -737,6 +765,7 @@ class QuotationController extends Controller
                         'design_file_url' => $designFileUrl,
                         'team_roster' => $teamRosterData,
                         'size_specifications' => $sizeSpecsData,
+                        'design_consultation' => $designConsultationData,
                         'notes' => $notesData,
                     ]);
 
