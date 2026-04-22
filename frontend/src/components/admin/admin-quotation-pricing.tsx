@@ -586,59 +586,27 @@ export function AdminQuotationPricing() {
                           <div className="flex justify-between">
                             <span className="text-gray-700">{teamRoster.length} Players</span>
                           </div>
-                          {setsCount > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">{setsCount} Sets</span>
-                              <span className="font-bold text-green-600">₱{setsAmount.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {topOnlyCount > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">{topOnlyCount} Top Only</span>
-                              <span className="font-bold text-amber-600">₱{topAmount.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {bottomOnlyCount > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">{bottomOnlyCount} Bottom Only</span>
-                              <span className="font-bold text-purple-600">₱{bottomAmount.toLocaleString()}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between col-span-1 md:col-span-2 p-2 bg-blue-100 rounded font-bold">
-                            <span>Subtotal</span>
-                            <span className="text-blue-700">₱{calculateSublimationSubtotal(item.id).toLocaleString()}</span>
-                          </div>
                         </div>
                         
-                        {/* Size Specifications for Sublimation */}
+                        {/* Size Specifications - Items List for Sublimation */}
                         {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
                           <div className="mt-4 pt-4 border-t border-blue-200">
-                            <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Size Specifications</p>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                              {item.size_specifications.top && (
-                                <div className="bg-blue-50 p-2 rounded">
-                                  <p className="text-gray-600 font-semibold">Top</p>
-                                  <p className="text-gray-900">{item.size_specifications.top}</p>
-                                </div>
-                              )}
-                              {item.size_specifications.bottom && (
-                                <div className="bg-blue-50 p-2 rounded">
-                                  <p className="text-gray-600 font-semibold">Bottom</p>
-                                  <p className="text-gray-900">{item.size_specifications.bottom}</p>
-                                </div>
-                              )}
-                              {item.size_specifications.width && (
-                                <div className="bg-blue-50 p-2 rounded">
-                                  <p className="text-gray-600 font-semibold">Width</p>
-                                  <p className="text-gray-900">{item.size_specifications.width}</p>
-                                </div>
-                              )}
-                              {item.size_specifications.height && (
-                                <div className="bg-blue-50 p-2 rounded">
-                                  <p className="text-gray-600 font-semibold">Height</p>
-                                  <p className="text-gray-900">{item.size_specifications.height}</p>
-                                </div>
-                              )}
+                            <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Size Specifications - Items List</p>
+                            <div className="space-y-2">
+                              {teamRoster.map((player: any, idx: number) => {
+                                const prices = sublimationPrices[item.id]
+                                const setPrice = Number(prices?.setPrice) || 0
+                                const topPrice = Number(prices?.topPrice) || 0
+                                const bottomPrice = Number(prices?.bottomPrice) || 0
+                                const amount = calculatePlayerAmount(item, player, setPrice, topPrice, bottomPrice)
+                                
+                                return (
+                                  <div key={idx} className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded">
+                                    <span className="text-gray-900 font-semibold">{player.sizeTop || player.sizeBottom} - {player.name || 'Player'}</span>
+                                    <span className="text-blue-700 font-bold">₱{amount.toLocaleString()}</span>
+                                  </div>
+                                )
+                              })}
                             </div>
                           </div>
                         )}
@@ -646,29 +614,28 @@ export function AdminQuotationPricing() {
                         {/* Design Consultation for Sublimation */}
                         {item.design_consultation && typeof item.design_consultation === "object" && (
                           <div className="mt-4 pt-4 border-t border-blue-200">
-                            <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Design Consultation</p>
-                            <div className="bg-blue-50 p-3 rounded border border-blue-300 space-y-2 text-sm">
-                              {item.design_consultation.needed && (
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-gray-700">Required:</span>
-                                  <span className="text-green-600 font-bold">Yes</span>
-                                </div>
-                              )}
+                            <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Design Consultation</p>
+                            <div className="space-y-2 text-sm">
                               {item.design_consultation.price && (
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-gray-700">Price:</span>
-                                  <span className="text-gray-900">₱{Number(item.design_consultation.price).toLocaleString()}</span>
+                                <div className="flex justify-between items-center bg-amber-50 p-2 rounded border border-amber-300">
+                                  <span className="text-gray-700 font-semibold">Price:</span>
+                                  <span className="text-amber-700 font-bold">₱{Number(item.design_consultation.price).toLocaleString()}</span>
                                 </div>
                               )}
                               {item.design_consultation.notes && (
-                                <div className="flex flex-col gap-1">
-                                  <span className="font-semibold text-gray-700">Notes:</span>
-                                  <p className="text-gray-900">{item.design_consultation.notes}</p>
+                                <div className="bg-amber-50 p-2 rounded border border-amber-300">
+                                  <p className="text-xs font-semibold text-gray-700 mb-1">Notes:</p>
+                                  <p className="text-gray-900 text-xs">{item.design_consultation.notes}</p>
                                 </div>
                               )}
                             </div>
                           </div>
                         )}
+
+                        <div className="mt-4 pt-4 border-t border-blue-200 flex justify-between items-center p-3 bg-blue-100 rounded font-bold">
+                          <span className="text-gray-700">Subtotal</span>
+                          <span className="text-blue-700 text-lg">₱{calculateSublimationSubtotal(item.id).toLocaleString()}</span>
+                        </div>
                       </div>
                     )
                   } else if (item.service?.name?.includes('Tarpaulin')) {
@@ -815,36 +782,76 @@ export function AdminQuotationPricing() {
                               </div>
                               <p className="text-xs text-gray-600 mb-4 italic">Pricing fields are disabled for Sublimation Printing Service. Existing prices will be preserved.</p>
 
-                              {/* Size Specifications for Sublimation */}
+                              {/* Size Specifications Table for Sublimation */}
                               {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
-                                <div className="mb-4 p-3 bg-white rounded border border-blue-300">
-                                  <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Specifications</h5>
-                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                    {item.size_specifications.top && (
-                                      <div className="bg-blue-50 p-2 rounded">
-                                        <p className="text-gray-600 font-semibold">Top</p>
-                                        <p className="text-gray-900">{item.size_specifications.top}</p>
-                                      </div>
-                                    )}
-                                    {item.size_specifications.bottom && (
-                                      <div className="bg-blue-50 p-2 rounded">
-                                        <p className="text-gray-600 font-semibold">Bottom</p>
-                                        <p className="text-gray-900">{item.size_specifications.bottom}</p>
-                                      </div>
-                                    )}
-                                    {item.size_specifications.width && (
-                                      <div className="bg-blue-50 p-2 rounded">
-                                        <p className="text-gray-600 font-semibold">Width</p>
-                                        <p className="text-gray-900">{item.size_specifications.width}</p>
-                                      </div>
-                                    )}
-                                    {item.size_specifications.height && (
-                                      <div className="bg-blue-50 p-2 rounded">
-                                        <p className="text-gray-600 font-semibold">Height</p>
-                                        <p className="text-gray-900">{item.size_specifications.height}</p>
-                                      </div>
-                                    )}
+                                <div className="mb-4">
+                                  <h5 className="font-semibold text-blue-900 mb-3 text-sm uppercase">Size Specifications - Items List</h5>
+                                  <div className="overflow-x-auto bg-white rounded border border-blue-300">
+                                    <table className="w-full text-xs">
+                                      <thead className="bg-blue-100 border-b border-blue-300">
+                                        <tr>
+                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Qty</th>
+                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Size</th>
+                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Length (in)</th>
+                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Size</th>
+                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Length (in)</th>
+                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Additional Name</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {item.team_roster.map((player: any, idx: number) => (
+                                          <tr key={idx} className="border-b border-blue-200 hover:bg-blue-50">
+                                            <td className="px-3 py-2 text-gray-900">1</td>
+                                            <td className="px-3 py-2 text-gray-900">{player.sizeTop || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{player.lengthTopInches || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{player.sizeBottom || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{player.lengthBottomInches || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{player.name || "-"}</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
                                   </div>
+                                </div>
+                              )}
+
+                              {/* Size Notes */}
+                              {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (
+                                <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-300">
+                                  <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Notes</h5>
+                                  <p className="text-xs text-gray-900">{item.notes.sizeNotes}</p>
+                                </div>
+                              )}
+
+                              {/* Design File */}
+                              {item.design_file_url && (
+                                <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                                  <h4 className="font-semibold text-green-900 mb-3">DESIGN FILE</h4>
+                                  <div className="flex gap-3">
+                                    <img
+                                      src={getApiImageUrl(item.design_file_url)}
+                                      alt="Design"
+                                      className="w-24 h-24 rounded-lg border border-green-300 object-cover"
+                                      onError={(e) => {
+                                        e.currentTarget.style.display = "none"
+                                      }}
+                                    />
+                                    <button
+                                      onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url))}
+                                      className="self-center flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
+                                    >
+                                      <ZoomIn size={16} />
+                                      View
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Design Comment */}
+                              {item.notes && typeof item.notes === "object" && item.notes.designNotes && (
+                                <div className="p-3 bg-purple-50 rounded border border-purple-300">
+                                  <h5 className="font-semibold text-purple-900 mb-2 text-sm">Design Comment</h5>
+                                  <p className="text-xs text-gray-900">{item.notes.designNotes}</p>
                                 </div>
                               )}
 
@@ -977,33 +984,6 @@ export function AdminQuotationPricing() {
                                   <ZoomIn size={16} />
                                   View
                                 </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Design Consultation */}
-                          {item.design_consultation && typeof item.design_consultation === "object" && (
-                            <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                              <h4 className="font-semibold text-amber-900 mb-3">DESIGN CONSULTATION</h4>
-                              <div className="space-y-3 text-sm">
-                                {item.design_consultation.needed && (
-                                  <div className="flex items-center justify-between p-2 bg-white rounded border border-amber-300">
-                                    <span className="font-semibold text-gray-700">Design Consultation Required:</span>
-                                    <span className="text-green-600 font-bold">Yes</span>
-                                  </div>
-                                )}
-                                {item.design_consultation.price && (
-                                  <div className="flex items-center justify-between p-2 bg-white rounded border border-amber-300">
-                                    <span className="font-semibold text-gray-700">Consultation Price:</span>
-                                    <span className="text-amber-700 font-bold">₱{Number(item.design_consultation.price).toLocaleString()}</span>
-                                  </div>
-                                )}
-                                {item.design_consultation.notes && (
-                                  <div className="p-2 bg-white rounded border border-amber-300">
-                                    <p className="font-semibold text-gray-700 mb-1">Consultation Notes:</p>
-                                    <p className="text-gray-900 text-xs leading-relaxed">{item.design_consultation.notes}</p>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           )}
