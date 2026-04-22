@@ -2299,7 +2299,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
                         if (hasTop && hasBottom) {
                           setsCount++
-                          setsPrice += basePrice * 2 // Double the base price for sets (top + bottom)
+                          setsPrice += basePrice // Base price for set (top + bottom together)
                         } else if (hasTop) {
                           topOnlyCount++
                           topOnlyPrice += basePrice // Single price for top only
@@ -2395,7 +2395,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                   const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
                                   const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
                                   const itemQty = sizeItem.qty || 0
-                                  const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
+                                  const itemPrice = basePrice
                                   const itemTotal = itemQty * itemPrice
 
                                   return (
@@ -2446,9 +2446,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                     const hasTop = player.sizeTop && player.sizeTop !== "None"
                                     const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
                                     if (hasTop && hasBottom) {
-                                      serviceSubtotal += basePrice * 2
+                                      serviceSubtotal += basePrice // Base price for set (top + bottom)
                                     } else if (hasTop || hasBottom) {
-                                      serviceSubtotal += basePrice
+                                      serviceSubtotal += basePrice // Base price for single (top only or bottom only)
                                     }
                                   })
                                 } else if (isTarpaulin && item.serviceRequirements?.sizeSpecifications?.width && item.serviceRequirements?.sizeSpecifications?.height) {
@@ -2456,18 +2456,15 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                                 } else if (sizeSpecItems.length > 0) {
                                   // Calculate for size specification items
                                   sizeSpecItems.forEach((sizeItem: any) => {
-                                    const hasTopSize = sizeItem.sizeTop && sizeItem.sizeTop.trim() !== ""
-                                    const hasBottomSize = sizeItem.sizeBottom && sizeItem.sizeBottom.trim() !== ""
-                                    const itemUnit = hasTopSize && hasBottomSize ? "SET" : "PCS"
-                                    const itemPrice = itemUnit === "SET" ? basePrice * 2 : basePrice
                                     const itemQty = sizeItem.qty || 0
+                                    const itemPrice = basePrice
                                     serviceSubtotal += itemQty * itemPrice
                                   })
                                 } else {
                                   serviceSubtotal = item.amount
                                 }
                                 
-                                // Add design consultation to service subtotal
+                                // Add design consultation to service subtotal (only once, not multiplied)
                                 if (hasDesignConsultation) {
                                   serviceSubtotal += item.serviceRequirements?.designConsultation?.price || 0
                                 }
