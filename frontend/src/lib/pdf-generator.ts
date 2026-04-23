@@ -110,21 +110,21 @@ export const generateQuotationPDF = async (quotation: any) => {
   // Center: Company Info (Centered)
   const leftMargin = 15
 
-doc.setFontSize(14)
-doc.setFont(undefined, "bold")
-doc.setTextColor(0, 0, 0)
-doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, yPosition)
+  doc.setFontSize(14)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(0, 0, 0)
+  doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, yPosition)
 
-yPosition += 6
-doc.setFontSize(8)
-doc.setFont(undefined, "normal")
-doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, yPosition)
+  yPosition += 6
+  doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, yPosition)
 
-yPosition += 4
-doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, yPosition)
+  yPosition += 4
+  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, yPosition)
 
-yPosition += 4
-doc.text("Email: piesorsogonsportswear@gmail.com", leftMargin, yPosition)
+  yPosition += 4
+  doc.text("Email: piesorsogonsportswear@gmail.com", leftMargin, yPosition)
 
   yPosition += 8
 
