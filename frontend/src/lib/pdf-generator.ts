@@ -108,21 +108,23 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition = companyInfoStartY
 
   // Center: Company Info (Centered)
-  doc.setFontSize(14)
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(0, 0, 0)
-  doc.text("PRINCESS JAIDEE ENTERPRISES", pageWidth / 2, yPosition, { align: "left" })
+  const leftMargin = 15
 
-  yPosition += 6
-  doc.setFontSize(8)
-  doc.setFont(undefined, "normal")
-  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", pageWidth / 2, yPosition, { align: "left" })
+doc.setFontSize(14)
+doc.setFont(undefined, "bold")
+doc.setTextColor(0, 0, 0)
+doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, yPosition)
 
-  yPosition += 4
-  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", pageWidth / 2, yPosition, { align: "left" })
+yPosition += 6
+doc.setFontSize(8)
+doc.setFont(undefined, "normal")
+doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, yPosition)
 
-  yPosition += 4
-  doc.text("Email: piesorsogonsportswear@gmail.com", pageWidth / 2, yPosition, { align: "left" })
+yPosition += 4
+doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, yPosition)
+
+yPosition += 4
+doc.text("Email: piesorsogonsportswear@gmail.com", leftMargin, yPosition)
 
   yPosition += 8
 
