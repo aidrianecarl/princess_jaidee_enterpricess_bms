@@ -71,60 +71,45 @@ export const generateQuotationPDF = async (quotation: any) => {
   let yPosition = 12
 
   // ===== HEADER SECTION =====
-  // Load logos first
-  const logoSize = 22
-  const logoStartY = 12
-  const companyInfoStartY = logoStartY + 8
+const logoSize = 28
+const leftMargin = 15
+const rightMargin = 15
 
-  // Left: Client Logo (aligned with company info)
-  // if (quotation.logo_url) {
-  //   try {
-  //     const logoFileName = quotation.logo_url.split('/').pop()
-  //     const clientLogoUrl = `https://api.princessjaideeenterprises.com/api/storage/app/public/quotations/logos/${logoFileName}`
-      
-  //     console.log("[v0] Loading client logo from:", clientLogoUrl)
-  //     const logoBase64 = await imageUrlToBase64(clientLogoUrl)
-      
-  //     if (logoBase64) {
-  //       doc.addImage(logoBase64, "PNG", 15, companyInfoStartY, logoSize, logoSize)
-  //       console.log("[v0] Client logo loaded successfully")
-  //     }
-  //   } catch (error) {
-  //     console.log("[v0] Error loading client logo:", error)
-  //   }
-  // }
+let headerTopY = 12
 
-  // Right: Princess JD Logo (aligned with company info)
-  try {
-    const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
-    if (princessJDBase64) {
-      doc.addImage(princessJDBase64, "PNG", pageWidth - 15 - logoSize, companyInfoStartY, logoSize, logoSize)
-      console.log("[v0] Princess JD logo loaded successfully")
-    }
-  } catch (error) {
-    console.log("[v0] Error loading Princess JD logo:", error)
+// ===== RIGHT: Princess JD Logo (TOP-ALIGNED) =====
+try {
+  const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
+  if (princessJDBase64) {
+    const logoX = pageWidth - rightMargin - logoSize
+    const logoY = headerTopY
+    doc.addImage(princessJDBase64, "PNG", logoX, logoY, logoSize, logoSize)
   }
+} catch (error) {
+  console.log("[v0] Error loading Princess JD logo:", error)
+}
 
-  yPosition = companyInfoStartY
+// ===== LEFT: COMPANY INFO (ALIGNED WITH LOGO TOP) =====
+let textY = headerTopY + 5
 
-  // Center: Company Info (Centered)
-  const leftMargin = 15
+doc.setFontSize(14)
+doc.setFont(undefined, "bold")
+doc.setTextColor(0, 0, 0)
+doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, textY)
 
-  doc.setFontSize(14)
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(0, 0, 0)
-  doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, yPosition)
+textY += 6
+doc.setFontSize(8)
+doc.setFont(undefined, "normal")
+doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, textY)
 
-  yPosition += 6
-  doc.setFontSize(8)
-  doc.setFont(undefined, "normal")
-  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, yPosition)
+textY += 4
+doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, textY)
 
-  yPosition += 4
-  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, yPosition)
+textY += 4
+doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
 
-  yPosition += 4
-  doc.text("Email: piesorsogonsportswear@gmail.com", leftMargin, yPosition)
+// ===== SET NEXT Y POSITION PROPERLY =====
+ yPosition = headerTopY + logoSize + 6
 
   yPosition += 8
 
