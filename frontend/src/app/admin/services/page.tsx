@@ -278,7 +278,7 @@ export default function ServicesPage() {
                 </h1>
                 <p className="text-sm md:text-base text-neutral-600 dark:text-neutral-400">Manage service offerings</p>
               </div>
-              <button
+              {/* <button
                 onClick={() => {
                   resetForm()
                   setShowModal(true)
@@ -287,7 +287,7 @@ export default function ServicesPage() {
               >
                 <Plus size={18} />
                 Add Service
-              </button>
+              </button> */}
             </div>
 
             {/* Error Message */}
