@@ -65,7 +65,11 @@ async function imageUrlToBase64(url: string): Promise<string> {
 }
 
 export const generateQuotationPDF = async (quotation: any) => {
-  const doc = new jsPDF()
+  const doc = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [216, 330], // Long bond paper (8.5 x 13 inches)
+  })
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   let yPosition = 12
