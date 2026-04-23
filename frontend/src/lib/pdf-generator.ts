@@ -303,8 +303,20 @@ export const generateQuotationPDF = async (quotation: any) => {
   // Calculate design consultation total from quotation items to add to subtotal
   let designConsultationTotalForSubtotal = 0
   quotation.items.forEach((item: any) => {
-    if (item.design_consultation && typeof item.design_consultation === "object") {
-      const consultationPrice = Number(item.design_consultation.price) || 0
+    let consultation = item.design_consultation
+    
+    // Handle if design_consultation is a JSON string
+    if (typeof consultation === 'string') {
+      try {
+        consultation = JSON.parse(consultation)
+      } catch (e) {
+        consultation = null
+      }
+    }
+    
+    // Now check if it's an object with a price
+    if (consultation && typeof consultation === "object") {
+      const consultationPrice = Number(consultation.price) || 0
       designConsultationTotalForSubtotal += consultationPrice
     }
   })
@@ -356,8 +368,20 @@ export const generateQuotationPDF = async (quotation: any) => {
   // Calculate design consultation total from quotation items
   let designConsultationTotal = 0
   quotation.items.forEach((item: any) => {
-    if (item.design_consultation && typeof item.design_consultation === "object") {
-      const consultationPrice = Number(item.design_consultation.price) || 0
+    let consultation = item.design_consultation
+    
+    // Handle if design_consultation is a JSON string
+    if (typeof consultation === 'string') {
+      try {
+        consultation = JSON.parse(consultation)
+      } catch (e) {
+        consultation = null
+      }
+    }
+    
+    // Now check if it's an object with a price
+    if (consultation && typeof consultation === "object") {
+      const consultationPrice = Number(consultation.price) || 0
       designConsultationTotal += consultationPrice
     }
   })
@@ -365,13 +389,37 @@ export const generateQuotationPDF = async (quotation: any) => {
   console.log("[v0] Design Consultation Calculation:", {
     quotation_items_count: quotation.items.length,
     design_consultation_total: designConsultationTotal,
-    items_with_consultation: quotation.items.filter((item: any) => item.design_consultation && typeof item.design_consultation === "object").length,
-    consultation_details: quotation.items.map((item: any) => ({
-      service: item.service?.name,
-      consultation: item.design_consultation,
-      consultation_type: typeof item.design_consultation,
-      consultation_keys: item.design_consultation ? Object.keys(item.design_consultation) : null
-    }))
+    items_with_consultation: quotation.items.filter((item: any) => {
+      let consultation = item.design_consultation
+      if (typeof consultation === 'string') {
+        try {
+          consultation = JSON.parse(consultation)
+        } catch (e) {
+          return false
+        }
+      }
+      return consultation && typeof consultation === "object"
+    }).length,
+    consultation_details: quotation.items.map((item: any) => {
+      let consultation = item.design_consultation
+      let parsedConsultation = null
+      if (typeof consultation === 'string') {
+        try {
+          parsedConsultation = JSON.parse(consultation)
+        } catch (e) {
+          parsedConsultation = null
+        }
+      } else {
+        parsedConsultation = consultation
+      }
+      return {
+        service: item.service?.name,
+        consultation_raw: item.design_consultation,
+        consultation_parsed: parsedConsultation,
+        consultation_type: typeof item.design_consultation,
+        price: parsedConsultation ? parsedConsultation.price : null
+      }
+    })
   })
 
   const chargesTableData = [
