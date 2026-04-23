@@ -72,7 +72,7 @@ export default function DashboardViewQuotationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
-  const [isPricingDetailsExpanded, setIsPricingDetailsExpanded] = useState(true)
+  const [expandedPricingItems, setExpandedPricingItems] = useState<Set<number>>(new Set())
   const [isDownloading, setIsDownloading] = useState(false)
   const [sublimationPrices, setSublimationPrices] = useState<Record<number, { setPrice: string; topPrice: string; bottomPrice: string }>>({})
   const [user, setUser] = useState<any>(null)
@@ -382,91 +382,137 @@ export default function DashboardViewQuotationPage() {
                   if (item.service?.name?.includes('Sublimation')) {
                     const teamRoster = item.team_roster || []
                     const prices = sublimationPrices[item.id]
-                    console.log(`[v0] Services Summary - ${item.service?.name}:`, {
-                      item_id: item.id,
-                      has_team_roster: !!teamRoster,
-                      team_roster_length: teamRoster.length,
-                      has_prices: !!prices,
-                      prices_data: prices,
-                      size_specifications: item.size_specifications,
-                      design_consultation: item.design_consultation
-                    })
-                    if (!prices) {
-                      console.log(`[v0] WARNING: No prices found for item ${item.id}`)
-                      return null
-                    }
+                    
+                    // Handle items with team_roster (Jersey)
+                    if (teamRoster.length > 0) {
+                      if (!prices) return null
 
-                    const setPrice = Number(prices.setPrice) || 0
-                    const topPrice = Number(prices.topPrice) || 0
-                    const bottomPrice = Number(prices.bottomPrice) || 0
+                      const setPrice = Number(prices.setPrice) || 0
+                      const topPrice = Number(prices.topPrice) || 0
+                      const bottomPrice = Number(prices.bottomPrice) || 0
 
-                    let setsCount = 0, topOnlyCount = 0, bottomOnlyCount = 0, setsAmount = 0, topAmount = 0, bottomAmount = 0
+                      let setsCount = 0, topOnlyCount = 0, bottomOnlyCount = 0, setsAmount = 0, topAmount = 0, bottomAmount = 0
 
-                    teamRoster.forEach((player: any) => {
-                      const hasTop = player.sizeTop && player.sizeTop !== "None"
-                      const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+                      teamRoster.forEach((player: any) => {
+                        const hasTop = player.sizeTop && player.sizeTop !== "None"
+                        const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
 
-                      if (hasTop && hasBottom) {
-                        setsCount++
-                        setsAmount += setPrice
-                      } else if (hasTop) {
-                        topOnlyCount++
-                        topAmount += topPrice
-                      } else if (hasBottom) {
-                        bottomOnlyCount++
-                        bottomAmount += bottomPrice
+                        if (hasTop && hasBottom) {
+                          setsCount++
+                          setsAmount += setPrice
+                        } else if (hasTop) {
+                          topOnlyCount++
+                          topAmount += topPrice
+                        } else if (hasBottom) {
+                          bottomOnlyCount++
+                          bottomAmount += bottomPrice
+                        }
+                      })
+
+                      let subtotal = setsAmount + topAmount + bottomAmount
+                      if (item.design_consultation && typeof item.design_consultation === "object") {
+                        const consultationPrice = Number(item.design_consultation.price) || 0
+                        subtotal += consultationPrice
                       }
-                    })
 
-                    // Calculate subtotal for display
-                    let subtotal = setsAmount + topAmount + bottomAmount
-                    if (item.design_consultation && typeof item.design_consultation === "object") {
-                      const consultationPrice = Number(item.design_consultation.price) || 0
-                      subtotal += consultationPrice
-                    }
-
-                    return (
-                      <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
-                        <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
-                        
-                        {/* 3-Column Layout */}
-                        <div className="grid grid-cols-3 gap-2">
-                          {teamRoster.length > 0 && (
-                            <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
-                              <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
-                              <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
+                      return (
+                        <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
+                          <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
+                          
+                          {/* 3-Column Layout */}
+                          <div className="grid grid-cols-3 gap-2">
+                            {teamRoster.length > 0 && (
+                              <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
+                                <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
+                                <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
+                              </div>
+                            )}
+                            <div className="space-y-2">
+                              {setsCount > 0 && (
+                                <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
+                                  <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
+                                  <p className="text-lg font-bold text-green-600">{setsCount}</p>
+                                  <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
+                                </div>
+                              )}
+                              {topOnlyCount > 0 && (
+                                <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
+                                  <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
+                                  <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
+                                  <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
+                                </div>
+                              )}
+                              {bottomOnlyCount > 0 && (
+                                <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
+                                  <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
+                                  <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
+                                  <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
+                                </div>
+                              )}
                             </div>
-                          )}
-                          <div className="space-y-2">
-                            {setsCount > 0 && (
-                              <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
-                                <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
-                                <p className="text-lg font-bold text-green-600">{setsCount}</p>
-                                <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
-                              </div>
-                            )}
-                            {topOnlyCount > 0 && (
-                              <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
-                                <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
-                                <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
-                                <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
-                              </div>
-                            )}
-                            {bottomOnlyCount > 0 && (
-                              <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
-                                <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
-                                <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
-                                <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-2 bg-blue-50 rounded border border-blue-300">
-                            <p className="text-xs text-blue-700 font-semibold mb-1 text-center">Subtotal</p>
-                            <p className="text-lg font-bold text-blue-700 text-center">₱{subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                            <div className="p-2 bg-blue-50 rounded border border-blue-300">
+                              <p className="text-xs text-blue-700 font-semibold mb-1 text-center">Subtotal</p>
+                              <p className="text-lg font-bold text-blue-700 text-center">₱{subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )
+                      )
+                    }
+                    
+                    // Handle items with size_specifications (Tshirt, Polo Shirt)
+                    if (item.size_specifications && typeof item.size_specifications === "object") {
+                      let sizeSpecs = item.size_specifications
+                      if (typeof item.size_specifications === 'string') {
+                        try {
+                          sizeSpecs = JSON.parse(item.size_specifications)
+                        } catch (e) {
+                          return null
+                        }
+                      }
+                      
+                      if (sizeSpecs.items && Array.isArray(sizeSpecs.items) && sizeSpecs.items.length > 0) {
+                        const basePrice = Number(item.unit_price) || 0
+                        let subtotal = 0
+                        
+                        sizeSpecs.items.forEach((spec: any) => {
+                          const qty = Number(spec.qty) || 0
+                          const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+                          const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+                          const isSet = hasTop && hasBottom
+                          const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
+                          subtotal += itemPrice
+                        })
+                        
+                        if (item.design_consultation && typeof item.design_consultation === "object") {
+                          const consultationPrice = Number(item.design_consultation.price) || 0
+                          subtotal += consultationPrice
+                        }
+                        
+                        return (
+                          <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
+                            <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
+                            
+                            {/* 3-Column Layout for Size Specs */}
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
+                                <p className="text-xs text-gray-600 font-semibold mb-1">Total Items</p>
+                                <p className="text-lg font-bold text-gray-900">{sizeSpecs.items.length}</p>
+                              </div>
+                              <div className="p-2 bg-blue-50 rounded border border-blue-200 text-center">
+                                <p className="text-xs text-blue-700 font-semibold mb-1">Unit Price</p>
+                                <p className="text-lg font-bold text-blue-600">₱{basePrice.toLocaleString()}</p>
+                              </div>
+                              <div className="p-2 bg-blue-50 rounded border border-blue-300">
+                                <p className="text-xs text-blue-700 font-semibold mb-1 text-center">Subtotal</p>
+                                <p className="text-lg font-bold text-blue-700 text-center">₱{subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      }
+                    }
+                    
+                    return null
                   } else if (item.service?.name?.includes('Tarpaulin')) {
                     const specs = item.size_specifications
                     if (!specs) return null
@@ -494,47 +540,71 @@ export default function DashboardViewQuotationPage() {
               </div>
             </div>
 
-            {/* Pricing Details - Expandable */}
+            {/* Pricing Details */}
             <div className="border-t-2 border-gray-200">
-              <div 
-                onClick={() => setIsPricingDetailsExpanded(!isPricingDetailsExpanded)}
-                className="p-3 md:p-8 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:bg-gray-100 transition flex items-center justify-between"
-              >
+              <div className="p-3 md:p-8 bg-gradient-to-r from-gray-50 to-gray-100">
                 <h2 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
                   Pricing Details
                   <span className="text-sm font-normal text-gray-500">
                     ({quotation.items.length} {quotation.items.length === 1 ? "item" : "items"})
                   </span>
                 </h2>
-                <ChevronDown 
-                  size={24}
-                  className={`text-gray-600 transition-transform ${isPricingDetailsExpanded ? "rotate-180" : ""}`}
-                />
               </div>
 
-              {isPricingDetailsExpanded && (
+              {quotation.items.length === 0 ? (
                 <div className="p-3 md:p-8">
-                  {quotation.items.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
-                  <p className="text-lg mb-2">No items added</p>
+                  <div className="text-center py-12 text-gray-500">
+                    <p className="text-lg mb-2">No items added</p>
+                  </div>
                 </div>
               ) : (
-                <DashboardQuotationPricing
-                  quotation={quotation}
-                  sublimationPrices={sublimationPrices}
-                  expandedItems={expandedItems}
-                  onToggleExpand={(itemId: number) => {
-                    const newExpanded = new Set(expandedItems)
-                    if (newExpanded.has(itemId)) {
-                      newExpanded.delete(itemId)
-                    } else {
-                      newExpanded.add(itemId)
-                    }
-                    setExpandedItems(newExpanded)
-                  }}
-                  onImageExpand={(imageUrl: string) => setExpandedImage(imageUrl)}
-                />
-              )}
+                <div className="p-3 md:p-8">
+                  {quotation.items.map((item: any) => {
+                    return (
+                      <div key={item.id} className="mb-4 pb-4 border-b border-gray-200 last:border-b-0">
+                        {/* Expandable Header per Item */}
+                        <div 
+                          onClick={() => {
+                            const newExpanded = new Set(expandedPricingItems)
+                            if (newExpanded.has(item.id)) {
+                              newExpanded.delete(item.id)
+                            } else {
+                              newExpanded.add(item.id)
+                            }
+                            setExpandedPricingItems(newExpanded)
+                          }}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition"
+                        >
+                          <h3 className="font-bold text-blue-900">{item.service?.name}</h3>
+                          <ChevronDown 
+                            size={20}
+                            className={`text-gray-600 transition-transform ${expandedPricingItems.has(item.id) ? "rotate-180" : ""}`}
+                          />
+                        </div>
+
+                        {/* Expanded Content */}
+                        {expandedPricingItems.has(item.id) && (
+                          <div className="mt-3 pt-3">
+                            <DashboardQuotationPricing
+                              quotation={{...quotation, items: [item]}}
+                              sublimationPrices={sublimationPrices}
+                              expandedItems={expandedItems}
+                              onToggleExpand={(itemId: number) => {
+                                const newExpanded = new Set(expandedItems)
+                                if (newExpanded.has(itemId)) {
+                                  newExpanded.delete(itemId)
+                                } else {
+                                  newExpanded.add(itemId)
+                                }
+                                setExpandedItems(newExpanded)
+                              }}
+                              onImageExpand={(imageUrl: string) => setExpandedImage(imageUrl)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
