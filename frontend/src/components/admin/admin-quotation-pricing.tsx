@@ -800,7 +800,7 @@ export function AdminQuotationPricing() {
                         <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
                           
                           {/* Sublimation Pricing */}
-                          {item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0 && item.service?.name?.includes('Sublimation') && (
+                          {item.service?.name?.includes('Sublimation') && ((item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0) || (item.size_specifications && (typeof item.size_specifications === 'object' ? item.size_specifications.items?.length > 0 : true))) && (
                             <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                               <h4 className="font-semibold text-blue-900 mb-4">Sublimation Printing Service</h4>
                               
@@ -986,9 +986,11 @@ export function AdminQuotationPricing() {
                                 return null
                               })()}
 
-                              {/* Team Roster Table */}
-                              <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
-                              <div className="space-y-2">
+                              {/* Team Roster Table - Only show if team roster exists */}
+                              {item.team_roster && Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
+                                <>
+                                  <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
+                                  <div className="space-y-2">
                                 {item.team_roster.map((player: any, idx: number) => {
                                   const prices = sublimationPrices[item.id]
                                   const setPrice = Number(prices?.setPrice) || 0
@@ -1036,6 +1038,8 @@ export function AdminQuotationPricing() {
                                   <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
                                   <p className="text-sm text-blue-900">{item.notes.teamNotes}</p>
                                 </div>
+                              )}
+                                </>
                               )}
                             </div>
                           )}
