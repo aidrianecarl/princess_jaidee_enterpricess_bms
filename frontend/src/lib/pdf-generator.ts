@@ -75,45 +75,45 @@ export const generateQuotationPDF = async (quotation: any) => {
   let yPosition = 12
 
   // ===== HEADER SECTION =====
-const logoSize = 28
-const leftMargin = 15
-const rightMargin = 15
+  const logoSize = 28
+  const leftMargin = 15
+  const rightMargin = 15
 
-let headerTopY = 12
+  let headerTopY = 12
 
-// ===== RIGHT: Princess JD Logo (TOP-ALIGNED) =====
-try {
-  const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
-  if (princessJDBase64) {
-    const logoX = pageWidth - rightMargin - logoSize
-    const logoY = headerTopY
-    doc.addImage(princessJDBase64, "PNG", logoX, logoY, logoSize, logoSize)
+  // ===== RIGHT: Princess JD Logo (TOP-ALIGNED) =====
+  try {
+    const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
+    if (princessJDBase64) {
+      const logoX = pageWidth - rightMargin - logoSize
+      const logoY = headerTopY
+      doc.addImage(princessJDBase64, "PNG", logoX, logoY, logoSize, logoSize)
+    }
+  } catch (error) {
+    console.log("[v0] Error loading Princess JD logo:", error)
   }
-} catch (error) {
-  console.log("[v0] Error loading Princess JD logo:", error)
-}
 
-// ===== LEFT: COMPANY INFO (ALIGNED WITH LOGO TOP) =====
-let textY = headerTopY + 5
+  // ===== LEFT: COMPANY INFO (ALIGNED WITH LOGO TOP) =====
+  let textY = headerTopY + 5
 
-doc.setFontSize(14)
-doc.setFont(undefined, "bold")
-doc.setTextColor(0, 0, 0)
-doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, textY)
+  doc.setFontSize(14)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(0, 0, 0)
+  doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, textY)
 
-textY += 6
-doc.setFontSize(8)
-doc.setFont(undefined, "normal")
-doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, textY)
+  textY += 6
+  doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, textY)
 
-textY += 4
-doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, textY)
+  textY += 4
+  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, textY)
 
-textY += 4
-doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
+  textY += 4
+  doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
 
-// ===== SET NEXT Y POSITION PROPERLY =====
- yPosition = headerTopY + logoSize + 6
+  // ===== SET NEXT Y POSITION PROPERLY =====
+  yPosition = headerTopY + logoSize + 6
 
 
   // Horizontal line separator
@@ -150,7 +150,14 @@ doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
   doc.setFont(undefined, "normal")
   const clientName = quotation.customer?.bill_to_name || quotation.customer?.name || quotation.client_name || "N/A"
   doc.text(clientName, leftColX + 25, yPosition)
-  
+
+  doc.setFont(undefined, "bold")
+  doc.text("Quotation No.:", rightColX, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.quotation_number || quotation.id?.toString() || "N/A", rightColX + 22, yPosition)
+
+  yPosition += 5
+
   doc.setFont(undefined, "bold")
   doc.text("Date:", rightColX, yPosition)
   doc.setFont(undefined, "normal")
@@ -160,6 +167,8 @@ doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
     day: "2-digit",
   })
   doc.text(currentDate, rightColX + 15, yPosition)
+
+  yPosition -= 5
 
   yPosition += 5
   doc.setFont(undefined, "bold")
@@ -328,9 +337,18 @@ doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
   yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
 
   // ===== CHARGES/DESCRIPTION TABLE =====
+  // Calculate design consultation total
+  let designConsultationTotal = 0
+  items.forEach((item: any) => {
+    if (item.design_consultation && typeof item.design_consultation === "object") {
+      const consultationPrice = Number(item.design_consultation.price) || 0
+      designConsultationTotal += consultationPrice
+    }
+  })
+
   const chargesTableData = [
     ["Service Fee", ""],
-    ["Layout Fee", ""],
+    ["Layout Fee", designConsultationTotal > 0 ? designConsultationTotal.toLocaleString("en-PH", { minimumFractionDigits: 0 }) : ""],
     ["Labor and Installation", ""],
     ["Mobilization Fee", ""],
     ["Project", ""],
@@ -366,12 +384,21 @@ doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
   yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
 
   // ===== FINANCIAL SUMMARY =====
-  const total = parseFloat(quotation.total || quotation.subtotal || 0)
+  const total = parseFloat(quotation.total || 0)
   const downPayment = parseFloat(quotation.down_payment || 0)
   const balance = total - downPayment
 
   const summaryRightX = pageWidth - 10
   const summaryLabelX = pageWidth - 80
+
+  // SUB TOTAL (only items from table)
+  doc.setFontSize(9)
+  doc.setFont(undefined, "normal")
+  doc.setTextColor(0, 0, 0)
+  doc.text("Sub Total:", summaryLabelX, yPosition, { align: "left" })
+  doc.text(calculatedSubtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+
+  yPosition += 6
 
   // TOTAL PROJECT COST
   doc.setFontSize(10)
@@ -386,11 +413,11 @@ doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
   // DOWN PAYMENT - Yellow highlight
   doc.setFont(undefined, "bold")
   doc.setTextColor(220, 20, 60) // Red
-  
+
   // Yellow background for entire down payment row
   doc.setFillColor(255, 255, 0) // Yellow
   doc.rect(summaryLabelX - 5, yPosition - 4, pageWidth - summaryLabelX + 3, 6, "F")
-  
+
   doc.text("DOWN PAYMENT:", summaryLabelX, yPosition, { align: "left" })
   doc.setTextColor(0, 0, 0)
   doc.text(downPayment.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
