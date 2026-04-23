@@ -1317,16 +1317,27 @@ export default function OrdersPage() {
                             onClick={async () => {
                               try {
                                 // Fetch full quotation data from API to get complete items array
-                                const response = await apiClient.admin().get(`/admin/quotations/${item.quotation_id}`)
-                                const quotationData = response.data.data || response.data
+                                const response = await fetch(`${apiUrl}/admin/quotations/${item.quotation_id}`, {
+                                  headers: {
+                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                                    "Content-Type": "application/json",
+                                  },
+                                })
                                 
-                                if (!quotationData) {
+                                if (!response.ok) {
                                   throw new Error("Failed to fetch quotation data")
+                                }
+                                
+                                const quotationData = await response.json()
+                                const quotation = quotationData.data || quotationData
+                                
+                                if (!quotation) {
+                                  throw new Error("No quotation data found")
                                 }
                                 
                                 // Convert order to quotation format for PDF generation with full data
                                 const quotationForPDF = {
-                                  ...quotationData,
+                                  ...quotation,
                                   id: item.id,
                                   order_number: item.order_number,
                                   total: item.total,
