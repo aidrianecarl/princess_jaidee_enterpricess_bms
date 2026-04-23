@@ -71,60 +71,25 @@ export const generateQuotationPDF = async (quotation: any) => {
   let yPosition = 12
 
   // ===== HEADER SECTION =====
-  // Load logos first
   const logoSize = 22
   const logoStartY = 12
   const companyInfoStartY = logoStartY + 8
 
-  // Left: Client Logo (aligned with company info)
-  if (quotation.logo_url) {
-    try {
-      const logoFileName = quotation.logo_url.split('/').pop()
-      const clientLogoUrl = `https://api.princessjaideeenterprises.com/api/storage/app/public/quotations/logos/${logoFileName}`
-      
-      console.log("[v0] Loading client logo from:", clientLogoUrl)
-      const logoBase64 = await imageUrlToBase64(clientLogoUrl)
-      
-      if (logoBase64) {
-        doc.addImage(logoBase64, "PNG", 15, companyInfoStartY, logoSize, logoSize)
-        console.log("[v0] Client logo loaded successfully")
-      }
-    } catch (error) {
-      console.log("[v0] Error loading client logo:", error)
-    }
-  }
-
-  // Right: Princess JD Logo (aligned with company info)
-  try {
-    const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
-    if (princessJDBase64) {
-      doc.addImage(princessJDBase64, "PNG", pageWidth - 15 - logoSize, companyInfoStartY, logoSize, logoSize)
-      console.log("[v0] Princess JD logo loaded successfully")
-    }
-  } catch (error) {
-    console.log("[v0] Error loading Princess JD logo:", error)
-  }
-
-  yPosition = companyInfoStartY
-
-  // Center: Company Info (Centered)
-  doc.setFontSize(14)
+  // Left: Company Info (PRINCESS JAIDEE ENTERPRISES)
+  doc.setFontSize(8)
   doc.setFont(undefined, "bold")
   doc.setTextColor(0, 0, 0)
-  doc.text("PRINCESS JAIDEE ENTERPRISES", pageWidth / 2, yPosition, { align: "center" })
-
-  yPosition += 6
-  doc.setFontSize(8)
+  doc.text("PRINCESS JAIDEE ENTERPRISES", 15, companyInfoStartY)
+  
+  doc.setFontSize(7)
   doc.setFont(undefined, "normal")
-  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", pageWidth / 2, yPosition, { align: "center" })
+  doc.text("A.B. Fajardo Bldg., Calle Nueva St.,", 15, companyInfoStartY + 4)
+  doc.text("Brgy. Polvorista, Sorsogon City", 15, companyInfoStartY + 7)
+  doc.text("0930 821 8871 / 0915 175 9881", 15, companyInfoStartY + 10)
+  doc.text("(056) 311 8663", 15, companyInfoStartY + 13)
+  doc.text("piesorsogonsportswear@gmail.com", 15, companyInfoStartY + 16)
 
-  yPosition += 4
-  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", pageWidth / 2, yPosition, { align: "center" })
-
-  yPosition += 4
-  doc.text("Email: piesorsogonsportswear@gmail.com", pageWidth / 2, yPosition, { align: "center" })
-
-  yPosition += 8
+  yPosition = companyInfoStartY
 
   // Horizontal line separator
   doc.setDrawColor(0, 0, 0)
@@ -220,7 +185,7 @@ export const generateQuotationPDF = async (quotation: any) => {
     let servicePrice = parseFloat(item.line_total || unitPrice)
     let subtotalForService = 0
 
-    // For Sublimation: Show with SET/TOP/BOTTOM counts in name
+    // For Sublimation with team roster: Show with SET/TOP/BOTTOM counts
     if (serviceName.includes('Sublimation') && teamRoster && Array.isArray(teamRoster)) {
       const breakdown = calculateSublimationBreakdown(teamRoster, unitPrice)
       subtotalForService = breakdown.subtotal
@@ -230,6 +195,38 @@ export const generateQuotationPDF = async (quotation: any) => {
       projectTableData.push([
         `${serviceName} (${requirementsStr})`,
         quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
+
+      calculatedSubtotal += subtotalForService
+    }
+    // For Sublimation with size_specifications: Show sizes in name
+    else if (serviceName.includes('Sublimation') && sizeSpecs && sizeSpecs.items && Array.isArray(sizeSpecs.items)) {
+      // Build size description from items
+      const sizeDescriptions = sizeSpecs.items.map((spec: any) => {
+        const parts = []
+        if (spec.qty) parts.push(spec.qty)
+        if (spec.sizeTop && spec.sizeTop !== "-") parts.push(`${spec.sizeTop}${spec.lengthTopInches ? `-${spec.lengthTopInches}` : ''}`)
+        if (spec.sizeBottom && spec.sizeBottom !== "-") parts.push(`${spec.sizeBottom}${spec.lengthBottomInches ? `-${spec.lengthBottomInches}` : ''}`)
+        return parts.join(' ')
+      }).join(', ')
+
+      // Calculate total quantity and price
+      const totalQty = sizeSpecs.items.reduce((sum: number, spec: any) => sum + (Number(spec.qty) || 0), 0)
+      const basePrice = unitPrice
+      subtotalForService = sizeSpecs.items.reduce((sum: number, spec: any) => {
+        const qty = Number(spec.qty) || 0
+        const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+        const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+        const isSet = hasTop && hasBottom
+        const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
+        return sum + itemPrice
+      }, 0)
+
+      projectTableData.push([
+        `${serviceName} (${sizeDescriptions})`,
+        totalQty.toString(),
         unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
         subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
       ])
