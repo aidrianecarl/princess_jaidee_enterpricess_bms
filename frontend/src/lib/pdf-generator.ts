@@ -300,8 +300,17 @@ export const generateQuotationPDF = async (quotation: any) => {
   projectTableData.push(["", "", "", ""])
   projectTableData.push(["", "", "", ""])
 
-  // Add subtotal row
-  const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : calculatedSubtotal
+  // Calculate design consultation total from quotation items to add to subtotal
+  let designConsultationTotalForSubtotal = 0
+  quotation.items.forEach((item: any) => {
+    if (item.design_consultation && typeof item.design_consultation === "object") {
+      const consultationPrice = Number(item.design_consultation.price) || 0
+      designConsultationTotalForSubtotal += consultationPrice
+    }
+  })
+
+  // Add subtotal row with design consultation included
+  const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : (calculatedSubtotal + designConsultationTotalForSubtotal)
   projectTableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 })])
 
   autoTable(doc, {
@@ -352,14 +361,16 @@ export const generateQuotationPDF = async (quotation: any) => {
       designConsultationTotal += consultationPrice
     }
   })
-  
+
   console.log("[v0] Design Consultation Calculation:", {
     quotation_items_count: quotation.items.length,
     design_consultation_total: designConsultationTotal,
     items_with_consultation: quotation.items.filter((item: any) => item.design_consultation && typeof item.design_consultation === "object").length,
     consultation_details: quotation.items.map((item: any) => ({
       service: item.service?.name,
-      consultation: item.design_consultation
+      consultation: item.design_consultation,
+      consultation_type: typeof item.design_consultation,
+      consultation_keys: item.design_consultation ? Object.keys(item.design_consultation) : null
     }))
   })
 
@@ -423,26 +434,6 @@ export const generateQuotationPDF = async (quotation: any) => {
 
   const summaryRightX = pageWidth - 10
   const summaryLabelX = pageWidth - 80
-
-  // SUB TOTAL (only items from table)
-  doc.setFontSize(9)
-  doc.setFont(undefined, "normal")
-  doc.setTextColor(0, 0, 0)
-  doc.text("Sub Total:", summaryLabelX, yPosition, { align: "left" })
-  doc.text(calculatedSubtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
-  
-  console.log("[v0] Sub Total Calculation:", {
-    calculated_subtotal: calculatedSubtotal,
-    quotation_items: quotation.items.length,
-    items_breakdown: quotation.items.map((item: any) => ({
-      service: item.service?.name,
-      quantity: item.quantity,
-      unit_price: item.unit_price,
-      line_total: item.line_total
-    }))
-  })
-
-  yPosition += 6
 
   // TOTAL PROJECT COST
   doc.setFontSize(10)
