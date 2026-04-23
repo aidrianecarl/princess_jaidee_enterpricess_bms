@@ -8,8 +8,9 @@ import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X, Calendar, CheckCircle2, Package, Building2, CreditCard, User, TrendingDown } from "lucide-react"
+import { FileText, MapPin, DollarSign, Users, Loader2, CheckCircle, Clock, Eye, Settings, Search, X, Calendar, CheckCircle2, Package, Building2, CreditCard, User, TrendingDown, Download } from "lucide-react"
 import { OrderProgressBar } from "@/components/order/order-progress-bar"
+import { generateQuotationPDF } from "@/lib/pdf-generator"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1308,6 +1309,27 @@ export default function OrdersPage() {
                           >
                             <Settings size={18} />
                             <span>Update</span>
+                          </Button>
+                        )}
+
+                        {item.isOrder && (item.payment_status === "partial" || item.payment_status === "paid") && (
+                          <Button
+                            onClick={() => {
+                              // Convert order to quotation format for PDF generation
+                              const quotationForPDF = {
+                                ...item.quotation,
+                                id: item.id,
+                                order_number: item.order_number,
+                                total: item.total,
+                                down_payment: 0,
+                                customer: item.customer,
+                              }
+                              generateQuotationPDF(quotationForPDF)
+                            }}
+                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
+                          >
+                            <Download size={18} />
+                            <span>Statement</span>
                           </Button>
                         )}
 

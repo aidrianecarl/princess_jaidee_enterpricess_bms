@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card"
 import { ArrowLeft, Eye, FileText, Loader2, Download } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
-import { generateQuotationPDF } from "@/lib/pdf-generator"
+import { generateQuotationPDF as generateQuotationRequestPDF } from "@/lib/pdf-quotation-generator"
 
 interface Quotation {
   id: number
@@ -290,7 +290,7 @@ export default function QuotedProposalsPage() {
                           </Button>
                         </Link>
                         <Button
-                          onClick={() => generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)}
+                          onClick={() => generateQuotationRequestPDF(quotation)}
                           size="sm"
                           className="flex items-center gap-2 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
                         >
@@ -346,7 +346,7 @@ export default function QuotedProposalsPage() {
                           </Button>
                         </Link>
                         <Button
-                          onClick={() => generateQuotationPDF(quotation, `quotation-${quotation.quotation_number}`)}
+                          onClick={() => generateQuotationRequestPDF(quotation)}
                           size="sm"
                           className="flex items-center gap-2 w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white"
                         >
