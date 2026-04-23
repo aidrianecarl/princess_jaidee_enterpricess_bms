@@ -1316,11 +1316,15 @@ export default function OrdersPage() {
                           <Button
                             onClick={() => {
                               try {
-                                // Use the quotation data that's already loaded
+                                // Ensure quotation data exists
                                 if (!item.quotation) {
                                   console.error("[v0] No quotation data available for statement download")
+                                  alert("Error: No quotation data available")
                                   return
                                 }
+                                
+                                // Get items from quotation or from the order directly
+                                const items = item.quotation.items || item.quotation.quotation_items || []
                                 
                                 // Create quotation format for PDF generation with all data
                                 const quotationForPDF = {
@@ -1329,10 +1333,14 @@ export default function OrdersPage() {
                                   order_number: item.order_number,
                                   total: item.total,
                                   down_payment: 0,
+                                  items: Array.isArray(items) ? items : [], // Ensure items is always an array
                                 }
+                                
+                                console.log("[v0] Generating PDF with quotation:", { id: quotationForPDF.id, itemsCount: quotationForPDF.items.length })
                                 generateQuotationPDF(quotationForPDF)
                               } catch (error) {
                                 console.error("[v0] Error downloading statement:", error)
+                                alert("Error generating PDF: " + (error instanceof Error ? error.message : "Unknown error"))
                               }
                             }}
                             className="flex-1 bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
