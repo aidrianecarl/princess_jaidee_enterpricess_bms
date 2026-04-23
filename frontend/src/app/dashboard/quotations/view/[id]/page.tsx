@@ -4,9 +4,10 @@ import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { getApiImageUrl } from "@/lib/api-urls"
-import { ArrowLeft, Loader2, ChevronDown, X, ZoomIn, Download } from "lucide-react"
+import { ArrowLeft, Loader2, Download } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/header"
+import { DashboardQuotationPricing } from "@/components/dashboard/dashboard-quotation-pricing"
 import {
   Dialog,
   DialogContent,
@@ -403,7 +404,7 @@ export default function DashboardViewQuotationPage() {
                 Services Summary
               </h2>
               <div className="space-y-4">
-                {quotation.items.map((item) => {
+                {quotation.items.map((item: any) => {
                   if (item.service?.name?.includes('Sublimation')) {
                     const teamRoster = item.team_roster || []
                     const prices = sublimationPrices[item.id]
@@ -431,34 +432,51 @@ export default function DashboardViewQuotationPage() {
                       }
                     })
 
+                    // Calculate subtotal for display
+                    let subtotal = setsAmount + topAmount + bottomAmount
+                    if (item.design_consultation && typeof item.design_consultation === "object") {
+                      const consultationPrice = Number(item.design_consultation.price) || 0
+                      subtotal += consultationPrice
+                    }
+
                     return (
                       <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
-                        <h3 className="font-bold text-blue-900 mb-3">{item.service?.name}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-700">{teamRoster.length} Players</span>
+                        <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
+                        
+                        {/* 3-Column Layout */}
+                        <div className="grid grid-cols-3 gap-2">
+                          {teamRoster.length > 0 && (
+                            <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
+                              <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
+                              <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
+                            </div>
+                          )}
+                          <div className="space-y-2">
+                            {setsCount > 0 && (
+                              <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
+                                <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
+                                <p className="text-lg font-bold text-green-600">{setsCount}</p>
+                                <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
+                              </div>
+                            )}
+                            {topOnlyCount > 0 && (
+                              <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
+                                <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
+                                <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
+                                <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
+                              </div>
+                            )}
+                            {bottomOnlyCount > 0 && (
+                              <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
+                                <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
+                                <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
+                                <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
+                              </div>
+                            )}
                           </div>
-                          {setsCount > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">{setsCount} Sets</span>
-                              <span className="font-bold text-green-600">₱{setsAmount.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {topOnlyCount > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">{topOnlyCount} Top Only</span>
-                              <span className="font-bold text-amber-600">₱{topAmount.toLocaleString()}</span>
-                            </div>
-                          )}
-                          {bottomOnlyCount > 0 && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-700">{bottomOnlyCount} Bottom Only</span>
-                              <span className="font-bold text-purple-600">₱{bottomAmount.toLocaleString()}</span>
-                            </div>
-                          )}
-                          <div className="flex justify-between col-span-1 md:col-span-2 p-2 bg-blue-100 rounded font-bold">
-                            <span>Subtotal</span>
-                            <span className="text-blue-700">₱{calculateSublimationSubtotal(item.id).toLocaleString()}</span>
+                          <div className="p-2 bg-blue-50 rounded border border-blue-300">
+                            <p className="text-xs text-blue-700 font-semibold mb-1 text-center">Subtotal</p>
+                            <p className="text-lg font-bold text-blue-700 text-center">₱{subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                           </div>
                         </div>
                       </div>
@@ -499,225 +517,27 @@ export default function DashboardViewQuotationPage() {
                 </span>
               </h2>
 
-              <div className="mb-6">
-                {quotation.items.length === 0 ? (
-                  <div className="text-center py-12 text-gray-500">
-                    <p className="text-lg mb-2">No items added </p>
-                  </div>
-                ) : (
-                  quotation.items.map((item: any) => (
-                    <div key={item.id} className="mb-4 pb-4 border-b border-gray-200">
-                      {/* Main Row - Collapsible */}
-                      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 p-3 bg-gray-50 rounded-lg">
-                        {(Array.isArray(item.team_roster) && item.team_roster.length > 0) ||
-                          (item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0) ||
-                          item.design_file_url ||
-                          item.notes ? (
-                          <button
-                            onClick={() => {
-                              const newExpanded = new Set(expandedItems)
-                              if (newExpanded.has(item.id)) {
-                                newExpanded.delete(item.id)
-                              } else {
-                                newExpanded.add(item.id)
-                              }
-                              setExpandedItems(newExpanded)
-                            }}
-                            className="p-1 hover:bg-gray-200 rounded transition self-start md:self-center"
-                          >
-                            <ChevronDown
-                              size={18}
-                              className={`transition-transform ${expandedItems.has(item.id) ? "rotate-180" : ""}`}
-                            />
-                          </button>
-                        ) : null}
-
-                        {/* Image & Name Column */}
-                        <div className="flex-1 flex gap-2 min-w-0">
-                          {item.design_file_url ? (
-                            <img
-                              src={getApiImageUrl(item.design_file_url)}
-                              alt={item.service?.name || "Design"}
-                              className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none"
-                              }}
-                            />
-                          ) : item.service?.image_url ? (
-                            <img
-                              src={getApiImageUrl(item.service.image_url)}
-                              alt={item.service.name}
-                              className="w-12 h-12 md:w-14 md:h-14 rounded-lg border border-gray-200 object-cover flex-shrink-0"
-                              onError={(e) => {
-                                e.currentTarget.style.display = "none"
-                              }}
-                            />
-                          ) : null}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900 text-sm md:text-base truncate">{item.service?.name || "Custom Item"}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Collapsible Details */}
-                      {expandedItems.has(item.id) && (
-                        <div className="mt-3 ml-0 md:ml-8 pt-3 border-t border-gray-200 space-y-3">
-                          {/* Team Roster */}
-                          {Array.isArray(item.team_roster) && item.team_roster.length > 0 && (
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                              <h4 className="font-bold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
-                              <div className="overflow-x-auto">
-                                <table className="w-full text-xs md:text-sm">
-                                  <thead>
-                                    <tr className="border-b border-blue-200">
-                                      <th className="text-left p-2 font-semibold text-blue-900">Name</th>
-                                      <th className="text-left p-2 font-semibold text-blue-900">Jersey #</th>
-                                      <th className="text-left p-2 font-semibold text-blue-900">Top Size</th>
-                                      <th className="text-left p-2 font-semibold text-blue-900">Top Length (in)</th>
-                                      <th className="text-left p-2 font-semibold text-blue-900">Bottom Size</th>
-                                      <th className="text-left p-2 font-semibold text-blue-900">Bottom Length (in)</th>
-                                      <th className="text-left p-2 font-semibold text-blue-900">Amount</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {item.team_roster.map((player: any, idx: number) => {
-                                      const hasTop = player.sizeTop && player.sizeTop !== "None"
-                                      const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
-                                      const prices = sublimationPrices[item.id]
-                                      const setPrice = prices ? Number(prices.setPrice) : 0
-                                      const topPrice = prices ? Number(prices.topPrice) : 0
-                                      const bottomPrice = prices ? Number(prices.bottomPrice) : 0
-
-                                      let amount = 0
-                                      if (hasTop && hasBottom) {
-                                        amount = setPrice
-                                      } else if (hasTop) {
-                                        amount = topPrice
-                                      } else if (hasBottom) {
-                                        amount = bottomPrice
-                                      }
-
-                                      return (
-                                        <tr key={idx} className="border-b border-blue-100 hover:bg-blue-100/50">
-                                          <td className="p-2 text-gray-900">{player.name || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.number || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.sizeTop || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.lengthTopInches || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.sizeBottom || "-"}</td>
-                                          <td className="p-2 text-gray-900">{player.lengthBottomInches || "-"}</td>
-                                          <td className="p-2 font-bold text-blue-600">₱{amount.toLocaleString()}</td>
-                                        </tr>
-                                      )
-                                    })}
-                                  </tbody>
-                                </table>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Size Specifications - Items List for Uniforms */}
-                          {item.size_specifications && typeof item.size_specifications === "object" && (
-                            <>
-                              {/* If it has items array (uniform sizes) */}
-                              {Array.isArray(item.size_specifications.items) && item.size_specifications.items.length > 0 ? (
-                                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                                  <h4 className="font-bold text-green-900 mb-3">SIZE SPECIFICATION ITEMS</h4>
-                                  <div className="space-y-2">
-                                    {item.size_specifications.items.map((sizeItem: any, idx: number) => {
-                                      const hasTopSize = sizeItem.sizeTop && typeof sizeItem.sizeTop === 'string' && sizeItem.sizeTop.trim() !== ""
-                                      const hasBottomSize = sizeItem.sizeBottom && typeof sizeItem.sizeBottom === 'string' && sizeItem.sizeBottom.trim() !== ""
-                                      const itemQty = sizeItem.qty || 1
-                                      
-                                      const displayItems = []
-                                      if (hasTopSize) {
-                                        displayItems.push({
-                                          label: `TOP - ${sizeItem.sizeTop.toUpperCase()}`,
-                                          qty: itemQty
-                                        })
-                                      }
-                                      if (hasBottomSize) {
-                                        displayItems.push({
-                                          label: `BOTTOM - ${sizeItem.sizeBottom.toUpperCase()}`,
-                                          qty: itemQty
-                                        })
-                                      }
-                                      
-                                      return (
-                                        <div key={idx} className="space-y-1">
-                                          {displayItems.map((displayItem, dispIdx) => (
-                                            <div key={dispIdx} className="flex items-center justify-between p-2 bg-white rounded border border-green-100 text-sm">
-                                              <div className="flex items-center gap-2">
-                                                <span className="font-semibold text-green-700">{displayItem.qty}</span>
-                                                <span className="text-gray-600">{displayItem.label}</span>
-                                              </div>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                              ) : (
-                                /* Regular tarpaulin or other size specs */
-                                Object.keys(item.size_specifications).length > 0 && (
-                                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                                    <h4 className="font-bold text-green-900 mb-3">SIZE SPECIFICATIONS</h4>
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                                      {Object.entries(item.size_specifications).map(([key, value]: [string, any]) => (
-                                        <div key={key} className="p-2 bg-white rounded border border-green-100">
-                                          <p className="text-green-700 font-semibold capitalize text-xs">{key}</p>
-                                          <p className="text-gray-900">{value || "-"}</p>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )
-                              )}
-                            </>
-                          )}
-
-                          {/* Design File */}
-                          {item.design_file_url && (
-                            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-                              <h4 className="font-bold text-purple-900 mb-3">DESIGN FILE</h4>
-                              <div
-                                className="relative inline-block cursor-pointer"
-                                onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url))}
-                              >
-                                <img
-                                  src={getApiImageUrl(item.design_file_url)}
-                                  alt="Design"
-                                  className="max-w-xs max-h-40 rounded-lg border border-purple-200 hover:opacity-75 transition"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = "none"
-                                  }}
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition">
-                                  <ZoomIn size={32} className="text-white bg-black/50 rounded-full p-2" />
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Notes */}
-                          {item.notes && (
-                            <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
-                              <h4 className="font-bold text-amber-900 mb-2">NOTES</h4>
-                              <p className="text-gray-900 whitespace-pre-wrap text-sm">
-                  {typeof item.notes === 'string' 
-                    ? item.notes 
-                    : typeof item.notes === 'object' 
-                      ? (item.notes.additionalNotes || item.notes.teamNotes || item.notes.sizeNotes || item.notes.designNotes || item.notes.notes || Object.values(item.notes).filter((v: any) => v && typeof v === 'string').join(' | ') || 'No notes')
-                      : 'No notes'}
-                </p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
+              {quotation.items.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <p className="text-lg mb-2">No items added</p>
+                </div>
+              ) : (
+                <DashboardQuotationPricing
+                  quotation={quotation}
+                  sublimationPrices={sublimationPrices}
+                  expandedItems={expandedItems}
+                  onToggleExpand={(itemId: number) => {
+                    const newExpanded = new Set(expandedItems)
+                    if (newExpanded.has(itemId)) {
+                      newExpanded.delete(itemId)
+                    } else {
+                      newExpanded.add(itemId)
+                    }
+                    setExpandedItems(newExpanded)
+                  }}
+                  onImageExpand={(imageUrl: string) => setExpandedImage(imageUrl)}
+                />
+              )}
             </div>
 
             {/* Totals Section */}

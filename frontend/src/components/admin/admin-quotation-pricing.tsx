@@ -623,10 +623,12 @@ export function AdminQuotationPricing() {
 
                         {/* Sets, Top Only, Bottom Only Breakdown - 3 Columns */}
                         <div className="grid grid-cols-3 gap-2 mb-4">
-                          {/* <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
-                            <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
-                            <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
-                          </div> */}
+                          {teamRoster.length > 0 && (
+                            <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
+                              <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
+                              <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
+                            </div>
+                          )}
                           <div className="space-y-2">
                             {setsCount > 0 && (
                               <div className="p-2 bg-green-50 rounded border border-green-200 text-center">

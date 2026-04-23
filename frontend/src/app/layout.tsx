@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     description: "Custom apparel and sportswear solutions",
     type: "website",
   },
-    generator: 'v0.app'
+    generator: 'aidriane.app'
 }
 
 export default function RootLayout({
