@@ -308,28 +308,35 @@ export const generateQuotationPDF = async (quotation: any) => {
     head: [["PROJECT TYPE:", "QTY", "UNIT PRICE", "PRICE"]],
     body: projectTableData,
     startY: yPosition,
-    theme: "grid",
-    headerStyles: {
-      fillColor: [220, 20, 60], // Crimson Red
+
+    theme: "plain", // 🔥 IMPORTANT: remove grid override
+
+    styles: {
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1,
+    },
+
+    headStyles: {
+      fillColor: [220, 20, 60], // ✅ FORCE RED
       textColor: [255, 255, 255],
       fontStyle: "bold",
       fontSize: 9,
       halign: "center",
       valign: "middle",
-      cellPadding: 2,
     },
+
     bodyStyles: {
       fontSize: 8,
       textColor: [0, 0, 0],
-      cellPadding: 2,
     },
+
     columnStyles: {
       0: { halign: "left" },
       1: { halign: "center" },
       2: { halign: "center" },
       3: { halign: "right" },
     },
-    tableWidth: "100%",
+
     margin: { left: 10, right: 10 },
   })
 
@@ -337,13 +344,23 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
 
   // ===== CHARGES/DESCRIPTION TABLE =====
-  // Calculate design consultation total
+  // Calculate design consultation total from quotation items
   let designConsultationTotal = 0
-  items.forEach((item: any) => {
+  quotation.items.forEach((item: any) => {
     if (item.design_consultation && typeof item.design_consultation === "object") {
       const consultationPrice = Number(item.design_consultation.price) || 0
       designConsultationTotal += consultationPrice
     }
+  })
+  
+  console.log("[v0] Design Consultation Calculation:", {
+    quotation_items_count: quotation.items.length,
+    design_consultation_total: designConsultationTotal,
+    items_with_consultation: quotation.items.filter((item: any) => item.design_consultation && typeof item.design_consultation === "object").length,
+    consultation_details: quotation.items.map((item: any) => ({
+      service: item.service?.name,
+      consultation: item.design_consultation
+    }))
   })
 
   const chargesTableData = [
@@ -397,6 +414,17 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setTextColor(0, 0, 0)
   doc.text("Sub Total:", summaryLabelX, yPosition, { align: "left" })
   doc.text(calculatedSubtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 }), summaryRightX, yPosition, { align: "right" })
+  
+  console.log("[v0] Sub Total Calculation:", {
+    calculated_subtotal: calculatedSubtotal,
+    quotation_items: quotation.items.length,
+    items_breakdown: quotation.items.map((item: any) => ({
+      service: item.service?.name,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      line_total: item.line_total
+    }))
+  })
 
   yPosition += 6
 
