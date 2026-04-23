@@ -236,7 +236,15 @@ export function AdminQuotationPricing() {
       const basePrice = Number(item.unit_price) || 0
       subtotal = item.size_specifications.items.reduce((sum: number, spec: any) => {
         const qty = Number(spec.qty) || 0
-        return sum + (basePrice * qty)
+        
+        // Determine if it's a SET (both top and bottom) or PCS (single)
+        const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+        const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+        const isSet = hasTop && hasBottom
+        
+        // Calculate price: SET = baseprice * 2 * qty, PCS = baseprice * qty
+        const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
+        return sum + itemPrice
       }, 0)
     } else if (item.team_roster) {
       // Fallback to team_roster calculation if no size_specifications.items
@@ -611,31 +619,33 @@ export function AdminQuotationPricing() {
 
                     return (
                       <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
-                        <h3 className="font-bold text-blue-900 mb-3">{item.service?.name}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
-                          <div className="flex justify-between">
-                            <span className="text-gray-700">{teamRoster.length} Players</span>
-                          </div>
-                        </div>
+                        <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
 
-                        {/* Sets, Top Only, Bottom Only Breakdown */}
-                        <div className="space-y-2 mb-4">
+                        {/* Sets, Top Only, Bottom Only Breakdown - 4 Columns */}
+                        <div className="grid grid-cols-4 gap-2 mb-4">
+                          <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
+                            <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
+                            <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
+                          </div>
                           {setsCount > 0 && (
-                            <div className="flex justify-between items-center p-2 bg-green-50 rounded border border-green-200">
-                              <span className="text-gray-700 font-semibold">{setsCount} Sets</span>
-                              <span className="text-green-600 font-bold">₱{setsAmount.toLocaleString()}</span>
+                            <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
+                              <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
+                              <p className="text-lg font-bold text-green-600">{setsCount}</p>
+                              <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
                             </div>
                           )}
                           {topOnlyCount > 0 && (
-                            <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
-                              <span className="text-gray-700 font-semibold">{topOnlyCount} Top Only</span>
-                              <span className="text-orange-600 font-bold">₱{topAmount.toLocaleString()}</span>
+                            <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
+                              <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
+                              <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
+                              <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
                             </div>
                           )}
                           {bottomOnlyCount > 0 && (
-                            <div className="flex justify-between items-center p-2 bg-purple-50 rounded border border-purple-200">
-                              <span className="text-gray-700 font-semibold">{bottomOnlyCount} Bottom Only</span>
-                              <span className="text-purple-600 font-bold">₱{bottomAmount.toLocaleString()}</span>
+                            <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
+                              <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
+                              <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
+                              <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
                             </div>
                           )}
                         </div>
@@ -891,19 +901,32 @@ export function AdminQuotationPricing() {
                                               <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Size</th>
                                               <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Length (in)</th>
                                               <th className="px-3 py-2 text-left text-gray-700 font-semibold">Additional Name</th>
+                                              <th className="px-3 py-2 text-right text-gray-700 font-semibold">Price</th>
                                             </tr>
                                           </thead>
                                           <tbody>
                                             {sizeSpecs.items.map((spec: any, idx: number) => {
+                                              const basePrice = Number(item.unit_price) || 0
+                                              const qty = Number(spec.qty) || 0
+                                              
+                                              // Determine if it's a SET (both top and bottom) or PCS (single)
+                                              const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+                                              const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+                                              const isSet = hasTop && hasBottom
+                                              
+                                              // Calculate price: SET = baseprice * 2 * qty, PCS = baseprice * qty
+                                              const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
+                                              
                                               console.log(`[v0] Rendering size spec row ${idx}:`, spec)
                                               return (
                                               <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
-                                                <td className="px-3 py-2 text-gray-900 font-semibold">{spec.qty} PCS</td>
+                                                <td className="px-3 py-2 text-gray-900 font-semibold">{qty} {isSet ? 'SET' : 'PCS'}</td>
                                                 <td className="px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
                                                 <td className="px-3 py-2 text-gray-900">{spec.lengthTopInches || "-"}</td>
                                                 <td className="px-3 py-2 text-gray-900">{spec.sizeBottom || "-"}</td>
                                                 <td className="px-3 py-2 text-gray-900">{spec.lengthBottomInches || "-"}</td>
                                                 <td className="px-3 py-2 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
+                                                <td className="px-3 py-2 text-right text-green-600 font-bold">₱{itemPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                               </tr>
                                             )
                                             })}
