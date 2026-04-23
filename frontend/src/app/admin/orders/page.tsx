@@ -1316,19 +1316,31 @@ export default function OrdersPage() {
                           <Button
                             onClick={() => {
                               try {
+                                console.log("[v0] ===== STATEMENT DOWNLOAD START =====")
+                                console.log("[v0] item object:", item)
+                                
                                 // Ensure quotation data exists
                                 if (!item.quotation) {
                                   console.error("[v0] No quotation data available for statement download")
+                                  console.log("[v0] Full item object:", item)
                                   alert("Error: No quotation data available")
                                   return
                                 }
                                 
+                                console.log("[v0] quotation object:", item.quotation)
+                                console.log("[v0] quotation keys:", Object.keys(item.quotation))
+                                
                                 // Get items from quotation - handle both items and quotation_items
                                 let items = item.quotation.items || item.quotation.quotation_items || []
+                                console.log("[v0] Raw items found:", items)
+                                console.log("[v0] Items is array?", Array.isArray(items))
+                                console.log("[v0] Items length:", items ? items.length : 0)
                                 
                                 // Parse items if they need JSON parsing
                                 if (Array.isArray(items)) {
-                                  items = items.map((itemData: any) => {
+                                  items = items.map((itemData: any, idx: number) => {
+                                    console.log(`[v0] Processing item ${idx}:`, itemData)
+                                    
                                     // Parse JSON string fields if needed
                                     const parsedItem = { ...itemData }
                                     
@@ -1336,8 +1348,10 @@ export default function OrdersPage() {
                                     if (typeof parsedItem.design_consultation === 'string') {
                                       try {
                                         parsedItem.design_consultation = JSON.parse(parsedItem.design_consultation)
+                                        console.log(`[v0] Parsed design_consultation for item ${idx}:`, parsedItem.design_consultation)
                                       } catch (e) {
                                         parsedItem.design_consultation = null
+                                        console.log(`[v0] Failed to parse design_consultation for item ${idx}:`, e)
                                       }
                                     }
                                     
@@ -1345,8 +1359,10 @@ export default function OrdersPage() {
                                     if (typeof parsedItem.team_roster === 'string') {
                                       try {
                                         parsedItem.team_roster = JSON.parse(parsedItem.team_roster)
+                                        console.log(`[v0] Parsed team_roster for item ${idx}:`, parsedItem.team_roster)
                                       } catch (e) {
                                         parsedItem.team_roster = null
+                                        console.log(`[v0] Failed to parse team_roster for item ${idx}:`, e)
                                       }
                                     }
                                     
@@ -1354,14 +1370,19 @@ export default function OrdersPage() {
                                     if (typeof parsedItem.size_specifications === 'string') {
                                       try {
                                         parsedItem.size_specifications = JSON.parse(parsedItem.size_specifications)
+                                        console.log(`[v0] Parsed size_specifications for item ${idx}:`, parsedItem.size_specifications)
                                       } catch (e) {
                                         parsedItem.size_specifications = null
+                                        console.log(`[v0] Failed to parse size_specifications for item ${idx}:`, e)
                                       }
                                     }
                                     
+                                    console.log(`[v0] Final parsed item ${idx}:`, parsedItem)
                                     return parsedItem
                                   })
                                 }
+                                
+                                console.log("[v0] Final parsed items array:", items)
                                 
                                 // Create quotation format for PDF generation with all data
                                 const quotationForPDF = {
@@ -1373,10 +1394,20 @@ export default function OrdersPage() {
                                   items: Array.isArray(items) ? items : [], // Ensure items is always an array
                                 }
                                 
-                                console.log("[v0] Generating PDF with quotation:", { id: quotationForPDF.id, itemsCount: quotationForPDF.items.length, itemsData: quotationForPDF.items })
+                                console.log("[v0] quotationForPDF object:", quotationForPDF)
+                                console.log("[v0] quotationForPDF.items:", quotationForPDF.items)
+                                console.log("[v0] quotationForPDF.items length:", quotationForPDF.items.length)
+                                console.log("[v0] Generating PDF with quotation:", { 
+                                  id: quotationForPDF.id, 
+                                  itemsCount: quotationForPDF.items.length, 
+                                  itemsData: quotationForPDF.items 
+                                })
+                                console.log("[v0] ===== STATEMENT DOWNLOAD END =====")
+                                
                                 generateQuotationPDF(quotationForPDF)
                               } catch (error) {
                                 console.error("[v0] Error downloading statement:", error)
+                                console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack")
                                 alert("Error generating PDF: " + (error instanceof Error ? error.message : "Unknown error"))
                               }
                             }}
