@@ -186,110 +186,109 @@ export const generateQuotationPDF = async (quotation: any) => {
 
   if (items && Array.isArray(items)) {
     items.forEach((item: any) => {
-      const quantity = item.quantity || 0
-      const unitPrice = parseFloat(item.unit_price || 0)
-      let teamRoster = item.team_roster
-      let sizeSpecs = item.size_specifications
-      const serviceName = item.service?.name || item.name || "Service"
+    const quantity = item.quantity || 0
+    const unitPrice = parseFloat(item.unit_price || 0)
+    let teamRoster = item.team_roster
+    let sizeSpecs = item.size_specifications
+    const serviceName = item.service?.name || item.name || "Service"
 
-      // Parse teamRoster if it's a string
-      if (typeof teamRoster === 'string') {
-        try {
-          teamRoster = JSON.parse(teamRoster)
-        } catch (e) {
-          teamRoster = null
-        }
+    // Parse teamRoster if it's a string
+    if (typeof teamRoster === 'string') {
+      try {
+        teamRoster = JSON.parse(teamRoster)
+      } catch (e) {
+        teamRoster = null
       }
+    }
 
-      // Parse sizeSpecs if it's a string
-      if (typeof sizeSpecs === 'string') {
-        try {
-          sizeSpecs = JSON.parse(sizeSpecs)
-        } catch (e) {
-          sizeSpecs = null
-        }
+    // Parse sizeSpecs if it's a string
+    if (typeof sizeSpecs === 'string') {
+      try {
+        sizeSpecs = JSON.parse(sizeSpecs)
+      } catch (e) {
+        sizeSpecs = null
       }
+    }
 
-      let servicePrice = parseFloat(item.line_total || unitPrice)
-      let subtotalForService = 0
+    let servicePrice = parseFloat(item.line_total || unitPrice)
+    let subtotalForService = 0
 
-      // For Sublimation with team roster: Show with SET/TOP/BOTTOM counts
-      if (serviceName.includes('Sublimation') && teamRoster && Array.isArray(teamRoster)) {
-        const breakdown = calculateSublimationBreakdown(teamRoster, unitPrice)
-        subtotalForService = breakdown.subtotal
+    // For Sublimation with team roster: Show with SET/TOP/BOTTOM counts
+    if (serviceName.includes('Sublimation') && teamRoster && Array.isArray(teamRoster)) {
+      const breakdown = calculateSublimationBreakdown(teamRoster, unitPrice)
+      subtotalForService = breakdown.subtotal
 
-        const requirementsStr = `${breakdown.setsCount} SET${breakdown.setsCount !== 1 ? 'S' : ''} - ${breakdown.topOnlyCount} TOP - ${breakdown.bottomOnlyCount} BOTTOM`
+      const requirementsStr = `${breakdown.setsCount} SET${breakdown.setsCount !== 1 ? 'S' : ''} - ${breakdown.topOnlyCount} TOP - ${breakdown.bottomOnlyCount} BOTTOM`
 
-        projectTableData.push([
-          `${serviceName} (${requirementsStr})`,
-          quantity.toString(),
-          unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-          subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
+      projectTableData.push([
+        `${serviceName} (${requirementsStr})`,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
 
-        calculatedSubtotal += subtotalForService
-      }
-      // For Sublimation with size_specifications: Show sizes in name
-      else if (serviceName.includes('Sublimation') && sizeSpecs && sizeSpecs.items && Array.isArray(sizeSpecs.items)) {
-        // Build size description from items
-        const sizeDescriptions = sizeSpecs.items.map((spec: any) => {
-          const parts = []
-          if (spec.qty) parts.push(spec.qty)
-          if (spec.sizeTop && spec.sizeTop !== "-") parts.push(`${spec.sizeTop}${spec.lengthTopInches ? `-${spec.lengthTopInches}` : ''}`)
-          if (spec.sizeBottom && spec.sizeBottom !== "-") parts.push(`${spec.sizeBottom}${spec.lengthBottomInches ? `-${spec.lengthBottomInches}` : ''}`)
-          return parts.join(' ')
-        }).join(', ')
+      calculatedSubtotal += subtotalForService
+    }
+    // For Sublimation with size_specifications: Show sizes in name
+    else if (serviceName.includes('Sublimation') && sizeSpecs && sizeSpecs.items && Array.isArray(sizeSpecs.items)) {
+      // Build size description from items
+      const sizeDescriptions = sizeSpecs.items.map((spec: any) => {
+        const parts = []
+        if (spec.qty) parts.push(spec.qty)
+        if (spec.sizeTop && spec.sizeTop !== "-") parts.push(`${spec.sizeTop}${spec.lengthTopInches ? `-${spec.lengthTopInches}` : ''}`)
+        if (spec.sizeBottom && spec.sizeBottom !== "-") parts.push(`${spec.sizeBottom}${spec.lengthBottomInches ? `-${spec.lengthBottomInches}` : ''}`)
+        return parts.join(' ')
+      }).join(', ')
 
-        // Calculate total quantity and price
-        const totalQty = sizeSpecs.items.reduce((sum: number, spec: any) => sum + (Number(spec.qty) || 0), 0)
-        const basePrice = unitPrice
-        subtotalForService = sizeSpecs.items.reduce((sum: number, spec: any) => {
-          const qty = Number(spec.qty) || 0
-          const hasTop = spec.sizeTop && spec.sizeTop !== "-"
-          const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
-          const isSet = hasTop && hasBottom
-          const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
-          return sum + itemPrice
-        }, 0)
+      // Calculate total quantity and price
+      const totalQty = sizeSpecs.items.reduce((sum: number, spec: any) => sum + (Number(spec.qty) || 0), 0)
+      const basePrice = unitPrice
+      subtotalForService = sizeSpecs.items.reduce((sum: number, spec: any) => {
+        const qty = Number(spec.qty) || 0
+        const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+        const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+        const isSet = hasTop && hasBottom
+        const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
+        return sum + itemPrice
+      }, 0)
 
-        projectTableData.push([
-          `${serviceName} (${sizeDescriptions})`,
-          totalQty.toString(),
-          unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-          subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
+      projectTableData.push([
+        `${serviceName} (${sizeDescriptions})`,
+        totalQty.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
 
-        calculatedSubtotal += subtotalForService
-      }
-      // For Tarpaulin: Show size in name with uppercase FT
-      else if (serviceName.includes('Tarpaulin') && sizeSpecs) {
-        subtotalForService = calculateTarpaulinSubtotal(sizeSpecs, quantity)
-        const width = sizeSpecs.width || "?"
-        const height = sizeSpecs.height || "?"
+      calculatedSubtotal += subtotalForService
+    }
+    // For Tarpaulin: Show size in name with uppercase FT
+    else if (serviceName.includes('Tarpaulin') && sizeSpecs) {
+      subtotalForService = calculateTarpaulinSubtotal(sizeSpecs, quantity)
+      const width = sizeSpecs.width || "?"
+      const height = sizeSpecs.height || "?"
 
-        projectTableData.push([
-          `${serviceName} (${width}FT × ${height}FT)`,
-          quantity.toString(),
-          unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-          subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
+      projectTableData.push([
+        `${serviceName} (${width}FT × ${height}FT)`,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
 
-        calculatedSubtotal += subtotalForService
-      }
-      // For other services
-      else {
-        subtotalForService = servicePrice
-        calculatedSubtotal += subtotalForService
+      calculatedSubtotal += subtotalForService
+    }
+    // For other services
+    else {
+      subtotalForService = servicePrice
+      calculatedSubtotal += subtotalForService
 
-        projectTableData.push([
-          serviceName,
-          quantity.toString(),
-          unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-          subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
-        ])
-      }
-    })
-  }
+      projectTableData.push([
+        serviceName,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
+    }
+  })
 
   // Add empty rows
   projectTableData.push(["", "", "", ""])
@@ -299,23 +298,23 @@ export const generateQuotationPDF = async (quotation: any) => {
   let designConsultationTotalForSubtotal = 0
   if (Array.isArray(quotation.items)) {
     quotation.items.forEach((item: any) => {
-      let consultation = item.design_consultation
-
-      // Handle if design_consultation is a JSON string
-      if (typeof consultation === 'string') {
-        try {
-          consultation = JSON.parse(consultation)
-        } catch (e) {
-          consultation = null
-        }
+    let consultation = item.design_consultation
+    
+    // Handle if design_consultation is a JSON string
+    if (typeof consultation === 'string') {
+      try {
+        consultation = JSON.parse(consultation)
+      } catch (e) {
+        consultation = null
       }
-
-      // Now check if it's an object with a price
-      if (consultation && typeof consultation === "object") {
-        const consultationPrice = Number(consultation.price) || 0
-        designConsultationTotalForSubtotal += consultationPrice
-      }
-    })
+    }
+    
+    // Now check if it's an object with a price
+    if (consultation && typeof consultation === "object") {
+      const consultationPrice = Number(consultation.price) || 0
+      designConsultationTotalForSubtotal += consultationPrice
+    }
+  }
   }
 
   // Add subtotal row with design consultation included
@@ -366,23 +365,23 @@ export const generateQuotationPDF = async (quotation: any) => {
   let designConsultationTotal = 0
   if (Array.isArray(quotation.items)) {
     quotation.items.forEach((item: any) => {
-      let consultation = item.design_consultation
-
-      // Handle if design_consultation is a JSON string
-      if (typeof consultation === 'string') {
-        try {
-          consultation = JSON.parse(consultation)
-        } catch (e) {
-          consultation = null
-        }
+    let consultation = item.design_consultation
+    
+    // Handle if design_consultation is a JSON string
+    if (typeof consultation === 'string') {
+      try {
+        consultation = JSON.parse(consultation)
+      } catch (e) {
+        consultation = null
       }
-
-      // Now check if it's an object with a price
-      if (consultation && typeof consultation === "object") {
-        const consultationPrice = Number(consultation.price) || 0
-        designConsultationTotal += consultationPrice
-      }
-    })
+    }
+    
+    // Now check if it's an object with a price
+    if (consultation && typeof consultation === "object") {
+      const consultationPrice = Number(consultation.price) || 0
+      designConsultationTotal += consultationPrice
+    }
+  }
   }
 
   console.log("[v0] Design Consultation Calculation:", {
@@ -420,6 +419,7 @@ export const generateQuotationPDF = async (quotation: any) => {
       }
     }) : []
   })
+  }
 
   const chargesTableData = [
     ["Service Fee", ""],
