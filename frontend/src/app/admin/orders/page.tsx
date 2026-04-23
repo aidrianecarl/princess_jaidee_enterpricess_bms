@@ -1314,30 +1314,17 @@ export default function OrdersPage() {
 
                         {item.isOrder && (item.payment_status === "partial" || item.payment_status === "paid") && (
                           <Button
-                            onClick={async () => {
+                            onClick={() => {
                               try {
-                                // Fetch full quotation data from API to get complete items array
-                                const response = await fetch(`${apiUrl}/admin/quotations/${item.quotation_id}`, {
-                                  headers: {
-                                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                                    "Content-Type": "application/json",
-                                  },
-                                })
-                                
-                                if (!response.ok) {
-                                  throw new Error("Failed to fetch quotation data")
+                                // Use the quotation data that's already loaded
+                                if (!item.quotation) {
+                                  console.error("[v0] No quotation data available for statement download")
+                                  return
                                 }
                                 
-                                const quotationData = await response.json()
-                                const quotation = quotationData.data || quotationData
-                                
-                                if (!quotation) {
-                                  throw new Error("No quotation data found")
-                                }
-                                
-                                // Convert order to quotation format for PDF generation with full data
+                                // Create quotation format for PDF generation with all data
                                 const quotationForPDF = {
-                                  ...quotation,
+                                  ...item.quotation,
                                   id: item.id,
                                   order_number: item.order_number,
                                   total: item.total,
