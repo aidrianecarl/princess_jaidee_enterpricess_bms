@@ -138,12 +138,13 @@ export async function generateQuotationPDF(quotation: any) {
   yPosition += 10
 
   // ===== QUOTATION ITEMS TABLE =====
-  const items = quotation.quotation_items || []
+  const items = Array.isArray(quotation.quotation_items) ? quotation.quotation_items : []
   const tableData: any[] = [["Item Description", "Qty", "Unit Price", "Amount"]]
 
   let subtotalAmount = 0
 
-  items.forEach((item: any) => {
+  if (items && Array.isArray(items)) {
+    items.forEach((item: any) => {
     const quantity = item.quantity || 0
     const unitPrice = parseFloat(item.unit_price || 0)
     const amount = quantity * unitPrice
@@ -156,7 +157,8 @@ export async function generateQuotationPDF(quotation: any) {
       `₱${unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 })}`,
       `₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 0 })}`,
     ])
-  })
+  }
+  }
 
   autoTable(doc, {
     head: [tableData[0]],
@@ -198,7 +200,8 @@ export async function generateQuotationPDF(quotation: any) {
 
   // Add design consultation if exists
   let designConsultationTotal = 0
-  quotation.quotation_items.forEach((item: any) => {
+  if (Array.isArray(quotation.quotation_items)) {
+    quotation.quotation_items.forEach((item: any) => {
     let consultation = item.design_consultation
     if (typeof consultation === 'string') {
       try {
@@ -211,7 +214,8 @@ export async function generateQuotationPDF(quotation: any) {
       const consultationPrice = Number(consultation.price) || 0
       designConsultationTotal += consultationPrice
     }
-  })
+  }
+  }
 
   if (designConsultationTotal > 0) {
     doc.text("Design Consultation:", summaryLabelX, yPosition, { align: "left" })

@@ -1323,6 +1323,7 @@ export default function OrdersPage() {
                                 total: item.total,
                                 down_payment: 0,
                                 customer: item.customer,
+                                items: item.quotation?.items || [],
                               }
                               generateQuotationPDF(quotationForPDF)
                             }}
