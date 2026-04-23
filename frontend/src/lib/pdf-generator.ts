@@ -71,25 +71,60 @@ export const generateQuotationPDF = async (quotation: any) => {
   let yPosition = 12
 
   // ===== HEADER SECTION =====
+  // Load logos first
   const logoSize = 22
   const logoStartY = 12
   const companyInfoStartY = logoStartY + 8
 
-  // Left: Company Info (PRINCESS JAIDEE ENTERPRISES)
-  doc.setFontSize(8)
-  doc.setFont(undefined, "bold")
-  doc.setTextColor(0, 0, 0)
-  doc.text("PRINCESS JAIDEE ENTERPRISES", 15, companyInfoStartY)
-  
-  doc.setFontSize(7)
-  doc.setFont(undefined, "normal")
-  doc.text("A.B. Fajardo Bldg., Calle Nueva St.,", 15, companyInfoStartY + 4)
-  doc.text("Brgy. Polvorista, Sorsogon City", 15, companyInfoStartY + 7)
-  doc.text("0930 821 8871 / 0915 175 9881", 15, companyInfoStartY + 10)
-  doc.text("(056) 311 8663", 15, companyInfoStartY + 13)
-  doc.text("piesorsogonsportswear@gmail.com", 15, companyInfoStartY + 16)
+  // Left: Client Logo (aligned with company info)
+  // if (quotation.logo_url) {
+  //   try {
+  //     const logoFileName = quotation.logo_url.split('/').pop()
+  //     const clientLogoUrl = `https://api.princessjaideeenterprises.com/api/storage/app/public/quotations/logos/${logoFileName}`
+      
+  //     console.log("[v0] Loading client logo from:", clientLogoUrl)
+  //     const logoBase64 = await imageUrlToBase64(clientLogoUrl)
+      
+  //     if (logoBase64) {
+  //       doc.addImage(logoBase64, "PNG", 15, companyInfoStartY, logoSize, logoSize)
+  //       console.log("[v0] Client logo loaded successfully")
+  //     }
+  //   } catch (error) {
+  //     console.log("[v0] Error loading client logo:", error)
+  //   }
+  // }
+
+  // Right: Princess JD Logo (aligned with company info)
+  try {
+    const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
+    if (princessJDBase64) {
+      doc.addImage(princessJDBase64, "PNG", pageWidth - 15 - logoSize, companyInfoStartY, logoSize, logoSize)
+      console.log("[v0] Princess JD logo loaded successfully")
+    }
+  } catch (error) {
+    console.log("[v0] Error loading Princess JD logo:", error)
+  }
 
   yPosition = companyInfoStartY
+
+  // Center: Company Info (Centered)
+  doc.setFontSize(14)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(0, 0, 0)
+  doc.text("PRINCESS JAIDEE ENTERPRISES", pageWidth / 2, yPosition, { align: "left" })
+
+  yPosition += 6
+  doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", pageWidth / 2, yPosition, { align: "left" })
+
+  yPosition += 4
+  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", pageWidth / 2, yPosition, { align: "left" })
+
+  yPosition += 4
+  doc.text("Email: piesorsogonsportswear@gmail.com", pageWidth / 2, yPosition, { align: "left" })
+
+  yPosition += 8
 
   // Horizontal line separator
   doc.setDrawColor(0, 0, 0)
