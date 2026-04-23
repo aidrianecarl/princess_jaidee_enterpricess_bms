@@ -1314,18 +1314,28 @@ export default function OrdersPage() {
 
                         {item.isOrder && (item.payment_status === "partial" || item.payment_status === "paid") && (
                           <Button
-                            onClick={() => {
-                              // Convert order to quotation format for PDF generation
-                              const quotationForPDF = {
-                                ...item.quotation,
-                                id: item.id,
-                                order_number: item.order_number,
-                                total: item.total,
-                                down_payment: 0,
-                                customer: item.customer,
-                                items: item.quotation?.items || [],
+                            onClick={async () => {
+                              try {
+                                // Fetch full quotation data from API to get complete items array
+                                const response = await apiClient.admin().get(`/admin/quotations/${item.quotation_id}`)
+                                const quotationData = response.data.data || response.data
+                                
+                                if (!quotationData) {
+                                  throw new Error("Failed to fetch quotation data")
+                                }
+                                
+                                // Convert order to quotation format for PDF generation with full data
+                                const quotationForPDF = {
+                                  ...quotationData,
+                                  id: item.id,
+                                  order_number: item.order_number,
+                                  total: item.total,
+                                  down_payment: 0,
+                                }
+                                generateQuotationPDF(quotationForPDF)
+                              } catch (error) {
+                                console.error("[v0] Error downloading statement:", error)
                               }
-                              generateQuotationPDF(quotationForPDF)
                             }}
                             className="flex-1 bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
                           >
