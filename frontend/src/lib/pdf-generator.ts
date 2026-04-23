@@ -151,6 +151,11 @@ export const generateQuotationPDF = async (quotation: any) => {
   const clientName = quotation.customer?.bill_to_name || quotation.customer?.name || quotation.client_name || "N/A"
   doc.text(clientName, leftColX + 25, yPosition)
 
+  doc.setFont(undefined, "bold")
+  doc.text("Quotation No.:", rightColX, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.quotation_number || quotation.id?.toString() || "N/A", rightColX + 22, yPosition)
+
   yPosition += 5
 
   doc.setFont(undefined, "bold")
@@ -162,6 +167,8 @@ export const generateQuotationPDF = async (quotation: any) => {
     day: "2-digit",
   })
   doc.text(currentDate, rightColX + 15, yPosition)
+
+  yPosition -= 5
 
   yPosition += 5
   doc.setFont(undefined, "bold")
