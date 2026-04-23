@@ -621,33 +621,39 @@ export function AdminQuotationPricing() {
                       <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
                         <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
 
-                        {/* Sets, Top Only, Bottom Only Breakdown - 4 Columns */}
-                        <div className="grid grid-cols-4 gap-2 mb-4">
+                        {/* Sets, Top Only, Bottom Only Breakdown - 3 Columns */}
+                        <div className="grid grid-cols-3 gap-2 mb-4">
                           <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
                             <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
                             <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
                           </div>
-                          {setsCount > 0 && (
-                            <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
-                              <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
-                              <p className="text-lg font-bold text-green-600">{setsCount}</p>
-                              <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
-                            </div>
-                          )}
-                          {topOnlyCount > 0 && (
-                            <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
-                              <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
-                              <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
-                              <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
-                            </div>
-                          )}
-                          {bottomOnlyCount > 0 && (
-                            <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
-                              <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
-                              <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
-                              <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
-                            </div>
-                          )}
+                          <div className="space-y-2">
+                            {setsCount > 0 && (
+                              <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
+                                <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
+                                <p className="text-lg font-bold text-green-600">{setsCount}</p>
+                                <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
+                              </div>
+                            )}
+                            {topOnlyCount > 0 && (
+                              <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
+                                <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
+                                <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
+                                <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
+                              </div>
+                            )}
+                            {bottomOnlyCount > 0 && (
+                              <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
+                                <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
+                                <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
+                                <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-2 bg-blue-50 rounded border border-blue-300">
+                            <p className="text-xs text-blue-700 font-semibold mb-1 text-center">Subtotal</p>
+                            <p className="text-lg font-bold text-blue-700 text-center">₱{calculateSublimationSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+                          </div>
                         </div>
                         
                         {/* Size Specifications - Items List for Sublimation */}
@@ -701,11 +707,6 @@ export function AdminQuotationPricing() {
                             </div>
                           </div>
                         )}
-
-                        <div className="mt-4 pt-4 border-t border-blue-200 flex justify-between items-center p-3 bg-blue-100 rounded font-bold">
-                          <span className="text-gray-700">Subtotal</span>
-                          <span className="text-blue-700 text-lg">₱{calculateSublimationSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                        </div>
                       </div>
                     )
                   } else if (item.service?.name?.includes('Tarpaulin')) {
