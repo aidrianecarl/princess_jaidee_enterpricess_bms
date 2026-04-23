@@ -1323,8 +1323,45 @@ export default function OrdersPage() {
                                   return
                                 }
                                 
-                                // Get items from quotation or from the order directly
-                                const items = item.quotation.items || item.quotation.quotation_items || []
+                                // Get items from quotation - handle both items and quotation_items
+                                let items = item.quotation.items || item.quotation.quotation_items || []
+                                
+                                // Parse items if they need JSON parsing
+                                if (Array.isArray(items)) {
+                                  items = items.map((itemData: any) => {
+                                    // Parse JSON string fields if needed
+                                    const parsedItem = { ...itemData }
+                                    
+                                    // Parse design_consultation if it's a JSON string
+                                    if (typeof parsedItem.design_consultation === 'string') {
+                                      try {
+                                        parsedItem.design_consultation = JSON.parse(parsedItem.design_consultation)
+                                      } catch (e) {
+                                        parsedItem.design_consultation = null
+                                      }
+                                    }
+                                    
+                                    // Parse team_roster if it's a JSON string
+                                    if (typeof parsedItem.team_roster === 'string') {
+                                      try {
+                                        parsedItem.team_roster = JSON.parse(parsedItem.team_roster)
+                                      } catch (e) {
+                                        parsedItem.team_roster = null
+                                      }
+                                    }
+                                    
+                                    // Parse size_specifications if it's a JSON string
+                                    if (typeof parsedItem.size_specifications === 'string') {
+                                      try {
+                                        parsedItem.size_specifications = JSON.parse(parsedItem.size_specifications)
+                                      } catch (e) {
+                                        parsedItem.size_specifications = null
+                                      }
+                                    }
+                                    
+                                    return parsedItem
+                                  })
+                                }
                                 
                                 // Create quotation format for PDF generation with all data
                                 const quotationForPDF = {
@@ -1336,7 +1373,7 @@ export default function OrdersPage() {
                                   items: Array.isArray(items) ? items : [], // Ensure items is always an array
                                 }
                                 
-                                console.log("[v0] Generating PDF with quotation:", { id: quotationForPDF.id, itemsCount: quotationForPDF.items.length })
+                                console.log("[v0] Generating PDF with quotation:", { id: quotationForPDF.id, itemsCount: quotationForPDF.items.length, itemsData: quotationForPDF.items })
                                 generateQuotationPDF(quotationForPDF)
                               } catch (error) {
                                 console.error("[v0] Error downloading statement:", error)
