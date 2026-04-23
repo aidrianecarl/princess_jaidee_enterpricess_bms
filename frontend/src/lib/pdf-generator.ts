@@ -180,12 +180,11 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition += 10
 
   // ===== PROJECT DETAILS TABLE =====
-  const items = Array.isArray(quotation.items) ? quotation.items : []
+  const items = quotation.items || []
   const projectTableData: any[] = []
   let calculatedSubtotal = 0
 
-  if (items && Array.isArray(items)) {
-    items.forEach((item: any) => {
+  items.forEach((item: any) => {
     const quantity = item.quantity || 0
     const unitPrice = parseFloat(item.unit_price || 0)
     let teamRoster = item.team_roster
@@ -296,8 +295,7 @@ export const generateQuotationPDF = async (quotation: any) => {
 
   // Calculate design consultation total from quotation items to add to subtotal
   let designConsultationTotalForSubtotal = 0
-  if (Array.isArray(quotation.items)) {
-    quotation.items.forEach((item: any) => {
+  quotation.items.forEach((item: any) => {
     let consultation = item.design_consultation
     
     // Handle if design_consultation is a JSON string
@@ -314,8 +312,7 @@ export const generateQuotationPDF = async (quotation: any) => {
       const consultationPrice = Number(consultation.price) || 0
       designConsultationTotalForSubtotal += consultationPrice
     }
-  }
-  }
+  })
 
   // Add subtotal row with design consultation included
   const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : (calculatedSubtotal + designConsultationTotalForSubtotal)
@@ -363,8 +360,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ===== CHARGES/DESCRIPTION TABLE =====
   // Calculate design consultation total from quotation items
   let designConsultationTotal = 0
-  if (Array.isArray(quotation.items)) {
-    quotation.items.forEach((item: any) => {
+  quotation.items.forEach((item: any) => {
     let consultation = item.design_consultation
     
     // Handle if design_consultation is a JSON string
@@ -381,13 +377,12 @@ export const generateQuotationPDF = async (quotation: any) => {
       const consultationPrice = Number(consultation.price) || 0
       designConsultationTotal += consultationPrice
     }
-  }
-  }
+  })
 
   console.log("[v0] Design Consultation Calculation:", {
-    quotation_items_count: Array.isArray(quotation.items) ? quotation.items.length : 0,
+    quotation_items_count: quotation.items.length,
     design_consultation_total: designConsultationTotal,
-    items_with_consultation: Array.isArray(quotation.items) ? quotation.items.filter((item: any) => {
+    items_with_consultation: quotation.items.filter((item: any) => {
       let consultation = item.design_consultation
       if (typeof consultation === 'string') {
         try {
@@ -397,8 +392,8 @@ export const generateQuotationPDF = async (quotation: any) => {
         }
       }
       return consultation && typeof consultation === "object"
-    }).length : 0,
-    consultation_details: Array.isArray(quotation.items) ? quotation.items.map((item: any) => {
+    }).length,
+    consultation_details: quotation.items.map((item: any) => {
       let consultation = item.design_consultation
       let parsedConsultation = null
       if (typeof consultation === 'string') {
@@ -417,9 +412,8 @@ export const generateQuotationPDF = async (quotation: any) => {
         consultation_type: typeof item.design_consultation,
         price: parsedConsultation ? parsedConsultation.price : null
       }
-    }) : []
+    })
   })
-  }
 
   const chargesTableData = [
     ["Service Fee", ""],
