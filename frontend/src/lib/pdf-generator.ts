@@ -375,9 +375,16 @@ export const generateQuotationPDF = async (quotation: any) => {
     head: [["DESCRIPTION", "AMOUNT"]],
     body: chargesTableData,
     startY: yPosition,
+
     theme: "grid",
-    headerStyles: {
-      fillColor: [220, 20, 60], // Crimson Red
+
+    styles: {
+      lineColor: [0, 0, 0],
+      lineWidth: 0.1,
+    },
+
+    headStyles: {
+      fillColor: [220, 20, 60], // ✅ FORCE RED
       textColor: [255, 255, 255],
       fontStyle: "bold",
       fontSize: 9,
@@ -385,17 +392,26 @@ export const generateQuotationPDF = async (quotation: any) => {
       valign: "middle",
       cellPadding: 2,
     },
+
     bodyStyles: {
       fontSize: 8,
       textColor: [0, 0, 0],
       cellPadding: 2,
     },
+
     columnStyles: {
       0: { halign: "left" },
       1: { halign: "right" },
     },
-    tableWidth: "100%",
+
     margin: { left: 10, right: 10 },
+
+    didParseCell: function (data) {
+      if (data.section === "head") {
+        data.cell.styles.fillColor = [220, 20, 60] // 🔥 HARD OVERRIDE
+        data.cell.styles.textColor = [255, 255, 255]
+      }
+    },
   })
 
   yPosition = Math.max((doc as any).lastAutoTable?.finalY || yPosition + 30, yPosition + 30) + 8
