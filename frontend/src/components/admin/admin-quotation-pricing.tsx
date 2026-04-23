@@ -217,7 +217,19 @@ export function AdminQuotationPricing() {
 
   const calculateSublimationSubtotal = (itemId: number): number => {
     const item = quotation?.items.find(i => i.id === itemId)
-    if (!item || !item.team_roster) return 0
+    if (!item) return 0
+
+    // If size_specifications with items array exists, sum those prices
+    if (item.size_specifications?.items && Array.isArray(item.size_specifications.items)) {
+      const basePrice = Number(item.unit_price) || 0
+      return item.size_specifications.items.reduce((sum: number, spec: any) => {
+        const qty = Number(spec.qty) || 0
+        return sum + (basePrice * qty)
+      }, 0)
+    }
+
+    // Fallback to team_roster calculation if no size_specifications.items
+    if (!item.team_roster) return 0
 
     const prices = sublimationPrices[itemId]
     if (!prices) return 0
@@ -596,28 +608,22 @@ export function AdminQuotationPricing() {
                             <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Size Specifications - Items List</p>
                             <div className="space-y-2">
                               {item.size_specifications.items.map((spec: any, idx: number) => {
-                                const prices = sublimationPrices[item.id]
-                                const setPrice = Number(prices?.setPrice) || 0
-                                const topPrice = Number(prices?.topPrice) || 0
-                                const bottomPrice = Number(prices?.bottomPrice) || 0
+                                // Calculate price: unit_price * qty
+                                const basePrice = Number(item.unit_price) || 0
+                                const qty = Number(spec.qty) || 0
+                                const itemPrice = basePrice * qty
                                 
-                                // Calculate price based on spec quantities
-                                let amount = 0
-                                if (spec.qty) {
-                                  const qty = Number(spec.qty) || 0
-                                  if (spec.qtyUnit === 'SET') {
-                                    amount = qty * setPrice
-                                  } else if (spec.qtyUnit === 'TOP') {
-                                    amount = qty * topPrice
-                                  } else if (spec.qtyUnit === 'BOTTOM') {
-                                    amount = qty * bottomPrice
-                                  }
-                                }
+                                // Determine size display (TOP or BOTTOM depending on qtyUnit)
+                                const sizeDisplay = spec.qtyUnit === 'TOP' 
+                                  ? spec.sizeTop 
+                                  : spec.qtyUnit === 'BOTTOM' 
+                                  ? spec.sizeBottom 
+                                  : spec.sizeTop || spec.sizeBottom || 'N/A'
                                 
                                 return (
-                                  <div key={idx} className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded">
-                                    <span className="text-gray-900 font-semibold">{spec.qty}{spec.qtyUnit} - {spec.sizeTop || spec.sizeBottom || 'N/A'}</span>
-                                    <span className="text-blue-700 font-bold">₱{amount.toLocaleString()}</span>
+                                  <div key={idx} className="flex justify-between items-center text-sm bg-blue-50 p-3 rounded border border-blue-200">
+                                    <span className="text-gray-900 font-semibold">{qty} {spec.qtyUnit} - {sizeDisplay}</span>
+                                    <span className="text-blue-700 font-bold">₱{itemPrice.toLocaleString()}</span>
                                   </div>
                                 )
                               })}
@@ -801,10 +807,10 @@ export function AdminQuotationPricing() {
                                item.size_specifications.items && Array.isArray(item.size_specifications.items) && 
                                item.size_specifications.items.length > 0 && (
                                 <div className="mb-4">
-                                  <h5 className="font-semibold text-blue-900 mb-3 text-sm uppercase">Size Specifications - Items List</h5>
-                                  <div className="overflow-x-auto bg-white rounded border border-blue-300">
+                                  <h5 className="font-semibold text-green-900 mb-3 text-sm uppercase bg-green-100 p-2 rounded">Size Specifications - Items List</h5>
+                                  <div className="overflow-x-auto bg-white rounded border border-green-300">
                                     <table className="w-full text-xs">
-                                      <thead className="bg-blue-100 border-b border-blue-300">
+                                      <thead className="bg-green-100 border-b border-green-300">
                                         <tr>
                                           <th className="px-3 py-2 text-left text-gray-700 font-semibold">Qty</th>
                                           <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Size</th>
@@ -816,8 +822,8 @@ export function AdminQuotationPricing() {
                                       </thead>
                                       <tbody>
                                         {item.size_specifications.items.map((spec: any, idx: number) => (
-                                          <tr key={idx} className="border-b border-blue-200 hover:bg-blue-50">
-                                            <td className="px-3 py-2 text-gray-900">{spec.qty || 1}</td>
+                                          <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
+                                            <td className="px-3 py-2 text-gray-900 font-semibold">{spec.qty} PCS</td>
                                             <td className="px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
                                             <td className="px-3 py-2 text-gray-900">{spec.lengthTopInches || "-"}</td>
                                             <td className="px-3 py-2 text-gray-900">{spec.sizeBottom || "-"}</td>
