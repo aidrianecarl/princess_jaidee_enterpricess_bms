@@ -137,6 +137,16 @@ export function AdminQuotationPricing() {
           }
         }
         
+        // DEBUG: Log full item structure
+        console.log(`[v0] Item: ${item.service?.name}`, {
+          service_name: item.service?.name,
+          has_size_specs: !!sizeSpecs,
+          size_specs_items: sizeSpecs?.items?.length || 0,
+          has_team_roster: !!teamRoster,
+          team_roster_length: teamRoster?.length || 0,
+          has_design_consultation: !!item.design_consultation
+        })
+        
         let notesData = item.notes
         if (typeof item.notes === 'string' && item.notes) {
           try {
@@ -219,28 +229,36 @@ export function AdminQuotationPricing() {
     const item = quotation?.items.find(i => i.id === itemId)
     if (!item) return 0
 
+    let subtotal = 0
+
     // If size_specifications with items array exists, sum those prices
     if (item.size_specifications?.items && Array.isArray(item.size_specifications.items)) {
       const basePrice = Number(item.unit_price) || 0
-      return item.size_specifications.items.reduce((sum: number, spec: any) => {
+      subtotal = item.size_specifications.items.reduce((sum: number, spec: any) => {
         const qty = Number(spec.qty) || 0
         return sum + (basePrice * qty)
       }, 0)
+    } else if (item.team_roster) {
+      // Fallback to team_roster calculation if no size_specifications.items
+      const prices = sublimationPrices[itemId]
+      if (prices) {
+        const setPrice = Number(prices.setPrice) || 0
+        const topPrice = Number(prices.topPrice) || 0
+        const bottomPrice = Number(prices.bottomPrice) || 0
+
+        subtotal = item.team_roster.reduce((sum: number, player: any) => {
+          return sum + calculatePlayerAmount(item, player, setPrice, topPrice, bottomPrice)
+        }, 0)
+      }
     }
 
-    // Fallback to team_roster calculation if no size_specifications.items
-    if (!item.team_roster) return 0
+    // Add design consultation price if present
+    if (item.design_consultation && typeof item.design_consultation === "object") {
+      const consultationPrice = Number(item.design_consultation.price) || 0
+      subtotal += consultationPrice
+    }
 
-    const prices = sublimationPrices[itemId]
-    if (!prices) return 0
-
-    const setPrice = Number(prices.setPrice) || 0
-    const topPrice = Number(prices.topPrice) || 0
-    const bottomPrice = Number(prices.bottomPrice) || 0
-
-    return item.team_roster.reduce((sum: number, player: any) => {
-      return sum + calculatePlayerAmount(item, player, setPrice, topPrice, bottomPrice)
-    }, 0)
+    return subtotal
   }
 
   const calculateTarpaulinSubtotal = (itemId: number): number => {
@@ -594,10 +612,32 @@ export function AdminQuotationPricing() {
                     return (
                       <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
                         <h3 className="font-bold text-blue-900 mb-3">{item.service?.name}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-4">
                           <div className="flex justify-between">
                             <span className="text-gray-700">{teamRoster.length} Players</span>
                           </div>
+                        </div>
+
+                        {/* Sets, Top Only, Bottom Only Breakdown */}
+                        <div className="space-y-2 mb-4">
+                          {setsCount > 0 && (
+                            <div className="flex justify-between items-center p-2 bg-green-50 rounded border border-green-200">
+                              <span className="text-gray-700 font-semibold">{setsCount} Sets</span>
+                              <span className="text-green-600 font-bold">₱{setsAmount.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {topOnlyCount > 0 && (
+                            <div className="flex justify-between items-center p-2 bg-orange-50 rounded border border-orange-200">
+                              <span className="text-gray-700 font-semibold">{topOnlyCount} Top Only</span>
+                              <span className="text-orange-600 font-bold">₱{topAmount.toLocaleString()}</span>
+                            </div>
+                          )}
+                          {bottomOnlyCount > 0 && (
+                            <div className="flex justify-between items-center p-2 bg-purple-50 rounded border border-purple-200">
+                              <span className="text-gray-700 font-semibold">{bottomOnlyCount} Bottom Only</span>
+                              <span className="text-purple-600 font-bold">₱{bottomAmount.toLocaleString()}</span>
+                            </div>
+                          )}
                         </div>
                         
                         {/* Size Specifications - Items List for Sublimation */}
@@ -634,18 +674,18 @@ export function AdminQuotationPricing() {
                         {/* Design Consultation for Sublimation */}
                         {item.design_consultation && typeof item.design_consultation === "object" && (
                           <div className="mt-4 pt-4 border-t border-blue-200">
-                            <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Design Consultation</p>
-                            <div className="space-y-2 text-sm">
-                              {item.design_consultation.price && (
-                                <div className="flex justify-between items-center bg-amber-50 p-2 rounded border border-amber-300">
-                                  <span className="text-gray-700 font-semibold">Price:</span>
-                                  <span className="text-amber-700 font-bold">₱{Number(item.design_consultation.price).toLocaleString()}</span>
+                            <div className="p-3 bg-blue-50 rounded border-l-4 border-l-blue-600">
+                              <p className="text-sm font-semibold text-blue-700 mb-2">+ Design Consultation</p>
+                              {item.design_consultation.notes && (
+                                <div className="mb-2">
+                                  <p className="text-xs font-semibold text-gray-700 mb-1">Design Details:</p>
+                                  <p className="text-sm text-gray-900">{item.design_consultation.notes}</p>
                                 </div>
                               )}
-                              {item.design_consultation.notes && (
-                                <div className="bg-amber-50 p-2 rounded border border-amber-300">
-                                  <p className="text-xs font-semibold text-gray-700 mb-1">Notes:</p>
-                                  <p className="text-gray-900 text-xs">{item.design_consultation.notes}</p>
+                              {item.design_consultation.price && (
+                                <div className="flex justify-between items-center p-2 bg-white rounded">
+                                  <span className="text-gray-700 font-semibold">Consultation Fee:</span>
+                                  <span className="text-blue-600 font-bold">₱{Number(item.design_consultation.price).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                                 </div>
                               )}
                             </div>
@@ -654,7 +694,7 @@ export function AdminQuotationPricing() {
 
                         <div className="mt-4 pt-4 border-t border-blue-200 flex justify-between items-center p-3 bg-blue-100 rounded font-bold">
                           <span className="text-gray-700">Subtotal</span>
-                          <span className="text-blue-700 text-lg">₱{calculateSublimationSubtotal(item.id).toLocaleString()}</span>
+                          <span className="text-blue-700 text-lg">₱{calculateSublimationSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                         </div>
                       </div>
                     )
@@ -821,7 +861,9 @@ export function AdminQuotationPricing() {
                                         </tr>
                                       </thead>
                                       <tbody>
-                                        {item.size_specifications.items.map((spec: any, idx: number) => (
+                                        {item.size_specifications.items.map((spec: any, idx: number) => {
+                                          console.log(`[v0] Rendering size spec row ${idx}:`, spec)
+                                          return (
                                           <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
                                             <td className="px-3 py-2 text-gray-900 font-semibold">{spec.qty} PCS</td>
                                             <td className="px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
@@ -830,12 +872,15 @@ export function AdminQuotationPricing() {
                                             <td className="px-3 py-2 text-gray-900">{spec.lengthBottomInches || "-"}</td>
                                             <td className="px-3 py-2 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
                                           </tr>
-                                        ))}
+                                        )
+                                        })}
                                       </tbody>
                                     </table>
                                   </div>
                                 </div>
                               )}
+                              {!item.size_specifications?.items && console.log(`[v0] No size_specifications.items for ${item.service?.name}`)}
+                              {item.size_specifications && !Array.isArray(item.size_specifications.items) && console.log(`[v0] size_specifications.items is not an array for ${item.service?.name}`)}
 
                               {/* Size Notes */}
                               {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (

@@ -967,10 +967,12 @@ class QuotationController extends Controller
                 return response()->json(['error' => 'Quotation not found'], 404);
             }
 
-            // Log service image URLs for debugging
+            // Log service image URLs and size specifications for debugging
             foreach ($quotation->items as $item) {
                 if ($item->service) {
                     error_log('[v0] AdminShow - Item ' . $item->id . ' Service: ' . $item->service->name . ' Image URL: ' . ($item->service->image_url ?? 'NULL'));
+                    error_log('[v0] AdminShow - Item ' . $item->id . ' size_specifications type: ' . gettype($item->size_specifications) . ' value: ' . substr($item->size_specifications, 0, 200));
+                    error_log('[v0] AdminShow - Item ' . $item->id . ' has design_consultation: ' . (isset($item->design_consultation) ? 'yes' : 'no'));
                 }
             }
 
