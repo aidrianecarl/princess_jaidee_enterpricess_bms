@@ -111,7 +111,6 @@ doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
 // ===== SET NEXT Y POSITION PROPERLY =====
  yPosition = headerTopY + logoSize + 6
 
-  yPosition += 8
 
   // Horizontal line separator
   doc.setDrawColor(0, 0, 0)
