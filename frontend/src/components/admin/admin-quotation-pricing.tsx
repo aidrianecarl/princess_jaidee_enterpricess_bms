@@ -589,20 +589,34 @@ export function AdminQuotationPricing() {
                         </div>
                         
                         {/* Size Specifications - Items List for Sublimation */}
-                        {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
+                        {item.size_specifications && typeof item.size_specifications === "object" && 
+                         item.size_specifications.items && Array.isArray(item.size_specifications.items) && 
+                         item.size_specifications.items.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-blue-200">
                             <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Size Specifications - Items List</p>
                             <div className="space-y-2">
-                              {teamRoster.map((player: any, idx: number) => {
+                              {item.size_specifications.items.map((spec: any, idx: number) => {
                                 const prices = sublimationPrices[item.id]
                                 const setPrice = Number(prices?.setPrice) || 0
                                 const topPrice = Number(prices?.topPrice) || 0
                                 const bottomPrice = Number(prices?.bottomPrice) || 0
-                                const amount = calculatePlayerAmount(item, player, setPrice, topPrice, bottomPrice)
+                                
+                                // Calculate price based on spec quantities
+                                let amount = 0
+                                if (spec.qty) {
+                                  const qty = Number(spec.qty) || 0
+                                  if (spec.qtyUnit === 'SET') {
+                                    amount = qty * setPrice
+                                  } else if (spec.qtyUnit === 'TOP') {
+                                    amount = qty * topPrice
+                                  } else if (spec.qtyUnit === 'BOTTOM') {
+                                    amount = qty * bottomPrice
+                                  }
+                                }
                                 
                                 return (
                                   <div key={idx} className="flex justify-between items-center text-sm bg-blue-50 p-2 rounded">
-                                    <span className="text-gray-900 font-semibold">{player.sizeTop || player.sizeBottom} - {player.name || 'Player'}</span>
+                                    <span className="text-gray-900 font-semibold">{spec.qty}{spec.qtyUnit} - {spec.sizeTop || spec.sizeBottom || 'N/A'}</span>
                                     <span className="text-blue-700 font-bold">₱{amount.toLocaleString()}</span>
                                   </div>
                                 )
@@ -783,7 +797,9 @@ export function AdminQuotationPricing() {
                               <p className="text-xs text-gray-600 mb-4 italic">Pricing fields are disabled for Sublimation Printing Service. Existing prices will be preserved.</p>
 
                               {/* Size Specifications Table for Sublimation */}
-                              {item.size_specifications && typeof item.size_specifications === "object" && Object.keys(item.size_specifications).length > 0 && (
+                              {item.size_specifications && typeof item.size_specifications === "object" && 
+                               item.size_specifications.items && Array.isArray(item.size_specifications.items) && 
+                               item.size_specifications.items.length > 0 && (
                                 <div className="mb-4">
                                   <h5 className="font-semibold text-blue-900 mb-3 text-sm uppercase">Size Specifications - Items List</h5>
                                   <div className="overflow-x-auto bg-white rounded border border-blue-300">
@@ -799,14 +815,14 @@ export function AdminQuotationPricing() {
                                         </tr>
                                       </thead>
                                       <tbody>
-                                        {item.team_roster.map((player: any, idx: number) => (
+                                        {item.size_specifications.items.map((spec: any, idx: number) => (
                                           <tr key={idx} className="border-b border-blue-200 hover:bg-blue-50">
-                                            <td className="px-3 py-2 text-gray-900">1</td>
-                                            <td className="px-3 py-2 text-gray-900">{player.sizeTop || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{player.lengthTopInches || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{player.sizeBottom || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{player.lengthBottomInches || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{player.name || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{spec.qty || 1}</td>
+                                            <td className="px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{spec.lengthTopInches || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{spec.sizeBottom || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{spec.lengthBottomInches || "-"}</td>
+                                            <td className="px-3 py-2 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
                                           </tr>
                                         ))}
                                       </tbody>
