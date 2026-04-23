@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { getApiImageUrl } from "@/lib/api-urls"
-import { ArrowLeft, Loader2, Download } from "lucide-react"
+import { ArrowLeft, Loader2, Download, ChevronDown } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { DashboardQuotationPricing } from "@/components/dashboard/dashboard-quotation-pricing"
@@ -72,6 +72,7 @@ export default function DashboardViewQuotationPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  const [isPricingDetailsExpanded, setIsPricingDetailsExpanded] = useState(true)
   const [isDownloading, setIsDownloading] = useState(false)
   const [sublimationPrices, setSublimationPrices] = useState<Record<number, { setPrice: string; topPrice: string; bottomPrice: string }>>({})
   const [user, setUser] = useState<any>(null)
@@ -346,16 +347,6 @@ export default function DashboardViewQuotationPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 flex-1">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Bill To / Client</h3>
-                    <div className="space-y-1 text-sm text-gray-900">
-                      <p className="font-semibold text-lg">{quotation.customer?.name || quotation.customer?.bill_to_name || "-"}</p>
-                      <p>{quotation.customer?.email || quotation.customer?.bill_to_email || "-"}</p>
-                      <p className="text-xs text-gray-500 mt-2">{quotation.customer?.bill_to_street || quotation.customer?.street || ""}</p>
-                      <p className="text-xs text-gray-500">{quotation.customer?.bill_to_city || quotation.customer?.city || ""} {quotation.customer?.bill_to_state || quotation.customer?.state || ""}</p>
-                    </div>
-                  </div>
-
-                  <div className="text-left md:text-right">
                     <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">From</h3>
                     <div className="space-y-1 text-sm text-gray-900">
                       <p className="font-semibold">{quotation.business_name}</p>
@@ -367,32 +358,15 @@ export default function DashboardViewQuotationPage() {
                       <p>{quotation.business_email}</p>
                     </div>
                   </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Bill To Section */}
-            <div className="p-8 border-b-2 border-gray-200 bg-orange-50">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">Bill To</h3>
-                  <div className="space-y-1 text-gray-900 text-sm">
-                    <p className="font-semibold">{quotation.customer?.bill_to_name || "-"}</p>
-                    <p>{quotation.customer?.bill_to_street || "-"}</p>
-                    <p>
-                      {quotation.customer?.bill_to_city || ""} {quotation.customer?.bill_to_state || ""} {quotation.customer?.bill_to_postal || ""}
-                    </p>
-                    <p>{quotation.customer?.bill_to_phone || "-"}</p>
-                    <p>{quotation.customer?.bill_to_email || "-"}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 uppercase mb-4">DUE DATE</h3>
-                  <div className="space-y-4">
-                    <p className="text-gray-900 font-semibold">
-                      {quotation.valid_until ? new Date(quotation.valid_until).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "-"}
-                    </p>
+                  <div className="text-left md:text-right">
+                    <h3 className="text-sm font-semibold text-gray-700 uppercase mb-3">Bill To / Client</h3>
+                    <div className="space-y-1 text-sm text-gray-900">
+                      <p className="font-semibold text-lg">{quotation.customer?.name || quotation.customer?.bill_to_name || "-"}</p>
+                      <p>{quotation.customer?.email || quotation.customer?.bill_to_email || "-"}</p>
+                      <p className="text-xs text-gray-500 mt-2">{quotation.customer?.bill_to_street || quotation.customer?.street || ""}</p>
+                      <p className="text-xs text-gray-500">{quotation.customer?.bill_to_city || quotation.customer?.city || ""} {quotation.customer?.bill_to_state || quotation.customer?.state || ""}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -408,7 +382,19 @@ export default function DashboardViewQuotationPage() {
                   if (item.service?.name?.includes('Sublimation')) {
                     const teamRoster = item.team_roster || []
                     const prices = sublimationPrices[item.id]
-                    if (!prices) return null
+                    console.log(`[v0] Services Summary - ${item.service?.name}:`, {
+                      item_id: item.id,
+                      has_team_roster: !!teamRoster,
+                      team_roster_length: teamRoster.length,
+                      has_prices: !!prices,
+                      prices_data: prices,
+                      size_specifications: item.size_specifications,
+                      design_consultation: item.design_consultation
+                    })
+                    if (!prices) {
+                      console.log(`[v0] WARNING: No prices found for item ${item.id}`)
+                      return null
+                    }
 
                     const setPrice = Number(prices.setPrice) || 0
                     const topPrice = Number(prices.topPrice) || 0
@@ -508,16 +494,27 @@ export default function DashboardViewQuotationPage() {
               </div>
             </div>
 
-            {/* Pricing Details */}
-            <div className="p-3 md:p-8">
-              <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6 flex items-center gap-2">
-                Pricing Details
-                <span className="text-sm font-normal text-gray-500">
-                  ({quotation.items.length} {quotation.items.length === 1 ? "item" : "items"})
-                </span>
-              </h2>
+            {/* Pricing Details - Expandable */}
+            <div className="border-t-2 border-gray-200">
+              <div 
+                onClick={() => setIsPricingDetailsExpanded(!isPricingDetailsExpanded)}
+                className="p-3 md:p-8 bg-gradient-to-r from-gray-50 to-gray-100 cursor-pointer hover:bg-gray-100 transition flex items-center justify-between"
+              >
+                <h2 className="text-xl md:text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  Pricing Details
+                  <span className="text-sm font-normal text-gray-500">
+                    ({quotation.items.length} {quotation.items.length === 1 ? "item" : "items"})
+                  </span>
+                </h2>
+                <ChevronDown 
+                  size={24}
+                  className={`text-gray-600 transition-transform ${isPricingDetailsExpanded ? "rotate-180" : ""}`}
+                />
+              </div>
 
-              {quotation.items.length === 0 ? (
+              {isPricingDetailsExpanded && (
+                <div className="p-3 md:p-8">
+                  {quotation.items.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <p className="text-lg mb-2">No items added</p>
                 </div>
@@ -537,6 +534,8 @@ export default function DashboardViewQuotationPage() {
                   }}
                   onImageExpand={(imageUrl: string) => setExpandedImage(imageUrl)}
                 />
+              )}
+                </div>
               )}
             </div>
 

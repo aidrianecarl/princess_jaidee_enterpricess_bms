@@ -177,9 +177,19 @@ export function DashboardQuotationPricing({
                 try {
                   sizeSpecs = JSON.parse(item.size_specifications)
                 } catch (e) {
+                  console.log(`[v0] ERROR parsing size_specifications JSON for item ${item.id}:`, e)
                   sizeSpecs = null
                 }
               }
+              
+              console.log(`[v0] Size Specifications for ${item.service?.name} (item ${item.id}):`, {
+                raw_size_specs: item.size_specifications,
+                parsed_size_specs: sizeSpecs,
+                is_object: typeof sizeSpecs === "object",
+                has_items: !!sizeSpecs?.items,
+                items_is_array: Array.isArray(sizeSpecs?.items),
+                items_length: sizeSpecs?.items?.length
+              })
               
               if (sizeSpecs && typeof sizeSpecs === "object" && sizeSpecs.items && Array.isArray(sizeSpecs.items) && sizeSpecs.items.length > 0) {
                 return (
