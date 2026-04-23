@@ -842,53 +842,103 @@ export function AdminQuotationPricing() {
                               </div>
                               <p className="text-xs text-gray-600 mb-4 italic">Pricing fields are disabled for Sublimation Printing Service. Existing prices will be preserved.</p>
 
+                              {/* Debug: Log what data we have */}
+                              {(() => {
+                                let sizeSpecs = item.size_specifications
+                                if (typeof item.size_specifications === 'string' && item.size_specifications) {
+                                  try {
+                                    sizeSpecs = JSON.parse(item.size_specifications)
+                                  } catch (e) {
+                                    console.log('[v0] ERROR parsing size_specifications JSON:', e)
+                                  }
+                                }
+                                console.log(`[v0] PRICING DETAILS for ${item.service?.name}:`, {
+                                  raw_size_specifications: item.size_specifications,
+                                  parsed_size_specs: sizeSpecs,
+                                  has_size_specifications: !!sizeSpecs,
+                                  size_spec_type: typeof sizeSpecs,
+                                  has_items: !!sizeSpecs?.items,
+                                  items_is_array: Array.isArray(sizeSpecs?.items),
+                                  items_count: sizeSpecs?.items?.length,
+                                  has_team_roster: !!item.team_roster,
+                                  team_roster_count: item.team_roster?.length
+                                })
+                                return null
+                              })()}
+
                               {/* Size Specifications Table for Sublimation */}
-                              {item.size_specifications && typeof item.size_specifications === "object" && 
-                               item.size_specifications.items && Array.isArray(item.size_specifications.items) && 
-                               item.size_specifications.items.length > 0 && (
-                                <div className="mb-4">
-                                  <h5 className="font-semibold text-green-900 mb-3 text-sm uppercase bg-green-100 p-2 rounded">Size Specifications - Items List</h5>
-                                  <div className="overflow-x-auto bg-white rounded border border-green-300">
-                                    <table className="w-full text-xs">
-                                      <thead className="bg-green-100 border-b border-green-300">
-                                        <tr>
-                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Qty</th>
-                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Size</th>
-                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Length (in)</th>
-                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Size</th>
-                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Length (in)</th>
-                                          <th className="px-3 py-2 text-left text-gray-700 font-semibold">Additional Name</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {item.size_specifications.items.map((spec: any, idx: number) => {
-                                          console.log(`[v0] Rendering size spec row ${idx}:`, spec)
-                                          return (
-                                          <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
-                                            <td className="px-3 py-2 text-gray-900 font-semibold">{spec.qty} PCS</td>
-                                            <td className="px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{spec.lengthTopInches || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{spec.sizeBottom || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{spec.lengthBottomInches || "-"}</td>
-                                            <td className="px-3 py-2 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
-                                          </tr>
-                                        )
-                                        })}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                </div>
-                              )}
-                              {!item.size_specifications?.items && console.log(`[v0] No size_specifications.items for ${item.service?.name}`)}
-                              {item.size_specifications && !Array.isArray(item.size_specifications.items) && console.log(`[v0] size_specifications.items is not an array for ${item.service?.name}`)}
+                              {(() => {
+                                let sizeSpecs = item.size_specifications
+                                if (typeof item.size_specifications === 'string' && item.size_specifications) {
+                                  try {
+                                    sizeSpecs = JSON.parse(item.size_specifications)
+                                  } catch (e) {
+                                    sizeSpecs = null
+                                  }
+                                }
+                                
+                                if (sizeSpecs && typeof sizeSpecs === "object" && sizeSpecs.items && Array.isArray(sizeSpecs.items) && sizeSpecs.items.length > 0) {
+                                  return (
+                                    <div className="mb-4">
+                                      <h5 className="font-semibold text-green-900 mb-3 text-sm uppercase bg-green-100 p-2 rounded">Size Specifications - Items List</h5>
+                                      <div className="overflow-x-auto bg-white rounded border border-green-300">
+                                        <table className="w-full text-xs">
+                                          <thead className="bg-green-100 border-b border-green-300">
+                                            <tr>
+                                              <th className="px-3 py-2 text-left text-gray-700 font-semibold">Qty</th>
+                                              <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Size</th>
+                                              <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Length (in)</th>
+                                              <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Size</th>
+                                              <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Length (in)</th>
+                                              <th className="px-3 py-2 text-left text-gray-700 font-semibold">Additional Name</th>
+                                            </tr>
+                                          </thead>
+                                          <tbody>
+                                            {sizeSpecs.items.map((spec: any, idx: number) => {
+                                              console.log(`[v0] Rendering size spec row ${idx}:`, spec)
+                                              return (
+                                              <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
+                                                <td className="px-3 py-2 text-gray-900 font-semibold">{spec.qty} PCS</td>
+                                                <td className="px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
+                                                <td className="px-3 py-2 text-gray-900">{spec.lengthTopInches || "-"}</td>
+                                                <td className="px-3 py-2 text-gray-900">{spec.sizeBottom || "-"}</td>
+                                                <td className="px-3 py-2 text-gray-900">{spec.lengthBottomInches || "-"}</td>
+                                                <td className="px-3 py-2 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
+                                              </tr>
+                                            )
+                                            })}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    </div>
+                                  )
+                                } else {
+                                  console.log(`[v0] ERROR: Cannot display size specs for ${item.service?.name}. Size specs is null/empty or items is not an array`)
+                                  return null
+                                }
+                              })()}
 
                               {/* Size Notes */}
-                              {item.notes && typeof item.notes === "object" && item.notes.sizeNotes && (
-                                <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-300">
-                                  <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Notes</h5>
-                                  <p className="text-xs text-gray-900">{item.notes.sizeNotes}</p>
-                                </div>
-                              )}
+                              {(() => {
+                                let notes = item.notes
+                                if (typeof item.notes === 'string' && item.notes) {
+                                  try {
+                                    notes = JSON.parse(item.notes)
+                                  } catch (e) {
+                                    notes = null
+                                  }
+                                }
+                                
+                                if (notes && typeof notes === "object" && notes.sizeNotes) {
+                                  return (
+                                    <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-300">
+                                      <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Notes</h5>
+                                      <p className="text-xs text-gray-900">{notes.sizeNotes}</p>
+                                    </div>
+                                  )
+                                }
+                                return null
+                              })()}
 
                               {/* Design File */}
                               {item.design_file_url && (
@@ -915,12 +965,26 @@ export function AdminQuotationPricing() {
                               )}
 
                               {/* Design Comment */}
-                              {item.notes && typeof item.notes === "object" && item.notes.designNotes && (
-                                <div className="p-3 bg-purple-50 rounded border border-purple-300">
-                                  <h5 className="font-semibold text-purple-900 mb-2 text-sm">Design Comment</h5>
-                                  <p className="text-xs text-gray-900">{item.notes.designNotes}</p>
-                                </div>
-                              )}
+                              {(() => {
+                                let notes = item.notes
+                                if (typeof item.notes === 'string' && item.notes) {
+                                  try {
+                                    notes = JSON.parse(item.notes)
+                                  } catch (e) {
+                                    notes = null
+                                  }
+                                }
+                                
+                                if (notes && typeof notes === "object" && notes.designNotes) {
+                                  return (
+                                    <div className="p-3 bg-purple-50 rounded border border-purple-300">
+                                      <h5 className="font-semibold text-purple-900 mb-2 text-sm">Design Comment</h5>
+                                      <p className="text-xs text-gray-900">{notes.designNotes}</p>
+                                    </div>
+                                  )
+                                }
+                                return null
+                              })()}
 
                               {/* Team Roster Table */}
                               <h4 className="font-semibold text-blue-900 mb-3">TEAM ROSTER DETAILS</h4>
