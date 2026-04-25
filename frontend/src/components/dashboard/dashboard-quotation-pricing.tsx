@@ -98,7 +98,7 @@ export function DashboardQuotationPricing({
   if (!quotation?.items) return null
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-0 divide-y-2 divide-gray-200">
       {quotation.items.map((item: PricingLineItem) => {
         if (!item.service?.name?.includes('Sublimation')) return null
 
@@ -130,45 +130,54 @@ export function DashboardQuotationPricing({
         })
 
         return (
-          <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
-            <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
+          <div key={item.id} className="border-b border-gray-200 last:border-b-0 py-6 px-4 md:px-6">
+            <h3 className="font-bold text-lg text-gray-900 mb-6">{item.service?.name}</h3>
 
-            {/* Sets, Top Only, Bottom Only Breakdown - 3 Columns */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {teamRoster.length > 0 && (
-                <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
-                  <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
-                  <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
-                </div>
-              )}
-              <div className="space-y-2">
-                {setsCount > 0 && (
-                  <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
-                    <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
-                    <p className="text-lg font-bold text-green-600">{setsCount}</p>
-                    <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
-                  </div>
-                )}
-                {topOnlyCount > 0 && (
-                  <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
-                    <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
-                    <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
-                    <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
-                  </div>
-                )}
-                {bottomOnlyCount > 0 && (
-                  <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
-                    <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
-                    <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
-                    <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
-                  </div>
-                )}
+            {/* Pricing Summary Table */}
+            {teamRoster.length > 0 && (
+              <div className="mb-6 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b-2 border-gray-300 bg-gray-50">
+                      <th className="px-4 py-3 text-left font-semibold text-gray-700">Item Description</th>
+                      <th className="px-4 py-3 text-center font-semibold text-gray-700">Qty</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Unit Price</th>
+                      <th className="px-4 py-3 text-right font-semibold text-gray-700">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {setsCount > 0 && (
+                      <tr className="border-b border-gray-200 hover:bg-green-50 transition">
+                        <td className="px-4 py-3 text-gray-900 font-medium">Players {setsCount} Sets</td>
+                        <td className="px-4 py-3 text-center text-gray-900 font-semibold">{setsCount}</td>
+                        <td className="px-4 py-3 text-right text-gray-900">₱{setPrice.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                        <td className="px-4 py-3 text-right text-green-600 font-bold">₱{setsAmount.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                      </tr>
+                    )}
+                    {topOnlyCount > 0 && (
+                      <tr className="border-b border-gray-200 hover:bg-orange-50 transition">
+                        <td className="px-4 py-3 text-gray-900 font-medium">Top Only {topOnlyCount}</td>
+                        <td className="px-4 py-3 text-center text-gray-900 font-semibold">{topOnlyCount}</td>
+                        <td className="px-4 py-3 text-right text-gray-900">₱{topPrice.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                        <td className="px-4 py-3 text-right text-orange-600 font-bold">₱{topAmount.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                      </tr>
+                    )}
+                    {bottomOnlyCount > 0 && (
+                      <tr className="border-b border-gray-200 hover:bg-purple-50 transition">
+                        <td className="px-4 py-3 text-gray-900 font-medium">Bottom Only {bottomOnlyCount}</td>
+                        <td className="px-4 py-3 text-center text-gray-900 font-semibold">{bottomOnlyCount}</td>
+                        <td className="px-4 py-3 text-right text-gray-900">₱{bottomPrice.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                        <td className="px-4 py-3 text-right text-purple-600 font-bold">₱{bottomAmount.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                      </tr>
+                    )}
+                    <tr className="border-t-2 border-gray-300 bg-blue-50">
+                      <td colSpan={3} className="px-4 py-3 text-right font-semibold text-gray-900">Subtotal</td>
+                      <td className="px-4 py-3 text-right font-bold text-blue-700 text-lg">₱{calculateSublimationSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <div className="p-2 bg-blue-50 rounded border border-blue-300">
-                <p className="text-xs text-blue-700 font-semibold mb-1 text-center">Subtotal</p>
-                <p className="text-lg font-bold text-blue-700 text-center">₱{calculateSublimationSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-              </div>
-            </div>
+            )}
 
             {/* Size Specifications Table */}
             {(() => {
@@ -182,56 +191,43 @@ export function DashboardQuotationPricing({
                 }
               }
               
-              console.log(`[v0] Size Specifications for ${item.service?.name} (item ${item.id}):`, {
-                raw_size_specs: item.size_specifications,
-                parsed_size_specs: sizeSpecs,
-                is_object: typeof sizeSpecs === "object",
-                has_items: !!sizeSpecs?.items,
-                items_is_array: Array.isArray(sizeSpecs?.items),
-                items_length: sizeSpecs?.items?.length
-              })
-              
               if (sizeSpecs && typeof sizeSpecs === "object" && sizeSpecs.items && Array.isArray(sizeSpecs.items) && sizeSpecs.items.length > 0) {
                 return (
-                  <div className="mb-4">
-                    <h5 className="font-semibold text-green-900 mb-3 text-sm uppercase bg-green-100 p-2 rounded">Size Specifications - Items List</h5>
-                    <div className="overflow-x-auto bg-white rounded border border-green-300">
-                      <table className="w-full text-xs">
-                        <thead className="bg-green-100 border-b border-green-300">
-                          <tr>
-                            <th className="px-3 py-2 text-left text-gray-700 font-semibold">Qty</th>
-                            <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Size</th>
-                            <th className="px-3 py-2 text-left text-gray-700 font-semibold">Top Length (in)</th>
-                            <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Size</th>
-                            <th className="px-3 py-2 text-left text-gray-700 font-semibold">Bottom Length (in)</th>
-                            <th className="px-3 py-2 text-left text-gray-700 font-semibold">Additional Name</th>
-                            <th className="px-3 py-2 text-right text-gray-700 font-semibold">Price</th>
+                  <div className="mb-6">
+                    <h5 className="font-semibold text-gray-900 mb-4 text-sm uppercase tracking-wide">Size Specifications</h5>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-gray-300 bg-gray-50">
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Qty</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Top Size</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Top Length</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Bottom Size</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Bottom Length</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Name</th>
+                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Price</th>
                           </tr>
                         </thead>
                         <tbody>
                           {sizeSpecs.items.map((spec: any, idx: number) => {
                             const basePrice = Number(item.unit_price) || 0
                             const qty = Number(spec.qty) || 0
-                            
-                            // Determine if it's a SET (both top and bottom) or PCS (single)
                             const hasTop = spec.sizeTop && spec.sizeTop !== "-"
                             const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
                             const isSet = hasTop && hasBottom
-                            
-                            // Calculate price: SET = baseprice * 2 * qty, PCS = baseprice * qty
                             const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
                             
                             return (
-                            <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
-                              <td className="px-3 py-2 text-gray-900 font-semibold">{qty} {isSet ? 'SET' : 'PCS'}</td>
-                              <td className="px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
-                              <td className="px-3 py-2 text-gray-900">{spec.lengthTopInches || "-"}</td>
-                              <td className="px-3 py-2 text-gray-900">{spec.sizeBottom || "-"}</td>
-                              <td className="px-3 py-2 text-gray-900">{spec.lengthBottomInches || "-"}</td>
-                              <td className="px-3 py-2 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
-                              <td className="px-3 py-2 text-right text-green-600 font-bold">₱{itemPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                            </tr>
-                          )
+                              <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                                <td className="px-4 py-3 text-gray-900 font-semibold">{qty} {isSet ? 'SET' : 'PCS'}</td>
+                                <td className="px-4 py-3 text-gray-900">{spec.sizeTop || "-"}</td>
+                                <td className="px-4 py-3 text-gray-900">{spec.lengthTopInches || "-"}</td>
+                                <td className="px-4 py-3 text-gray-900">{spec.sizeBottom || "-"}</td>
+                                <td className="px-4 py-3 text-gray-900">{spec.lengthBottomInches || "-"}</td>
+                                <td className="px-4 py-3 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
+                                <td className="px-4 py-3 text-right text-green-600 font-bold">₱{itemPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                              </tr>
+                            )
                           })}
                         </tbody>
                       </table>
@@ -255,9 +251,9 @@ export function DashboardQuotationPricing({
               
               if (notes && typeof notes === "object" && notes.sizeNotes) {
                 return (
-                  <div className="mb-4 p-3 bg-blue-50 rounded border border-blue-300">
+                  <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
                     <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Notes</h5>
-                    <p className="text-xs text-gray-900">{notes.sizeNotes}</p>
+                    <p className="text-sm text-gray-700">{notes.sizeNotes}</p>
                   </div>
                 )
               }
@@ -266,23 +262,23 @@ export function DashboardQuotationPricing({
 
             {/* Design File */}
             {item.design_file_url && (
-              <div className="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                <h4 className="font-semibold text-green-900 mb-3">DESIGN FILE</h4>
-                <div className="flex gap-3">
+              <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                <h4 className="font-semibold text-green-900 mb-3 text-sm uppercase tracking-wide">Design File</h4>
+                <div className="flex gap-4 items-start">
                   <img
                     src={getApiImageUrl(item.design_file_url)}
                     alt="Design"
-                    className="w-24 h-24 rounded-lg border border-green-300 object-cover"
+                    className="w-20 h-20 rounded-lg border border-green-300 object-cover shadow-sm"
                     onError={(e) => {
                       e.currentTarget.style.display = "none"
                     }}
                   />
                   <button
                     onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url))}
-                    className="self-center flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm"
+                    className="self-center flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-medium shadow-md hover:shadow-lg"
                   >
                     <ZoomIn size={16} />
-                    View
+                    View Full
                   </button>
                 </div>
               </div>
@@ -301,9 +297,9 @@ export function DashboardQuotationPricing({
               
               if (notes && typeof notes === "object" && notes.designNotes) {
                 return (
-                  <div className="p-3 bg-purple-50 rounded border border-purple-300">
+                  <div className="mb-6 p-4 bg-purple-50 rounded-lg border border-purple-200">
                     <h5 className="font-semibold text-purple-900 mb-2 text-sm">Design Comment</h5>
-                    <p className="text-xs text-gray-900">{notes.designNotes}</p>
+                    <p className="text-sm text-gray-700">{notes.designNotes}</p>
                   </div>
                 )
               }
@@ -315,65 +311,57 @@ export function DashboardQuotationPricing({
               <>
                 <button
                   onClick={() => onToggleExpand(item.id)}
-                  className="w-full mt-4 pt-4 border-t border-blue-200 flex items-center justify-between p-3 hover:bg-blue-50 transition rounded"
+                  className="w-full pt-6 pb-3 border-t-2 border-gray-300 flex items-center justify-between font-semibold text-gray-900 hover:text-blue-600 transition group"
                 >
-                  <h4 className="font-semibold text-blue-900">TEAM ROSTER DETAILS</h4>
-                  <ChevronDown size={20} className={`text-gray-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                  <span className="uppercase tracking-wide text-sm">Team Roster Details</span>
+                  <ChevronDown size={20} className={`text-gray-600 group-hover:text-blue-600 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                 </button>
 
                 {isExpanded && (
-                  <div className="mt-4 space-y-2 pb-4">
-                    {item.team_roster.map((player: any, idx: number) => {
-                      const hasTop = player.sizeTop && player.sizeTop !== "None"
-                      const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
-                      let amount = 0
+                  <div className="mt-6 space-y-3 pb-6">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b-2 border-gray-300 bg-gray-50">
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Player Name</th>
+                            <th className="px-4 py-3 text-center font-semibold text-gray-700">Jersey #</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Top</th>
+                            <th className="px-4 py-3 text-left font-semibold text-gray-700">Bottom</th>
+                            <th className="px-4 py-3 text-right font-semibold text-gray-700">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {item.team_roster.map((player: any, idx: number) => {
+                            const hasTop = player.sizeTop && player.sizeTop !== "None"
+                            const hasBottom = player.sizeBottom && player.sizeBottom !== "None"
+                            let amount = 0
 
-                      if (hasTop && hasBottom) {
-                        amount = setPrice
-                      } else if (hasTop) {
-                        amount = topPrice
-                      } else if (hasBottom) {
-                        amount = bottomPrice
-                      }
+                            if (hasTop && hasBottom) {
+                              amount = setPrice
+                            } else if (hasTop) {
+                              amount = topPrice
+                            } else if (hasBottom) {
+                              amount = bottomPrice
+                            }
 
-                      return (
-                        <div key={idx} className="grid grid-cols-7 gap-2 text-sm bg-gray-50 p-2 rounded border border-gray-200">
-                          <div>
-                            <p className="text-xs text-gray-600 font-semibold">Name</p>
-                            <p className="text-gray-900">{player.name}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-semibold">Jersey #</p>
-                            <p className="text-gray-900">{player.number}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-semibold">Top Size</p>
-                            <p className="text-gray-900">{player.sizeTop || "-"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-semibold">Top Length (in)</p>
-                            <p className="text-gray-900">{player.lengthTopInches || "-"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-semibold">Bottom Size</p>
-                            <p className="text-gray-900">{player.sizeBottom || "-"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-semibold">Bottom Length (in)</p>
-                            <p className="text-gray-900">{player.lengthBottomInches || "-"}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-600 font-semibold">Amount</p>
-                            <p className="text-gray-900 font-semibold">₱{amount.toLocaleString()}</p>
-                          </div>
-                        </div>
-                      )
-                    })}
+                            return (
+                              <tr key={idx} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                                <td className="px-4 py-3 text-gray-900 font-medium">{player.name}</td>
+                                <td className="px-4 py-3 text-center text-gray-900 font-semibold">{player.number}</td>
+                                <td className="px-4 py-3 text-gray-900">{player.sizeTop ? `${player.sizeTop}${player.lengthTopInches ? ` (${player.lengthTopInches}in)` : ''}` : "-"}</td>
+                                <td className="px-4 py-3 text-gray-900">{player.sizeBottom ? `${player.sizeBottom}${player.lengthBottomInches ? ` (${player.lengthBottomInches}in)` : ''}` : "-"}</td>
+                                <td className="px-4 py-3 text-right text-blue-600 font-bold">₱{amount.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
 
                     {item.notes && typeof item.notes === "object" && item.notes.teamNotes && (
-                      <div className="mt-4 pt-4 border-t border-blue-300">
-                        <p className="text-xs font-semibold text-blue-700 uppercase mb-2">Jersey Customization Notes</p>
-                        <p className="text-sm text-blue-900">{item.notes.teamNotes}</p>
+                      <div className="mt-4 pt-4 border-t border-gray-300">
+                        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Jersey Customization Notes</p>
+                        <p className="text-sm text-gray-700">{item.notes.teamNotes}</p>
                       </div>
                     )}
                   </div>

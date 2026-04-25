@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Calendar, FileText, Loader, Eye as EyeIcon, Package, DollarSign, Clock, Zap, CheckCircle2, Check, Search, ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { generateQuotationPDF } from "@/lib/pdf-quotation-generator"
-import { toast } from "@/hooks/use-toast-notification"
+import { useToast } from "@/hooks/use-toast"
+import { apiClient } from "@/lib/api-client"
 
 interface OrderItem {
   id: number
@@ -87,7 +88,6 @@ function MiniOrderProgressBar({ items }: { items: OrderItem[] }) {
     if (step === 'completed') return progress === 100
     return false
   }
-
   return (
     <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
       <div className="flex justify-between items-center mb-2">
@@ -179,6 +179,7 @@ export default function MyOrdersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 10
   const router = useRouter()
+  const { toast } = useToast()
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -281,85 +282,44 @@ export default function MyOrdersPage() {
     return items.reduce((acc, item) => acc + (item.quantity || 1), 0)
   }
 
-  const handleDownloadPDF = async (order: Order) => {
-    try {
-      console.log("[v0] PDF Download - Starting for order ID:", order.id)
-
-      if (!order.quotation) {
+  const handleDownloadPDF = async (data: any) => {
+      try {
+        console.log("[v0] PDF Download - Starting for quotation/order ID:", data.id)
+  
+        // If it's an order (has quotation_id), get the quotation ID; otherwise use id
+        const quotationId = data.quotation_id || data.id
+        
+        const response = await apiClient.admin().get(`/admin/quotations/${quotationId}`)
+        console.log("[v0] PDF Download - API response received:", response)
+  
+        const quotationData = response.data.data || response.data
+        console.log("[v0] PDF Download - Quotation data:", quotationData)
+  
+        if (!quotationData) {
+          throw new Error("No quotation data received from API")
+        }
+  
+        // Generate PDF with quotation data
+        console.log("[v0] PDF Download - Calling generateQuotationPDF")
+        generateQuotationPDF(quotationData)
+        console.log("[v0] PDF Download - PDF generated successfully")
+  
+        toast({
+          title: "Success",
+          description: `Quotation ${quotationData.quotation_number || quotationData.number || "PDF"} downloaded successfully`,
+          variant: "default"
+        })
+      } catch (error: any) {
+        console.error("[v0] PDF Download - Error occurred:", error)
+        const errorMessage = error?.response?.data?.error || error?.message || "Failed to download quotation"
+        console.log("[v0] PDF Download - Error message:", errorMessage)
         toast({
           title: "Error",
-          description: "No quotation data available for this order",
+          description: errorMessage,
           variant: "destructive"
         })
-        return
       }
-
-      // Get items from quotation - handle both items and quotation_items
-      let items = order.quotation.items || order.quotation.quotation_items || []
-      
-      // Parse items if they need JSON parsing
-      if (Array.isArray(items)) {
-        items = items.map((itemData: any) => {
-          const parsedItem = { ...itemData }
-          
-          // Parse design_consultation if it's a JSON string
-          if (typeof parsedItem.design_consultation === 'string') {
-            try {
-              parsedItem.design_consultation = JSON.parse(parsedItem.design_consultation)
-            } catch (e) {
-              parsedItem.design_consultation = null
-            }
-          }
-          
-          // Parse team_roster if it's a JSON string
-          if (typeof parsedItem.team_roster === 'string') {
-            try {
-              parsedItem.team_roster = JSON.parse(parsedItem.team_roster)
-            } catch (e) {
-              parsedItem.team_roster = null
-            }
-          }
-          
-          // Parse size_specifications if it's a JSON string
-          if (typeof parsedItem.size_specifications === 'string') {
-            try {
-              parsedItem.size_specifications = JSON.parse(parsedItem.size_specifications)
-            } catch (e) {
-              parsedItem.size_specifications = null
-            }
-          }
-          
-          return parsedItem
-        })
-      }
-
-      // Create quotation format for PDF generation with all data
-      const quotationForPDF = {
-        ...order.quotation,
-        id: order.id,
-        order_number: order.order_number,
-        total: order.total,
-        down_payment: 0,
-        items: Array.isArray(items) ? items : [],
-      }
-
-      console.log("[v0] PDF Download - Generating PDF with quotation:", quotationForPDF)
-      generateQuotationPDF(quotationForPDF)
-      
-      toast({
-        title: "Success",
-        description: `Statement of Account for Order ${order.order_number} downloaded successfully`,
-        variant: "default"
-      })
-    } catch (error) {
-      console.error("[v0] PDF Download - Error occurred:", error)
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to download statement",
-        variant: "destructive"
-      })
     }
-  }
 
   // Pagination
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage)
