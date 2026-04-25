@@ -148,7 +148,7 @@ export function DashboardQuotationPricing({
                   <tbody>
                     {setsCount > 0 && (
                       <tr className="border-b border-gray-200 hover:bg-green-50 transition">
-                        <td className="px-4 py-3 text-gray-900 font-medium">Players {setsCount} Sets</td>
+                        <td className="px-4 py-3 text-gray-900 font-medium">{setsCount} Sets</td>
                         <td className="px-4 py-3 text-center text-gray-900 font-semibold">{setsCount}</td>
                         <td className="px-4 py-3 text-right text-gray-900">₱{setPrice.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
                         <td className="px-4 py-3 text-right text-green-600 font-bold">₱{setsAmount.toLocaleString('en-US', {minimumFractionDigits: 0})}</td>
