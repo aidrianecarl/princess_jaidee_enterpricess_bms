@@ -6,8 +6,10 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, FileText, Loader, Eye as EyeIcon, Package, DollarSign, Clock, Zap, CheckCircle2, Check, Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { Calendar, FileText, Loader, Eye as EyeIcon, Package, DollarSign, Clock, Zap, CheckCircle2, Check, Search, ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { generateQuotationPDF } from "@/lib/pdf-quotation-generator"
+import { toast } from "@/hooks/use-toast-notification"
 
 interface OrderItem {
   id: number
@@ -47,6 +49,7 @@ interface Order {
     id: number
     branch_name: string
   }
+  quotation?: any
   items?: OrderItem[]
   job_order?: JobOrder
 }
@@ -278,6 +281,86 @@ export default function MyOrdersPage() {
     return items.reduce((acc, item) => acc + (item.quantity || 1), 0)
   }
 
+  const handleDownloadPDF = async (order: Order) => {
+    try {
+      console.log("[v0] PDF Download - Starting for order ID:", order.id)
+
+      if (!order.quotation) {
+        toast({
+          title: "Error",
+          description: "No quotation data available for this order",
+          variant: "destructive"
+        })
+        return
+      }
+
+      // Get items from quotation - handle both items and quotation_items
+      let items = order.quotation.items || order.quotation.quotation_items || []
+      
+      // Parse items if they need JSON parsing
+      if (Array.isArray(items)) {
+        items = items.map((itemData: any) => {
+          const parsedItem = { ...itemData }
+          
+          // Parse design_consultation if it's a JSON string
+          if (typeof parsedItem.design_consultation === 'string') {
+            try {
+              parsedItem.design_consultation = JSON.parse(parsedItem.design_consultation)
+            } catch (e) {
+              parsedItem.design_consultation = null
+            }
+          }
+          
+          // Parse team_roster if it's a JSON string
+          if (typeof parsedItem.team_roster === 'string') {
+            try {
+              parsedItem.team_roster = JSON.parse(parsedItem.team_roster)
+            } catch (e) {
+              parsedItem.team_roster = null
+            }
+          }
+          
+          // Parse size_specifications if it's a JSON string
+          if (typeof parsedItem.size_specifications === 'string') {
+            try {
+              parsedItem.size_specifications = JSON.parse(parsedItem.size_specifications)
+            } catch (e) {
+              parsedItem.size_specifications = null
+            }
+          }
+          
+          return parsedItem
+        })
+      }
+
+      // Create quotation format for PDF generation with all data
+      const quotationForPDF = {
+        ...order.quotation,
+        id: order.id,
+        order_number: order.order_number,
+        total: order.total,
+        down_payment: 0,
+        items: Array.isArray(items) ? items : [],
+      }
+
+      console.log("[v0] PDF Download - Generating PDF with quotation:", quotationForPDF)
+      generateQuotationPDF(quotationForPDF)
+      
+      toast({
+        title: "Success",
+        description: `Statement of Account for Order ${order.order_number} downloaded successfully`,
+        variant: "default"
+      })
+    } catch (error) {
+      console.error("[v0] PDF Download - Error occurred:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to download statement",
+        variant: "destructive"
+      })
+    }
+  }
+
   // Pagination
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage)
   const startIndex = (currentPage - 1) * ordersPerPage
@@ -385,6 +468,15 @@ export default function MyOrdersPage() {
                         <EyeIcon size={16} className="mr-1.5" />
                         <span className="hidden sm:inline">View Details</span>
                         <span className="sm:hidden">View</span>
+                      </Button>
+                      <Button
+                        onClick={() => handleDownloadPDF(order)}
+                        className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-green-500/25 transition-all duration-300 flex-shrink-0"
+                        size="sm"
+                      >
+                        <Download size={16} className="mr-1.5" />
+                        <span className="hidden sm:inline">Statement</span>
+                        <span className="sm:hidden">PDF</span>
                       </Button>
                     </div>
 
