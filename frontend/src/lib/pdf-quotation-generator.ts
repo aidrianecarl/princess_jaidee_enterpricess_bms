@@ -13,12 +13,12 @@ async function imageUrlToBase64(url: string): Promise<string> {
       reader.readAsDataURL(blob)
     })
   } catch (error) {
-    console.log("[RFQ] Error converting image:", error)
+    console.log("[v0] Error converting image:", error)
     return ""
   }
 }
 
-export const generateRFQPDF = async (quotation: any) => {
+export const generateQuotationPDF = async (quotation: any) => {
   const doc = new jsPDF({
     orientation: "portrait",
     unit: "mm",
@@ -39,7 +39,7 @@ export const generateRFQPDF = async (quotation: any) => {
         doc.addImage(clientLogo, "PNG", 15, yPosition, logoSize, logoSize)
       }
     } catch (e) {
-      console.log("Client logo error", e)
+      console.log("[v0] Client logo error", e)
     }
   }
 
@@ -50,7 +50,7 @@ export const generateRFQPDF = async (quotation: any) => {
       doc.addImage(companyLogo, "PNG", pageWidth - 15 - logoSize, yPosition, logoSize, logoSize)
     }
   } catch (e) {
-    console.log("Company logo error", e)
+    console.log("[v0] Company logo error", e)
   }
 
   // CENTER TEXT
@@ -61,115 +61,216 @@ export const generateRFQPDF = async (quotation: any) => {
   doc.text("Region V", pageWidth / 2, yPosition + 12, { align: "center" })
 
   doc.setFont(undefined, "bold")
+  doc.setFontSize(10)
   doc.text(
-    quotation.business_name || "PRINCESS JAIDEE ENTERPRISES",
+    quotation.business_name || "ORAS NATIONAL HIGH SCHOOL",
     pageWidth / 2,
     yPosition + 17,
     { align: "center" }
   )
 
   doc.setFont(undefined, "normal")
+  doc.setFontSize(8)
   doc.text(
-    quotation.business_city || "Sorsogon City",
+    quotation.business_address || "Oras, Camiguin",
     pageWidth / 2,
     yPosition + 21,
     { align: "center" }
   )
 
-  yPosition += logoSize + 10
+  doc.text(
+    quotation.business_city || "Sorsogon City",
+    pageWidth / 2,
+    yPosition + 25,
+    { align: "center" }
+  )
+
+  yPosition += logoSize + 12
 
   // ================= TITLE =================
   doc.setFontSize(14)
   doc.setFont(undefined, "bold")
   doc.setTextColor(0, 102, 153)
-  doc.text("REQUEST FOR QUOTATION", pageWidth / 2, yPosition, { align: "center" })
-
-  yPosition += 10
-
-  // ================= META =================
-  doc.setFontSize(8)
-  doc.setTextColor(0, 0, 0)
-
-  const today = new Date().toLocaleDateString("en-US")
-
-  doc.text(`Date: ${today}`, pageWidth - 60, yPosition)
-  doc.text(`Quotation No: ${quotation.quotation_number || "N/A"}`, pageWidth - 60, yPosition + 5)
+  
+  // Blue banner rectangle
+  doc.setDrawColor(0, 150, 200)
+  doc.setFillColor(0, 150, 200)
+  doc.rect(15, yPosition - 3, pageWidth - 30, 8, "F")
+  
+  doc.setTextColor(255, 255, 255)
+  doc.text("REQUEST FOR QUOTATION", pageWidth / 2, yPosition + 2, { align: "center" })
 
   yPosition += 12
 
-  // ================= SUPPLIER =================
-  doc.text(`Supplier Name: ${quotation.business_name || ""}`, 15, yPosition)
-  yPosition += 5
+  // ================= META =================
+  doc.setFontSize(9)
+  doc.setTextColor(0, 0, 0)
+  doc.setFont(undefined, "bold")
 
-  doc.text(`Address: ${quotation.business_address || ""}`, 15, yPosition)
-  yPosition += 5
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
-  doc.text(`Contact: ${quotation.business_phone || ""}`, 15, yPosition)
+  doc.text(`Date: ${today}`, pageWidth - 60, yPosition)
+  doc.text(`Quotation No: ${quotation.quotation_number || quotation.id || "N/A"}`, pageWidth - 60, yPosition + 5)
+
+  yPosition += 12
+
+  // ================= SUPPLIER INFO =================
+  doc.setFontSize(9)
+  doc.setFont(undefined, "bold")
+  doc.text("Supplier Name:", 15, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.customer?.business_name || quotation.customer?.company_name || "N/A", 50, yPosition)
+
+  yPosition += 5
+  doc.setFont(undefined, "bold")
+  doc.text("Address:", 15, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.customer?.bill_to_address || quotation.customer?.address || "N/A", 50, yPosition)
+
+  yPosition += 5
+  doc.setFont(undefined, "bold")
+  doc.text("TIN:", 15, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.customer?.tin || "N/A", 50, yPosition)
 
   yPosition += 10
 
   // ================= INSTRUCTION =================
-  doc.setFontSize(7)
-  doc.text(
-    "Please quote your lowest price on the items listed below, subject to the conditions stated.",
-    15,
-    yPosition
-  )
+  doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  const instruction = "Please quote your lowest price on the items/listed below, subject to the General Conditions on the last page."
+  doc.text(instruction, 15, yPosition, { maxWidth: pageWidth - 30 })
 
   yPosition += 8
 
   // ================= TABLE =================
-  const items = quotation.items || []
+  const items = quotation.items || quotation.quotation_items || []
 
   const tableData = items.map((item: any, index: number) => [
     index + 1,
     "piece",
     item.service?.name || item.name || "Service",
     item.quantity || 1,
-    Number(item.unit_price || 0).toLocaleString("en-PH"),
-    Number(item.line_total || 0).toLocaleString("en-PH"),
+    Number(item.unit_price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 }),
+    Number(item.line_total || (item.quantity || 1) * (item.unit_price || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2 }),
   ])
 
   autoTable(doc, {
-    head: [["ITEM NO.", "UNIT", "DESCRIPTION", "QTY", "UNIT PRICE", "TOTAL"]],
+    head: [["ITEM NO.", "UNIT", "DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
     body: tableData,
     startY: yPosition,
-
+    margin: { left: 15, right: 15 },
+    
     styles: {
       fontSize: 8,
+      cellPadding: 3,
       lineColor: [0, 0, 0],
-      lineWidth: 0.1,
+      lineWidth: 0.3,
     },
 
     headStyles: {
-      fillColor: [220, 220, 220],
+      fillColor: [200, 200, 200],
       textColor: [0, 0, 0],
       fontStyle: "bold",
+      halign: "center",
+      lineWidth: 0.5,
+    },
+
+    bodyStyles: {
+      textColor: [0, 0, 0],
     },
 
     columnStyles: {
-      0: { halign: "center" },
-      1: { halign: "center" },
-      3: { halign: "center" },
-      4: { halign: "right" },
-      5: { halign: "right" },
+      0: { halign: "center", cellWidth: 20 },
+      1: { halign: "center", cellWidth: 20 },
+      2: { halign: "left" },
+      3: { halign: "center", cellWidth: 25 },
+      4: { halign: "right", cellWidth: 30 },
+      5: { halign: "right", cellWidth: 30 },
     },
 
-    margin: { left: 10, right: 10 },
+    didDrawPage: function () {
+      // This is called after the table is drawn
+    },
   })
 
   yPosition = (doc as any).lastAutoTable.finalY + 15
 
-  // ================= SIGNATURE =================
+  // ================= TOTAL =================
+  let totalAmount = 0
+  items.forEach((item: any) => {
+    totalAmount += Number(item.line_total || (item.quantity || 1) * (item.unit_price || 0))
+  })
+
+  // Add design consultation if exists
+  let designConsultationTotal = 0
+  if (Array.isArray(quotation.items)) {
+    quotation.items.forEach((item: any) => {
+      let consultation = item.design_consultation
+      if (typeof consultation === 'string') {
+        try {
+          consultation = JSON.parse(consultation)
+        } catch (e) {
+          consultation = null
+        }
+      }
+      if (consultation && typeof consultation === "object") {
+        const consultationPrice = Number(consultation.price) || 0
+        designConsultationTotal += consultationPrice
+      }
+    })
+  }
+
+  totalAmount += designConsultationTotal
+
+  const totalLabelX = pageWidth - 65
+  const totalValueX = pageWidth - 15
+
+  doc.setFontSize(9)
+  doc.setFont(undefined, "bold")
+  doc.setTextColor(0, 0, 0)
+  doc.text("TOTAL:", totalLabelX, yPosition, { align: "left" })
+  doc.text(totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2 }), totalValueX, yPosition, { align: "right" })
+
+  yPosition += 12
+
+  // ================= TERMS & CONDITIONS =================
+  doc.setFontSize(7)
+  doc.setFont(undefined, "bold")
+  doc.text("Note:", 15, yPosition)
+
+  yPosition += 4
+  doc.setFont(undefined, "normal")
+  doc.text("1. All entries must be Type written", 20, yPosition)
+  yPosition += 3
+  doc.text("2. Delivery period within ten (10) calendar days", 20, yPosition)
+  yPosition += 3
+  doc.text("3. Warranty period shall be for a period of six (6) months for Supplies & Materials, One (1) year for", 20, yPosition)
+  yPosition += 3
+  doc.text("    equipment, from the date of acceptance by the procuring entity", 20, yPosition)
+  yPosition += 3
+  doc.text("4. Price validity shall be for a period of Thirty (30) calendar days", 20, yPosition)
+  yPosition += 3
+  doc.text("5. D-EPS Registration certificate shall be attached upon submission of the quotation", 20, yPosition)
+  yPosition += 3
+  doc.text("6. Bidders shall submit original brochures showing certification of the product being offered", 20, yPosition)
+
+  yPosition += 10
+
+  // ================= SIGNATURE SECTION =================
   doc.setFontSize(8)
+  doc.setFont(undefined, "normal")
+  
+  doc.text("_________________________", 15, yPosition)
+  doc.text("Printed Name over Signature", 15, yPosition + 4)
 
-  doc.text("Printed Name over Signature", pageWidth - 80, yPosition)
+  doc.text("_________________________", pageWidth - 60, yPosition)
+  doc.text("Tel. No. /Cellphone No./Email Address", pageWidth - 60, yPosition + 4)
 
-  doc.line(pageWidth - 80, yPosition + 10, pageWidth - 20, yPosition + 10)
+  yPosition += 10
+  doc.text("Date: _________________", pageWidth - 60, yPosition)
 
-  doc.text("Date:", pageWidth - 80, yPosition + 18)
-
-  // ================= SAVE =================
-  const fileName = `RFQ_${quotation.quotation_number || "draft"}.pdf`
+  // Save PDF
+  const fileName = `RFQ_${quotation.quotation_number || quotation.id || "draft"}.pdf`
   doc.save(fileName)
 }
