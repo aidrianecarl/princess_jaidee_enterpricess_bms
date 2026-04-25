@@ -20,6 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { apiClient } from "@/lib/api-client"
+import { useToast } from "@/hooks/use-toast"
+
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
 
@@ -169,7 +172,10 @@ export default function OrdersPage() {
   const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false)
   const [releaseOrderId, setReleaseOrderId] = useState<number | null>(null)
   const itemsPerPage = 6
+  const { toast } = useToast()
 
+
+  
   useEffect(() => {
     const token = localStorage.getItem("admin_token")
     if (!token) {
@@ -237,6 +243,42 @@ export default function OrdersPage() {
       console.error("[v0] Error fetching employees:", err)
     }
   }
+
+  const handleDownloadPDF = async (quotation: any) => {
+      try {
+        console.log("[v0] PDF Download - Starting for quotation ID:", quotation.id)
+        
+        const response = await apiClient.admin().get(`/admin/quotations/${quotation.id}`)
+        console.log("[v0] PDF Download - API response received:", response)
+        
+        const quotationData = response.data.data || response.data
+        console.log("[v0] PDF Download - Quotation data:", quotationData)
+        
+        if (!quotationData) {
+          throw new Error("No quotation data received from API")
+        }
+        
+        // Generate PDF with quotation data
+        console.log("[v0] PDF Download - Calling generateQuotationPDF")
+        generateQuotationPDF(quotationData)
+        console.log("[v0] PDF Download - PDF generated successfully")
+        
+        toast({
+          title: "Success",
+          description: `Quotation ${quotation.quotation_number} downloaded successfully`,
+          variant: "default"
+        })
+      } catch (error: any) {
+        console.error("[v0] PDF Download - Error occurred:", error)
+        const errorMessage = error?.response?.data?.error || error?.message || "Failed to download quotation"
+        console.log("[v0] PDF Download - Error message:", errorMessage)
+        toast({ 
+          title: "Error", 
+          description: errorMessage, 
+          variant: "destructive" 
+        })
+      }
+    }
 
   const fetchSentQuotations = async (token: string) => {
     try {
@@ -1313,109 +1355,13 @@ export default function OrdersPage() {
                         )}
 
                         {item.isOrder && (item.payment_status === "partial" || item.payment_status === "paid") && (
-                          <Button
-                            onClick={() => {
-                              try {
-                                console.log("[v0] ===== STATEMENT DOWNLOAD START =====")
-                                console.log("[v0] item object:", item)
-                                
-                                // Ensure quotation data exists
-                                if (!item.quotation) {
-                                  console.error("[v0] No quotation data available for statement download")
-                                  console.log("[v0] Full item object:", item)
-                                  alert("Error: No quotation data available")
-                                  return
-                                }
-                                
-                                console.log("[v0] quotation object:", item.quotation)
-                                console.log("[v0] quotation keys:", Object.keys(item.quotation))
-                                
-                                // Get items from quotation - handle both items and quotation_items
-                                let items = item.quotation.items || item.quotation.quotation_items || []
-                                console.log("[v0] Raw items found:", items)
-                                console.log("[v0] Items is array?", Array.isArray(items))
-                                console.log("[v0] Items length:", items ? items.length : 0)
-                                
-                                // Parse items if they need JSON parsing
-                                if (Array.isArray(items)) {
-                                  items = items.map((itemData: any, idx: number) => {
-                                    console.log(`[v0] Processing item ${idx}:`, itemData)
-                                    
-                                    // Parse JSON string fields if needed
-                                    const parsedItem = { ...itemData }
-                                    
-                                    // Parse design_consultation if it's a JSON string
-                                    if (typeof parsedItem.design_consultation === 'string') {
-                                      try {
-                                        parsedItem.design_consultation = JSON.parse(parsedItem.design_consultation)
-                                        console.log(`[v0] Parsed design_consultation for item ${idx}:`, parsedItem.design_consultation)
-                                      } catch (e) {
-                                        parsedItem.design_consultation = null
-                                        console.log(`[v0] Failed to parse design_consultation for item ${idx}:`, e)
-                                      }
-                                    }
-                                    
-                                    // Parse team_roster if it's a JSON string
-                                    if (typeof parsedItem.team_roster === 'string') {
-                                      try {
-                                        parsedItem.team_roster = JSON.parse(parsedItem.team_roster)
-                                        console.log(`[v0] Parsed team_roster for item ${idx}:`, parsedItem.team_roster)
-                                      } catch (e) {
-                                        parsedItem.team_roster = null
-                                        console.log(`[v0] Failed to parse team_roster for item ${idx}:`, e)
-                                      }
-                                    }
-                                    
-                                    // Parse size_specifications if it's a JSON string
-                                    if (typeof parsedItem.size_specifications === 'string') {
-                                      try {
-                                        parsedItem.size_specifications = JSON.parse(parsedItem.size_specifications)
-                                        console.log(`[v0] Parsed size_specifications for item ${idx}:`, parsedItem.size_specifications)
-                                      } catch (e) {
-                                        parsedItem.size_specifications = null
-                                        console.log(`[v0] Failed to parse size_specifications for item ${idx}:`, e)
-                                      }
-                                    }
-                                    
-                                    console.log(`[v0] Final parsed item ${idx}:`, parsedItem)
-                                    return parsedItem
-                                  })
-                                }
-                                
-                                console.log("[v0] Final parsed items array:", items)
-                                
-                                // Create quotation format for PDF generation with all data
-                                const quotationForPDF = {
-                                  ...item.quotation,
-                                  id: item.id,
-                                  order_number: item.order_number,
-                                  total: item.total,
-                                  down_payment: 0,
-                                  items: Array.isArray(items) ? items : [], // Ensure items is always an array
-                                }
-                                
-                                console.log("[v0] quotationForPDF object:", quotationForPDF)
-                                console.log("[v0] quotationForPDF.items:", quotationForPDF.items)
-                                console.log("[v0] quotationForPDF.items length:", quotationForPDF.items.length)
-                                console.log("[v0] Generating PDF with quotation:", { 
-                                  id: quotationForPDF.id, 
-                                  itemsCount: quotationForPDF.items.length, 
-                                  itemsData: quotationForPDF.items 
-                                })
-                                console.log("[v0] ===== STATEMENT DOWNLOAD END =====")
-                                
-                                generateQuotationPDF(quotationForPDF)
-                              } catch (error) {
-                                console.error("[v0] Error downloading statement:", error)
-                                console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack")
-                                alert("Error generating PDF: " + (error instanceof Error ? error.message : "Unknown error"))
-                              }
-                            }}
-                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white flex items-center justify-center gap-2 h-10 rounded-lg transition-all duration-300 hover:scale-105 active:scale-95"
-                          >
-                            <Download size={18} />
-                            <span>Statement</span>
-                          </Button>
+                          <button
+                                      onClick={() => handleDownloadPDF(quotation)}
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                    >
+                                      <Download size={16} />
+                                      PDF
+                                    </button>
                         )}
 
                         {!item.isOrder && (
