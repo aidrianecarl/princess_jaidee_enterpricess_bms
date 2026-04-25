@@ -122,7 +122,7 @@ interface JobOrder {
     bill_to_email: string
     bill_to_phone?: string
   }
-  assigned_to?: number | {id: number; first_name: string; last_name: string; email: string}
+  assigned_to?: number | { id: number; first_name: string; last_name: string; email: string }
   assignedTo?: {
     id?: number
     first_name: string
@@ -153,7 +153,7 @@ export default function OrdersPage() {
   const [sentQuotations, setSentQuotations] = useState<SentQuotation[]>([])
   const [allOrders, setAllOrders] = useState<Order[]>([])
   const [jobOrders, setJobOrders] = useState<JobOrder[]>([])
-  const [jobOrdersStats, setJobOrdersStats] = useState<{[key: number]: {completed: number; total: number}}>({})
+  const [jobOrdersStats, setJobOrdersStats] = useState<{ [key: number]: { completed: number; total: number } }>({})
   const [employees, setEmployees] = useState<Employee[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
   const [savingId, setSavingId] = useState<number | null>(null)
@@ -175,7 +175,7 @@ export default function OrdersPage() {
   const { toast } = useToast()
 
 
-  
+
   useEffect(() => {
     const token = localStorage.getItem("admin_token")
     if (!token) {
@@ -244,50 +244,53 @@ export default function OrdersPage() {
     }
   }
 
-  const handleDownloadPDF = async (quotation: any) => {
-      try {
-        console.log("[v0] PDF Download - Starting for quotation ID:", quotation.id)
-        
-        const response = await apiClient.admin().get(`/admin/quotations/${quotation.id}`)
-        console.log("[v0] PDF Download - API response received:", response)
-        
-        const quotationData = response.data.data || response.data
-        console.log("[v0] PDF Download - Quotation data:", quotationData)
-        
-        if (!quotationData) {
-          throw new Error("No quotation data received from API")
-        }
-        
-        // Generate PDF with quotation data
-        console.log("[v0] PDF Download - Calling generateQuotationPDF")
-        generateQuotationPDF(quotationData)
-        console.log("[v0] PDF Download - PDF generated successfully")
-        
-        toast({
-          title: "Success",
-          description: `Quotation ${quotation.quotation_number} downloaded successfully`,
-          variant: "default"
-        })
-      } catch (error: any) {
-        console.error("[v0] PDF Download - Error occurred:", error)
-        const errorMessage = error?.response?.data?.error || error?.message || "Failed to download quotation"
-        console.log("[v0] PDF Download - Error message:", errorMessage)
-        toast({ 
-          title: "Error", 
-          description: errorMessage, 
-          variant: "destructive" 
-        })
+  const handleDownloadPDF = async (data: any) => {
+    try {
+      console.log("[v0] PDF Download - Starting for quotation/order ID:", data.id)
+
+      // If it's an order (has quotation_id), get the quotation ID; otherwise use id
+      const quotationId = data.quotation_id || data.id
+      
+      const response = await apiClient.admin().get(`/admin/quotations/${quotationId}`)
+      console.log("[v0] PDF Download - API response received:", response)
+
+      const quotationData = response.data.data || response.data
+      console.log("[v0] PDF Download - Quotation data:", quotationData)
+
+      if (!quotationData) {
+        throw new Error("No quotation data received from API")
       }
+
+      // Generate PDF with quotation data
+      console.log("[v0] PDF Download - Calling generateQuotationPDF")
+      generateQuotationPDF(quotationData)
+      console.log("[v0] PDF Download - PDF generated successfully")
+
+      toast({
+        title: "Success",
+        description: `Quotation ${quotationData.quotation_number || quotationData.number || "PDF"} downloaded successfully`,
+        variant: "default"
+      })
+    } catch (error: any) {
+      console.error("[v0] PDF Download - Error occurred:", error)
+      const errorMessage = error?.response?.data?.error || error?.message || "Failed to download quotation"
+      console.log("[v0] PDF Download - Error message:", errorMessage)
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      })
     }
+  }
 
   const fetchSentQuotations = async (token: string) => {
     try {
       console.log("[v0] === FETCHING QUOTATIONS START ===")
-      
+
       // Use the existing adminIndex endpoint with status filter
       const url = `${apiUrl}/admin/quotations?status=sent`
       console.log("[v0] Fetching from URL:", url)
-      
+
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -305,11 +308,11 @@ export default function OrdersPage() {
       const data = await response.json()
       console.log("[v0] Raw API response:", data)
       console.log("[v0] Response is array?", Array.isArray(data))
-      
+
       // The adminIndex returns an array directly, not wrapped in data property
       const quotations = Array.isArray(data) ? data : (data.data || [])
       console.log("[v0] Parsed quotations count:", quotations.length)
-      
+
       quotations.forEach((q, index) => {
         console.log(`[v0] Quotation #${index}:`, {
           id: q.id,
@@ -320,7 +323,7 @@ export default function OrdersPage() {
           total: q.total
         })
       })
-      
+
       console.log("[v0] Setting state with", quotations.length, "quotations")
       setSentQuotations(quotations)
       console.log("[v0] === FETCHING QUOTATIONS END ===")
@@ -334,10 +337,10 @@ export default function OrdersPage() {
   const fetchAllOrders = async (token: string) => {
     try {
       console.log("[v0] === FETCHING ALL ORDERS START ===")
-      
+
       const url = `${apiUrl}/admin/orders`
       console.log("[v0] Fetching from URL:", url)
-      
+
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -350,10 +353,10 @@ export default function OrdersPage() {
 
       const data = await response.json()
       console.log("[v0] Raw orders data:", data)
-      
+
       const orders = data.data || data
       console.log("[v0] Parsed orders count:", orders.length)
-      
+
       orders.forEach((order: any, idx: number) => {
         console.log(`[v0] Order #${idx}:`, {
           id: order.id,
@@ -365,7 +368,7 @@ export default function OrdersPage() {
           remaining_balance: order.remaining_balance
         })
       })
-      
+
       console.log("[v0] Setting state with", orders.length, "orders")
       setAllOrders(orders)
       console.log("[v0] === FETCHING ALL ORDERS END ===")
@@ -378,10 +381,10 @@ export default function OrdersPage() {
   const fetchJobOrders = async (token: string) => {
     try {
       console.log("[v0] === FETCHING JOB ORDERS START ===")
-      
+
       const url = `${apiUrl}/admin/job-orders`
       console.log("[v0] Fetching from URL:", url)
-      
+
       const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -398,10 +401,10 @@ export default function OrdersPage() {
 
       const data = await response.json()
       console.log("[v0] Raw job orders data:", data)
-      
+
       const orders = data.data || data || []
       console.log("[v0] Parsed job orders count:", orders.length)
-      
+
       orders.forEach((jobOrder: JobOrder, idx: number) => {
         console.log(`[v0] Job Order #${idx}:`, {
           id: jobOrder.id,
@@ -414,14 +417,14 @@ export default function OrdersPage() {
           branch: jobOrder.order?.branch
         })
       })
-      
+
       console.log("[v0] Setting state with", orders.length, "job orders")
       setJobOrders(orders)
-      
+
       orders.forEach((jobOrder: JobOrder) => {
         fetchJobOrderItems(jobOrder.id, token)
       })
-      
+
       console.log("[v0] === FETCHING JOB ORDERS END ===")
     } catch (err) {
       console.error('[v0] Error fetching job orders:', err)
@@ -443,7 +446,7 @@ export default function OrdersPage() {
 
       const data = await response.json()
       const items = data.data || data || []
-      
+
       const completed = items.filter((item: any) => item.status === 'completed').length
       setJobOrdersStats(prev => ({
         ...prev,
@@ -516,10 +519,10 @@ export default function OrdersPage() {
       const token = localStorage.getItem("admin_token")
 
       // Calculate payment status and remaining balance based on payment type
-      const paymentAmount = paymentType === "fullpayment" 
-        ? selectedQuotation.total 
+      const paymentAmount = paymentType === "fullpayment"
+        ? selectedQuotation.total
         : parseFloat(formData.downPaymentInput) || (selectedQuotation.total * 0.5)
-      
+
       const remainingBalance = selectedQuotation.total - paymentAmount
       const paymentStatus = paymentType === "fullpayment" ? "paid" : "partial"
 
@@ -625,13 +628,13 @@ export default function OrdersPage() {
 
   const handleReleaseOrder = async () => {
     if (!releaseOrderId) return
-    
+
     const token = localStorage.getItem("admin_token")
     if (!token) return
 
     try {
       setIsReleasing(releaseOrderId)
-      
+
       const response = await fetch(`${apiUrl}/admin/job-orders/${releaseOrderId}/release`, {
         method: 'PUT',
         headers: {
@@ -666,7 +669,7 @@ export default function OrdersPage() {
     console.log("[v0] filterStatus:", filterStatus)
     console.log("[v0] sentQuotations count:", sentQuotations.length)
     console.log("[v0] sentQuotations data:", sentQuotations)
-    
+
     let filtered: any[] = []
 
     if (filterStatus === "pending") {
@@ -693,10 +696,10 @@ export default function OrdersPage() {
             quotation_number: order.order_number,
             total: order.total,
             remaining_balance: order.remaining_balance,
-            customer: { 
-              name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
-              email: order.customer?.bill_to_email || order.customer?.email || "", 
-              phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
+            customer: {
+              name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`,
+              email: order.customer?.bill_to_email || order.customer?.email || "",
+              phone: order.customer?.bill_to_phone || order.customer?.phone || ""
             },
             created_at: order.order_date,
             payment_status: order.payment_status,
@@ -726,10 +729,10 @@ export default function OrdersPage() {
             quotation_number: order.order_number,
             total: order.total,
             remaining_balance: order.remaining_balance,
-            customer: { 
-              name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`, 
-              email: order.customer?.bill_to_email || order.customer?.email || "", 
-              phone: order.customer?.bill_to_phone || order.customer?.phone || "" 
+            customer: {
+              name: order.customer?.bill_to_name || order.customer?.name || `Customer ${order.customer_id}`,
+              email: order.customer?.bill_to_email || order.customer?.email || "",
+              phone: order.customer?.bill_to_phone || order.customer?.phone || ""
             },
             created_at: order.order_date,
             payment_status: order.payment_status,
@@ -757,7 +760,7 @@ export default function OrdersPage() {
     console.log("[v0] Final displayData count:", filtered.length)
     console.log("[v0] Final displayData:", filtered)
     console.log("[v0] === DISPLAYDATA CALCULATION END ===")
-    
+
     return filtered
   }, [filterStatus, sentQuotations, allOrders, searchQuery])
 
@@ -820,29 +823,25 @@ export default function OrdersPage() {
                 setFilterStatus("pending")
                 setCurrentPage(1)
               }}
-              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
-                filterStatus === "pending"
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${filterStatus === "pending"
                   ? "bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 text-white shadow-xl shadow-orange-500/30 ring-2 ring-orange-400/50"
                   : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-orange-500/10 border border-neutral-200 dark:border-neutral-700"
-              }`}
+                }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "pending" ? "opacity-100" : ""}`} />
               <div className="relative flex flex-col items-center gap-2">
-                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  filterStatus === "pending" 
-                    ? "bg-white/20 shadow-inner" 
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${filterStatus === "pending"
+                    ? "bg-white/20 shadow-inner"
                     : "bg-orange-100 dark:bg-orange-900/30 group-hover:bg-orange-200 dark:group-hover:bg-orange-900/50"
-                }`}>
-                  <Clock className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
-                    filterStatus === "pending" ? "text-white" : "text-orange-600 dark:text-orange-400"
-                  }`} />
+                  }`}>
+                  <Clock className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${filterStatus === "pending" ? "text-white" : "text-orange-600 dark:text-orange-400"
+                    }`} />
                 </div>
                 <span className="font-bold text-sm md:text-base">Pending</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
-                  filterStatus === "pending" 
-                    ? "bg-white/20 text-white" 
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${filterStatus === "pending"
+                    ? "bg-white/20 text-white"
                     : "bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400"
-                }`}>
+                  }`}>
                   {sentQuotations.length}
                 </span>
               </div>
@@ -854,29 +853,25 @@ export default function OrdersPage() {
                 setFilterStatus("partial")
                 setCurrentPage(1)
               }}
-              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
-                filterStatus === "partial"
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${filterStatus === "partial"
                   ? "bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30 ring-2 ring-blue-400/50"
                   : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-blue-500/10 border border-neutral-200 dark:border-neutral-700"
-              }`}
+                }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "partial" ? "opacity-100" : ""}`} />
               <div className="relative flex flex-col items-center gap-2">
-                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  filterStatus === "partial" 
-                    ? "bg-white/20 shadow-inner" 
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${filterStatus === "partial"
+                    ? "bg-white/20 shadow-inner"
                     : "bg-blue-100 dark:bg-blue-900/30 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50"
-                }`}>
-                  <DollarSign className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
-                    filterStatus === "partial" ? "text-white" : "text-blue-600 dark:text-blue-400"
-                  }`} />
+                  }`}>
+                  <DollarSign className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${filterStatus === "partial" ? "text-white" : "text-blue-600 dark:text-blue-400"
+                    }`} />
                 </div>
                 <span className="font-bold text-sm md:text-base text-center">Partial</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
-                  filterStatus === "partial" 
-                    ? "bg-white/20 text-white" 
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${filterStatus === "partial"
+                    ? "bg-white/20 text-white"
                     : "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                }`}>
+                  }`}>
                   {allOrders.filter(o => o.payment_status === "partial").length}
                 </span>
               </div>
@@ -888,29 +883,25 @@ export default function OrdersPage() {
                 setFilterStatus("paid")
                 setCurrentPage(1)
               }}
-              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
-                filterStatus === "paid"
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${filterStatus === "paid"
                   ? "bg-gradient-to-br from-green-500 via-green-600 to-emerald-600 text-white shadow-xl shadow-green-500/30 ring-2 ring-green-400/50"
                   : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-green-500/10 border border-neutral-200 dark:border-neutral-700"
-              }`}
+                }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "paid" ? "opacity-100" : ""}`} />
               <div className="relative flex flex-col items-center gap-2">
-                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  filterStatus === "paid" 
-                    ? "bg-white/20 shadow-inner" 
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${filterStatus === "paid"
+                    ? "bg-white/20 shadow-inner"
                     : "bg-green-100 dark:bg-green-900/30 group-hover:bg-green-200 dark:group-hover:bg-green-900/50"
-                }`}>
-                  <CheckCircle className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
-                    filterStatus === "paid" ? "text-white" : "text-green-600 dark:text-green-400"
-                  }`} />
+                  }`}>
+                  <CheckCircle className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${filterStatus === "paid" ? "text-white" : "text-green-600 dark:text-green-400"
+                    }`} />
                 </div>
                 <span className="font-bold text-sm md:text-base text-center">Fully Paid</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
-                  filterStatus === "paid" 
-                    ? "bg-white/20 text-white" 
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${filterStatus === "paid"
+                    ? "bg-white/20 text-white"
                     : "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400"
-                }`}>
+                  }`}>
                   {allOrders.filter(o => o.payment_status === "paid" && !o.released_date).length}
                 </span>
               </div>
@@ -922,29 +913,25 @@ export default function OrdersPage() {
                 setFilterStatus("completed")
                 setCurrentPage(1)
               }}
-              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${
-                filterStatus === "completed"
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 ${filterStatus === "completed"
                   ? "bg-gradient-to-br from-amber-500 via-orange-500 to-orange-600 text-white shadow-xl shadow-orange-500/30 ring-2 ring-amber-400/50"
                   : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-amber-500/10 border border-neutral-200 dark:border-neutral-700"
-              }`}
+                }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "completed" ? "opacity-100" : ""}`} />
               <div className="relative flex flex-col items-center gap-2">
-                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  filterStatus === "completed" 
-                    ? "bg-white/20 shadow-inner" 
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${filterStatus === "completed"
+                    ? "bg-white/20 shadow-inner"
                     : "bg-amber-100 dark:bg-amber-900/30 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50"
-                }`}>
-                  <Package className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
-                    filterStatus === "completed" ? "text-white" : "text-amber-600 dark:text-amber-400"
-                  }`} />
+                  }`}>
+                  <Package className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${filterStatus === "completed" ? "text-white" : "text-amber-600 dark:text-amber-400"
+                    }`} />
                 </div>
                 <span className="font-bold text-sm md:text-base">Completed</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
-                  filterStatus === "completed" 
-                    ? "bg-white/20 text-white" 
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${filterStatus === "completed"
+                    ? "bg-white/20 text-white"
                     : "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400"
-                }`}>
+                  }`}>
                   {jobOrders.filter(jo => jo.status?.toLowerCase() === "completed" && !jo.released_date).length}
                 </span>
               </div>
@@ -956,29 +943,25 @@ export default function OrdersPage() {
                 setFilterStatus("released")
                 setCurrentPage(1)
               }}
-              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 col-span-2 sm:col-span-1 ${
-                filterStatus === "released"
+              className={`group relative overflow-hidden rounded-2xl p-4 md:p-5 transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 col-span-2 sm:col-span-1 ${filterStatus === "released"
                   ? "bg-gradient-to-br from-purple-500 via-purple-600 to-violet-600 text-white shadow-xl shadow-purple-500/30 ring-2 ring-purple-400/50"
                   : "bg-white dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:shadow-lg hover:shadow-purple-500/10 border border-neutral-200 dark:border-neutral-700"
-              }`}
+                }`}
             >
               <div className={`absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${filterStatus === "released" ? "opacity-100" : ""}`} />
               <div className="relative flex flex-col items-center gap-2">
-                <div className={`p-2.5 rounded-xl transition-all duration-300 ${
-                  filterStatus === "released" 
-                    ? "bg-white/20 shadow-inner" 
+                <div className={`p-2.5 rounded-xl transition-all duration-300 ${filterStatus === "released"
+                    ? "bg-white/20 shadow-inner"
                     : "bg-purple-100 dark:bg-purple-900/30 group-hover:bg-purple-200 dark:group-hover:bg-purple-900/50"
-                }`}>
-                  <CheckCircle2 className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${
-                    filterStatus === "released" ? "text-white" : "text-purple-600 dark:text-purple-400"
-                  }`} />
+                  }`}>
+                  <CheckCircle2 className={`w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:scale-110 ${filterStatus === "released" ? "text-white" : "text-purple-600 dark:text-purple-400"
+                    }`} />
                 </div>
                 <span className="font-bold text-sm md:text-base">Released</span>
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${
-                  filterStatus === "released" 
-                    ? "bg-white/20 text-white" 
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full transition-all ${filterStatus === "released"
+                    ? "bg-white/20 text-white"
                     : "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-                }`}>
+                  }`}>
                   {jobOrders.filter(jo => !!jo.released_date).length}
                 </span>
               </div>
@@ -1002,17 +985,17 @@ export default function OrdersPage() {
                 }
                 return false
               })
-              
+
               // Apply search filter for Completed and Released tabs
               if (searchQuery.trim()) {
                 const query = searchQuery.toLowerCase()
-                filteredJobOrders = filteredJobOrders.filter((jo: JobOrder) => 
+                filteredJobOrders = filteredJobOrders.filter((jo: JobOrder) =>
                   jo.job_order_number?.toLowerCase().includes(query) ||
                   jo.customer?.bill_to_name?.toLowerCase().includes(query) ||
                   jo.customer?.bill_to_email?.toLowerCase().includes(query)
                 )
               }
-              
+
               return filteredJobOrders.length === 0 ? (
                 <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
                   <Package className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
@@ -1023,157 +1006,157 @@ export default function OrdersPage() {
               ) : (
                 <div className="grid gap-4 md:gap-6">
                   {filteredJobOrders.map((jobOrder: JobOrder) => (
-                  <Card
-                    key={jobOrder.id}
-                    className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700"
-                  >
-                    <div className="p-6 sm:p-8">
-                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-6 flex-wrap">
-                            <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
-                              {jobOrder.job_order_number}
-                            </h3>
-                            <div className="flex gap-2 flex-wrap items-center">
-                              <span className={`${getStatusColor(jobOrder.status)}`}>
-                                {getStatusLabel(jobOrder.status)}
-                              </span>
-                              {jobOrder.is_priority && (
-                                <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
-                                  Priority
+                    <Card
+                      key={jobOrder.id}
+                      className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700"
+                    >
+                      <div className="p-6 sm:p-8">
+                        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-6 flex-wrap">
+                              <h3 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 dark:from-blue-400 dark:to-blue-600 bg-clip-text text-transparent">
+                                {jobOrder.job_order_number}
+                              </h3>
+                              <div className="flex gap-2 flex-wrap items-center">
+                                <span className={`${getStatusColor(jobOrder.status)}`}>
+                                  {getStatusLabel(jobOrder.status)}
                                 </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {jobOrdersStats[jobOrder.id] && jobOrdersStats[jobOrder.id].total > 0 && (
-                            <div className="mb-4 w-full p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
-                              <OrderProgressBar items={Array.from({ length: jobOrdersStats[jobOrder.id].total }, (_, i) => ({
-                                id: i,
-                                status: i < jobOrdersStats[jobOrder.id].completed ? 'completed' : 'pending'
-                              }))} />
-                            </div>
-                          )}
-
-                          <div className="mb-6 pb-6 border-b-2 border-neutral-200 dark:border-neutral-700">
-                            <div className="flex items-center gap-2 mb-3">
-                              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                              <p className="text-xs text-neutral-600 dark:text-neutral-400 font-bold uppercase tracking-wider">Customer</p>
-                            </div>
-                            <div className="space-y-2 bg-neutral-50 dark:bg-neutral-700/30 rounded-lg p-3">
-                              <p className="text-sm md:text-base font-bold text-neutral-900 dark:text-white">
-                                {jobOrder.customer?.bill_to_name || 'N/A'}
-                              </p>
-                              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-                                {jobOrder.customer?.bill_to_email || 'N/A'}
-                              </p>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800/50">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
-                                <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Start Date</p>
+                                {jobOrder.is_priority && (
+                                  <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300">
+                                    Priority
+                                  </span>
+                                )}
                               </div>
-                              <p className="font-bold text-neutral-900 dark:text-white text-sm">
-                                {formatDate(jobOrder.start_date)}
-                              </p>
                             </div>
-                            <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-800/50">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
-                                <p className="text-xs text-orange-600 dark:text-orange-300 font-bold uppercase">Due Date</p>
+
+                            {jobOrdersStats[jobOrder.id] && jobOrdersStats[jobOrder.id].total > 0 && (
+                              <div className="mb-4 w-full p-3 bg-neutral-50 dark:bg-neutral-700/50 rounded-lg">
+                                <OrderProgressBar items={Array.from({ length: jobOrdersStats[jobOrder.id].total }, (_, i) => ({
+                                  id: i,
+                                  status: i < jobOrdersStats[jobOrder.id].completed ? 'completed' : 'pending'
+                                }))} />
                               </div>
-                              <p className="font-bold text-neutral-900 dark:text-white text-sm">
-                                {formatDate(jobOrder.due_date)}
-                              </p>
-                            </div>
-                            <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800/50">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Users size={16} className="text-purple-600 dark:text-purple-400" />
-                                <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase">Assigned</p>
+                            )}
+
+                            <div className="mb-6 pb-6 border-b-2 border-neutral-200 dark:border-neutral-700">
+                              <div className="flex items-center gap-2 mb-3">
+                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-bold uppercase tracking-wider">Customer</p>
                               </div>
-                              <p className="font-bold text-sm text-neutral-900 dark:text-white">
-                                {(() => {
-                                  const assignedToObj = jobOrder.assignedTo || (typeof jobOrder.assigned_to === 'object' ? jobOrder.assigned_to : null)
-                                  const firstName = assignedToObj?.first_name
-                                  const lastName = assignedToObj?.last_name
-                                  return (firstName || lastName) ? `${firstName || ''} ${lastName || ''}`.trim() : 'Unassigned'
-                                })()}
-                              </p>
-                            </div>
-                            {jobOrder.order?.branch && (
-                              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800/50">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Building2 size={16} className="text-green-600 dark:text-green-400" />
-                                  <p className="text-xs text-green-600 dark:text-green-300 font-bold uppercase">Branch</p>
-                                </div>
-                                <p className="font-bold text-sm text-neutral-900 dark:text-white">
-                                  {jobOrder.order.branch.name}
-                                  {jobOrder.order.branch.location && ` - ${jobOrder.order.branch.location}`}
+                              <div className="space-y-2 bg-neutral-50 dark:bg-neutral-700/30 rounded-lg p-3">
+                                <p className="text-sm md:text-base font-bold text-neutral-900 dark:text-white">
+                                  {jobOrder.customer?.bill_to_name || 'N/A'}
+                                </p>
+                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                                  {jobOrder.customer?.bill_to_email || 'N/A'}
                                 </p>
                               </div>
-                            )}
-                            {!jobOrder.order?.branch && (
-                              <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
-                                <p className="text-xs text-gray-500 dark:text-gray-400">[v0] No branch - Check console</p>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800/50">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
+                                  <p className="text-xs text-blue-600 dark:text-blue-300 font-bold uppercase">Start Date</p>
+                                </div>
+                                <p className="font-bold text-neutral-900 dark:text-white text-sm">
+                                  {formatDate(jobOrder.start_date)}
+                                </p>
+                              </div>
+                              <div className="bg-orange-50 dark:bg-orange-900/20 rounded-lg p-3 border border-orange-200 dark:border-orange-800/50">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Calendar size={16} className="text-orange-600 dark:text-orange-400" />
+                                  <p className="text-xs text-orange-600 dark:text-orange-300 font-bold uppercase">Due Date</p>
+                                </div>
+                                <p className="font-bold text-neutral-900 dark:text-white text-sm">
+                                  {formatDate(jobOrder.due_date)}
+                                </p>
+                              </div>
+                              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800/50">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Users size={16} className="text-purple-600 dark:text-purple-400" />
+                                  <p className="text-xs text-purple-600 dark:text-purple-300 font-bold uppercase">Assigned</p>
+                                </div>
+                                <p className="font-bold text-sm text-neutral-900 dark:text-white">
+                                  {(() => {
+                                    const assignedToObj = jobOrder.assignedTo || (typeof jobOrder.assigned_to === 'object' ? jobOrder.assigned_to : null)
+                                    const firstName = assignedToObj?.first_name
+                                    const lastName = assignedToObj?.last_name
+                                    return (firstName || lastName) ? `${firstName || ''} ${lastName || ''}`.trim() : 'Unassigned'
+                                  })()}
+                                </p>
+                              </div>
+                              {jobOrder.order?.branch && (
+                                <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800/50">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Building2 size={16} className="text-green-600 dark:text-green-400" />
+                                    <p className="text-xs text-green-600 dark:text-green-300 font-bold uppercase">Branch</p>
+                                  </div>
+                                  <p className="font-bold text-sm text-neutral-900 dark:text-white">
+                                    {jobOrder.order.branch.name}
+                                    {jobOrder.order.branch.location && ` - ${jobOrder.order.branch.location}`}
+                                  </p>
+                                </div>
+                              )}
+                              {!jobOrder.order?.branch && (
+                                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-center border border-gray-200 dark:border-gray-600">
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">[v0] No branch - Check console</p>
+                                </div>
+                              )}
+                            </div>
+
+                            {jobOrder.notes && (
+                              <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
+                                <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase mb-2">Notes</p>
+                                <p className="text-sm text-neutral-700 dark:text-neutral-300">{jobOrder.notes}</p>
                               </div>
                             )}
                           </div>
 
-                          {jobOrder.notes && (
-                            <div className="mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-700">
-                              <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold uppercase mb-2">Notes</p>
-                              <p className="text-sm text-neutral-700 dark:text-neutral-300">{jobOrder.notes}</p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex gap-2 w-full md:w-auto flex-col md:flex-row">
-                          <Button
-                            onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
-                            disabled={!!jobOrder.released_date}
-                            className={`${jobOrder.released_date ? 'opacity-50 cursor-not-allowed' : ''} bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2`}
-                          >
-                            <Eye size={18} />
-                            <span className="hidden sm:inline">View</span>
-                          </Button>
-
-                          {jobOrder.status?.toLowerCase() === 'completed' && !jobOrder.released_date ? (
+                          <div className="flex gap-2 w-full md:w-auto flex-col md:flex-row">
                             <Button
-                              onClick={() => handleReleaseConfirm(jobOrder.id)}
-                              disabled={isReleasing === jobOrder.id}
-                              className="bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
+                              onClick={() => router.push(`/admin/job-orders/${jobOrder.id}/orders`)}
+                              disabled={!!jobOrder.released_date}
+                              className={`${jobOrder.released_date ? 'opacity-50 cursor-not-allowed' : ''} bg-orange-500 hover:bg-orange-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2`}
                             >
-                              {isReleasing === jobOrder.id ? (
-                                <>
-                                  <Loader2 size={18} className="animate-spin" />
-                                  <span className="hidden sm:inline">Releasing...</span>
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle2 size={18} />
-                                  <span className="hidden sm:inline">Release</span>
-                                </>
-                              )}
+                              <Eye size={18} />
+                              <span className="hidden sm:inline">View</span>
                             </Button>
-                          ) : jobOrder.released_date ? (
-                            <Button
-                              disabled={true}
-                              className="bg-green-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
-                            >
-                              <CheckCircle2 size={18} />
-                              <span className="hidden sm:inline">Released</span>
-                            </Button>
-                          ) : null}
+
+                            {jobOrder.status?.toLowerCase() === 'completed' && !jobOrder.released_date ? (
+                              <Button
+                                onClick={() => handleReleaseConfirm(jobOrder.id)}
+                                disabled={isReleasing === jobOrder.id}
+                                className="bg-purple-600 hover:bg-purple-700 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2"
+                              >
+                                {isReleasing === jobOrder.id ? (
+                                  <>
+                                    <Loader2 size={18} className="animate-spin" />
+                                    <span className="hidden sm:inline">Releasing...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={18} />
+                                    <span className="hidden sm:inline">Release</span>
+                                  </>
+                                )}
+                              </Button>
+                            ) : jobOrder.released_date ? (
+                              <Button
+                                disabled={true}
+                                className="bg-green-600 text-white h-10 md:h-auto md:min-w-[160px] flex items-center justify-center gap-2 opacity-60 cursor-not-allowed"
+                              >
+                                <CheckCircle2 size={18} />
+                                <span className="hidden sm:inline">Released</span>
+                              </Button>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )
+                    </Card>
+                  ))}
+                </div>
+              )
             })()
           ) : displayData.length === 0 ? (
             <Card className="p-12 text-center bg-white dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
@@ -1186,8 +1169,8 @@ export default function OrdersPage() {
             <>
               <div className="grid gap-4 md:gap-6 grid-cols-1 lg:grid-cols-2">
                 {paginatedData.map((item: any, idx: number) => (
-                  <Card 
-                    key={`${item.isOrder ? "order" : "quot"}-${item.id}`} 
+                  <Card
+                    key={`${item.isOrder ? "order" : "quot"}-${item.id}`}
                     className="overflow-hidden bg-gradient-to-br from-white to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/50 border border-neutral-200 dark:border-neutral-700 hover:shadow-2xl hover:shadow-blue-200/50 dark:hover:shadow-blue-900/30 transition-all duration-300 hover:border-blue-300 dark:hover:border-blue-700 hover:scale-[1.01] hover:-translate-y-1 animate-fade-in"
                     style={{ animationDelay: `${idx * 50}ms` }}
                   >
@@ -1204,7 +1187,7 @@ export default function OrdersPage() {
                         </div>
                         <div>
                           <span className={`px-3 py-1.5 rounded-full text-xs font-bold inline-flex items-center gap-1.5 ${getStatusColor(item.payment_status)}`}>
-                            {item.isOrder && item.payment_status 
+                            {item.isOrder && item.payment_status
                               ? (
                                 <>
                                   {item.payment_status === 'paid' && <CheckCircle size={14} />}
@@ -1356,12 +1339,12 @@ export default function OrdersPage() {
 
                         {item.isOrder && (item.payment_status === "partial" || item.payment_status === "paid") && (
                           <button
-                                      onClick={() => handleDownloadPDF(quotation)}
-                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
-                                    >
-                                      <Download size={16} />
-                                      PDF
-                                    </button>
+                            onClick={() => handleDownloadPDF(item)}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                          >
+                            <Download size={16} />
+                            PDF
+                          </button>
                         )}
 
                         {!item.isOrder && (
