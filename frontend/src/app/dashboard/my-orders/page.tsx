@@ -429,15 +429,13 @@ export default function MyOrdersPage() {
                         <span className="hidden sm:inline">View Details</span>
                         <span className="sm:hidden">View</span>
                       </Button>
-                      <Button
-                        onClick={() => handleDownloadPDF(order)}
-                        className="bg-green-500 hover:bg-green-600 text-white shadow-lg hover:shadow-green-500/25 transition-all duration-300 flex-shrink-0"
-                        size="sm"
-                      >
-                        <Download size={16} className="mr-1.5" />
-                        <span className="hidden sm:inline">Statement</span>
-                        <span className="sm:hidden">PDF</span>
-                      </Button>
+                      <button
+                            onClick={() => handleDownloadPDF(order)}
+                            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                          >
+                            <Download size={16} />
+                            PDF
+                          </button>
                     </div>
 
                     {/* Info Grid */}
