@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, FileText, Loader, Eye as EyeIcon, Package, DollarSign, Clock, Zap, CheckCircle2, Check, Search, ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { generateQuotationPDF } from "@/lib/pdf-quotation-generator"
+import { generateQuotationPDF } from "@/lib/pdf-generator"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api-client"
 
