@@ -30,8 +30,18 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
     setError("")
     setSuccess("")
 
+    const trimmedEmail = email.trim()
+
+    if (!trimmedEmail) {
+      setError("Please enter your email address")
+      setIsLoading(false)
+      return
+    }
+
     try {
-      const response = await apiClient.client().post("/forgot-password/send-code", { email })
+      const response = await apiClient.client().post("/forgot-password/send-code", { 
+        email: trimmedEmail 
+      })
       
       if (response.data.success) {
         setSuccess("Code sent to your email. Please check your inbox.")
@@ -43,7 +53,8 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
         setError(response.data.message || "Failed to send code. Please try again.")
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "An error occurred. Please try again.")
+      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.email?.[0] || "An error occurred. Please try again."
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -55,16 +66,24 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
     setError("")
     setSuccess("")
 
-    if (!code || code.length !== 6) {
+    const trimmedCode = code.trim()
+
+    if (!trimmedCode || trimmedCode.length !== 6) {
       setError("Please enter a valid 6-digit code")
+      setIsLoading(false)
+      return
+    }
+
+    if (!/^\d{6}$/.test(trimmedCode)) {
+      setError("Code must contain only digits")
       setIsLoading(false)
       return
     }
 
     try {
       const response = await apiClient.client().post("/forgot-password/verify-code", { 
-        email, 
-        code 
+        email: email.trim(), 
+        code: trimmedCode
       })
       
       if (response.data.success) {
@@ -77,7 +96,8 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
         setError(response.data.message || "Invalid code. Please try again.")
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "An error occurred. Please try again.")
+      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.code?.[0] || "An error occurred. Please try again."
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -109,8 +129,8 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
 
     try {
       const response = await apiClient.client().post("/forgot-password/reset", { 
-        email, 
-        code,
+        email: email.trim(), 
+        code: code.trim(),
         password,
         password_confirmation: confirmPassword
       })
@@ -125,7 +145,8 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
         setError(response.data.message || "Failed to reset password. Please try again.")
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || "An error occurred. Please try again.")
+      const errorMessage = err.response?.data?.message || err.response?.data?.errors?.password?.[0] || "An error occurred. Please try again."
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }
