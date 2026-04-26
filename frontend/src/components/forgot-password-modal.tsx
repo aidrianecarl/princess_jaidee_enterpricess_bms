@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { X, Mail, Lock, ArrowRight, Loader, AlertCircle, CheckCircle2 } from "lucide-react"
+import { X, Mail, Lock, ArrowRight, Loader, AlertCircle, CheckCircle2, Eye, EyeOff } from "lucide-react"
 import { apiClient } from "@/lib/api-client"
 
 interface ForgotPasswordModalProps {
