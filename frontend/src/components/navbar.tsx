@@ -44,14 +44,20 @@ export function Navbar() {
     window.location.href = "/admin"
   }
 
-  const isAdminPage = pathname?.startsWith("/admin")
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const isContactPage = pathname === '/contact'
+    if (isContactPage) {
+      e.preventDefault()
+      window.location.href = '/'
+    }
+  }
 
   return (
     <nav className={`sticky top-0 z-50 backdrop-blur-md border-b ${isDarkMode ? 'bg-neutral-900/80 border-red-900/30' : 'bg-white/80 border-red-200'} shadow-sm`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link href={isAdminPage ? "/admin/dashboard" : "/"} className="flex items-center gap-2 group">
+          <Link href={isAdminPage ? "/admin/dashboard" : "/"} onClick={handleLogoClick} className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-lg overflow-hidden group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 flex items-center justify-center">
               <Image 
                 src="/princessjd.png" 
@@ -77,10 +83,16 @@ export function Navbar() {
                 About
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-600 to-red-400 group-hover:w-full transition-all duration-300"></span>
               </Link>
-              <Link href="#services" className={`${isDarkMode ? 'text-neutral-300 hover:text-red-400' : 'text-neutral-600 hover:text-red-600'} transition-colors duration-300 relative group`}>
-                Services
+              <button 
+                onClick={() => {
+                  const element = document.getElementById('partnerships')
+                  element?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className={`${isDarkMode ? 'text-neutral-300 hover:text-red-400' : 'text-neutral-600 hover:text-red-600'} transition-colors duration-300 relative group`}
+              >
+                Partners
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-600 to-red-400 group-hover:w-full transition-all duration-300"></span>
-              </Link>
+              </button>
               <Link href="#testimonials" className={`${isDarkMode ? 'text-neutral-300 hover:text-red-400' : 'text-neutral-600 hover:text-red-600'} transition-colors duration-300 relative group`}>
                 Testimonials
                 <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-red-600 to-red-400 group-hover:w-full transition-all duration-300"></span>
@@ -167,9 +179,16 @@ export function Navbar() {
             <Link href="#about" className={`block py-2 transition-all duration-300 ${isDarkMode ? 'text-neutral-300 hover:text-red-400 hover:pl-2' : 'text-neutral-600 hover:text-red-600 hover:pl-2'}`}>
               About
             </Link>
-            <Link href="#services" className={`block py-2 transition-all duration-300 ${isDarkMode ? 'text-neutral-300 hover:text-red-400 hover:pl-2' : 'text-neutral-600 hover:text-red-600 hover:pl-2'}`}>
-              Services
-            </Link>
+            <button 
+              onClick={() => {
+                const element = document.getElementById('partnerships')
+                element?.scrollIntoView({ behavior: 'smooth' })
+                setIsOpen(false)
+              }}
+              className={`block py-2 transition-all duration-300 ${isDarkMode ? 'text-neutral-300 hover:text-red-400 hover:pl-2' : 'text-neutral-600 hover:text-red-600 hover:pl-2'}`}
+            >
+              Partners
+            </button>
             <Link href="#testimonials" className={`block py-2 transition-all duration-300 ${isDarkMode ? 'text-neutral-300 hover:text-red-400 hover:pl-2' : 'text-neutral-600 hover:text-red-600 hover:pl-2'}`}>
               Testimonials
             </Link>

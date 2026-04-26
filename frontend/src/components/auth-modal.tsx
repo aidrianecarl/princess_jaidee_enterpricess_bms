@@ -14,8 +14,8 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode }: AuthModalProp
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
-      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-red-100 animate-slideUp" onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-white rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-red-100 animate-slideUp">
         <div className="relative h-24 bg-gradient-to-r from-red-600 via-red-500 to-orange-500 flex flex-col justify-between p-6 rounded-t-2xl">
           <div className="flex justify-between items-center">
             <div className="flex flex-col gap-1">
@@ -31,8 +31,8 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode }: AuthModalProp
           </div>
         </div>
 
-        <div className="p-8 space-y-6" onClick={(e) => e.stopPropagation()}>
-          <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+        <div className="p-8 space-y-6">
+          <div className="space-y-4">
             {mode === "login" ? <LoginForm onSuccess={onClose} /> : <SignupForm onSuccess={onClose} />}
           </div>
 
