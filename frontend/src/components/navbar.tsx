@@ -3,7 +3,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Menu, X, Sun, Moon, Bell, LogOut } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 
@@ -13,7 +12,6 @@ export function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const pathname = usePathname()
-  const router = useRouter()
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme")
@@ -47,13 +45,12 @@ export function Navbar() {
   }
 
   const isAdminPage = pathname?.startsWith("/admin")
-  const isContactPage = pathname === '/contact'
   
-  const handleLogoClick = () => {
-    if (isAdminPage) {
-      router.push('/admin/dashboard')
-    } else if (isContactPage) {
-      router.push('/')
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const isContactPage = pathname === '/contact'
+    if (isContactPage) {
+      e.preventDefault()
+      window.location.href = '/'
     }
   }
 
@@ -62,7 +59,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <button onClick={handleLogoClick} className="flex items-center gap-2 group">
+          <Link href={isAdminPage ? "/admin/dashboard" : "/"} onClick={handleLogoClick} className="flex items-center gap-2 group">
             <div className="w-10 h-10 rounded-lg overflow-hidden group-hover:shadow-lg group-hover:scale-110 transition-all duration-300 flex items-center justify-center">
               <Image 
                 src="/princessjd.png" 
@@ -75,7 +72,7 @@ export function Navbar() {
             <span className={`font-bold text-lg hidden sm:inline bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent`}>
               Princess Jaidee
             </span>
-          </button>
+          </Link>
 
           {/* Desktop Menu */}
           {!isAdminPage && (
