@@ -71,65 +71,42 @@ export default function AdminQuotationsPage() {
   const fetchQuotations = async () => {
     try {
       setIsLoading(true)
-      const response = await apiClient.admin().get("/admin/quotations", {
-        params: {
-          status: statusFilter !== "priced" ? statusFilter : undefined,
-        },
-      })
+      const response = await apiClient.admin().get("/admin/quotations")
       
-      // Filter quotations based on status
-      let filtered = response.data.data || response.data || []
-      console.log("[v0] Fetched quotations:", filtered.length, "items")
+      // Get all quotations
+      let allQuotations = response.data.data || response.data || []
       
-      // For pending, exclude quotations that already have price set (has_price = 1)
+      // Apply filter based on statusFilter
+      let filtered: any[] = []
+      
       if (statusFilter === "pending") {
-        filtered = filtered.filter((q: any) => (q.has_price === 0 || q.has_price === "0" || !q.has_price))
-        console.log("[v0] After pending filter:", filtered.length, "items")
-      }
-      // For priced, show only quotations with has_price = 1
-      else if (statusFilter === "priced") {
-        filtered = filtered.filter((q: any) => (q.has_price === 1 || q.has_price === "1"))
-        console.log("[v0] After priced filter:", filtered.length, "items")
+        // Pending: status = "pending" and has_price = 0
+        filtered = allQuotations.filter((q: any) => 
+          (q.status?.toLowerCase() === "pending" || q.status === "pending") &&
+          (q.has_price === 0 || q.has_price === "0" || !q.has_price)
+        )
+      } else if (statusFilter === "priced") {
+        // Priced: status = "pending" and has_price = 1
+        filtered = allQuotations.filter((q: any) => 
+          (q.status?.toLowerCase() === "pending" || q.status === "pending") &&
+          (q.has_price === 1 || q.has_price === "1")
+        )
+      } else if (statusFilter === "history") {
+        // History: status = "sent" and has_price = 1
+        filtered = allQuotations.filter((q: any) => 
+          (q.status?.toLowerCase() === "sent" || q.status === "sent") &&
+          (q.has_price === 1 || q.has_price === "1")
+        )
+      } else if (statusFilter === "rejected") {
+        // Rejected: status = "rejected"
+        filtered = allQuotations.filter((q: any) => 
+          q.status?.toLowerCase() === "rejected" || q.status === "rejected"
+        )
       }
       
-      // Sort quotations: "sent" status (Request Order available) first, then "ordered" status last
-      // For priced filter: items with status 'sent' should show first (can Request Order), 
-      // items with status 'ordered' should show last (already ordered)
-      filtered = filtered.sort((a: any, b: any) => {
-        const aStatus = a.status?.toLowerCase() || ''
-        const bStatus = b.status?.toLowerCase() || ''
-        
-        console.log("[v0] Comparing quotations - A:", a.id, "status:", aStatus, "| B:", b.id, "status:", bStatus)
-        
-        // "ordered" status comes last - these are already converted to orders
-        if (aStatus === 'ordered' && bStatus !== 'ordered') {
-          console.log("[v0] A is ordered, B is not - A goes after B")
-          return 1
-        }
-        if (aStatus !== 'ordered' && bStatus === 'ordered') {
-          console.log("[v0] B is ordered, A is not - B goes after A")
-          return -1
-        }
-        
-        // "sent" status (can Request Order) comes first - these are quotations ready for ordering
-        if (aStatus === 'sent' && bStatus !== 'sent') {
-          console.log("[v0] A is sent, B is not - A comes first")
-          return -1
-        }
-        if (aStatus !== 'sent' && bStatus === 'sent') {
-          console.log("[v0] B is sent, A is not - B comes first")
-          return 1
-        }
-        
-        // Sort others by created_at descending (newest first)
-        const result = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        console.log("[v0] Sorting by date - result:", result)
-        return result
-      })
-      
-      console.log("[v0] After sorting, filtered quotations order:")
-      filtered.forEach((q: any, idx: number) => {
-        console.log(`[v0] ${idx + 1}. Quotation #${q.quotation_number} - Status: ${q.status}`)
+      // Sort by created_at descending (newest first)
+      filtered.sort((a: any, b: any) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
       
       setQuotations(filtered)
@@ -268,9 +245,10 @@ export default function AdminQuotationsPage() {
         {/* Filters */}
         <div className="flex flex-wrap gap-2 animate-slide-up">
           {[
-            { key: "pending", label: "Pending (No Price)", hideCount: true },
+            { key: "pending", label: "Pending (No Price)" },
             { key: "priced", label: "Priced Quotations" },
-            { key: "rejected", label: "Rejected", hideCount: true },
+            { key: "history", label: "Quotation History" },
+            { key: "rejected", label: "Rejected" },
           ].map((filter: any) => (
             <button
               key={filter.key}
@@ -316,12 +294,12 @@ export default function AdminQuotationsPage() {
                       <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                         Branch
                       </th>
-                      {statusFilter === "priced" && (
+                      {(statusFilter === "priced" || statusFilter === "history") && (
                         <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                           Amount
                         </th>
                       )}
-                      {statusFilter === "priced" && (
+                      {(statusFilter === "priced" || statusFilter === "history") && (
                         <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                           Status
                         </th>
@@ -364,7 +342,7 @@ export default function AdminQuotationsPage() {
                                 <span className="text-neutral-400 italic">-</span>
                               )}
                             </td>
-                            {statusFilter === "priced" && (
+                            {(statusFilter === "priced" || statusFilter === "history") && (
                               <td className="px-4 py-3 text-sm font-semibold text-neutral-900 dark:text-white">
                                 ₱
                                 {Number.parseFloat(quotation.total).toLocaleString(undefined, {
@@ -372,16 +350,16 @@ export default function AdminQuotationsPage() {
                                 })}
                               </td>
                             )}
-                            {statusFilter === "priced" && (
+                            {(statusFilter === "priced" || statusFilter === "history") && (
                               <td className="px-4 py-3 text-sm">
-                                {quotation.status === "ordered" ? (
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                                    <CheckCircle size={12} className="mr-1" />
-                                    Ordered
+                                {statusFilter === "priced" ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                                    Pending Price
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
-                                    Ready to Order
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
+                                    <CheckCircle size={12} className="mr-1" />
+                                    Sent to Production
                                   </span>
                                 )}
                               </td>
@@ -406,7 +384,7 @@ export default function AdminQuotationsPage() {
                                   </button>
                                 )}
 
-                                {/* Priced → PDF + Request Order or Ordered */}
+                                {/* Priced → PDF + Request Order */}
                                 {statusFilter === "priced" && quotation.has_price && (
                                   <>
                                     <button
@@ -416,37 +394,56 @@ export default function AdminQuotationsPage() {
                                       <Download size={16} />
                                       PDF
                                     </button>
-                                    {quotation.status === "ordered" ? (
-                                      <button
-                                        disabled
-                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400 text-sm font-medium cursor-not-allowed opacity-60"
-                                      >
-                                        <CheckCircle size={16} />
-                                        Ordered
-                                      </button>
-                                    ) : (
-                                      <button
-                                        onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
-                                        disabled={sendingId === quotation.id}
-                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition text-sm font-medium hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        {sendingId === quotation.id ? (
-                                          <>
-                                            <Loader2 size={16} className="animate-spin" />
-                                            Sending...
-                                          </>
-                                        ) : (
-                                          <>
-                                            <FileText size={16} />
-                                            Request Order
-                                          </>
-                                        )}
-                                      </button>
-                                    )}
+                                    <button
+                                      onClick={() => setConfirmModal({ isOpen: true, quotationId: quotation.id })}
+                                      disabled={sendingId === quotation.id}
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 transition text-sm font-medium hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      {sendingId === quotation.id ? (
+                                        <>
+                                          <Loader2 size={16} className="animate-spin" />
+                                          Sending...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <FileText size={16} />
+                                          Request Order
+                                        </>
+                                      )}
+                                    </button>
                                   </>
                                 )}
 
-                                {/* Rejected → No actions */}
+                                {/* History → PDF + View Only */}
+                                {statusFilter === "history" && quotation.has_price && (
+                                  <>
+                                    <button
+                                      onClick={() => handleDownloadPDF(quotation)}
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                    >
+                                      <Download size={16} />
+                                      PDF
+                                    </button>
+                                    <button
+                                      disabled
+                                      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-900/30 text-gray-600 dark:text-gray-400 text-sm font-medium cursor-not-allowed opacity-60"
+                                    >
+                                      <CheckCircle size={16} />
+                                      Completed
+                                    </button>
+                                  </>
+                                )}
+
+                                {/* Rejected → View only */}
+                                {statusFilter === "rejected" && (
+                                  <button
+                                    onClick={() => handleViewQuotation(quotation.id)}
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50 transition text-sm font-medium hover:scale-105 active:scale-95"
+                                  >
+                                    <Eye size={16} />
+                                    View
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
