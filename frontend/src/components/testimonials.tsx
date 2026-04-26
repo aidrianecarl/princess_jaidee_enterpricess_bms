@@ -27,8 +27,7 @@ export function Testimonials() {
 
   const fetchRatings = async () => {
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"}/ratings?limit=3&orderBy=recent`
-      console.log("[v0] Starting testimonials fetch from URL:", apiUrl)
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"}/ratings?limit=3`
       
       const response = await fetch(apiUrl, {
         method: "GET",
@@ -37,27 +36,58 @@ export function Testimonials() {
         },
       })
 
-      console.log("[v0] Response status:", response.status)
-      console.log("[v0] Response ok:", response.ok)
-      console.log("[v0] Response headers:", response.headers)
-
       if (!response.ok) {
-        console.log("[v0] Response not ok, attempting to read response text")
-        const errorText = await response.text()
-        console.log("[v0] Error response text:", errorText)
         throw new Error(`Failed to fetch ratings - Status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log("[v0] Successfully parsed JSON response")
-      console.log("[v0] Response data:", data)
-      console.log("[v0] Response data type:", typeof data)
-      console.log("[v0] Response data is array:", Array.isArray(data))
-      console.log("[v0] Response data length:", data ? data.length : 0)
 
+      // If data is empty array, use fallback testimonials
+      if (!data || data.length === 0) {
+        setTestimonials([
+          {
+            name: "Maria Santos",
+            role: "School Sports Director",
+            rating: 5,
+            text: "Excellent quality and fast delivery! Our team jerseys look amazing and arrived exactly on time for the championship.",
+            avatar: "MS",
+            date: new Date().toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+          },
+          {
+            name: "John Rivera",
+            role: "Corporate Events Manager",
+            rating: 5,
+            text: "Professional service from start to finish. The custom design process was smooth and the final product exceeded expectations.",
+            avatar: "JR",
+            date: new Date().toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+          },
+          {
+            name: "Ana Reyes",
+            role: "Basketball Coach",
+            rating: 5,
+            text: "Best custom apparel provider in the region. Highly recommended for any team or organization needs.",
+            avatar: "AR",
+            date: new Date().toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            }),
+          },
+        ])
+        setIsLoading(false)
+        return
+      }
+
+      // Process fetched ratings
       const processedTestimonials = data.map((rating: Rating) => {
-        console.log("[v0] Processing rating:", rating)
-        
         const firstName = rating.user?.first_name || "Customer"
         const lastName = rating.user?.last_name || ""
         const fullName = `${firstName} ${lastName}`.trim()
@@ -68,7 +98,7 @@ export function Testimonials() {
           day: "numeric",
         })
 
-        const processed = {
+        return {
           name: fullName,
           role: "Valued Customer",
           rating: rating.star_rating,
@@ -76,17 +106,10 @@ export function Testimonials() {
           avatar: avatarInitials || "C",
           date: createdDate,
         }
-        
-        console.log("[v0] Processed testimonial:", processed)
-        return processed
       })
 
-      console.log("[v0] All processed testimonials:", processedTestimonials)
-      console.log("[v0] Setting testimonials state with", processedTestimonials.length, 'items')
       setTestimonials(processedTestimonials)
     } catch (error) {
-      console.error("[v0] ERROR fetching ratings:", error)
-      console.log("[v0] Error type:", error instanceof Error ? error.message : String(error))
       // Fallback to default testimonials if fetch fails
       setTestimonials([
         {
@@ -126,8 +149,6 @@ export function Testimonials() {
           }),
         },
       ])
-    } finally {
-      console.log("[v0] Finally block - setting isLoading to false")
       setIsLoading(false)
     }
   }

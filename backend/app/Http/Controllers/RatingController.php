@@ -31,17 +31,22 @@ class RatingController extends Controller
             }
             Log::info('[v0] Validated limit: ' . $limit);
 
-            // Fetch ratings with customer data
+            // Fetch ratings with user/customer data
             Log::info('[v0] Attempting to fetch ratings from database');
             
             $ratings = Rating::with('customer')
-                ->where('has_rating', true)
                 ->orderBy('created_at', 'desc')
                 ->limit($limit)
                 ->get();
 
             Log::info('[v0] Successfully fetched ' . count($ratings) . ' ratings from database');
             Log::info('[v0] Raw ratings data: ' . json_encode($ratings));
+
+            // If no ratings found, return empty array
+            if (count($ratings) === 0) {
+                Log::info('[v0] No ratings found in database, returning empty array');
+                return response()->json([]);
+            }
 
             // Format response data
             $formattedRatings = $ratings->map(function ($rating) {
@@ -64,6 +69,11 @@ class RatingController extends Controller
                     ];
                 } else {
                     Log::info('[v0] WARNING - Customer relation is null for rating ID: ' . $rating->id);
+                    $customerData = [
+                        'id' => $rating->customer_id,
+                        'first_name' => 'Customer',
+                        'last_name' => '',
+                    ];
                 }
 
                 return [
@@ -90,8 +100,7 @@ class RatingController extends Controller
             ]);
             return response()->json([
                 'error' => 'Failed to fetch ratings',
-                'exception_message' => $e->getMessage(),
-                'exception_code' => $e->getCode(),
+                'message' => 'Unable to load ratings at this time',
             ], 500);
         }
     }
