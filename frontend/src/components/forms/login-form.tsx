@@ -8,9 +8,10 @@ import { useRouter } from "next/navigation"
 
 interface LoginFormProps {
   onSuccess: () => void
+  onForgotPassword?: () => void
 }
 
-export function LoginForm({ onSuccess }: LoginFormProps) {
+export function LoginForm({ onSuccess, onForgotPassword }: LoginFormProps) {
   const router = useRouter()
 
   const [isLoading, setIsLoading] = useState(false)
@@ -183,6 +184,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
 
       <button
         type="button"
+        onClick={onForgotPassword}
         className="text-sm text-red-600 font-medium text-center block hover:underline"
       >
         Forgot your password?

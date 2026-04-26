@@ -11,7 +11,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ContactController;
-use App\Http\Controllers\RatingController;
+use App\Http\Controllers\PasswordResetController;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 
@@ -29,6 +29,11 @@ Route::post('/register', [AuthController::class, 'clientRegister']);
 Route::post('/login', [AuthController::class, 'clientLogin']);
 Route::post('/admin/login', [AuthController::class, 'adminLogin']);
 Route::post('/contact', [ContactController::class, 'sendMessage']);
+
+// Forgot Password Routes - No Authentication Required
+Route::post('/forgot-password/send-code', [PasswordResetController::class, 'sendResetCode']);
+Route::post('/forgot-password/verify-code', [PasswordResetController::class, 'verifyResetCode']);
+Route::post('/forgot-password/reset', [PasswordResetController::class, 'resetPassword']);
 
 Route::get('/services', [ServiceController::class, 'index']);
 Route::get('/services/{id}', [ServiceController::class, 'show']);

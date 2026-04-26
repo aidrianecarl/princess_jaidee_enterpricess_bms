@@ -1,7 +1,9 @@
 "use client"
 import { X } from 'lucide-react'
+import { useState } from 'react'
 import { LoginForm } from "./forms/login-form"
 import { SignupForm } from "./forms/signup-form"
+import { ForgotPasswordModal } from "./forgot-password-modal"
 
 interface AuthModalProps {
   isOpen: boolean
@@ -11,6 +13,7 @@ interface AuthModalProps {
 }
 
 export function AuthModal({ isOpen, onClose, mode, onSwitchMode }: AuthModalProps) {
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
   if (!isOpen) return null
 
   return (
@@ -33,7 +36,16 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode }: AuthModalProp
 
         <div className="p-8 space-y-6">
           <div className="space-y-4">
-            {mode === "login" ? <LoginForm onSuccess={onClose} /> : <SignupForm onSuccess={onClose} />}
+            {mode === "login" ? (
+              <LoginForm 
+                onSuccess={onClose} 
+                onForgotPassword={() => {
+                  setShowForgotPassword(true)
+                }}
+              />
+            ) : (
+              <SignupForm onSuccess={onClose} />
+            )}
           </div>
 
           <div className="relative flex items-center gap-3 py-4">
@@ -55,6 +67,16 @@ export function AuthModal({ isOpen, onClose, mode, onSwitchMode }: AuthModalProp
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      <ForgotPasswordModal
+        isOpen={showForgotPassword}
+        onClose={() => setShowForgotPassword(false)}
+        onBackToLogin={() => {
+          setShowForgotPassword(false)
+          onSwitchMode("login")
+        }}
+      />
     </div>
   )
 }

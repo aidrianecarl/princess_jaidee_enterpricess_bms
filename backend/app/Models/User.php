@@ -29,6 +29,10 @@ class User extends Authenticatable
         'user_type',
         'status',
         'branch_id',
+        'reset_code',
+        'reset_code_expires_at',
+        'reset_code_attempts',
+        'last_password_reset_request_at',
     ];
 
     protected $hidden = [
