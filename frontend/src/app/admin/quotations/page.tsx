@@ -79,14 +79,17 @@ export default function AdminQuotationsPage() {
       
       // Filter quotations based on status
       let filtered = response.data.data || response.data || []
+      console.log("[v0] Fetched quotations:", filtered.length, "items")
       
       // For pending, exclude quotations that already have price set (has_price = 1)
       if (statusFilter === "pending") {
         filtered = filtered.filter((q: any) => (q.has_price === 0 || q.has_price === "0" || !q.has_price))
+        console.log("[v0] After pending filter:", filtered.length, "items")
       }
       // For priced, show only quotations with has_price = 1
       else if (statusFilter === "priced") {
         filtered = filtered.filter((q: any) => (q.has_price === 1 || q.has_price === "1"))
+        console.log("[v0] After priced filter:", filtered.length, "items")
       }
       
       // Sort quotations: "sent" status (Request Order available) first, then "ordered" status last
@@ -96,16 +99,37 @@ export default function AdminQuotationsPage() {
         const aStatus = a.status?.toLowerCase() || ''
         const bStatus = b.status?.toLowerCase() || ''
         
-        // "sent" status (can Request Order) comes first - these are quotations ready for ordering
-        if (aStatus === 'sent' && bStatus !== 'sent') return -1
-        if (aStatus !== 'sent' && bStatus === 'sent') return 1
+        console.log("[v0] Comparing quotations - A:", a.id, "status:", aStatus, "| B:", b.id, "status:", bStatus)
         
         // "ordered" status comes last - these are already converted to orders
-        if (aStatus === 'ordered' && bStatus !== 'ordered') return 1
-        if (aStatus !== 'ordered' && bStatus === 'ordered') return -1
+        if (aStatus === 'ordered' && bStatus !== 'ordered') {
+          console.log("[v0] A is ordered, B is not - A goes after B")
+          return 1
+        }
+        if (aStatus !== 'ordered' && bStatus === 'ordered') {
+          console.log("[v0] B is ordered, A is not - B goes after A")
+          return -1
+        }
+        
+        // "sent" status (can Request Order) comes first - these are quotations ready for ordering
+        if (aStatus === 'sent' && bStatus !== 'sent') {
+          console.log("[v0] A is sent, B is not - A comes first")
+          return -1
+        }
+        if (aStatus !== 'sent' && bStatus === 'sent') {
+          console.log("[v0] B is sent, A is not - B comes first")
+          return 1
+        }
         
         // Sort others by created_at descending (newest first)
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        const result = new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        console.log("[v0] Sorting by date - result:", result)
+        return result
+      })
+      
+      console.log("[v0] After sorting, filtered quotations order:")
+      filtered.forEach((q: any, idx: number) => {
+        console.log(`[v0] ${idx + 1}. Quotation #${q.quotation_number} - Status: ${q.status}`)
       })
       
       setQuotations(filtered)
@@ -126,28 +150,21 @@ export default function AdminQuotationsPage() {
       toast({ title: "Error", description: "Invalid quotation ID", variant: "destructive" })
       return
     }
-    console.log("Navigating to quotation pricing:", quotationId)
     router.push(`/admin/quotations/${quotationId}/pricing`)
   }
 
   const handleDownloadPDF = async (quotation: any) => {
     try {
-      console.log("[v0] PDF Download - Starting for quotation ID:", quotation.id)
-      
       const response = await apiClient.admin().get(`/admin/quotations/${quotation.id}`)
-      console.log("[v0] PDF Download - API response received:", response)
       
       const quotationData = response.data.data || response.data
-      console.log("[v0] PDF Download - Quotation data:", quotationData)
       
       if (!quotationData) {
         throw new Error("No quotation data received from API")
       }
       
       // Generate PDF with quotation data
-      console.log("[v0] PDF Download - Calling generateQuotationPDF")
       generateQuotationPDF(quotationData)
-      console.log("[v0] PDF Download - PDF generated successfully")
       
       toast({
         title: "Success",
@@ -155,9 +172,7 @@ export default function AdminQuotationsPage() {
         variant: "default"
       })
     } catch (error: any) {
-      console.error("[v0] PDF Download - Error occurred:", error)
       const errorMessage = error?.response?.data?.error || error?.message || "Failed to download quotation"
-      console.log("[v0] PDF Download - Error message:", errorMessage)
       toast({ 
         title: "Error", 
         description: errorMessage, 
@@ -169,7 +184,6 @@ export default function AdminQuotationsPage() {
   const handleRequestOrder = async (quotationId: number) => {
     try {
       setSendingId(quotationId)
-      console.log("[v0] Request Order - Starting for quotation ID:", quotationId)
 
       let token = localStorage.getItem("admin_token")
       
@@ -177,12 +191,6 @@ export default function AdminQuotationsPage() {
       if (!token) {
         token = localStorage.getItem("auth_token")
       }
-      
-      console.log("[v0] Request Order - Token check:", {
-        hasToken: !!token,
-        tokenLength: token ? token.length : 0,
-        tokenPrefix: token ? token.substring(0, 20) : "NO TOKEN"
-      })
       
       if (!token) {
         throw new Error("No authentication token found. Please log in again.")
@@ -199,8 +207,6 @@ export default function AdminQuotationsPage() {
         }),
       })
 
-      console.log("[v0] Request Order - Response status:", response.status)
-
       if (!response.ok) {
         const errorData = await response.json()
         throw new Error(errorData.message || "Failed to request order")
@@ -213,8 +219,6 @@ export default function AdminQuotationsPage() {
         )
       )
 
-      console.log("[v0] Request Order - Status updated successfully")
-
       toast({
         title: "Success",
         description: "Order request sent to production successfully",
@@ -225,7 +229,6 @@ export default function AdminQuotationsPage() {
       // Refresh the quotations list
       fetchQuotations()
     } catch (error: any) {
-      console.error("[v0] Request Order - Error occurred:", error)
       const errorMessage = error?.message || "Failed to request order"
       toast({ 
         title: "Error", 
@@ -318,6 +321,11 @@ export default function AdminQuotationsPage() {
                           Amount
                         </th>
                       )}
+                      {statusFilter === "priced" && (
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
+                          Status
+                        </th>
+                      )}
                       <th className="px-4 py-3 text-left text-sm font-semibold text-neutral-900 dark:text-white">
                         Created
                       </th>
@@ -362,6 +370,20 @@ export default function AdminQuotationsPage() {
                                 {Number.parseFloat(quotation.total).toLocaleString(undefined, {
                                   minimumFractionDigits: 2,
                                 })}
+                              </td>
+                            )}
+                            {statusFilter === "priced" && (
+                              <td className="px-4 py-3 text-sm">
+                                {quotation.status === "ordered" ? (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
+                                    <CheckCircle size={12} className="mr-1" />
+                                    Ordered
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
+                                    Ready to Order
+                                  </span>
+                                )}
                               </td>
                             )}
                             <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">
