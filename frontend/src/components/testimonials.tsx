@@ -28,6 +28,7 @@ export function Testimonials() {
   const fetchRatings = async () => {
     try {
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"}/ratings?limit=3`
+      console.log("[v0] Testimonials - Starting fetch from URL:", apiUrl)
       
       const response = await fetch(apiUrl, {
         method: "GET",
@@ -36,14 +37,22 @@ export function Testimonials() {
         },
       })
 
+      console.log("[v0] Testimonials - Response status:", response.status)
+      console.log("[v0] Testimonials - Response ok:", response.ok)
+
       if (!response.ok) {
+        console.error("[v0] Testimonials - Response not OK, status:", response.status)
         throw new Error(`Failed to fetch ratings - Status: ${response.status}`)
       }
 
       const data = await response.json()
+      console.log("[v0] Testimonials - Received data:", data)
+      console.log("[v0] Testimonials - Data is array:", Array.isArray(data))
+      console.log("[v0] Testimonials - Data length:", data?.length || 0)
 
       // If data is empty array, use fallback testimonials
       if (!data || data.length === 0) {
+        console.log("[v0] Testimonials - No data received, using fallback testimonials")
         setTestimonials([
           {
             name: "Maria Santos",
@@ -87,7 +96,10 @@ export function Testimonials() {
       }
 
       // Process fetched ratings
+      console.log("[v0] Testimonials - Processing", data.length, "ratings")
       const processedTestimonials = data.map((rating: Rating) => {
+        console.log("[v0] Testimonials - Processing rating:", rating)
+        
         const firstName = rating.user?.first_name || "Customer"
         const lastName = rating.user?.last_name || ""
         const fullName = `${firstName} ${lastName}`.trim()
@@ -108,8 +120,12 @@ export function Testimonials() {
         }
       })
 
+      console.log("[v0] Testimonials - Processed testimonials:", processedTestimonials)
       setTestimonials(processedTestimonials)
+      setIsLoading(false)
     } catch (error) {
+      console.error("[v0] Testimonials - ERROR fetching ratings:", error)
+      console.log("[v0] Testimonials - Using fallback testimonials due to error")
       // Fallback to default testimonials if fetch fails
       setTestimonials([
         {
