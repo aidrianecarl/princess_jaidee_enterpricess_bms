@@ -44,6 +44,8 @@ export function Navbar() {
     window.location.href = "/admin"
   }
 
+  const isAdminPage = pathname?.startsWith("/admin")
+  
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const isContactPage = pathname === '/contact'
     if (isContactPage) {
