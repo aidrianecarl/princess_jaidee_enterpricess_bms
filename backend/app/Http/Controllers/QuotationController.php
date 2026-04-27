@@ -1351,7 +1351,7 @@ class QuotationController extends Controller
                 'start_date' => $request->start_date ? Carbon::parse($request->start_date) : Carbon::now(),
                 'due_date' => $request->due_date ? Carbon::parse($request->due_date) : Carbon::now()->addDays(7),
                 'is_priority' => $request->is_priority ?? 0,
-                'notes' => $request->notes ?? 'Order sent to warehouse for production processing. Please follow the schedule and quality standards.',
+                'notes' => $request->notes ?? null,
             ]);
 
             Log::info('[v0] Job order created', ['job_order_id' => $jobOrder->id, 'job_order_number' => $jobOrderNumber]);

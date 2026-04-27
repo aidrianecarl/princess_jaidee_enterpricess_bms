@@ -143,7 +143,7 @@ export function SetPaymentModal({
         downPaymentInput,
         startDate,
         dueDate,
-        notes: warehouseNote,
+        notes,
         paymentMethod,
         isPriority: isPriority === "yes" ? 1 : 0,
         items: quotation.items || [],
