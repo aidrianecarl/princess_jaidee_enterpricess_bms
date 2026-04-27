@@ -37,7 +37,7 @@ export default function ManageAccountPage() {
       </div>
 
       {/* Main Content */}
-      <main className="pt-[15px] px-4 sm:px-6 lg:px-8 lg:ml-64">
+      <main className="pt-[20px] px-4 sm:px-6 lg:px-8 lg:ml-64">
         {isLoading ? (
           <div className="max-w-7xl mx-auto py-8 sm:py-12">
             <div className="h-96 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl animate-pulse" />
