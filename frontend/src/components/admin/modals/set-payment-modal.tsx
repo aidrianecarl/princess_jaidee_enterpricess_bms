@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { DollarSign, Loader2, AlertCircle } from "lucide-react"
+import { DollarSign, Loader2, AlertCircle, Package } from "lucide-react"
 
 interface SetPaymentModalProps {
   isOpen: boolean
@@ -26,7 +26,7 @@ interface SetPaymentModalProps {
       phone: string
     }
   } | null
-  employees: Array<{ id: number; first_name: string; last_name: string; email: string; role?: string; user_type?: string; branch_id?: number }>
+  employees?: Array<{ id: number; first_name: string; last_name: string; email: string; role?: string; user_type?: string; branch_id?: number }>
   branches?: Array<{ id: number; name: string; is_main_branch: boolean }>
   onConfirm: (paymentType: "downpayment" | "fullpayment", employeeId: number, formData: any) => Promise<void>
   isSaving?: boolean
@@ -36,13 +36,12 @@ export function SetPaymentModal({
   isOpen,
   onOpenChange,
   quotation,
-  employees,
+  employees = [],
   branches = [],
   onConfirm,
   isSaving = false,
 }: SetPaymentModalProps) {
   const [paymentType, setPaymentType] = useState<"downpayment" | "fullpayment">("downpayment")
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null)
   const [downPaymentInput, setDownPaymentInput] = useState<string>("")
   const [startDate, setStartDate] = useState<string>("")
   const [dueDate, setDueDate] = useState<string>("")
@@ -51,6 +50,7 @@ export function SetPaymentModal({
   const [isPriority, setIsPriority] = useState<string>("no")
   const [error, setError] = useState("")
   const [paymentTypeChangeTimer, setPaymentTypeChangeTimer] = useState<NodeJS.Timeout | null>(null)
+  const [warehouseNote, setWarehouseNote] = useState<string>("Order sent to warehouse for production processing. Please follow the schedule and quality standards.")
   const isInitializedRef = useRef(false)
 
   // ✅ ALL HOOKS MUST BE HERE - BEFORE ANY EARLY RETURNS
@@ -86,14 +86,8 @@ export function SetPaymentModal({
   }
 
   const handleConfirm = async () => {
-    console.log("[v0] handleConfirm called - selectedEmployeeId:", selectedEmployeeId)
+    console.log("[v0] handleConfirm called")
     setError("")
-
-    if (!selectedEmployeeId) {
-      console.warn("[v0] No employee selected")
-      setError("Please select an employee")
-      return
-    }
 
     if (!startDate) {
       setError("Please set a start date")
@@ -138,8 +132,6 @@ export function SetPaymentModal({
     try {
       console.log("[v0] Calling onConfirm with:", {
         paymentType,
-        selectedEmployeeId,
-        downPaymentInput,
         startDate,
         dueDate,
         notes,
@@ -147,11 +139,11 @@ export function SetPaymentModal({
         isPriority: isPriority === "yes" ? 1 : 0,
       })
       
-      await onConfirm(paymentType, selectedEmployeeId, {
+      await onConfirm(paymentType, 0, {
         downPaymentInput,
         startDate,
         dueDate,
-        notes,
+        notes: warehouseNote,
         paymentMethod,
         isPriority: isPriority === "yes" ? 1 : 0,
         items: quotation.items || [],
@@ -160,7 +152,6 @@ export function SetPaymentModal({
       console.log("[v0] onConfirm completed successfully")
       onOpenChange(false)
       setPaymentType("downpayment")
-      setSelectedEmployeeId(null)
       setDownPaymentInput("")
       setStartDate("")
       setDueDate("")
@@ -356,34 +347,20 @@ export function SetPaymentModal({
             </select>
           </div>
 
-          {/* Employee Selection */}
-          <div className="space-y-2">
-            <label className="block text-sm font-semibold text-neutral-900 dark:text-white">
-              Assign to Employee
-            </label>
-            <select
-              value={selectedEmployeeId || ""}
-              onChange={(e) => setSelectedEmployeeId(e.target.value ? parseInt(e.target.value) : null)}
-              className="w-full px-4 py-2 border-2 border-neutral-200 dark:border-neutral-700 rounded-lg focus:outline-none focus:border-orange-500 dark:focus:border-orange-400 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white transition"
-            >
-              <option value="">-- Select Employee --</option>
-              {(() => {
-                const mainBranch = branches.find(b => b.is_main_branch)
-                const filteredEmployees = employees.filter((emp) => {
-                  return emp.branch_id === mainBranch?.id
-                })
-                return filteredEmployees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.first_name} {emp.last_name} ({emp.role})
-                  </option>
-                ))
-              })()}
-            </select>
-            {selectedEmployeeId && (
-              <p className="text-xs text-green-600 dark:text-green-400">
-                ✓ {`${employees.find(e => e.id === selectedEmployeeId)?.first_name} ${employees.find(e => e.id === selectedEmployeeId)?.last_name}`} selected
+          {/* Warehouse Notification */}
+          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800">
+            <div className="space-y-3">
+              <div className="flex items-start gap-2">
+                <Package size={20} className="text-blue-600 dark:text-blue-400 mt-1 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-blue-900 dark:text-blue-100">Production Request</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">{warehouseNote}</p>
+                </div>
+              </div>
+              <p className="text-xs text-blue-600 dark:text-blue-400 pl-6">
+                ✓ This order will be automatically assigned to the warehouse for production processing.
               </p>
-            )}
+            </div>
           </div>
 
           {/* Priority Dropdown */}

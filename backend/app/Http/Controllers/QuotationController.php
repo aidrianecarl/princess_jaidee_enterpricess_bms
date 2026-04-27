@@ -1341,17 +1341,17 @@ class QuotationController extends Controller
             
             $jobOrderNumber = 'JO-' . $today . '-' . str_pad($joSequence, 5, '0', STR_PAD_LEFT);
 
-            // Create job order
+            // Create job order - Auto-assign to current admin user
             $jobOrder = \App\Models\JobOrder::create([
                 'job_order_number' => $jobOrderNumber,
                 'order_id' => $order->id,
                 'customer_id' => $quotation->customer_id,
-                'assigned_to' => $request->assigned_to,
+                'assigned_to' => auth()->id(),
                 'status' => 'pending',
                 'start_date' => $request->start_date ? Carbon::parse($request->start_date) : Carbon::now(),
                 'due_date' => $request->due_date ? Carbon::parse($request->due_date) : Carbon::now()->addDays(7),
                 'is_priority' => $request->is_priority ?? 0,
-                'notes' => $request->notes ?? $quotation->notes,
+                'notes' => $request->notes ?? 'Order sent to warehouse for production processing. Please follow the schedule and quality standards.',
             ]);
 
             Log::info('[v0] Job order created', ['job_order_id' => $jobOrder->id, 'job_order_number' => $jobOrderNumber]);
