@@ -123,7 +123,7 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700" aria-describedby="quotation-items-description">
+      <DialogContent className="max-w-5x2 max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700" aria-describedby="quotation-items-description">
         <DialogHeader>
           <DialogTitle id="quotation-items-description" className="text-2xl font-bold text-neutral-900 dark:text-white">
             Quotation Items - {quotation.quotation_number}
