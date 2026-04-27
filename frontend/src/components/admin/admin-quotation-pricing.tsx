@@ -674,7 +674,7 @@ export function AdminQuotationPricing() {
                       )
                     }
                     
-                    // Fallback to old card layout if no items array
+                    // Fallback to table layout for team roster breakdown
                     const teamRoster = item.team_roster || []
                     const prices = sublimationPrices[item.id]
                     if (!prices) return null
@@ -702,64 +702,85 @@ export function AdminQuotationPricing() {
                     })
 
                     return (
-                      <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
-                        <h3 className="font-bold text-blue-900 mb-4">{item.service?.name}</h3>
-
-                        {/* Sets, Top Only, Bottom Only Breakdown - 3 Columns */}
-                        <div className="grid grid-cols-3 gap-2 mb-4">
-                          {teamRoster.length > 0 && (
-                            <div className="p-2 bg-gray-50 rounded border border-gray-200 text-center">
-                              <p className="text-xs text-gray-600 font-semibold mb-1">Players</p>
-                              <p className="text-lg font-bold text-gray-900">{teamRoster.length}</p>
-                            </div>
-                          )}
-                          <div className="space-y-2">
-                            {setsCount > 0 && (
-                              <div className="p-2 bg-green-50 rounded border border-green-200 text-center">
-                                <p className="text-xs text-green-700 font-semibold mb-1">Sets</p>
-                                <p className="text-lg font-bold text-green-600">{setsCount}</p>
-                                <p className="text-xs text-green-600">₱{setsAmount.toLocaleString()}</p>
-                              </div>
-                            )}
-                            {topOnlyCount > 0 && (
-                              <div className="p-2 bg-orange-50 rounded border border-orange-200 text-center">
-                                <p className="text-xs text-orange-700 font-semibold mb-1">Top Only</p>
-                                <p className="text-lg font-bold text-orange-600">{topOnlyCount}</p>
-                                <p className="text-xs text-orange-600">₱{topAmount.toLocaleString()}</p>
-                              </div>
-                            )}
-                            {bottomOnlyCount > 0 && (
-                              <div className="p-2 bg-purple-50 rounded border border-purple-200 text-center">
-                                <p className="text-xs text-purple-700 font-semibold mb-1">Bottom Only</p>
-                                <p className="text-lg font-bold text-purple-600">{bottomOnlyCount}</p>
-                                <p className="text-xs text-purple-600">₱{bottomAmount.toLocaleString()}</p>
-                              </div>
-                            )}
-                          </div>
-                          <div className="p-2 bg-blue-50 rounded border border-blue-300">
-                            <p className="text-xs text-blue-700 font-semibold mb-1 text-center">Subtotal</p>
-                            <p className="text-lg font-bold text-blue-700 text-center">₱{calculateSublimationSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
-                          </div>
+                      <div key={item.id} className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+                        <div className="bg-blue-100 border-b border-blue-300 p-4">
+                          <h3 className="font-bold text-blue-900">{item.service?.name}</h3>
                         </div>
-                        
+
+                        {/* Modern Responsive Breakdown Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-blue-50 border-b border-blue-300">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-gray-700 font-semibold">Category</th>
+                                <th className="px-4 py-3 text-center text-gray-700 font-semibold">Count</th>
+                                <th className="px-4 py-3 text-right text-gray-700 font-semibold">Unit Price</th>
+                                <th className="px-4 py-3 text-right text-gray-700 font-semibold">Amount</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {teamRoster.length > 0 && (
+                                <tr className="border-b border-blue-200 bg-gray-50">
+                                  <td className="px-4 py-3 text-gray-900 font-semibold">Total Players</td>
+                                  <td className="px-4 py-3 text-center text-gray-900 font-bold">{teamRoster.length}</td>
+                                  <td className="px-4 py-3 text-right text-gray-700">-</td>
+                                  <td className="px-4 py-3 text-right text-gray-700">-</td>
+                                </tr>
+                              )}
+                              {setsCount > 0 && (
+                                <tr className="border-b border-blue-200 hover:bg-green-50">
+                                  <td className="px-4 py-3 text-gray-900 font-semibold text-green-700">Sets (Top + Bottom)</td>
+                                  <td className="px-4 py-3 text-center text-gray-900 font-bold">{setsCount}</td>
+                                  <td className="px-4 py-3 text-right text-gray-900">₱{setPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                  <td className="px-4 py-3 text-right text-green-600 font-bold">₱{setsAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                </tr>
+                              )}
+                              {topOnlyCount > 0 && (
+                                <tr className="border-b border-blue-200 hover:bg-orange-50">
+                                  <td className="px-4 py-3 text-gray-900 font-semibold text-orange-700">Top Only</td>
+                                  <td className="px-4 py-3 text-center text-gray-900 font-bold">{topOnlyCount}</td>
+                                  <td className="px-4 py-3 text-right text-gray-900">₱{topPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                  <td className="px-4 py-3 text-right text-orange-600 font-bold">₱{topAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                </tr>
+                              )}
+                              {bottomOnlyCount > 0 && (
+                                <tr className="border-b border-blue-200 hover:bg-purple-50">
+                                  <td className="px-4 py-3 text-gray-900 font-semibold text-purple-700">Bottom Only</td>
+                                  <td className="px-4 py-3 text-center text-gray-900 font-bold">{bottomOnlyCount}</td>
+                                  <td className="px-4 py-3 text-right text-gray-900">₱{bottomPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                  <td className="px-4 py-3 text-right text-purple-600 font-bold">₱{bottomAmount.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                </tr>
+                              )}
+                              <tr className="bg-blue-50 border-t-2 border-blue-300">
+                                <td colSpan={3} className="px-4 py-3 text-right text-gray-900 font-bold">Subtotal</td>
+                                <td className="px-4 py-3 text-right text-blue-700 font-bold text-lg">₱{calculateSublimationSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
                         {/* Design Consultation for Sublimation */}
                         {item.design_consultation && typeof item.design_consultation === "object" && (
-                          <div className="mt-4 pt-4 border-t border-blue-200">
-                            <div className="p-3 bg-blue-50 rounded border-l-4 border-l-blue-600">
-                              <p className="text-sm font-semibold text-blue-700 mb-2">+ Design Consultation</p>
-                              {item.design_consultation.notes && (
-                                <div className="mb-2">
-                                  <p className="text-xs font-semibold text-gray-700 mb-1">Design Details:</p>
-                                  <p className="text-sm text-gray-900">{item.design_consultation.notes}</p>
-                                </div>
-                              )}
-                              {item.design_consultation.price && (
-                                <div className="flex justify-between items-center p-2 bg-white rounded">
-                                  <span className="text-gray-700 font-semibold">Consultation Fee:</span>
-                                  <span className="text-blue-600 font-bold">₱{Number(item.design_consultation.price).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
-                                </div>
-                              )}
+                          <div className="p-4 border-t border-blue-200 bg-gradient-to-r from-indigo-50 to-blue-50">
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className="font-bold text-indigo-900 flex items-center gap-2">
+                                <span className="text-lg">✨</span> Design Consultation
+                              </h4>
                             </div>
+                            {item.design_consultation.notes && (
+                              <div className="mb-3 p-3 bg-white rounded border border-indigo-200">
+                                <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Details</p>
+                                <p className="text-sm text-gray-900">{item.design_consultation.notes}</p>
+                              </div>
+                            )}
+                            {item.design_consultation.price && (
+                              <div className="p-3 bg-white rounded border-l-4 border-l-indigo-500">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-700 font-semibold">Consultation Fee:</span>
+                                  <span className="text-indigo-600 font-bold text-lg">₱{Number(item.design_consultation.price).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
@@ -769,20 +790,65 @@ export function AdminQuotationPricing() {
                     if (!specs) return null
 
                     return (
-                      <div key={item.id} className="p-4 bg-white rounded-lg border border-blue-200">
-                        <h3 className="font-bold text-blue-900 mb-3">{item.service?.name}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-gray-700">{specs.width}ft × {specs.height}ft</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-700">{specs.totalSqft} sq ft × {item.quantity} qty</span>
-                          </div>
-                          <div className="flex justify-between col-span-1 md:col-span-2 p-2 bg-blue-100 rounded font-bold">
-                            <span>Subtotal</span>
-                            <span className="text-blue-700">₱{calculateTarpaulinSubtotal(item.id).toLocaleString()}</span>
-                          </div>
+                      <div key={item.id} className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+                        <div className="bg-blue-100 border-b border-blue-300 p-4">
+                          <h3 className="font-bold text-blue-900">{item.service?.name}</h3>
                         </div>
+
+                        {/* Tarpaulin Specifications Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead className="bg-blue-50 border-b border-blue-300">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-gray-700 font-semibold">Specification</th>
+                                <th className="px-4 py-3 text-right text-gray-700 font-semibold">Value</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr className="border-b border-blue-200 hover:bg-blue-50">
+                                <td className="px-4 py-3 text-gray-900 font-semibold">Dimensions</td>
+                                <td className="px-4 py-3 text-right text-gray-900">{specs.width}ft × {specs.height}ft</td>
+                              </tr>
+                              <tr className="border-b border-blue-200 hover:bg-blue-50">
+                                <td className="px-4 py-3 text-gray-900 font-semibold">Square Footage</td>
+                                <td className="px-4 py-3 text-right text-gray-900">{specs.totalSqft} sq ft</td>
+                              </tr>
+                              <tr className="border-b border-blue-200 hover:bg-blue-50">
+                                <td className="px-4 py-3 text-gray-900 font-semibold">Quantity</td>
+                                <td className="px-4 py-3 text-right text-gray-900">{item.quantity} qty</td>
+                              </tr>
+                              <tr className="bg-blue-50 border-t-2 border-blue-300">
+                                <td className="px-4 py-3 text-right text-gray-900 font-bold">Subtotal</td>
+                                <td className="px-4 py-3 text-right text-blue-700 font-bold text-lg">₱{calculateTarpaulinSubtotal(item.id).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Design Consultation for Tarpaulin */}
+                        {item.design_consultation && typeof item.design_consultation === "object" && (
+                          <div className="p-4 border-t border-blue-200 bg-gradient-to-r from-indigo-50 to-blue-50">
+                            <div className="flex items-start justify-between mb-3">
+                              <h4 className="font-bold text-indigo-900 flex items-center gap-2">
+                                <span className="text-lg">✨</span> Design Consultation
+                              </h4>
+                            </div>
+                            {item.design_consultation.notes && (
+                              <div className="mb-3 p-3 bg-white rounded border border-indigo-200">
+                                <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Details</p>
+                                <p className="text-sm text-gray-900">{item.design_consultation.notes}</p>
+                              </div>
+                            )}
+                            {item.design_consultation.price && (
+                              <div className="p-3 bg-white rounded border-l-4 border-l-indigo-500">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-gray-700 font-semibold">Consultation Fee:</span>
+                                  <span className="text-indigo-600 font-bold text-lg">₱{Number(item.design_consultation.price).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )
                   }

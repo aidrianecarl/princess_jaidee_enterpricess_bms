@@ -560,6 +560,29 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                               })()}
                             </div>
                           )}
+
+                          {/* Design Consultation */}
+                          {item.design_consultation && typeof item.design_consultation === "object" && (
+                            <div className="p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-lg border border-indigo-200">
+                              <h4 className="font-semibold text-indigo-900 mb-3 flex items-center gap-2">
+                                <span className="text-lg">✨</span> Design Consultation
+                              </h4>
+                              {item.design_consultation.notes && (
+                                <div className="mb-3 p-3 bg-white rounded border border-indigo-200">
+                                  <p className="text-xs font-semibold text-indigo-700 uppercase mb-2">Design Details</p>
+                                  <p className="text-sm text-gray-900">{item.design_consultation.notes}</p>
+                                </div>
+                              )}
+                              {item.design_consultation.price && (
+                                <div className="p-3 bg-white rounded border-l-4 border-l-indigo-500">
+                                  <div className="flex justify-between items-center">
+                                    <span className="text-gray-700 font-semibold">Consultation Fee:</span>
+                                    <span className="text-indigo-600 font-bold text-lg">₱{Number(item.design_consultation.price).toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
