@@ -197,12 +197,12 @@ export function Navbar() {
             <Link href="/contact" className={`block py-2 transition-all duration-300 ${isDarkMode ? 'text-neutral-300 hover:text-red-400 hover:pl-2' : 'text-neutral-600 hover:text-red-600 hover:pl-2'}`}>
               Contact
             </Link>
-            <Link
+            {/* <Link
               href="/contact"
               className="block mt-4 px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-full font-medium text-center hover:shadow-lg transition-all duration-300"
             >
               Contact
-            </Link>
+            </Link> */}
           </div>
         )}
       </div>
