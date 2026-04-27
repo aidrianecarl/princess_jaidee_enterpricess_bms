@@ -18,11 +18,17 @@ class OrderItem extends Model
         'design_file_url',
         'team_roster',
         'size_specifications',
+        'design_consultation',
         'notes',
     ];
 
     protected $casts = [
         'unit_price' => 'decimal:2',
+        'line_total' => 'decimal:2',
+        'team_roster' => 'array',
+        'size_specifications' => 'array',
+        'design_consultation' => 'array',
+        'notes' => 'array',
     ];
 
     public function order(): BelongsTo

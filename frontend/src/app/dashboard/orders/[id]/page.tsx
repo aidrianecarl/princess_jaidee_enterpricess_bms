@@ -20,6 +20,7 @@ interface OrderItem {
   design_file_url?: string
   team_roster?: any
   size_specifications?: any
+  design_consultation?: any
   notes?: any
   service?: { id: number; name: string }
 }
@@ -260,12 +261,20 @@ export default function OrderDetailsPage() {
             if (Array.isArray(items)) {
               items = items.filter((item: OrderItem) => item.order_id === orderData.id)
               
-              orderData.items = items.map((item: OrderItem) => ({
-                ...item,
-                team_roster: parseJSON(item.team_roster),
-                size_specifications: parseJSON(item.size_specifications),
-                notes: parseJSON(item.notes),
-              }))
+              orderData.items = items.map((item: OrderItem) => {
+                let teamRoster = parseJSON(item.team_roster)
+                let sizeSpecs = parseJSON(item.size_specifications)
+                let designConsultation = parseJSON(item.design_consultation)
+                let notesData = parseJSON(item.notes)
+                
+                return {
+                  ...item,
+                  team_roster: teamRoster,
+                  size_specifications: sizeSpecs,
+                  design_consultation: designConsultation,
+                  notes: notesData,
+                }
+              })
             }
           }
         } catch (itemErr) {
@@ -426,7 +435,8 @@ export default function OrderDetailsPage() {
             {order.items.filter((item, index, arr) => arr.findIndex(t => t.id === item.id) === index).map((item, index) => {
               const teamRoster = Array.isArray(item.team_roster) ? item.team_roster : null
               const sizeSpecs = typeof item.size_specifications === 'object' ? item.size_specifications : null
-              const statusColor = item.status === 'completed' 
+              const designConsultation = typeof item.design_consultation === 'object' ? item.design_consultation : null
+              const statusColor = item.status === 'completed'
                 ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                 : item.status === 'InProduction' || item.status === 'ongoing'
                 ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
@@ -529,6 +539,41 @@ export default function OrderDetailsPage() {
                             <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
                               <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
                               <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Design Consultation */}
+                    {item.design_consultation && typeof item.design_consultation === 'object' && Object.keys(item.design_consultation).length > 0 && (
+                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                        <h4 className="font-bold text-emerald-900 dark:text-emerald-300 mb-4 text-lg flex items-center gap-2">
+                          ✨ Design Consultation
+                        </h4>
+                        <div className="space-y-3">
+                          {item.design_consultation.included && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Included</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.design_consultation.included === true ? 'Yes' : 'No'}</p>
+                            </div>
+                          )}
+                          {item.design_consultation.description && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Description</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.design_consultation.description}</p>
+                            </div>
+                          )}
+                          {item.design_consultation.price && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Price</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">₱{Number(item.design_consultation.price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                            </div>
+                          )}
+                          {item.design_consultation.notes && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Notes</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.design_consultation.notes}</p>
                             </div>
                           )}
                         </div>
