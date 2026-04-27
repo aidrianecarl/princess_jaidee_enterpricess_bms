@@ -17,7 +17,7 @@ class OrderController extends Controller
         try {
             Log::info('[v0] OrderController index - Fetching all orders', ['request' => $request->all()]);
             
-            $query = Order::with(['customer', 'items', 'quotation', 'branch', 'job_order']);
+            $query = Order::with(['customer', 'items', 'quotation', 'branch', 'jobOrders']);
 
             if ($request->has('search')) {
                 Log::info('[v0] OrderController - Applying search filter:', ['search' => $request->search]);
@@ -31,12 +31,19 @@ class OrderController extends Controller
 
             $orders = $query->orderBy('created_at', 'desc')->get();
             
-            Log::info('[v0] Orders fetched successfully:', ['count' => $orders->count(), 'data_sample' => $orders->take(1)->toArray()]);
+            // Transform orders to include the latest job_order as single object
+            $transformedOrders = $orders->map(function($order) {
+                $order->job_order = $order->jobOrders->first(); // Get the first (latest) job order
+                unset($order->jobOrders); // Remove the array from response
+                return $order;
+            });
+            
+            Log::info('[v0] Orders fetched successfully:', ['count' => $transformedOrders->count(), 'data_sample' => $transformedOrders->take(1)->toArray()]);
 
             return response()->json([
                 'success' => true,
-                'data' => $orders,
-                'count' => $orders->count()
+                'data' => $transformedOrders,
+                'count' => $transformedOrders->count()
             ], 200);
         } catch (\Exception $e) {
             Log::error('[v0] Error fetching orders:', [
@@ -64,13 +71,17 @@ class OrderController extends Controller
                 'items.service',
                 'quotation.branch',
                 'branch',
-                'job_order'
+                'jobOrders'
             ])->find($id);
 
             if (!$order) {
                 Log::warning('Order not found: ' . $id);
                 return response()->json(['error' => 'Order not found'], 404);
             }
+
+            // Transform to include the latest job_order as single object
+            $order->job_order = $order->jobOrders->first();
+            unset($order->jobOrders);
 
             Log::info('Order found', [
                 'order_id' => $order->id,
@@ -237,7 +248,7 @@ class OrderController extends Controller
         try {
             Log::info('[v0] OrderController adminIndex - Fetching all orders for admin');
             
-            $query = Order::with(['customer', 'items', 'quotation.branch', 'creator', 'branch']);
+            $query = Order::with(['customer', 'items', 'quotation.branch', 'creator', 'branch', 'jobOrders']);
 
             // Get current user
             $currentUser = auth()->user();
@@ -284,9 +295,16 @@ class OrderController extends Controller
             
             $orders = $orders->get();
             
+            // Transform orders to include the latest job_order as single object
+            $transformedOrders = $orders->map(function($order) {
+                $order->job_order = $order->jobOrders->first(); // Get the first (latest) job order
+                unset($order->jobOrders); // Remove the array from response
+                return $order;
+            });
+            
             Log::info('[v0] Orders fetched successfully for admin:', [
-                'count' => $orders->count(),
-                'sample' => $orders->take(1)->map(function($order) {
+                'count' => $transformedOrders->count(),
+                'sample' => $transformedOrders->take(1)->map(function($order) {
                     return [
                         'id' => $order->id,
                         'order_number' => $order->order_number,
@@ -305,8 +323,8 @@ class OrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $orders,
-                'count' => $orders->count()
+                'data' => $transformedOrders,
+                'count' => $transformedOrders->count()
             ], 200);
         } catch (\Exception $e) {
             Log::error('[v0] Error fetching admin orders:', [
@@ -335,42 +353,30 @@ class OrderController extends Controller
             ]);
             
             // Fetch orders linked to quotations created by this user (created_by field in quotations)
-            $query = Order::with(['customer', 'items.service', 'quotation', 'branch', 'job_order']);
-            
-            \Log::info('[v0] OrderController customerIndex - Query built with relationships: customer, items.service, quotation, branch, job_order');
+            $query = Order::with(['customer', 'items.service', 'quotation', 'branch', 'jobOrders']);
             
             // Add where clause for quotation relationship - use 'created_by' not 'user_id'
             $query->whereHas('quotation', function($q) use ($user) {
-                \Log::info('[v0] whereHas quotation - filtering by created_by: ' . $user->id);
                 $q->where('created_by', $user->id);
             });
 
             $orders = $query->orderBy('created_at', 'desc')->get();
 
-            \Log::info('[v0] OrderController customerIndex - Orders fetched', [
-                'orders_count' => $orders->count(),
-            ]);
-
-            // Log branch data for each order
-            $orders->each(function($order, $index) {
-                \Log::info('[v0] Order ' . $index . ' details:', [
-                    'order_id' => $order->id,
-                    'order_number' => $order->order_number,
-                    'order_status' => $order->order_status,
-                    'branch_id' => $order->branch_id,
-                    'branch_exists' => $order->branch ? true : false,
-                    'branch_name' => $order->branch?->name ?? 'NULL',
-                    'job_order_exists' => $order->job_order ? true : false,
-                    'job_order_id' => $order->job_order?->id ?? 'NULL',
-                    'released_date' => $order->job_order?->released_date ?? 'NULL',
-                    'released_by' => $order->job_order?->released_by ?? 'NULL',
-                ]);
+            // Transform orders to include the latest job_order as single object
+            $transformedOrders = $orders->map(function($order) {
+                $order->job_order = $order->jobOrders->first(); // Get the first (latest) job order
+                unset($order->jobOrders); // Remove the array from response
+                return $order;
             });
+
+            \Log::info('[v0] OrderController customerIndex - Orders fetched', [
+                'orders_count' => $transformedOrders->count(),
+            ]);
 
             return response()->json([
                 'success' => true,
-                'data' => $orders,
-                'count' => $orders->count(),
+                'data' => $transformedOrders,
+                'count' => $transformedOrders->count(),
                 'message' => 'Orders fetched successfully'
             ], 200);
             

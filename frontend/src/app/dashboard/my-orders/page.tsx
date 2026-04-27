@@ -466,14 +466,24 @@ export default function MyOrdersPage() {
           </div>
         )}
 
-        {/* No search results */}
-        {!isLoading && searchTerm && filteredOrders.length === 0 && orders.length > 0 && (
+        {/* No filtered results but has data */}
+        {!isLoading && filterType === "history" && filteredOrders.length === 0 && orders.length > 0 && !searchTerm && (
           <div className="text-center py-20 animate-fade-in">
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
-              <Search className="h-10 w-10 text-neutral-400 dark:text-neutral-600" />
+              <Package className="h-10 w-10 text-neutral-400 dark:text-neutral-600" />
             </div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">No orders found</h3>
-            <p className="text-neutral-600 dark:text-neutral-400">No orders match &quot;{searchTerm}&quot;</p>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">No released orders</h3>
+            <p className="text-neutral-600 dark:text-neutral-400">You have no orders in your history yet. Released orders will appear here.</p>
+          </div>
+        )}
+
+        {!isLoading && filterType === "orders" && filteredOrders.length === 0 && orders.length > 0 && !searchTerm && (
+          <div className="text-center py-20 animate-fade-in">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
+              <Package className="h-10 w-10 text-neutral-400 dark:text-neutral-600" />
+            </div>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">No ready orders</h3>
+            <p className="text-neutral-600 dark:text-neutral-400">You don&apos;t have any orders ready for pickup at the moment.</p>
           </div>
         )}
 

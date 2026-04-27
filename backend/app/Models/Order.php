@@ -58,9 +58,9 @@ class Order extends Model
         return $this->belongsTo(Quotation::class);
     }
 
-    public function job_order(): HasMany
+    public function job_order(): BelongsTo
     {
-        return $this->hasMany(JobOrder::class, 'order_id');
+        return $this->belongsTo(JobOrder::class, 'id', 'order_id');
     }
 
     public function jobOrders(): HasMany
