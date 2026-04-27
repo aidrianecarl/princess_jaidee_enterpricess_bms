@@ -234,8 +234,40 @@ export default function OrderDetailsPage() {
       
       let orderData = data.data || data
       
-      // Fetch order items with their status
-      if (orderData.id) {
+      console.log("[v0] Order data from API:", {
+        order_id: orderData.id,
+        has_items: !!orderData.items,
+        items_count: orderData.items?.length || 0,
+        first_item_sample: orderData.items?.[0]
+      })
+      
+      // Use items directly from order API if available (they already have design_consultation from join)
+      if (orderData.items && Array.isArray(orderData.items)) {
+        console.log("[v0] Using items from order API - they include design_consultation from quotation items join")
+        
+        orderData.items = orderData.items.map((item: OrderItem) => {
+          let teamRoster = parseJSON(item.team_roster)
+          let sizeSpecs = parseJSON(item.size_specifications)
+          let designConsultation = parseJSON(item.design_consultation)
+          let notesData = parseJSON(item.notes)
+          
+          console.log(`[v0] Processing item ${item.id}:`, {
+            design_consultation_raw: item.design_consultation,
+            design_consultation_parsed: designConsultation
+          })
+          
+          return {
+            ...item,
+            team_roster: teamRoster,
+            size_specifications: sizeSpecs,
+            design_consultation: designConsultation,
+            notes: notesData,
+          }
+        })
+      } else {
+        // Fallback: Fetch order items with their status if not included in order API
+        console.log("[v0] Order items not in API response, fetching from separate endpoint")
+        
         try {
           const itemsResponse = await fetch(`${apiUrl}/order-items?order_id=${orderData.id}`, {
             headers: {

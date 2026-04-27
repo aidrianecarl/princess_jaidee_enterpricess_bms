@@ -65,11 +65,11 @@ class OrderController extends Controller
         try {
             Log::info('OrderController show - Fetching order ID: ' . $id);
             
-            // Load order with all relationships including items with service details and branch
+            // Load order with all relationships including items with service details and quotation items
             $order = Order::with([
                 'customer',
                 'items' => function($query) {
-                    $query->with('service');
+                    $query->with('service', 'quotationItem');
                 },
                 'quotation.branch',
                 'branch',
@@ -80,6 +80,53 @@ class OrderController extends Controller
                 Log::warning('Order not found: ' . $id);
                 return response()->json(['error' => 'Order not found'], 404);
             }
+
+            // Map quotation item data to order items
+            $order->items = $order->items->map(function($item) {
+                Log::info('[v0] Processing order item', [
+                    'item_id' => $item->id,
+                    'has_quotation_item' => $item->quotationItem ? true : false,
+                    'quotation_items_id' => $item->quotation_items_id,
+                ]);
+                
+                if ($item->quotationItem) {
+                    Log::info('[v0] Order Item - Quotation item data', [
+                        'item_id' => $item->id,
+                        'quotation_item_id' => $item->quotationItem->id,
+                        'quotation_design_consultation' => $item->quotationItem->design_consultation,
+                        'quotation_team_roster' => $item->quotationItem->team_roster,
+                        'quotation_size_specs' => $item->quotationItem->size_specifications,
+                    ]);
+                    
+                    // If design_consultation is not set on order item, use from quotation item
+                    if (!$item->design_consultation && $item->quotationItem->design_consultation) {
+                        $item->design_consultation = $item->quotationItem->design_consultation;
+                        Log::info('[v0] Assigned design_consultation from quotation item', [
+                            'item_id' => $item->id,
+                            'design_consultation' => $item->design_consultation
+                        ]);
+                    }
+                    
+                    // Similarly for other fields if needed
+                    if (!$item->team_roster && $item->quotationItem->team_roster) {
+                        $item->team_roster = $item->quotationItem->team_roster;
+                    }
+                    if (!$item->size_specifications && $item->quotationItem->size_specifications) {
+                        $item->size_specifications = $item->quotationItem->size_specifications;
+                    }
+                    if (!$item->notes && $item->quotationItem->notes) {
+                        $item->notes = $item->quotationItem->notes;
+                    }
+                }
+                
+                Log::info('[v0] Final item data being sent to frontend', [
+                    'item_id' => $item->id,
+                    'design_consultation' => $item->design_consultation,
+                    'team_roster' => $item->team_roster,
+                ]);
+                
+                return $item;
+            });
 
             // Transform to include the latest job_order as single object
             $order->job_order = $order->jobOrders->first();

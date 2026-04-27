@@ -142,6 +142,13 @@ export function DashboardOrderPricing({
           }
         }
 
+        console.log(`[v0] Order Item ${item.id}:`, {
+          raw_design_consultation: item.design_consultation,
+          parsed_design_consultation: designConsultation,
+          service_name: item.service?.name,
+          quotation_items_id: item.quotation_items_id
+        })
+
         return (
           <div key={item.id} className="border-b border-gray-200 last:border-b-0 py-6 px-4 md:px-6">
             {/* Item Header */}
