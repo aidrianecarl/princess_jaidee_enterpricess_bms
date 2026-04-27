@@ -143,7 +143,7 @@ export function Navbar() {
               </div>
             )}
 
-            {/* CTA Button (Landing Page) */}
+            {/* CTA Button (Landing Page)
             {!isAdminPage && (
               <Link
                 href="/"
@@ -151,7 +151,7 @@ export function Navbar() {
               >
                 Get Started
               </Link>
-            )}
+            )} */}
 
             {/* Mobile Menu Button */}
             <button onClick={() => setIsOpen(!isOpen)} className={`md:hidden p-2 rounded-lg transition-colors duration-300`} aria-label="Toggle menu">
