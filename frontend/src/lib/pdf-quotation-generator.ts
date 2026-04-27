@@ -144,16 +144,107 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ================= TABLE =================
   const items = quotation.items || quotation.quotation_items || []
 
-  const tableData = items.map((item: any, index: number) => [
-    index + 1,
-    item.service?.name || item.name || "Service",
-    item.quantity || 1,
-    Number(item.unit_price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 }),
-    Number(item.line_total || (item.quantity || 1) * (item.unit_price || 0)).toLocaleString("en-PH", { minimumFractionDigits: 2 }),
-  ])
+  const tableData: any[] = []
+  let calculatedSubtotal = 0
+
+  items.forEach((item: any, index: number) => {
+    const quantity = item.quantity || 0
+    const unitPrice = parseFloat(item.unit_price || 0)
+    let teamRoster = item.team_roster
+    let sizeSpecs = item.size_specifications
+    const serviceName = item.service?.name || item.name || "Service"
+
+    // Parse teamRoster if it's a string
+    if (typeof teamRoster === 'string') {
+      try {
+        teamRoster = JSON.parse(teamRoster)
+      } catch (e) {
+        teamRoster = null
+      }
+    }
+
+    // Parse sizeSpecs if it's a string
+    if (typeof sizeSpecs === 'string') {
+      try {
+        sizeSpecs = JSON.parse(sizeSpecs)
+      } catch (e) {
+        sizeSpecs = null
+      }
+    }
+
+    let subtotalForService = 0
+
+    // For Sublimation with size_specifications: Show sizes in name
+    if (serviceName.includes('Sublimation') && sizeSpecs && sizeSpecs.items && Array.isArray(sizeSpecs.items)) {
+      // Build size description from items
+      const sizeDescriptions = sizeSpecs.items.map((spec: any) => {
+        const parts = []
+        if (spec.qty) parts.push(spec.qty)
+        if (spec.sizeTop && spec.sizeTop !== "-") parts.push(`${spec.sizeTop}${spec.lengthTopInches ? `-${spec.lengthTopInches}` : ''}`)
+        if (spec.sizeBottom && spec.sizeBottom !== "-") parts.push(`${spec.sizeBottom}${spec.lengthBottomInches ? `-${spec.lengthBottomInches}` : ''}`)
+        return parts.join(' ')
+      }).join(', ')
+
+      // Calculate total quantity and price
+      const totalQty = sizeSpecs.items.reduce((sum: number, spec: any) => sum + (Number(spec.qty) || 0), 0)
+      const basePrice = unitPrice
+      subtotalForService = sizeSpecs.items.reduce((sum: number, spec: any) => {
+        const qty = Number(spec.qty) || 0
+        const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+        const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+        const isSet = hasTop && hasBottom
+        const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
+        return sum + itemPrice
+      }, 0)
+
+      tableData.push([
+        `${serviceName} (${sizeDescriptions})`,
+        totalQty.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
+
+      calculatedSubtotal += subtotalForService
+    }
+    // For Tarpaulin: Show size in name with uppercase FT
+    else if (serviceName.includes('Tarpaulin') && sizeSpecs) {
+      subtotalForService = quantity * unitPrice
+      const width = sizeSpecs.width || "?"
+      const height = sizeSpecs.height || "?"
+
+      tableData.push([
+        `${serviceName} (${width}FT × ${height}FT)`,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
+
+      calculatedSubtotal += subtotalForService
+    }
+    // For other services
+    else {
+      subtotalForService = Number(item.line_total || (quantity * unitPrice))
+      calculatedSubtotal += subtotalForService
+
+      tableData.push([
+        serviceName,
+        quantity.toString(),
+        unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+        subtotalForService.toLocaleString("en-PH", { minimumFractionDigits: 0 }),
+      ])
+    }
+  })
+
+  // Add empty rows
+  tableData.push(["", "", "", ""])
+  tableData.push(["", "", "", ""])
+
+  // Add subtotal row
+  const subtotal = quotation.subtotal ? parseFloat(quotation.subtotal) : calculatedSubtotal
+  tableData.push(["", "", "Sub Total:", subtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 })])
 
   autoTable(doc, {
-    head: [["ITEM NO.", "DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
+    head: [["DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
     body: tableData,
     startY: yPosition,
     margin: { left: 15, right: 15 },
@@ -178,11 +269,10 @@ export const generateQuotationPDF = async (quotation: any) => {
     },
 
     columnStyles: {
-      0: { halign: "center", cellWidth: 20 },
-      1: { halign: "left" },
-      2: { halign: "center", cellWidth: 25 },
+      0: { halign: "left" },
+      1: { halign: "center", cellWidth: 25 },
+      2: { halign: "right", cellWidth: 30 },
       3: { halign: "right", cellWidth: 30 },
-      4: { halign: "right", cellWidth: 30 },
     },
 
     didDrawPage: function () {
@@ -190,35 +280,9 @@ export const generateQuotationPDF = async (quotation: any) => {
     },
   })
 
-  yPosition = (doc as any).lastAutoTable.finalY + 15
+  yPosition = (doc as any).lastAutoTable.finalY + 5
 
   // ================= TOTAL =================
-  let totalAmount = 0
-  items.forEach((item: any) => {
-    totalAmount += Number(item.line_total || (item.quantity || 1) * (item.unit_price || 0))
-  })
-
-  // Add design consultation if exists
-  let designConsultationTotal = 0
-  if (Array.isArray(quotation.items)) {
-    quotation.items.forEach((item: any) => {
-      let consultation = item.design_consultation
-      if (typeof consultation === 'string') {
-        try {
-          consultation = JSON.parse(consultation)
-        } catch (e) {
-          consultation = null
-        }
-      }
-      if (consultation && typeof consultation === "object") {
-        const consultationPrice = Number(consultation.price) || 0
-        designConsultationTotal += consultationPrice
-      }
-    })
-  }
-
-  totalAmount += designConsultationTotal
-
   const totalLabelX = pageWidth - 65
   const totalValueX = pageWidth - 15
 
@@ -226,7 +290,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setFont(undefined, "bold")
   doc.setTextColor(0, 0, 0)
   doc.text("TOTAL:", totalLabelX, yPosition, { align: "left" })
-  doc.text(totalAmount.toLocaleString("en-PH", { minimumFractionDigits: 2 }), totalValueX, yPosition, { align: "right" })
+  doc.text(subtotal.toLocaleString("en-PH", { minimumFractionDigits: 0 }), totalValueX, yPosition, { align: "right" })
 
   yPosition += 12
 
@@ -273,11 +337,11 @@ export const generateQuotationPDF = async (quotation: any) => {
   // Label BELOW the line
   doc.setFontSize(7)
   doc.text("Authorized Canvaser", 15, signatureY + 6)
-  
+
 
   // RIGHT: Jhonie's Signature Section
   doc.setFont(undefined, "normal")
-  
+
   // Add signature image
   try {
     const signatureBase64 = await imageUrlToBase64("/jhonie_signature.png")
@@ -290,16 +354,16 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setFont(undefined, "bold")
   doc.setFontSize(8)
   // Name ABOVE the line
-doc.text("JHONIE E. DETERA", pageWidth - 70, signatureY - 2)
+  doc.text("JHONIE E. DETERA", pageWidth - 70, signatureY - 2)
 
-// Signature line
-doc.text("_________________________", pageWidth - 70, signatureY + 2)
+  // Signature line
+  doc.text("_________________________", pageWidth - 70, signatureY + 2)
 
-// Label BELOW the line
-doc.setFontSize(7)
-doc.text("Printed Name over Signature", pageWidth - 70, signatureY + 6)
-  
-  
+  // Label BELOW the line
+  doc.setFontSize(7)
+  doc.text("Printed Name over Signature", pageWidth - 70, signatureY + 6)
+
+
 
   // Tel and Date lines
   doc.setFont(undefined, "normal")
