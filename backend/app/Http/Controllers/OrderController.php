@@ -514,6 +514,7 @@ class OrderController extends Controller
             'design_file_url' => 'nullable|string',
             'team_roster' => 'nullable|string',
             'size_specifications' => 'nullable|string',
+            'design_consultation' => 'nullable|string',
             'notes' => 'nullable|string',
             'status' => 'nullable|in:pending,ongoing,completed',
         ]);
@@ -536,6 +537,7 @@ class OrderController extends Controller
                 'design_file_url' => $request->design_file_url ?? null,
                 'team_roster' => $request->team_roster ?? null,
                 'size_specifications' => $request->size_specifications ?? null,
+                'design_consultation' => $request->design_consultation ?? null,
                 'notes' => $request->notes ?? null,
                 'status' => $request->status ?? 'pending',
             ]);
@@ -579,6 +581,7 @@ class OrderController extends Controller
                 'design_file_url' => 'nullable|string',
                 'team_roster' => 'nullable|string|json',
                 'size_specifications' => 'nullable|string|json',
+                'design_consultation' => 'nullable|string|json',
                 'notes' => 'nullable|string|json',
             ]);
 
@@ -604,6 +607,9 @@ class OrderController extends Controller
             }
             if ($request->has('size_specifications')) {
                 $updateData['size_specifications'] = $request->size_specifications;
+            }
+            if ($request->has('design_consultation')) {
+                $updateData['design_consultation'] = $request->design_consultation;
             }
             if ($request->has('notes')) {
                 $updateData['notes'] = $request->notes;

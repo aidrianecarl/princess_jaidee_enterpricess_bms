@@ -36,7 +36,7 @@ export function DashboardOrderPricing({
 }: DashboardOrderPricingProps) {
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
-  const calculateSublimationSubtotal = (item: OrderItem): number => {
+  const calculateSublimationSubtotal = (item: OrderItem, designConsultation?: any): number => {
     if (!item) return 0
 
     let subtotal = 0
@@ -82,8 +82,8 @@ export function DashboardOrderPricing({
     }
 
     // Add design consultation price if present
-    if (item.design_consultation && typeof item.design_consultation === "object") {
-      const consultationPrice = Number(item.design_consultation.price) || 0
+    if (designConsultation && typeof designConsultation === "object") {
+      const consultationPrice = Number(designConsultation.price) || 0
       subtotal += consultationPrice
     }
 
@@ -133,6 +133,15 @@ export function DashboardOrderPricing({
           }
         }
 
+        let designConsultation = item.design_consultation
+        if (typeof item.design_consultation === 'string' && item.design_consultation) {
+          try {
+            designConsultation = JSON.parse(item.design_consultation)
+          } catch (e) {
+            designConsultation = null
+          }
+        }
+
         return (
           <div key={item.id} className="border-b border-gray-200 last:border-b-0 py-6 px-4 md:px-6">
             {/* Item Header */}
@@ -162,7 +171,7 @@ export function DashboardOrderPricing({
               <div className="text-left md:text-right">
                 <p className="text-sm text-gray-600 mb-1">Subtotal</p>
                 <p className="text-2xl md:text-3xl font-bold text-orange-600">
-                  ₱{calculateSublimationSubtotal(item).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  ₱{calculateSublimationSubtotal(item, designConsultation).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -334,22 +343,22 @@ export function DashboardOrderPricing({
             )}
 
             {/* Design Consultation */}
-            {item.design_consultation && typeof item.design_consultation === "object" && (
+            {designConsultation && typeof designConsultation === "object" && (
               <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
                 <h4 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">
                   <span>✨</span> Design Consultation
                 </h4>
-                {item.design_consultation.notes && (
+                {designConsultation.notes && (
                   <div className="mb-3 p-3 bg-white rounded border border-emerald-200">
                     <p className="text-xs font-semibold text-emerald-700 uppercase mb-2">Details</p>
-                    <p className="text-sm text-gray-900">{item.design_consultation.notes}</p>
+                    <p className="text-sm text-gray-900">{designConsultation.notes}</p>
                   </div>
                 )}
-                {item.design_consultation.price && (
+                {designConsultation.price && (
                   <div className="p-3 bg-white rounded border-l-4 border-l-emerald-500">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-700 font-semibold">Consultation Fee:</span>
-                      <span className="text-emerald-600 font-bold">₱{Number(item.design_consultation.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                      <span className="text-emerald-600 font-bold">₱{Number(designConsultation.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 )}
