@@ -168,6 +168,7 @@ export const generateQuotationPDF = async (quotation: any) => {
       try {
         sizeSpecs = JSON.parse(sizeSpecs)
       } catch (e) {
+        console.log("[v0] Error parsing sizeSpecs:", e, "Raw value:", sizeSpecs)
         sizeSpecs = null
       }
     }
@@ -176,6 +177,12 @@ export const generateQuotationPDF = async (quotation: any) => {
 
     // For Sublimation with size_specifications: Show sizes in name
     if (serviceName.includes('Sublimation') && sizeSpecs && sizeSpecs.items && Array.isArray(sizeSpecs.items)) {
+      console.log("[v0] Processing Sublimation item:", {
+        serviceName,
+        isJersey: serviceName.includes('Jersey'),
+        sizeSpecs
+      })
+      
       // Check if this is a Jersey item (has SET format)
       const isJersey = serviceName.includes('Jersey') || sizeSpecs.items.some((spec: any) => spec.setType || spec.set_type)
       
@@ -204,12 +211,20 @@ export const generateQuotationPDF = async (quotation: any) => {
           }
         })
         
-        totalQty = setSets
+        totalQty = setSets > 0 ? setSets : (topCount + bottomCount)
         const parts = []
         if (setSets > 0) parts.push(`${setSets} SET`)
         if (topCount > 0) parts.push(`${topCount} TOP`)
         if (bottomCount > 0) parts.push(`${bottomCount} BOTTOM`)
         sizeDescriptions = parts.join(' - ')
+        
+        console.log("[v0] Jersey formatting:", {
+          setSets,
+          topCount,
+          bottomCount,
+          sizeDescriptions,
+          totalQty
+        })
       } else {
         // For regular Sublimation: Build size description from items
         sizeDescriptions = sizeSpecs.items.map((spec: any) => {
