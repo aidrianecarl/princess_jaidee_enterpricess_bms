@@ -44,7 +44,7 @@ export default function ManageAccountPage() {
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-white to-red-50/20">
       <DashboardHeader user={user} />
-      <main className="w-full pt-20 md:pt-24">
+      <main className="w-full pt-20 md:pt-24 lg:ml-64">
         <ManageAccountContent user={user} />
       </main>
       <Toaster />
