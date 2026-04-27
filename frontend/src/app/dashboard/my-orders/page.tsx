@@ -48,7 +48,7 @@ interface Order {
   branch_id?: number
   branch?: {
     id: number
-    branch_name: string
+    name: string
   }
   quotation?: any
   items?: OrderItem[]
@@ -230,6 +230,8 @@ export default function MyOrdersPage() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api"
+      console.log("[v0] fetchMyOrders - API URL:", apiUrl)
+      console.log("[v0] fetchMyOrders - Auth Token:", token ? "Present" : "Missing")
       
       const response = await fetch(`${apiUrl}/orders`, {
         method: "GET",
@@ -240,8 +242,11 @@ export default function MyOrdersPage() {
         },
       })
 
+      console.log("[v0] fetchMyOrders - Response Status:", response.status)
+
       if (!response.ok) {
         if (response.status === 401) {
+          console.log("[v0] fetchMyOrders - Unauthorized (401)")
           router.push("/")
           return
         }
@@ -249,16 +254,29 @@ export default function MyOrdersPage() {
       }
 
       const data = await response.json()
+      console.log("[v0] fetchMyOrders - Full Response Data:", data)
+      
       const ordersData = data.data || data
+      console.log("[v0] fetchMyOrders - Orders Array:", ordersData)
       
       if (Array.isArray(ordersData)) {
+        console.log("[v0] fetchMyOrders - Order Count:", ordersData.length)
+        
+        // Check first order structure
+        if (ordersData.length > 0) {
+          console.log("[v0] fetchMyOrders - First Order:", ordersData[0])
+          console.log("[v0] fetchMyOrders - First Order Branch:", ordersData[0].branch)
+          console.log("[v0] fetchMyOrders - First Order Branch Name:", ordersData[0].branch?.name)
+        }
+        
         setOrders(ordersData)
         setFilteredOrders(ordersData)
       } else {
+        console.log("[v0] fetchMyOrders - Orders data is not an array")
         setOrders([])
       }
     } catch (err) {
-      console.error("[v0] Error fetching orders:", err)
+      console.error("[v0] fetchMyOrders - Error:", err)
       setError(err instanceof Error ? err.message : "Failed to load orders")
       setOrders([])
     } finally {
@@ -506,7 +524,7 @@ export default function MyOrdersPage() {
                           <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Branch</p>
                         </div>
                         <p className="font-semibold text-neutral-900 dark:text-white text-sm">
-                          {order.branch?.branch_name || 'N/A'}
+                          {order.branch?.name || 'N/A'}
                         </p>
                         <p className="text-xs text-neutral-500 dark:text-neutral-500">
                           Pick-up location

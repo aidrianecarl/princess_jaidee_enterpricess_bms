@@ -337,6 +337,8 @@ class OrderController extends Controller
             // Fetch orders linked to quotations created by this user (created_by field in quotations)
             $query = Order::with(['customer', 'items.service', 'quotation', 'branch', 'job_order']);
             
+            \Log::info('[v0] OrderController customerIndex - Query built with relationships: customer, items.service, quotation, branch, job_order');
+            
             // Add where clause for quotation relationship - use 'created_by' not 'user_id'
             $query->whereHas('quotation', function($q) use ($user) {
                 \Log::info('[v0] whereHas quotation - filtering by created_by: ' . $user->id);
@@ -345,11 +347,24 @@ class OrderController extends Controller
 
             $orders = $query->orderBy('created_at', 'desc')->get();
 
-            \Log::info('[v0] OrderController customerIndex - SUCCESS', [
-                'user_id' => $user->id,
+            \Log::info('[v0] OrderController customerIndex - Orders fetched', [
                 'orders_count' => $orders->count(),
-                'timestamp' => now()
             ]);
+
+            // Log branch data for each order
+            $orders->each(function($order, $index) {
+                \Log::info('[v0] Order ' . $index . ' details:', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'branch_id' => $order->branch_id,
+                    'branch_exists' => $order->branch ? true : false,
+                    'branch_data' => $order->branch ? [
+                        'id' => $order->branch->id,
+                        'name' => $order->branch->name ?? 'N/A',
+                        'branch_name' => $order->branch->branch_name ?? 'N/A',
+                    ] : 'NULL',
+                ]);
+            });
 
             return response()->json([
                 'success' => true,
