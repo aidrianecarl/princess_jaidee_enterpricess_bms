@@ -34,10 +34,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  console.log("RootLayout mounted - favicon should be /princessjd.png")
+  
   return (
     <html lang="en">
       <head>
-        <link rel="icon" href="/princessjd.png" type="image/png" />
+        <link rel="icon" href="/princessjd.png" type="image/png" onLoad={() => console.log("[v0] Favicon loaded successfully")} />
         <link rel="apple-touch-icon" href="/princessjd.png" />
       </head>
       <body className={`${inter.className} ${poppins.variable}`}>
