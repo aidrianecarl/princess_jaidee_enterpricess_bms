@@ -203,19 +203,26 @@ export default function MyOrdersPage() {
 
     // Apply filter type logic - default to "orders" tab
     if (filterType === "orders") {
-      // Only show orders that are completed but NOT released
-      // (no released_date OR no released_by, but must be completed)
+      // Show orders that are pending, InProduction, or completed but NOT released
       filtered = filtered.filter(order => {
+        const isPending = order.order_status === 'pending'
+        const isInProduction = order.order_status === 'InProduction' || order.order_status === ' InProduction'
         const isCompleted = order.order_status === 'completed'
         const isReleased = order.job_order?.released_date && order.job_order?.released_by
+        
+        const include = (isPending || isInProduction || (isCompleted && !isReleased))
+        
         console.log("[v0] Filter - Orders Tab", {
           order_number: order.order_number,
+          order_status: order.order_status,
+          isPending,
+          isInProduction,
           isCompleted,
           isReleased,
           job_order: order.job_order,
-          include: isCompleted && !isReleased
+          include
         })
-        return isCompleted && !isReleased
+        return include
       })
     } else if (filterType === "history") {
       // Only show released orders (completed AND has released_date AND released_by)
@@ -482,8 +489,8 @@ export default function MyOrdersPage() {
             <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center">
               <Package className="h-10 w-10 text-neutral-400 dark:text-neutral-600" />
             </div>
-            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">No ready orders</h3>
-            <p className="text-neutral-600 dark:text-neutral-400">You don&apos;t have any orders ready for pickup at the moment.</p>
+            <h3 className="text-xl font-semibold text-neutral-900 dark:text-white mb-2">No active orders</h3>
+            <p className="text-neutral-600 dark:text-neutral-400">You don&apos;t have any pending, in production, or ready orders at the moment.</p>
           </div>
         )}
 
