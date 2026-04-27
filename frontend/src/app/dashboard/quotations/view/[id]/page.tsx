@@ -309,7 +309,7 @@ export default function DashboardViewQuotationPage() {
         </div> */}
 
         {/* Content */}
-        <div className="mt-4 md:mt-6 ml-0 md:ml-64 px-3 md:px-4 lg:px-8 py-6 md:py-8">
+        <div className="mt-6 md:mt-6 ml-0 md:ml-64 px-3 md:px-4 lg:px-8 py-6 md:py-8">
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header with Logo */}
             <div className="p-8 border-b-4 border-orange-100">
