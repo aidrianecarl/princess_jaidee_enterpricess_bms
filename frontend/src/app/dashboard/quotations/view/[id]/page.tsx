@@ -280,7 +280,7 @@ export default function DashboardViewQuotationPage() {
       <DashboardHeader user={user} />
       <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
         {/* Toolbar */}
-        <div className="sticky top-16 z-30 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg">
+        {/* <div className="sticky top-16 z-30 bg-gradient-to-r from-red-600 to-orange-500 shadow-lg">
           <div className="ml-0 md:ml-64 px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between gap-2 md:gap-4 py-3 md:py-4 flex-wrap">
               <div className="flex items-center gap-2">
@@ -306,7 +306,7 @@ export default function DashboardViewQuotationPage() {
               )}
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Content */}
         <div className="ml-0 md:ml-64 px-3 md:px-4 lg:px-8 py-6 md:py-8">
