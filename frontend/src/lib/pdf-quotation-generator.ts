@@ -363,9 +363,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   yPosition += 3
   doc.text("4. Price validity shall be for a period of Thirty (30) calendar days", 20, yPosition)
   yPosition += 3
-  doc.text("5. D-EPS Registration certificate shall be attached upon submission of the quotation", 20, yPosition)
-  yPosition += 3
-  doc.text("6. Bidders shall submit original brochures showing certification of the product being offered", 20, yPosition)
+  doc.text("5. Bidders shall submit original brochures showing certification of the product being offered", 20, yPosition)
 
   yPosition += 10
 
