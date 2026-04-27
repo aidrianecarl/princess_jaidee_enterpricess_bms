@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { DashboardHeader } from "@/components/dashboard/header"
+import { DashboardOrderPricing } from "@/components/dashboard/dashboard-order-pricing"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -179,6 +180,7 @@ export default function OrderDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
+  const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     const userData = localStorage.getItem("user")
@@ -421,251 +423,33 @@ export default function OrderDetailsPage() {
 
         {/* Order Items */}
         {order.items && order.items.length > 0 && (
-          <div className="space-y-6 mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-white animate-fade-in">Order Items</h2>
-            
-            {order.items.filter((item, index, arr) => arr.findIndex(t => t.id === item.id) === index).map((item, index) => {
-              const teamRoster = Array.isArray(item.team_roster) ? item.team_roster : null
-              const sizeSpecs = typeof item.size_specifications === 'object' ? item.size_specifications : null
-              const designConsultation = typeof item.design_consultation === 'object' ? item.design_consultation : null
-              const statusColor = item.status === 'completed'
-                ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                : item.status === 'InProduction' || item.status === 'ongoing'
-                ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
-                : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-
-              return (
-                <Card 
-                  key={item.id} 
-                  className="overflow-hidden border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-md hover:shadow-xl transition-all duration-300 animate-fade-in-up"
-                  style={{ animationDelay: `${350 + index * 100}ms` }}
-                >
-                  {/* Item Header */}
-                  <div className="p-5 md:p-6 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 border-b border-neutral-200 dark:border-neutral-700">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                      <div className="flex-1">
-                        <h3 className="text-lg md:text-xl font-bold text-neutral-900 dark:text-white mb-2">
-                          {item.service?.name || `Item #${item.id}`}
-                        </h3>
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <span className="text-sm text-neutral-600 dark:text-neutral-400">
-                            Quantity: <span className="font-semibold text-neutral-900 dark:text-white">{item.quantity}</span>
-                          </span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
-                            {(item.status || 'pending').toUpperCase()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-left sm:text-right">
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">Total</p>
-                        <p className="text-xl md:text-2xl font-bold text-orange-600 dark:text-orange-400">
-                          ₱{(item.quantity * item.unit_price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-5 md:p-6 space-y-6">
-                    {/* Team Roster Details */}
-                    {teamRoster && teamRoster.length > 0 && (
-                      <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                        <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster Details</h4>
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm">
-                            <thead>
-                              <tr className="border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/50">
-                                <th className="px-4 py-3 text-left font-semibold text-blue-900 dark:text-blue-300">Player Name</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom</th>
-                                <th className="px-4 py-3 text-right font-semibold text-blue-900 dark:text-blue-300">Amount</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {teamRoster.map((player: any, idx: number) => (
-                                <tr key={idx} className="border-b border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition">
-                                  <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">{player.name}</td>
-                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
-                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '-'}</td>
-                                  <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '-'}</td>
-                                  <td className="px-4 py-3 text-right text-neutral-900 dark:text-white font-semibold">₱{Number(player.amount || 0).toLocaleString("en-PH", { minimumFractionDigits: 0 })}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Size Specifications */}
-                    {sizeSpecs && (Object.keys(sizeSpecs).length > 0 || (sizeSpecs.items && sizeSpecs.items.length > 0)) && (
-                      <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
-                        <h4 className="font-bold text-purple-900 dark:text-purple-300 mb-4 text-lg">
-                          Size Specifications
-                        </h4>
-                        
-                        {/* For Tarpaulin - flat structure */}
-                        {(sizeSpecs.width || sizeSpecs.height || sizeSpecs.totalSqft || sizeSpecs.top || sizeSpecs.bottom) && (
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {sizeSpecs.width && (
-                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
-                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width} ft</p>
-                              </div>
-                            )}
-                            {sizeSpecs.height && (
-                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
-                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height} ft</p>
-                              </div>
-                            )}
-                            {sizeSpecs.totalSqft && (
-                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
-                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft} sq ft</p>
-                              </div>
-                            )}
-                            {sizeSpecs.top && (
-                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
-                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
-                              </div>
-                            )}
-                            {sizeSpecs.bottom && (
-                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
-                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* For Sublimation - items array structure */}
-                        {sizeSpecs.items && sizeSpecs.items.length > 0 && (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="border-b border-purple-200 dark:border-purple-800 bg-purple-100 dark:bg-purple-900/50">
-                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Qty</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Top Size</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Top Length</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Bottom Size</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Bottom Length</th>
-                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Name</th>
-                                  <th className="px-4 py-3 text-right font-semibold text-purple-900 dark:text-purple-300">Price</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {sizeSpecs.items.map((spec: any, idx: number) => (
-                                  <tr key={idx} className="border-b border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
-                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.qty || '-'}</td>
-                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.sizeTop || '-'}</td>
-                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.lengthTopInches || '-'}</td>
-                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.sizeBottom || '-'}</td>
-                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.lengthBottomInches || '-'}</td>
-                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.name || '-'}</td>
-                                    <td className="px-4 py-3 text-right text-neutral-900 dark:text-white font-semibold">₱{Number(spec.price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Design Consultation */}
-                    {designConsultation && typeof designConsultation === 'object' && Object.keys(designConsultation).length > 0 && (
-                      <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                        <h4 className="font-bold text-emerald-900 dark:text-emerald-300 mb-4 text-lg">Design Details</h4>
-                        <div className="space-y-3">
-                          {designConsultation.description && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Description</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{designConsultation.description}</p>
-                            </div>
-                          )}
-                          {designConsultation.included && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Included</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{designConsultation.included === true ? 'Yes' : 'No'}</p>
-                            </div>
-                          )}
-                          {designConsultation.price && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Consultation Fee</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">₱{Number(designConsultation.price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
-                            </div>
-                          )}
-                          {designConsultation.notes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{designConsultation.notes}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Design Preview */}
-                    {item.design_file_url && (
-                      <div className="p-4 bg-gray-50 dark:bg-gray-900/20 rounded-xl border border-gray-200 dark:border-gray-800">
-                        <h4 className="font-bold text-gray-900 dark:text-gray-300 mb-4 text-lg">Design Preview</h4>
-                        <div className="relative w-full h-64 md:h-80 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 flex items-center justify-center">
-                          <img 
-                            src={getApiImageUrl(item.design_file_url)} 
-                            alt="Design preview" 
-                            crossOrigin="anonymous"
-                            onError={(e) => {
-                              e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200' viewBox='0 0 200 200'%3E%3Crect fill='%23e5e7eb' width='200' height='200'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999' font-size='14'%3EImage Not Found%3C/text%3E%3C/svg%3E"
-                            }}
-                            className="w-full h-full object-contain p-4"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">
-                          <span className="font-semibold">File:</span> {item.design_file_url?.split('/').pop() || 'Unknown'}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Notes */}
-                    {item.notes && typeof item.notes === 'object' && Object.keys(item.notes).length > 0 && (
-                      <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
-                        <h4 className="font-bold text-amber-900 dark:text-amber-300 mb-4 text-lg">Notes</h4>
-                        <div className="space-y-3">
-                          {item.notes.designNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Design Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.designNotes}</p>
-                            </div>
-                          )}
-                          {item.notes.sizeNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Size Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.sizeNotes}</p>
-                            </div>
-                          )}
-                          {item.notes.teamNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Team Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.teamNotes}</p>
-                            </div>
-                          )}
-                          {item.notes.additionalNotes && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Additional Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.notes.additionalNotes}</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              )
-            })}
-          </div>
+          <Card className="border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg mb-8 overflow-hidden">
+            <div className="p-6 bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/10 dark:to-amber-900/10 border-b border-neutral-200 dark:border-neutral-700">
+              <h2 className="text-xl md:text-2xl font-bold text-neutral-900 dark:text-white flex items-center gap-3">
+                <Package size={24} className="text-orange-600 dark:text-orange-400" />
+                Pricing Details
+                <span className="text-sm font-normal text-neutral-600 dark:text-neutral-400">
+                  ({order.items.length} {order.items.length === 1 ? "item" : "items"})
+                </span>
+              </h2>
+            </div>
+            <div className="p-6">
+              <DashboardOrderPricing
+                items={order.items.filter((item, index, arr) => arr.findIndex(t => t.id === item.id) === index)}
+                expandedItems={expandedItems}
+                onToggleExpand={(itemId: number) => {
+                  const newExpanded = new Set(expandedItems)
+                  if (newExpanded.has(itemId)) {
+                    newExpanded.delete(itemId)
+                  } else {
+                    newExpanded.add(itemId)
+                  }
+                  setExpandedItems(newExpanded)
+                }}
+                onImageExpand={(imageUrl: string) => {}}
+              />
+            </div>
+          </Card>
         )}
 
         {/* Order Details */}
