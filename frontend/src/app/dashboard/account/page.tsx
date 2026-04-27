@@ -28,25 +28,25 @@ export default function ManageAccountPage() {
     checkAuth()
   }, [router])
 
-  if (isLoading) {
-    return (
-      <div className="w-full min-h-screen bg-gradient-to-b from-white to-red-50/20">
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20">
+
+      {/* Header (responsive offset) */}
+      <div className="lg:ml-64">
         <DashboardHeader user={user} />
-        <main className="w-full pt-20 md:pt-24">
-          <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-full">
+      </div>
+
+      {/* Main Content */}
+      <main className="pt-20 md:pt-24 px-4 sm:px-6 lg:px-8 lg:ml-64">
+        {isLoading ? (
+          <div className="max-w-7xl mx-auto py-8 sm:py-12">
             <div className="h-96 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl animate-pulse" />
           </div>
-        </main>
-      </div>
-    )
-  }
-
-  return (
-    <div className="w-full min-h-screen bg-gradient-to-b from-white to-red-50/20">
-      <DashboardHeader user={user} />
-      <main className="w-full pt-20 md:pt-24 lg:ml-64">
-        <ManageAccountContent user={user} />
+        ) : (
+          <ManageAccountContent user={user} />
+        )}
       </main>
+
       <Toaster />
     </div>
   )
