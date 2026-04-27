@@ -588,9 +588,93 @@ export function AdminQuotationPricing() {
               <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
                 Services Summary
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {quotation.items.map((item) => {
                   if (item.service?.name?.includes('Sublimation')) {
+                    let sizeSpecs = item.size_specifications
+                    if (typeof item.size_specifications === 'string' && item.size_specifications) {
+                      try {
+                        sizeSpecs = JSON.parse(item.size_specifications)
+                      } catch (e) {
+                        sizeSpecs = null
+                      }
+                    }
+                    
+                    // Check if we have items array for table display
+                    const hasSizeItems = sizeSpecs && typeof sizeSpecs === 'object' && sizeSpecs.items && Array.isArray(sizeSpecs.items) && sizeSpecs.items.length > 0
+                    
+                    if (hasSizeItems) {
+                      return (
+                        <div key={item.id} className="bg-white rounded-lg border border-blue-200 overflow-hidden">
+                          <div className="bg-green-100 border-b border-green-300 p-4">
+                            <h3 className="font-bold text-green-900">{item.service?.name}</h3>
+                          </div>
+                          
+                          {/* Modern Responsive Table */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead className="bg-green-50 border-b border-green-300">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Qty</th>
+                                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Top Size</th>
+                                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Top Length (in)</th>
+                                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Bottom Size</th>
+                                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Bottom Length (in)</th>
+                                  <th className="px-4 py-3 text-left text-gray-700 font-semibold">Additional Name</th>
+                                  <th className="px-4 py-3 text-right text-gray-700 font-semibold">Price</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sizeSpecs.items.map((spec: any, idx: number) => {
+                                  const basePrice = Number(item.unit_price) || 0
+                                  const qty = Number(spec.qty) || 0
+                                  const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+                                  const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+                                  const isSet = hasTop && hasBottom
+                                  const itemPrice = isSet ? (basePrice * 2 * qty) : (basePrice * qty)
+                                  
+                                  return (
+                                    <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
+                                      <td className="px-4 py-3 text-gray-900 font-semibold">{qty} {isSet ? 'SET' : 'PCS'}</td>
+                                      <td className="px-4 py-3 text-gray-900">{spec.sizeTop || "-"}</td>
+                                      <td className="px-4 py-3 text-gray-900">{spec.lengthTopInches || "-"}</td>
+                                      <td className="px-4 py-3 text-gray-900">{spec.sizeBottom || "-"}</td>
+                                      <td className="px-4 py-3 text-gray-900">{spec.lengthBottomInches || "-"}</td>
+                                      <td className="px-4 py-3 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
+                                      <td className="px-4 py-3 text-right text-green-600 font-bold">₱{itemPrice.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    </tr>
+                                  )
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                          
+                          {/* Size Notes */}
+                          {(() => {
+                            let notes = item.notes
+                            if (typeof item.notes === 'string' && item.notes) {
+                              try {
+                                notes = JSON.parse(item.notes)
+                              } catch (e) {
+                                notes = null
+                              }
+                            }
+                            
+                            if (notes && typeof notes === "object" && notes.sizeNotes) {
+                              return (
+                                <div className="p-4 bg-blue-50 border-t border-blue-300">
+                                  <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Notes</h5>
+                                  <p className="text-sm text-gray-900">{notes.sizeNotes}</p>
+                                </div>
+                              )
+                            }
+                            return null
+                          })()}
+                        </div>
+                      )
+                    }
+                    
+                    // Fallback to old card layout if no items array
                     const teamRoster = item.team_roster || []
                     const prices = sublimationPrices[item.id]
                     if (!prices) return null
@@ -658,37 +742,6 @@ export function AdminQuotationPricing() {
                           </div>
                         </div>
                         
-                        {/* Size Specifications - Items List for Sublimation */}
-                        {item.size_specifications && typeof item.size_specifications === "object" && 
-                         item.size_specifications.items && Array.isArray(item.size_specifications.items) && 
-                         item.size_specifications.items.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-blue-200">
-                            <p className="text-xs font-semibold text-blue-700 uppercase mb-3">Size Specifications - Items List</p>
-                            <div className="space-y-2">
-                              {item.size_specifications.items.map((spec: any, idx: number) => {
-                                // Calculate price: unit_price * qty
-                                const basePrice = Number(item.unit_price) || 0
-                                const qty = Number(spec.qty) || 0
-                                const itemPrice = basePrice * qty
-                                
-                                // Determine size display (TOP or BOTTOM depending on qtyUnit)
-                                const sizeDisplay = spec.qtyUnit === 'TOP' 
-                                  ? spec.sizeTop 
-                                  : spec.qtyUnit === 'BOTTOM' 
-                                  ? spec.sizeBottom 
-                                  : spec.sizeTop || spec.sizeBottom || 'N/A'
-                                
-                                return (
-                                  <div key={idx} className="flex justify-between items-center text-sm bg-blue-50 p-3 rounded border border-blue-200">
-                                    <span className="text-gray-900 font-semibold">{qty} {spec.qtyUnit} - {sizeDisplay}</span>
-                                    <span className="text-blue-700 font-bold">₱{itemPrice.toLocaleString()}</span>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          </div>
-                        )}
-
                         {/* Design Consultation for Sublimation */}
                         {item.design_consultation && typeof item.design_consultation === "object" && (
                           <div className="mt-4 pt-4 border-t border-blue-200">

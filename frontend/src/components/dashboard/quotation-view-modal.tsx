@@ -359,73 +359,150 @@ export function QuotationViewModal({ quotation, isOpen, onClose }: QuotationView
                               }
                             }
                             
-                            const hasSpecs = sizeSpecsData && typeof sizeSpecsData === 'object' && Object.keys(sizeSpecsData).length > 0
+                            // Check for Sublimation services with size items
+                            const isSublimation = item.service?.name?.includes('Sublimation')
+                            const hasSizeItems = sizeSpecsData && typeof sizeSpecsData === 'object' && sizeSpecsData.items && Array.isArray(sizeSpecsData.items) && sizeSpecsData.items.length > 0
                             const hasSizeNotes = notesData && typeof notesData === 'object' && notesData.sizeNotes
                             
-                            return (hasSpecs || hasSizeNotes) ? (
-                              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                                <h4 className="font-semibold text-purple-900 mb-3">
-                                  {item.service?.name?.includes("Tarpaulin") ? "SIZE SPECIFICATION" : "UNIFORM CUSTOMIZATION"}
-                                </h4>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
-                                  {item.service?.name?.includes("Tarpaulin") ? (
-                                    <>
-                                      {sizeSpecsData?.width && (
-                                        <div>
-                                          <p className="text-xs text-gray-600 font-semibold">Width</p>
-                                          <p className="text-gray-900">{sizeSpecsData.width} ft</p>
-                                        </div>
-                                      )}
-                                      {sizeSpecsData?.height && (
-                                        <div>
-                                          <p className="text-xs text-gray-600 font-semibold">Height</p>
-                                          <p className="text-gray-900">{sizeSpecsData.height} ft</p>
-                                        </div>
-                                      )}
-                                      {sizeSpecsData?.totalSqft && (
-                                        <div>
-                                          <p className="text-xs text-gray-600 font-semibold">Total Sq Ft</p>
-                                          <p className="text-gray-900 font-semibold">{sizeSpecsData.totalSqft} sq ft</p>
-                                        </div>
-                                      )}
-                                      {sizeSpecsData?.totalPrice && (
-                                        <div>
-                                          <p className="text-xs text-gray-600 font-semibold">Total Price</p>
-                                          <p className="text-gray-900 font-bold">₱{sizeSpecsData.totalPrice}</p>
-                                        </div>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <>
-                                      {sizeSpecsData?.top && (
-                                        <div>
-                                          <p className="text-xs text-gray-600 font-semibold">Top/Shirt Size</p>
-                                          <p className="text-gray-900">{sizeSpecsData.top}</p>
-                                        </div>
-                                      )}
-                                      {sizeSpecsData?.bottom && (
-                                        <div>
-                                          <p className="text-xs text-gray-600 font-semibold">Bottom/Short Size</p>
-                                          <p className="text-gray-900">{sizeSpecsData.bottom}</p>
-                                        </div>
-                                      )}
-                                      {!sizeSpecsData?.top && !sizeSpecsData?.bottom && (
-                                        <div>
-                                          <p className="text-xs text-gray-600 font-semibold">Size</p>
-                                          <p className="text-gray-900">Not specified</p>
-                                        </div>
-                                      )}
-                                    </>
+                            if (isSublimation && hasSizeItems) {
+                              return (
+                                <div className="p-4 bg-green-50 rounded-lg border border-green-200 space-y-4">
+                                  <h4 className="font-semibold text-green-900">
+                                    SIZE SPECIFICATIONS - ITEMS LIST
+                                  </h4>
+                                  
+                                  {/* Modern Responsive Table */}
+                                  <div className="overflow-x-auto bg-white rounded border border-green-300">
+                                    <table className="w-full text-xs sm:text-sm">
+                                      <thead className="bg-green-100 border-b border-green-300">
+                                        <tr>
+                                          <th className="px-2 sm:px-3 py-2 text-left text-gray-700 font-semibold">Qty</th>
+                                          <th className="px-2 sm:px-3 py-2 text-left text-gray-700 font-semibold">Top Size</th>
+                                          <th className="px-2 sm:px-3 py-2 text-left text-gray-700 font-semibold">Top Length (in)</th>
+                                          <th className="px-2 sm:px-3 py-2 text-left text-gray-700 font-semibold">Bottom Size</th>
+                                          <th className="px-2 sm:px-3 py-2 text-left text-gray-700 font-semibold">Bottom Length (in)</th>
+                                          <th className="px-2 sm:px-3 py-2 text-left text-gray-700 font-semibold">Additional Name</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {sizeSpecsData.items.map((spec: any, idx: number) => {
+                                          const qty = Number(spec.qty) || 0
+                                          const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+                                          const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+                                          const isSet = hasTop && hasBottom
+                                          
+                                          return (
+                                            <tr key={idx} className="border-b border-green-200 hover:bg-green-50">
+                                              <td className="px-2 sm:px-3 py-2 text-gray-900 font-semibold">{qty} {isSet ? 'SET' : 'PCS'}</td>
+                                              <td className="px-2 sm:px-3 py-2 text-gray-900">{spec.sizeTop || "-"}</td>
+                                              <td className="px-2 sm:px-3 py-2 text-gray-900">{spec.lengthTopInches || "-"}</td>
+                                              <td className="px-2 sm:px-3 py-2 text-gray-900">{spec.sizeBottom || "-"}</td>
+                                              <td className="px-2 sm:px-3 py-2 text-gray-900">{spec.lengthBottomInches || "-"}</td>
+                                              <td className="px-2 sm:px-3 py-2 text-gray-900">{spec.name || spec.additionalName || "-"}</td>
+                                            </tr>
+                                          )
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                  
+                                  {/* Size Notes */}
+                                  {hasSizeNotes && (
+                                    <div className="p-3 bg-blue-50 rounded border border-blue-300">
+                                      <h5 className="font-semibold text-blue-900 mb-2 text-sm">Size Notes</h5>
+                                      <p className="text-xs sm:text-sm text-gray-900">{notesData.sizeNotes}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Service Image if available */}
+                                  {item.service?.image_url && (
+                                    <div className="p-3 bg-blue-50 rounded border border-blue-300">
+                                      <p className="text-xs font-semibold text-blue-900 mb-2 uppercase">Service Image</p>
+                                      <img
+                                        src={getApiImageUrl(item.service.image_url)}
+                                        alt={item.service.name}
+                                        className="max-w-xs h-auto rounded bg-white border border-blue-200"
+                                        onError={(e) => {
+                                          e.currentTarget.style.display = "none"
+                                        }}
+                                      />
+                                    </div>
                                   )}
                                 </div>
-                                {hasSizeNotes && (
-                                  <div className="mt-4 pt-4 border-t border-purple-300">
-                                    <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes</p>
-                                    <p className="text-sm text-purple-900">{notesData.sizeNotes}</p>
+                              )
+                            }
+                            
+                            // Fallback for non-Sublimation or non-items size specs
+                            const hasSpecs = sizeSpecsData && typeof sizeSpecsData === 'object' && Object.keys(sizeSpecsData).length > 0
+                            
+                            if ((hasSpecs && !hasSizeItems) || hasSizeNotes) {
+                              return (
+                                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                                  <h4 className="font-semibold text-purple-900 mb-3">
+                                    {item.service?.name?.includes("Tarpaulin") ? "SIZE SPECIFICATION" : "UNIFORM CUSTOMIZATION"}
+                                  </h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-white p-3 rounded">
+                                    {item.service?.name?.includes("Tarpaulin") ? (
+                                      <>
+                                        {sizeSpecsData?.width && (
+                                          <div>
+                                            <p className="text-xs text-gray-600 font-semibold">Width</p>
+                                            <p className="text-gray-900">{sizeSpecsData.width} ft</p>
+                                          </div>
+                                        )}
+                                        {sizeSpecsData?.height && (
+                                          <div>
+                                            <p className="text-xs text-gray-600 font-semibold">Height</p>
+                                            <p className="text-gray-900">{sizeSpecsData.height} ft</p>
+                                          </div>
+                                        )}
+                                        {sizeSpecsData?.totalSqft && (
+                                          <div>
+                                            <p className="text-xs text-gray-600 font-semibold">Total Sq Ft</p>
+                                            <p className="text-gray-900 font-semibold">{sizeSpecsData.totalSqft} sq ft</p>
+                                          </div>
+                                        )}
+                                        {sizeSpecsData?.totalPrice && (
+                                          <div>
+                                            <p className="text-xs text-gray-600 font-semibold">Total Price</p>
+                                            <p className="text-gray-900 font-bold">₱{sizeSpecsData.totalPrice}</p>
+                                          </div>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <>
+                                        {sizeSpecsData?.top && (
+                                          <div>
+                                            <p className="text-xs text-gray-600 font-semibold">Top/Shirt Size</p>
+                                            <p className="text-gray-900">{sizeSpecsData.top}</p>
+                                          </div>
+                                        )}
+                                        {sizeSpecsData?.bottom && (
+                                          <div>
+                                            <p className="text-xs text-gray-600 font-semibold">Bottom/Short Size</p>
+                                            <p className="text-gray-900">{sizeSpecsData.bottom}</p>
+                                          </div>
+                                        )}
+                                        {!sizeSpecsData?.top && !sizeSpecsData?.bottom && (
+                                          <div>
+                                            <p className="text-xs text-gray-600 font-semibold">Size</p>
+                                            <p className="text-gray-900">Not specified</p>
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
                                   </div>
-                                )}
-                              </div>
-                            ) : null
+                                  {hasSizeNotes && (
+                                    <div className="mt-4 pt-4 border-t border-purple-300">
+                                      <p className="text-xs font-semibold text-purple-700 uppercase mb-2">Size Notes</p>
+                                      <p className="text-sm text-purple-900">{notesData.sizeNotes}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            }
+                            
+                            return null
                           })()}
 
                           {/* Design File Preview */}
