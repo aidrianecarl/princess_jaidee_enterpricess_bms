@@ -356,13 +356,14 @@ class OrderController extends Controller
                 \Log::info('[v0] Order ' . $index . ' details:', [
                     'order_id' => $order->id,
                     'order_number' => $order->order_number,
+                    'order_status' => $order->order_status,
                     'branch_id' => $order->branch_id,
                     'branch_exists' => $order->branch ? true : false,
-                    'branch_data' => $order->branch ? [
-                        'id' => $order->branch->id,
-                        'name' => $order->branch->name ?? 'N/A',
-                        'branch_name' => $order->branch->branch_name ?? 'N/A',
-                    ] : 'NULL',
+                    'branch_name' => $order->branch?->name ?? 'NULL',
+                    'job_order_exists' => $order->job_order ? true : false,
+                    'job_order_id' => $order->job_order?->id ?? 'NULL',
+                    'released_date' => $order->job_order?->released_date ?? 'NULL',
+                    'released_by' => $order->job_order?->released_by ?? 'NULL',
                 ]);
             });
 

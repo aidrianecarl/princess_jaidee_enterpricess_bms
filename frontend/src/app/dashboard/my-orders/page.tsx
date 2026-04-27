@@ -203,15 +203,34 @@ export default function MyOrdersPage() {
 
     // Apply filter type logic - default to "orders" tab
     if (filterType === "orders") {
-      // Only show orders that are NOT released
-      filtered = filtered.filter(order => 
-        !order.job_order?.released_date || order.order_status !== 'completed'
-      )
+      // Only show orders that are completed but NOT released
+      // (no released_date OR no released_by, but must be completed)
+      filtered = filtered.filter(order => {
+        const isCompleted = order.order_status === 'completed'
+        const isReleased = order.job_order?.released_date && order.job_order?.released_by
+        console.log("[v0] Filter - Orders Tab", {
+          order_number: order.order_number,
+          isCompleted,
+          isReleased,
+          job_order: order.job_order,
+          include: isCompleted && !isReleased
+        })
+        return isCompleted && !isReleased
+      })
     } else if (filterType === "history") {
-      // Only show released orders
-      filtered = filtered.filter(order => 
-        order.job_order?.released_date && order.order_status === 'completed'
-      )
+      // Only show released orders (completed AND has released_date AND released_by)
+      filtered = filtered.filter(order => {
+        const isCompleted = order.order_status === 'completed'
+        const isReleased = order.job_order?.released_date && order.job_order?.released_by
+        console.log("[v0] Filter - History Tab", {
+          order_number: order.order_number,
+          isCompleted,
+          isReleased,
+          job_order: order.job_order,
+          include: isCompleted && isReleased
+        })
+        return isCompleted && isReleased
+      })
     }
 
     setFilteredOrders(filtered)
@@ -267,6 +286,9 @@ export default function MyOrdersPage() {
           console.log("[v0] fetchMyOrders - First Order:", ordersData[0])
           console.log("[v0] fetchMyOrders - First Order Branch:", ordersData[0].branch)
           console.log("[v0] fetchMyOrders - First Order Branch Name:", ordersData[0].branch?.name)
+          console.log("[v0] fetchMyOrders - First Order JobOrder:", ordersData[0].job_order)
+          console.log("[v0] fetchMyOrders - First Order JobOrder Released Date:", ordersData[0].job_order?.released_date)
+          console.log("[v0] fetchMyOrders - First Order JobOrder Released By:", ordersData[0].job_order?.released_by)
         }
         
         setOrders(ordersData)
