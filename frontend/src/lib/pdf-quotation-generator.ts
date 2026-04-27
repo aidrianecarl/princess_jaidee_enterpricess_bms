@@ -113,21 +113,15 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ================= SUPPLIER INFO =================
   doc.setFontSize(9)
   doc.setFont(undefined, "bold")
-  doc.text("Supplier Name:", 15, yPosition)
+  doc.text("Supplier Name: Princess Jaidee Enterprises", 15, yPosition)
   doc.setFont(undefined, "normal")
-  doc.text(quotation.customer?.business_name || quotation.customer?.company_name || "N/A", 50, yPosition)
 
   yPosition += 5
   doc.setFont(undefined, "bold")
-  doc.text("Address:", 15, yPosition)
+  doc.text("Address: A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", 15, yPosition)
   doc.setFont(undefined, "normal")
-  doc.text(quotation.customer?.bill_to_address || quotation.customer?.address || "N/A", 50, yPosition)
 
-  yPosition += 5
-  doc.setFont(undefined, "bold")
-  doc.text("TIN:", 15, yPosition)
-  doc.setFont(undefined, "normal")
-  doc.text(quotation.customer?.tin || "N/A", 50, yPosition)
+
 
   yPosition += 10
 
