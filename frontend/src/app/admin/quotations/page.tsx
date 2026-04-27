@@ -6,7 +6,7 @@ import { apiClient } from "@/lib/api-client"
 import { Eye, Download, FileText, Loader2, CheckCircle } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
-import { generateQuotationPDF } from "@/lib/pdf-generator"
+import { generateQuotationPDF } from "@/lib/pdf-quotation-generator"
 import { Button } from "@/components/ui/button"
 
 const QuotationSkeleton = () => (
