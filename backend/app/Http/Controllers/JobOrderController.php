@@ -505,7 +505,7 @@ class JobOrderController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Job order released successfully',
-                'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo', 'releasedBy', 'branch', 'order.branch'])
+                'data' => $jobOrder->load(['order.items', 'customer', 'assignedTo', 'releasedBy', 'order.branch'])
             ], 200);
         } catch (\Exception $e) {
             \Log::error('[v0] Error releasing job order:', [

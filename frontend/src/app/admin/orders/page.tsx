@@ -634,6 +634,8 @@ export default function OrdersPage() {
 
     try {
       setIsReleasing(releaseOrderId)
+      
+      console.log("[v0] handleReleaseOrder - START", { releaseOrderId, token: token ? "Present" : "Missing" })
 
       const response = await fetch(`${apiUrl}/admin/job-orders/${releaseOrderId}/release`, {
         method: 'PUT',
@@ -643,7 +645,12 @@ export default function OrdersPage() {
         },
       })
 
+      console.log("[v0] handleReleaseOrder - Response Status:", response.status)
+
       if (response.ok) {
+        const data = await response.json()
+        console.log("[v0] handleReleaseOrder - SUCCESS", data)
+        
         setJobOrders(
           jobOrders.map(jo =>
             jo.id === releaseOrderId
@@ -655,9 +662,11 @@ export default function OrdersPage() {
         setError("")
       } else {
         const data = await response.json()
+        console.log("[v0] handleReleaseOrder - FAILED", { status: response.status, error: data })
         setError(data.error || 'Failed to release order')
       }
     } catch (err) {
+      console.error("[v0] handleReleaseOrder - ERROR", err)
       setError(err instanceof Error ? err.message : 'Failed to release order')
     } finally {
       setIsReleasing(null)
@@ -974,7 +983,7 @@ export default function OrdersPage() {
               <Loader2 className="animate-spin mr-2" />
               <p className="text-neutral-600 dark:text-neutral-400">Loading...</p>
             </div>
-          ) : (filterStatus === "completed" || filterStatus === "released") ? (
+          ) : filterStatus === "completed" || filterStatus === "released" ? (
             (() => {
               // Filter job orders by status first
               let filteredJobOrders = jobOrders.filter((jo: JobOrder) => {
