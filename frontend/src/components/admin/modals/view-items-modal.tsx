@@ -123,18 +123,18 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6x2 max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700" aria-describedby="quotation-items-description">
-        <DialogHeader>
-          <DialogTitle id="quotation-items-description" className="text-2xl font-bold text-neutral-900 dark:text-white">
-            Quotation Items - {quotation.quotation_number}
+      <DialogContent className="w-[95vw] max-w-2xl sm:max-w-3xl lg:max-w-5xl xl:max-w-6xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 p-3 sm:p-4 md:p-6 rounded-lg" aria-describedby="quotation-items-description">
+        <DialogHeader className="sticky top-0 bg-white dark:bg-neutral-900 z-10 pb-3 mb-2 sm:mb-4">
+          <DialogTitle id="quotation-items-description" className="text-lg sm:text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white truncate pr-8">
+            Quotation #{quotation.quotation_number}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <div className="space-y-3 sm:space-y-4 md:space-y-6 py-2">
           {items.length === 0 ? (
-            <Card className="p-12 text-center bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700">
-              <Package size={32} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
-              <p className="text-neutral-600 dark:text-neutral-400 font-medium">No items found</p>
+            <Card className="p-8 sm:p-12 text-center bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700">
+              <Package size={32} className="text-neutral-400 dark:text-neutral-500 mx-auto mb-3 sm:mb-4" />
+              <p className="text-sm sm:text-base text-neutral-600 dark:text-neutral-400 font-medium">No items found</p>
             </Card>
           ) : (
             <>
@@ -156,38 +156,38 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
                     {/* Item Header */}
                     <div
                       onClick={() => toggleItemExpanded(item.id)}
-                      className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 cursor-pointer hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-300"
+                      className="p-3 sm:p-4 md:p-5 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 cursor-pointer hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/30 dark:hover:to-indigo-900/30 transition-all duration-300"
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex gap-3 items-start flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex gap-2 sm:gap-3 items-start flex-1 min-w-0">
                           {item.service?.image_url && (
                             <img
                               src={getApiImageUrl(item.service.image_url)}
                               alt={item.service.name}
-                              className="w-10 h-10 rounded-lg border border-neutral-200 dark:border-neutral-700 object-cover flex-shrink-0"
+                              className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg border border-neutral-200 dark:border-neutral-700 object-cover flex-shrink-0"
                               onError={(e) => {
                                 e.currentTarget.style.display = "none"
                               }}
                             />
                           )}
                           <div className="flex-1 min-w-0">
-                            <h3 className="text-lg font-bold text-neutral-900 dark:text-white">
+                            <h3 className="text-base sm:text-lg md:text-lg font-bold text-neutral-900 dark:text-white truncate">
                               {item.service?.name || "Service Item"}
                             </h3>
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                            <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 mt-1 line-clamp-1">
                               Qty: <span className="font-semibold">{item.quantity}</span> × {formatCurrency(item.unit_price)} = {formatCurrency(item.line_total)}
                             </p>
                           </div>
                         </div>
-                        <div className="text-right flex items-center gap-3">
+                        <div className="text-right flex items-center gap-2 flex-shrink-0">
                           <div>
-                            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                            <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400 whitespace-nowrap">
                               {formatCurrency(item.line_total)}
                             </p>
                           </div>
                           <ChevronDown
                             size={20}
-                            className={`text-neutral-600 dark:text-neutral-400 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                            className={`text-neutral-600 dark:text-neutral-400 transition-transform duration-300 flex-shrink-0 ${isExpanded ? 'rotate-180' : ''}`}
                           />
                         </div>
                       </div>
@@ -195,22 +195,22 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
                     {/* Expanded Details */}
                     {isExpanded && (
-                      <div className="p-6 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 space-y-6 animate-in fade-in slide-in-from-top">
+                      <div className="p-3 sm:p-4 md:p-6 bg-white dark:bg-neutral-800 border-t border-neutral-200 dark:border-neutral-700 space-y-4 md:space-y-6 animate-in fade-in slide-in-from-top">
                         {/* Design Image */}
                         {item.design_file_url && (
-                          <div className="space-y-3 animate-in fade-in slide-in-from-top-4">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm uppercase tracking-wide flex items-center gap-2">
-                              <ZoomIn size={16} className="text-indigo-600 dark:text-indigo-400" />
-                              Design Preview
+                          <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-4">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                              <ZoomIn size={16} className="text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                              <span className="truncate">Design Preview</span>
                             </h4>
                             <div
-                              className="relative group cursor-zoom-in"
+                              className="relative group cursor-zoom-in overflow-hidden rounded-lg"
                               onClick={() => setExpandedImage(getApiImageUrl(item.design_file_url || null))}
                             >
                               <img
                                 src={getApiImageUrl(item.design_file_url)}
                                 alt="Design Preview"
-                                className="w-full max-h-72 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 hover:opacity-90 transition-opacity duration-300 bg-neutral-100 dark:bg-neutral-700"
+                                className="w-full max-h-64 sm:max-h-80 md:max-h-96 object-cover rounded-lg border border-neutral-200 dark:border-neutral-700 hover:opacity-90 transition-opacity duration-300 bg-neutral-100 dark:bg-neutral-700"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement
                                   target.src = '/placeholder.svg?height=288&width=400'
@@ -232,27 +232,27 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
                         {/* Team Roster */}
                         {teamRoster && teamRoster.length > 0 && (
-                          <div className="space-y-3 animate-in fade-in slide-in-from-top-4 delay-100">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm uppercase tracking-wide">Team Roster</h4>
+                          <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-4 delay-100">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-xs sm:text-sm uppercase tracking-wide">Team Roster</h4>
                             <div className="overflow-x-auto rounded-lg border border-blue-200 dark:border-blue-900/50 bg-blue-50 dark:bg-blue-900/20">
-                              <table className="w-full text-sm">
+                              <table className="w-full text-xs sm:text-sm">
                                 <thead className="bg-blue-100 dark:bg-blue-900/40 border-b border-blue-300 dark:border-blue-900/50">
                                   <tr>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Name</th>
-                                    <th className="px-4 py-3 text-center font-semibold text-neutral-900 dark:text-white">Jersey #</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Top Size</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Bottom Size</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white">Name</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-center font-semibold text-neutral-900 dark:text-white">Jersey #</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white">Top Size</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white">Bottom Size</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {teamRoster.map((player, idx) => (
                                     <tr key={idx} className="border-b border-blue-200 dark:border-blue-900/50 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
-                                      <td className="px-4 py-3 text-neutral-900 dark:text-white font-medium">{player.name}</td>
-                                      <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">{player.number}</td>
-                                      <td className="px-4 py-3 text-neutral-900 dark:text-white">
+                                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white font-medium truncate">{player.name}</td>
+                                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-center text-neutral-900 dark:text-white font-semibold">{player.number}</td>
+                                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white text-xs sm:text-sm">
                                         {player.sizeTop ? `${player.sizeTop}${player.lengthTopInches ? ` (${player.lengthTopInches}in)` : ''}` : "-"}
                                       </td>
-                                      <td className="px-4 py-3 text-neutral-900 dark:text-white">
+                                      <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white text-xs sm:text-sm">
                                         {player.sizeBottom ? `${player.sizeBottom}${player.lengthBottomInches ? ` (${player.lengthBottomInches}in)` : ''}` : "-"}
                                       </td>
                                     </tr>
@@ -265,18 +265,18 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
                         {/* Size Specifications - Items Table */}
                         {isSublimation && sizeSpecs?.items && Array.isArray(sizeSpecs.items) && sizeSpecs.items.length > 0 && (
-                          <div className="space-y-3 animate-in fade-in slide-in-from-top-4 delay-150">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm uppercase tracking-wide">Size Specifications - Items List</h4>
+                          <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-4 delay-150">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-xs sm:text-sm uppercase tracking-wide">Size Specifications - Items List</h4>
                             <div className="overflow-x-auto rounded-lg border border-green-200 dark:border-green-900/50">
-                              <table className="w-full text-sm bg-white dark:bg-neutral-800">
+                              <table className="w-full text-xs sm:text-sm bg-white dark:bg-neutral-800">
                                 <thead className="bg-green-100 dark:bg-green-900/40 border-b border-green-300 dark:border-green-900/50">
                                   <tr>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Qty</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Top Size</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Top Length</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Bottom Size</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Bottom Length</th>
-                                    <th className="px-4 py-3 text-left font-semibold text-neutral-900 dark:text-white">Name</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white">Qty</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white">Top Size</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white hidden md:table-cell">Top Length</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white">Bottom Size</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white hidden md:table-cell">Bottom Length</th>
+                                    <th className="px-2 sm:px-4 py-2 sm:py-3 text-left font-semibold text-neutral-900 dark:text-white">Name</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -288,12 +288,12 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
                                     return (
                                       <tr key={idx} className="border-b border-green-200 dark:border-green-900/50 hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors">
-                                        <td className="px-4 py-3 text-neutral-900 dark:text-white font-semibold">{qty} {isSet ? 'SET' : 'PCS'}</td>
-                                        <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.sizeTop || "-"}</td>
-                                        <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.lengthTopInches || "-"}</td>
-                                        <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.sizeBottom || "-"}</td>
-                                        <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.lengthBottomInches || "-"}</td>
-                                        <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.name || spec.additionalName || "-"}</td>
+                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white font-semibold">{qty} {isSet ? 'SET' : 'PCS'}</td>
+                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white">{spec.sizeTop || "-"}</td>
+                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white hidden md:table-cell">{spec.lengthTopInches || "-"}</td>
+                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white">{spec.sizeBottom || "-"}</td>
+                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white hidden md:table-cell">{spec.lengthBottomInches || "-"}</td>
+                                        <td className="px-2 sm:px-4 py-2 sm:py-3 text-neutral-900 dark:text-white text-xs sm:text-sm truncate">{spec.name || spec.additionalName || "-"}</td>
                                       </tr>
                                     )
                                   })}
@@ -305,31 +305,31 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
                         {/* Tarpaulin Specifications */}
                         {isTarpaulin && sizeSpecs && (
-                          <div className="space-y-3 animate-in fade-in slide-in-from-top-4 delay-150">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm uppercase tracking-wide">Tarpaulin Specifications</h4>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                          <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-4 delay-150">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-xs sm:text-sm uppercase tracking-wide">Tarpaulin Specifications</h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                               {sizeSpecs.width && (
-                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
+                                <div className="p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold mb-1">Width</p>
-                                  <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.width} ft</p>
+                                  <p className="font-bold text-neutral-900 dark:text-white text-sm">{sizeSpecs.width} ft</p>
                                 </div>
                               )}
                               {sizeSpecs.height && (
-                                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
+                                <div className="p-2 sm:p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-900/50">
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold mb-1">Height</p>
-                                  <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.height} ft</p>
+                                  <p className="font-bold text-neutral-900 dark:text-white text-sm">{sizeSpecs.height} ft</p>
                                 </div>
                               )}
                               {sizeSpecs.totalSqft && (
-                                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900/50">
+                                <div className="p-2 sm:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-900/50">
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold mb-1">Square Footage</p>
-                                  <p className="font-bold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft} sq ft</p>
+                                  <p className="font-bold text-neutral-900 dark:text-white text-sm">{sizeSpecs.totalSqft} sq ft</p>
                                 </div>
                               )}
                               {sizeSpecs.totalPrice && (
-                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-900/50">
+                                <div className="p-2 sm:p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-900/50">
                                   <p className="text-xs text-neutral-600 dark:text-neutral-400 font-semibold mb-1">Total Price</p>
-                                  <p className="font-bold text-amber-600 dark:text-amber-400">{formatCurrency(sizeSpecs.totalPrice)}</p>
+                                  <p className="font-bold text-amber-600 dark:text-amber-400 text-sm">{formatCurrency(sizeSpecs.totalPrice)}</p>
                                 </div>
                               )}
                             </div>
@@ -338,32 +338,32 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
                         {/* Size Notes */}
                         {itemNotes?.sizeNotes && (
-                          <div className="space-y-2 animate-in fade-in slide-in-from-top-4 delay-200 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-900/50">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm uppercase tracking-wide flex items-center gap-2">
-                              <span className="inline-block w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full"></span>
-                              Size Notes
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-4 delay-200 p-3 sm:p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-900/50">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
+                              <span className="inline-block w-2 h-2 bg-purple-600 dark:bg-purple-400 rounded-full flex-shrink-0"></span>
+                              <span className="truncate">Size Notes</span>
                             </h4>
-                            <p className="text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.sizeNotes}</p>
+                            <p className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300">{itemNotes.sizeNotes}</p>
                           </div>
                         )}
 
                         {/* Design Consultation */}
                         {designConsultation && (
-                          <div className="space-y-3 animate-in fade-in slide-in-from-top-4 delay-200 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg border border-indigo-200 dark:border-indigo-900/50">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm uppercase tracking-wide flex items-center gap-2">
+                          <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-4 delay-200 p-3 sm:p-4 bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-lg border border-indigo-200 dark:border-indigo-900/50">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-xs sm:text-sm uppercase tracking-wide flex items-center gap-2">
                               <span className="text-lg">✨</span> Design Consultation
                             </h4>
                             {designConsultation.notes && (
-                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg border border-indigo-200 dark:border-indigo-900/50">
+                              <div className="p-2 sm:p-3 bg-white dark:bg-neutral-800 rounded-lg border border-indigo-200 dark:border-indigo-900/50">
                                 <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-400 uppercase mb-2">Design Details</p>
-                                <p className="text-sm text-neutral-900 dark:text-neutral-100">{designConsultation.notes}</p>
+                                <p className="text-xs sm:text-sm text-neutral-900 dark:text-neutral-100">{designConsultation.notes}</p>
                               </div>
                             )}
                             {designConsultation.price && (
-                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg border-l-4 border-l-indigo-500">
-                                <div className="flex justify-between items-center">
-                                  <span className="text-neutral-700 dark:text-neutral-300 font-semibold">Consultation Fee:</span>
-                                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-lg">{formatCurrency(designConsultation.price)}</span>
+                              <div className="p-2 sm:p-3 bg-white dark:bg-neutral-800 rounded-lg border-l-4 border-l-indigo-500">
+                                <div className="flex justify-between items-center gap-2">
+                                  <span className="text-xs sm:text-sm text-neutral-700 dark:text-neutral-300 font-semibold">Consultation Fee:</span>
+                                  <span className="text-indigo-600 dark:text-indigo-400 font-bold text-sm sm:text-lg whitespace-nowrap">{formatCurrency(designConsultation.price)}</span>
                                 </div>
                               </div>
                             )}
@@ -372,9 +372,9 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
 
                         {/* Other Notes */}
                         {itemNotes && (Object.values(itemNotes).some(v => v && v !== itemNotes.sizeNotes)) && (
-                          <div className="space-y-3 animate-in fade-in slide-in-from-top-4 delay-300 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-900/50">
-                            <h4 className="font-semibold text-neutral-900 dark:text-white text-sm uppercase tracking-wide">Notes</h4>
-                            <div className="space-y-2 text-sm">
+                          <div className="space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-4 delay-300 p-3 sm:p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-900/50">
+                            <h4 className="font-semibold text-neutral-900 dark:text-white text-xs sm:text-sm uppercase tracking-wide">Notes</h4>
+                            <div className="space-y-2 text-xs sm:text-sm">
                               {itemNotes.designNotes && (
                                 <div>
                                   <p className="text-xs font-semibold text-amber-900 dark:text-amber-400 mb-1">Design Notes</p>
@@ -409,33 +409,33 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
               })}
 
               {/* Summary */}
-              <div className="border-t-2 border-neutral-200 dark:border-neutral-700 pt-6 mt-6 space-y-3 animate-in fade-in slide-in-from-top-4 delay-500">
-                <div className="flex justify-between items-center text-neutral-700 dark:text-neutral-300">
+              <div className="border-t-2 border-neutral-200 dark:border-neutral-700 pt-3 sm:pt-4 md:pt-6 mt-3 sm:mt-4 md:mt-6 space-y-2 sm:space-y-3 animate-in fade-in slide-in-from-top-4 delay-500">
+                <div className="flex justify-between items-center text-xs sm:text-sm text-neutral-700 dark:text-neutral-300">
                   <span className="font-medium">Subtotal:</span>
                   <span className="font-semibold">{formatCurrency(quotation.subtotal || 0)}</span>
                 </div>
                 {quotation.discount && quotation.discount > 0 && (
-                  <div className="flex justify-between items-center text-neutral-700 dark:text-neutral-300">
+                  <div className="flex justify-between items-center text-xs sm:text-sm text-neutral-700 dark:text-neutral-300">
                     <span className="font-medium">Discount:</span>
                     <span className="font-semibold text-red-600 dark:text-red-400">-{formatCurrency(quotation.discount)}</span>
                   </div>
                 )}
                 {quotation.tax && quotation.tax > 0 && (
-                  <div className="flex justify-between items-center text-neutral-700 dark:text-neutral-300">
+                  <div className="flex justify-between items-center text-xs sm:text-sm text-neutral-700 dark:text-neutral-300">
                     <span className="font-medium">Tax:</span>
                     <span className="font-semibold">{formatCurrency(quotation.tax)}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center text-lg font-bold p-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white">
+                <div className="flex justify-between items-center text-sm sm:text-base md:text-lg font-bold p-3 sm:p-4 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-900 dark:to-indigo-900 text-white gap-2">
                   <span>Total</span>
-                  <span>{formatCurrency(quotation.total || 0)}</span>
+                  <span className="whitespace-nowrap">{formatCurrency(quotation.total || 0)}</span>
                 </div>
               </div>
             </>
           )}
         </div>
 
-        <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full mt-6">
+        <Button onClick={() => onOpenChange(false)} variant="outline" className="w-full mt-4 sm:mt-6 text-sm sm:text-base">
           Close
         </Button>
       </DialogContent>
@@ -443,14 +443,14 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
       {/* Image Zoom Dialog */}
       {expandedImage && (
         <Dialog open={!!expandedImage} onOpenChange={() => setExpandedImage(null)}>
-          <DialogContent className="max-w-2xl bg-black border-0 p-0">
+          <DialogContent className="w-[95vw] max-w-2xl sm:max-w-3xl lg:max-w-4xl max-h-[90vh] bg-black border-0 p-0 rounded-lg overflow-hidden">
             <button
               onClick={() => setExpandedImage(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 p-2 hover:bg-white/20 rounded-lg transition"
+              className="absolute top-2 right-2 text-white hover:text-gray-300 z-50 p-2 hover:bg-white/20 rounded-lg transition"
             >
               <X size={24} />
             </button>
-            <img src={expandedImage} alt="Expanded View" className="w-full h-auto rounded-lg" />
+            <img src={expandedImage} alt="Expanded View" className="w-full h-auto max-h-[85vh] object-contain" />
           </DialogContent>
         </Dialog>
       )}
