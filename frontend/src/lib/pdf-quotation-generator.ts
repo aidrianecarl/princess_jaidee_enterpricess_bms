@@ -176,17 +176,54 @@ export const generateQuotationPDF = async (quotation: any) => {
 
     // For Sublimation with size_specifications: Show sizes in name
     if (serviceName.includes('Sublimation') && sizeSpecs && sizeSpecs.items && Array.isArray(sizeSpecs.items)) {
-      // Build size description from items
-      const sizeDescriptions = sizeSpecs.items.map((spec: any) => {
+      // Check if this is a Jersey item (has SET format)
+      const isJersey = serviceName.includes('Jersey') || sizeSpecs.items.some((spec: any) => spec.setType || spec.set_type)
+      
+      let sizeDescriptions = ""
+      let totalQty = 0
+      
+      if (isJersey) {
+        // For Jersey: Format as "X SET - X TOP - X BOTTOM"
+        let setSets = 0
+        let topCount = 0
+        let bottomCount = 0
+        
+        sizeSpecs.items.forEach((spec: any) => {
+          const qty = Number(spec.qty) || 0
+          const hasTop = spec.sizeTop && spec.sizeTop !== "-"
+          const hasBottom = spec.sizeBottom && spec.sizeBottom !== "-"
+          
+          if (hasTop && hasBottom) {
+            setSets += qty
+            topCount += qty
+            bottomCount += qty
+          } else if (hasTop) {
+            topCount += qty
+          } else if (hasBottom) {
+            bottomCount += qty
+          }
+        })
+        
+        totalQty = setSets
         const parts = []
-        if (spec.qty) parts.push(spec.qty)
-        if (spec.sizeTop && spec.sizeTop !== "-") parts.push(`${spec.sizeTop}${spec.lengthTopInches ? `-${spec.lengthTopInches}` : ''}`)
-        if (spec.sizeBottom && spec.sizeBottom !== "-") parts.push(`${spec.sizeBottom}${spec.lengthBottomInches ? `-${spec.lengthBottomInches}` : ''}`)
-        return parts.join(' ')
-      }).join(', ')
+        if (setSets > 0) parts.push(`${setSets} SET`)
+        if (topCount > 0) parts.push(`${topCount} TOP`)
+        if (bottomCount > 0) parts.push(`${bottomCount} BOTTOM`)
+        sizeDescriptions = parts.join(' - ')
+      } else {
+        // For regular Sublimation: Build size description from items
+        sizeDescriptions = sizeSpecs.items.map((spec: any) => {
+          const parts = []
+          if (spec.qty) parts.push(spec.qty)
+          if (spec.sizeTop && spec.sizeTop !== "-") parts.push(`${spec.sizeTop}${spec.lengthTopInches ? `-${spec.lengthTopInches}` : ''}`)
+          if (spec.sizeBottom && spec.sizeBottom !== "-") parts.push(`${spec.sizeBottom}${spec.lengthBottomInches ? `-${spec.lengthBottomInches}` : ''}`)
+          return parts.join(' ')
+        }).join(', ')
+        
+        totalQty = sizeSpecs.items.reduce((sum: number, spec: any) => sum + (Number(spec.qty) || 0), 0)
+      }
 
-      // Calculate total quantity and price
-      const totalQty = sizeSpecs.items.reduce((sum: number, spec: any) => sum + (Number(spec.qty) || 0), 0)
+      // Calculate total price
       const basePrice = unitPrice
       subtotalForService = sizeSpecs.items.reduce((sum: number, spec: any) => {
         const qty = Number(spec.qty) || 0
