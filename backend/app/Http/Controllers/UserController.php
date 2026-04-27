@@ -351,10 +351,7 @@ class UserController extends Controller
         try {
             $user = User::with(['roles.permissions'])->findOrFail($id);
             
-            // Check if user is admin - admins get all permissions
-            $permissions = [];
-            
-            // Get roles data from already loaded relationship
+            // Roles data from already loaded relationship
             $roles = $user->roles->map(function($role) {
                 return [
                     'id' => $role->id,
@@ -363,8 +360,10 @@ class UserController extends Controller
                 ];
             })->toArray();
             
+            $permissions = [];
+            
+            // ONLY admins (by user_type) get all permissions
             if ($user->user_type === 'admin') {
-                // Admin gets all permissions based on user_type
                 $permissions = [
                     'view_dashboard',
                     'manage_branches',
@@ -390,7 +389,7 @@ class UserController extends Controller
                     'edit_job_orders',
                 ];
             } else {
-                // Get permissions from assigned roles
+                // Employees and other users get permissions ONLY from their assigned roles
                 $permissions = $user->roles
                     ->pluck('permissions')
                     ->flatten()
