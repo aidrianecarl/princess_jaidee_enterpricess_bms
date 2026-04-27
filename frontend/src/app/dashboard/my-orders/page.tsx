@@ -6,7 +6,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Calendar, FileText, Loader, Eye as EyeIcon, Package, DollarSign, Clock, Zap, CheckCircle2, Check, Search, ChevronLeft, ChevronRight, Download } from "lucide-react"
+import { Calendar, FileText, Loader, Eye as EyeIcon, Package, DollarSign, Clock, Zap, CheckCircle2, Check, Search, ChevronLeft, ChevronRight, Download, Building2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { generateQuotationPDF } from "@/lib/pdf-generator"
 import { useToast } from "@/hooks/use-toast"
@@ -176,6 +176,7 @@ export default function MyOrdersPage() {
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
+  const [filterType, setFilterType] = useState<"all" | "orders" | "history">("all")
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 10
   const router = useRouter()
@@ -194,14 +195,29 @@ export default function MyOrdersPage() {
     }
   }, [user])
 
-  // Filter orders by search term
+  // Filter orders by search term and filter type
   useEffect(() => {
-    const filtered = orders.filter(order =>
+    let filtered = orders.filter(order =>
       order.order_number.toLowerCase().includes(searchTerm.toLowerCase())
     )
+
+    // Apply filter type logic
+    if (filterType === "orders") {
+      // Only show orders that are NOT released (job_order status is not released)
+      filtered = filtered.filter(order => 
+        !order.job_order?.released_date || order.order_status !== 'completed'
+      )
+    } else if (filterType === "history") {
+      // Only show released orders (job_order is released)
+      filtered = filtered.filter(order => 
+        order.job_order?.released_date && order.order_status === 'completed'
+      )
+    }
+    // if filterType === "all", show everything
+
     setFilteredOrders(filtered)
     setCurrentPage(1) // Reset to first page when searching
-  }, [searchTerm, orders])
+  }, [searchTerm, orders, filterType])
 
   const fetchMyOrders = async () => {
     try {
@@ -264,6 +280,10 @@ export default function MyOrdersPage() {
     if (order.order_status === 'completed' && order.job_order?.released_date && order.job_order?.released_by) {
       return 'Released'
     }
+    // Show "Ready to Pickup" for completed orders that haven't been released yet
+    if (order.order_status === 'completed' && (!order.job_order?.released_date || !order.job_order?.released_by)) {
+      return 'Ready to Pickup'
+    }
     if (!order.order_status) return 'Pending'
     const normalized = order.order_status.trim().toLowerCase()
     if (normalized === 'inproduction') return 'In Production'
@@ -273,6 +293,9 @@ export default function MyOrdersPage() {
   const getOrderStatusBadge = (order: Order) => {
     if (order.order_status === 'completed' && order.job_order?.released_date && order.job_order?.released_by) {
       return "bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300"
+    }
+    if (order.order_status === 'completed' && (!order.job_order?.released_date || !order.job_order?.released_by)) {
+      return "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
     }
     return orderStatusColors[order.order_status] || orderStatusColors.pending
   }
@@ -337,8 +360,9 @@ export default function MyOrdersPage() {
           <p className="text-neutral-600 dark:text-neutral-400">View and track your orders</p>
         </div>
 
-        {/* Search Bar */}
-        <div className="mb-6 animate-fade-in">
+        {/* Search Bar and Filters */}
+        <div className="mb-6 space-y-4 animate-fade-in">
+          {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 dark:text-neutral-600" size={20} />
             <Input
@@ -348,6 +372,40 @@ export default function MyOrdersPage() {
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10 pr-4 py-2.5 bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
             />
+          </div>
+          
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setFilterType("all")}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filterType === "all"
+                  ? "bg-orange-500 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              }`}
+            >
+              All Orders
+            </button>
+            <button
+              onClick={() => setFilterType("orders")}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filterType === "orders"
+                  ? "bg-orange-500 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              }`}
+            >
+              Orders
+            </button>
+            <button
+              onClick={() => setFilterType("history")}
+              className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                filterType === "history"
+                  ? "bg-orange-500 text-white shadow-lg"
+                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
+              }`}
+            >
+              Order History
+            </button>
           </div>
         </div>
 
@@ -439,7 +497,7 @@ export default function MyOrdersPage() {
                     </div>
 
                     {/* Info Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                       <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 transition-colors">
                         <div className="flex items-center gap-2 mb-1">
                           <Package size={14} className="text-neutral-500" />
@@ -453,10 +511,23 @@ export default function MyOrdersPage() {
                         </p>
                       </div>
                       
+                      <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Building2 size={14} className="text-indigo-500" />
+                          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">Branch</p>
+                        </div>
+                        <p className="font-semibold text-neutral-900 dark:text-white text-sm">
+                          {order.branch?.branch_name || 'N/A'}
+                        </p>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-500">
+                          Pick-up location
+                        </p>
+                      </div>
+                      
                       <div className="p-3 rounded-lg bg-neutral-50 dark:bg-neutral-800/50 transition-colors">
                         <div className="flex items-center gap-2 mb-1">
                           <DollarSign size={14} className="text-red-500" />
-                          <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Remaining Balance</p>
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400 font-medium">Remaining</p>
                         </div>
                         <p className={`font-bold ${(order.remaining_balance || 0) > 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                           ₱{(order.remaining_balance || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
@@ -476,6 +547,19 @@ export default function MyOrdersPage() {
                         </p>
                       </div>
                     </div>
+
+                    {/* Release Date and Progress Bar */}
+                    {order.job_order?.released_date && (
+                      <div className="mt-4 p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-100 dark:border-purple-900/30">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Calendar size={14} className="text-purple-600" />
+                          <p className="text-xs text-purple-700 dark:text-purple-400 font-medium">Release Date</p>
+                        </div>
+                        <p className="font-semibold text-neutral-900 dark:text-white">
+                          {formatDate(order.job_order.released_date)}
+                        </p>
+                      </div>
+                    )}
 
                     {/* Progress Bar */}
                     <MiniOrderProgressBar items={order.items || []} />
