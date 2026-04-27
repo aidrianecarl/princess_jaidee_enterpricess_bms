@@ -125,7 +125,7 @@ export function ViewItemsModal({ isOpen, onOpenChange, quotation }: ViewItemsMod
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90vw] max-w-2xl sm:max-w-3xl lg:max-w-5xl xl:max-w-5xl max-h-[90vh] overflow-y-auto bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 p-3 sm:p-4 md:p-6 rounded-lg" aria-describedby="quotation-items-description">
         <DialogHeader className="sticky top-0 bg-white dark:bg-neutral-900 z-10 pb-3 mb-2 sm:mb-4">
-          <DialogTitle id="quotation-items-description" className="text-lg sm:text-2xl md:text-3xl font-bold text-neutral-900 dark:text-white truncate pr-8">
+          <DialogTitle id="quotation-items-description" className="text-lg sm:text-2xl md:text-2xl font-bold text-neutral-900 dark:text-white truncate pr-6">
             Quotation #{quotation.quotation_number}
           </DialogTitle>
         </DialogHeader>
