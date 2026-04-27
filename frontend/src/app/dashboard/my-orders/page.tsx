@@ -176,7 +176,7 @@ export default function MyOrdersPage() {
   const [error, setError] = useState("")
   const [user, setUser] = useState<any>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState<"all" | "orders" | "history">("all")
+  const [filterType, setFilterType] = useState<"orders" | "history">("orders")
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 10
   const router = useRouter()
@@ -201,19 +201,18 @@ export default function MyOrdersPage() {
       order.order_number.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    // Apply filter type logic
+    // Apply filter type logic - default to "orders" tab
     if (filterType === "orders") {
-      // Only show orders that are NOT released (job_order status is not released)
+      // Only show orders that are NOT released
       filtered = filtered.filter(order => 
         !order.job_order?.released_date || order.order_status !== 'completed'
       )
     } else if (filterType === "history") {
-      // Only show released orders (job_order is released)
+      // Only show released orders
       filtered = filtered.filter(order => 
         order.job_order?.released_date && order.order_status === 'completed'
       )
     }
-    // if filterType === "all", show everything
 
     setFilteredOrders(filtered)
     setCurrentPage(1) // Reset to first page when searching
@@ -376,16 +375,6 @@ export default function MyOrdersPage() {
           
           {/* Filter Buttons */}
           <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setFilterType("all")}
-              className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                filterType === "all"
-                  ? "bg-orange-500 text-white shadow-lg"
-                  : "bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-700"
-              }`}
-            >
-              All Orders
-            </button>
             <button
               onClick={() => setFilterType("orders")}
               className={`px-4 py-2 rounded-lg font-medium transition-all ${

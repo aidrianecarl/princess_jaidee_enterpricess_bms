@@ -335,7 +335,7 @@ class OrderController extends Controller
             ]);
             
             // Fetch orders linked to quotations created by this user (created_by field in quotations)
-            $query = Order::with(['customer', 'items.service', 'quotation']);
+            $query = Order::with(['customer', 'items.service', 'quotation', 'branch', 'job_order']);
             
             // Add where clause for quotation relationship - use 'created_by' not 'user_id'
             $query->whereHas('quotation', function($q) use ($user) {
