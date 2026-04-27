@@ -216,10 +216,6 @@ export default function OrderDetailsPage() {
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.princessjaideeenterprises.com/api"
       
-      console.log("[v0] OrderDetail - Fetching from:", apiUrl)
-      console.log("[v0] OrderDetail - Order ID:", params.id)
-      console.log("[v0] OrderDetail - Auth token:", token ? "Present" : "Missing")
-      
       const response = await fetch(`${apiUrl}/orders/${params.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -227,16 +223,12 @@ export default function OrderDetailsPage() {
         },
       })
 
-      console.log("[v0] OrderDetail - Response status:", response.status)
-
       if (!response.ok) {
         const errorText = await response.text()
-        console.error("[v0] OrderDetail - Error response:", errorText)
         throw new Error(`Failed to fetch order details: ${response.status} ${response.statusText}`)
       }
 
       const data = await response.json()
-      console.log("[v0] OrderDetail - Order data:", data)
       
       let orderData = data.data || data
       
@@ -266,17 +258,6 @@ export default function OrderDetailsPage() {
                 let sizeSpecs = parseJSON(item.size_specifications)
                 let designConsultation = parseJSON(item.design_consultation)
                 let notesData = parseJSON(item.notes)
-                
-                console.log("[v0] Order item:", {
-                  id: item.id,
-                  service: item.service?.name,
-                  teamRoster,
-                  sizeSpecs,
-                  designConsultation,
-                  raw_team_roster: item.team_roster,
-                  raw_sizeSpecs: item.size_specifications,
-                  raw_designConsultation: item.design_consultation,
-                })
                 
                 return {
                   ...item,

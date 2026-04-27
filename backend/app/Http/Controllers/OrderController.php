@@ -68,7 +68,9 @@ class OrderController extends Controller
             // Load order with all relationships including items with service details and branch
             $order = Order::with([
                 'customer',
-                'items.service',
+                'items' => function($query) {
+                    $query->with('service');
+                },
                 'quotation.branch',
                 'branch',
                 'jobOrders'
