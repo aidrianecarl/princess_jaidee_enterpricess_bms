@@ -264,10 +264,15 @@ export const generateQuotationPDF = async (quotation: any) => {
   // LEFT: Authorized Canvaser with client name
   doc.setFont(undefined, "bold")
   doc.setFontSize(8)
-  doc.text(clientName, 15, signatureY + 8)
-  doc.text("_________________________", 15, signatureY)
+  // Name ABOVE the line
+  doc.text(clientName, 15, signatureY - 2)
+
+  // Signature line
+  doc.text("_________________________", 15, signatureY + 2)
+
+  // Label BELOW the line
   doc.setFontSize(7)
-  doc.text("Authorized Canvaser", 15, signatureY + 4)
+  doc.text("Authorized Canvaser", 15, signatureY + 6)
   
 
   // RIGHT: Jhonie's Signature Section
@@ -284,12 +289,15 @@ export const generateQuotationPDF = async (quotation: any) => {
   }
   doc.setFont(undefined, "bold")
   doc.setFontSize(8)
-  doc.text("JHONIE E. DETERA", pageWidth - 70, signatureY + 8)
-  // Signature line
-  doc.text("_________________________", pageWidth - 70, signatureY)
-  
-  doc.setFontSize(7)
-  doc.text("Printed Name over Signature", pageWidth - 70, signatureY + 4)
+  // Name ABOVE the line
+doc.text("JHONIE E. DETERA", pageWidth - 70, signatureY - 2)
+
+// Signature line
+doc.text("_________________________", pageWidth - 70, signatureY + 2)
+
+// Label BELOW the line
+doc.setFontSize(7)
+doc.text("Printed Name over Signature", pageWidth - 70, signatureY + 6)
   
   
 
