@@ -267,6 +267,17 @@ export default function OrderDetailsPage() {
                 let designConsultation = parseJSON(item.design_consultation)
                 let notesData = parseJSON(item.notes)
                 
+                console.log("[v0] Order item:", {
+                  id: item.id,
+                  service: item.service?.name,
+                  teamRoster,
+                  sizeSpecs,
+                  designConsultation,
+                  raw_team_roster: item.team_roster,
+                  raw_sizeSpecs: item.size_specifications,
+                  raw_designConsultation: item.design_consultation,
+                })
+                
                 return {
                   ...item,
                   team_roster: teamRoster,
@@ -475,18 +486,19 @@ export default function OrderDetailsPage() {
 
                   {/* Content */}
                   <div className="p-5 md:p-6 space-y-6">
-                    {/* Team Roster */}
+                    {/* Team Roster Details */}
                     {teamRoster && teamRoster.length > 0 && (
                       <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                        <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster</h4>
+                        <h4 className="font-bold text-blue-900 dark:text-blue-300 mb-4 text-lg">Team Roster Details</h4>
                         <div className="overflow-x-auto">
                           <table className="w-full text-sm">
                             <thead>
                               <tr className="border-b border-blue-200 dark:border-blue-800 bg-blue-100 dark:bg-blue-900/50">
                                 <th className="px-4 py-3 text-left font-semibold text-blue-900 dark:text-blue-300">Player Name</th>
                                 <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Jersey #</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top Size</th>
-                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom Size</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Top</th>
+                                <th className="px-4 py-3 text-center font-semibold text-blue-900 dark:text-blue-300">Bottom</th>
+                                <th className="px-4 py-3 text-right font-semibold text-blue-900 dark:text-blue-300">Amount</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -496,6 +508,7 @@ export default function OrderDetailsPage() {
                                   <td className="px-4 py-3 text-center text-neutral-900 dark:text-white font-semibold">#{player.number}</td>
                                   <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeTop || '-'}</td>
                                   <td className="px-4 py-3 text-center text-neutral-900 dark:text-white">{player.sizeBottom || '-'}</td>
+                                  <td className="px-4 py-3 text-right text-neutral-900 dark:text-white font-semibold">₱{Number(player.amount || 0).toLocaleString("en-PH", { minimumFractionDigits: 0 })}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -505,75 +518,109 @@ export default function OrderDetailsPage() {
                     )}
 
                     {/* Size Specifications */}
-                    {sizeSpecs && Object.keys(sizeSpecs).length > 0 && (
+                    {sizeSpecs && (Object.keys(sizeSpecs).length > 0 || (sizeSpecs.items && sizeSpecs.items.length > 0)) && (
                       <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-200 dark:border-purple-800">
                         <h4 className="font-bold text-purple-900 dark:text-purple-300 mb-4 text-lg">
-                          {item.service?.name?.includes('Tarpaulin') ? 'Tarpaulin Size Specification' : 'Size Specification'}
+                          Size Specifications
                         </h4>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          {sizeSpecs.width && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width} ft</p>
-                            </div>
-                          )}
-                          {sizeSpecs.height && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height} ft</p>
-                            </div>
-                          )}
-                          {sizeSpecs.totalSqft && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft} sq ft</p>
-                            </div>
-                          )}
-                          {sizeSpecs.top && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
-                            </div>
-                          )}
-                          {sizeSpecs.bottom && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
-                              <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
-                            </div>
-                          )}
-                        </div>
+                        
+                        {/* For Tarpaulin - flat structure */}
+                        {(sizeSpecs.width || sizeSpecs.height || sizeSpecs.totalSqft || sizeSpecs.top || sizeSpecs.bottom) && (
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {sizeSpecs.width && (
+                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
+                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width} ft</p>
+                              </div>
+                            )}
+                            {sizeSpecs.height && (
+                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
+                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height} ft</p>
+                              </div>
+                            )}
+                            {sizeSpecs.totalSqft && (
+                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
+                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft} sq ft</p>
+                              </div>
+                            )}
+                            {sizeSpecs.top && (
+                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
+                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
+                              </div>
+                            )}
+                            {sizeSpecs.bottom && (
+                              <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
+                                <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* For Sublimation - items array structure */}
+                        {sizeSpecs.items && sizeSpecs.items.length > 0 && (
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="border-b border-purple-200 dark:border-purple-800 bg-purple-100 dark:bg-purple-900/50">
+                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Qty</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Top Size</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Top Length</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Bottom Size</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Bottom Length</th>
+                                  <th className="px-4 py-3 text-left font-semibold text-purple-900 dark:text-purple-300">Name</th>
+                                  <th className="px-4 py-3 text-right font-semibold text-purple-900 dark:text-purple-300">Price</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {sizeSpecs.items.map((spec: any, idx: number) => (
+                                  <tr key={idx} className="border-b border-purple-200 dark:border-purple-800 hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
+                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.qty || '-'}</td>
+                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.sizeTop || '-'}</td>
+                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.lengthTopInches || '-'}</td>
+                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.sizeBottom || '-'}</td>
+                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.lengthBottomInches || '-'}</td>
+                                    <td className="px-4 py-3 text-neutral-900 dark:text-white">{spec.name || '-'}</td>
+                                    <td className="px-4 py-3 text-right text-neutral-900 dark:text-white font-semibold">₱{Number(spec.price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* Design Consultation */}
-                    {item.design_consultation && typeof item.design_consultation === 'object' && Object.keys(item.design_consultation).length > 0 && (
+                    {designConsultation && typeof designConsultation === 'object' && Object.keys(designConsultation).length > 0 && (
                       <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                        <h4 className="font-bold text-emerald-900 dark:text-emerald-300 mb-4 text-lg flex items-center gap-2">
-                          ✨ Design Consultation
-                        </h4>
+                        <h4 className="font-bold text-emerald-900 dark:text-emerald-300 mb-4 text-lg">Design Details</h4>
                         <div className="space-y-3">
-                          {item.design_consultation.included && (
-                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Included</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.design_consultation.included === true ? 'Yes' : 'No'}</p>
-                            </div>
-                          )}
-                          {item.design_consultation.description && (
+                          {designConsultation.description && (
                             <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
                               <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Description</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.design_consultation.description}</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{designConsultation.description}</p>
                             </div>
                           )}
-                          {item.design_consultation.price && (
+                          {designConsultation.included && (
                             <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
-                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Price</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">₱{Number(item.design_consultation.price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Included</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{designConsultation.included === true ? 'Yes' : 'No'}</p>
                             </div>
                           )}
-                          {item.design_consultation.notes && (
+                          {designConsultation.price && (
+                            <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
+                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Consultation Fee</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">₱{Number(designConsultation.price).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</p>
+                            </div>
+                          )}
+                          {designConsultation.notes && (
                             <div className="p-3 bg-white dark:bg-neutral-800 rounded-lg">
                               <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase">Notes</p>
-                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{item.design_consultation.notes}</p>
+                              <p className="text-sm text-neutral-900 dark:text-white mt-1">{designConsultation.notes}</p>
                             </div>
                           )}
                         </div>
