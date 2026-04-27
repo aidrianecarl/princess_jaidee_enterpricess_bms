@@ -22,7 +22,11 @@ export const metadata: Metadata = {
     description: "Custom apparel and sportswear solutions",
     type: "website",
   },
-    generator: 'aidriane.app'
+  generator: 'aidriane.app',
+  icons: {
+    icon: '/princessjd.png',
+    apple: '/princessjd.png',
+  },
 }
 
 export default function RootLayout({
@@ -32,6 +36,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/princessjd.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/princessjd.png" />
+      </head>
       <body className={`${inter.className} ${poppins.variable}`}>
         <LayoutClient>{children}</LayoutClient>
       </body>
