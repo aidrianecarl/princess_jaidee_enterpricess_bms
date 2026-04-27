@@ -54,30 +54,38 @@ export const generateQuotationPDF = async (quotation: any) => {
   }
 
   // CENTER TEXT
-
-
   doc.setFont(undefined, "bold")
-  doc.setFontSize(10)
+  doc.setFontSize(11)
+  doc.setTextColor(0, 0, 0)
   doc.text(
     quotation.business_name || "PRINCESS JAIDEE ENTERPRISES",
     pageWidth / 2,
-    yPosition + 17,
+    yPosition + 10,
     { align: "center" }
   )
 
   doc.setFont(undefined, "normal")
   doc.setFontSize(8)
   doc.text(
-    quotation.business_address || "A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City",
+    `${quotation.business_address || "A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista"}, ${quotation.business_city || "Sorsogon City"}`,
     pageWidth / 2,
-    yPosition + 21,
+    yPosition + 14,
     { align: "center" }
   )
 
+  doc.setFontSize(8)
   doc.text(
-    quotation.business_city || "Sorsogon City",
+    `${quotation.business_state || "Sorsogon"} ${quotation.business_postal || "4700"}`,
     pageWidth / 2,
-    yPosition + 25,
+    yPosition + 17,
+    { align: "center" }
+  )
+
+  doc.setFontSize(8)
+  doc.text(
+    `Tel: ${quotation.business_phone || "0930 821 8871"} | Email: ${quotation.business_email || "pjesorsogonsportswear@gmail.com"}`,
+    pageWidth / 2,
+    yPosition + 20,
     { align: "center" }
   )
 
@@ -87,12 +95,12 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setFontSize(14)
   doc.setFont(undefined, "bold")
   doc.setTextColor(0, 102, 153)
-  
+
   // Blue banner rectangle
   doc.setDrawColor(0, 150, 200)
   doc.setFillColor(0, 150, 200)
   doc.rect(15, yPosition - 3, pageWidth - 30, 8, "F")
-  
+
   doc.setTextColor(255, 255, 255)
   doc.text("REQUEST FOR QUOTATION", pageWidth / 2, yPosition + 2, { align: "center" })
 
@@ -138,7 +146,6 @@ export const generateQuotationPDF = async (quotation: any) => {
 
   const tableData = items.map((item: any, index: number) => [
     index + 1,
-    "piece",
     item.service?.name || item.name || "Service",
     item.quantity || 1,
     Number(item.unit_price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 }),
@@ -146,11 +153,11 @@ export const generateQuotationPDF = async (quotation: any) => {
   ])
 
   autoTable(doc, {
-    head: [["ITEM NO.", "UNIT", "DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
+    head: [["ITEM NO.", "DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
     body: tableData,
     startY: yPosition,
     margin: { left: 15, right: 15 },
-    
+
     styles: {
       fontSize: 8,
       cellPadding: 3,
@@ -172,11 +179,10 @@ export const generateQuotationPDF = async (quotation: any) => {
 
     columnStyles: {
       0: { halign: "center", cellWidth: 20 },
-      1: { halign: "center", cellWidth: 20 },
-      2: { halign: "left" },
-      3: { halign: "center", cellWidth: 25 },
+      1: { halign: "left" },
+      2: { halign: "center", cellWidth: 25 },
+      3: { halign: "right", cellWidth: 30 },
       4: { halign: "right", cellWidth: 30 },
-      5: { halign: "right", cellWidth: 30 },
     },
 
     didDrawPage: function () {
@@ -250,15 +256,49 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ================= SIGNATURE SECTION =================
   doc.setFontSize(8)
   doc.setFont(undefined, "normal")
+  doc.setTextColor(0, 0, 0)
+
+  const signatureY = yPosition
+  const clientName = quotation.customer?.bill_to_name || quotation.customer?.name || quotation.client_name || "Client Name"
+
+  // LEFT: Authorized Canvaser with client name
+  doc.text("_________________________", 15, signatureY)
+  doc.setFontSize(7)
+  doc.text("Authorized Canvaser", 15, signatureY + 4)
+  doc.setFont(undefined, "bold")
+  doc.setFontSize(8)
+  doc.text(clientName, 15, signatureY + 8)
+
+  // RIGHT: Jhonie's Signature Section
+  doc.setFont(undefined, "normal")
   
-  doc.text("_________________________", 15, yPosition)
-  doc.text("Printed Name over Signature", 15, yPosition + 4)
+  // Add signature image
+  try {
+    const signatureBase64 = await imageUrlToBase64("/jhonie_signature.png")
+    if (signatureBase64) {
+      doc.addImage(signatureBase64, "PNG", pageWidth - 65, signatureY - 10, 50, 12)
+    }
+  } catch (error) {
+    console.log("[v0] Error loading signature image:", error)
+  }
 
-  doc.text("_________________________", pageWidth - 60, yPosition)
-  doc.text("Tel. No. /Cellphone No./Email Address", pageWidth - 60, yPosition + 4)
+  // Signature line
+  doc.text("_________________________", pageWidth - 70, signatureY)
+  
+  doc.setFontSize(7)
+  doc.text("Printed Name over Signature", pageWidth - 70, signatureY + 4)
+  
+  doc.setFont(undefined, "bold")
+  doc.setFontSize(8)
+  doc.text("JHONIE E. DETERA", pageWidth - 70, signatureY + 8)
 
-  yPosition += 10
-  doc.text("Date: _________________", pageWidth - 60, yPosition)
+  // Tel and Date lines
+  doc.setFont(undefined, "normal")
+  doc.setFontSize(8)
+  doc.text("Tel. No. /Cellphone No./Email Address", pageWidth - 70, signatureY + 12)
+  doc.text("_________________________", pageWidth - 70, signatureY + 16)
+
+  doc.text("Date: _________________", pageWidth - 70, signatureY + 22)
 
   // Save PDF
   const fileName = `RFQ_${quotation.quotation_number || quotation.id || "draft"}.pdf`
