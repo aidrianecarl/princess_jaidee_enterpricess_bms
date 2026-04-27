@@ -779,15 +779,9 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
       console.log("[v0] Processed branches array:", branchesArray)
       setBranches(branchesArray)
 
-      // Auto-select main branch if available
-      const mainBranch = branchesArray.find((b: any) => b.is_main_branch)
-      if (mainBranch) {
-        console.log("[v0] Auto-selecting main branch:", mainBranch.id)
-        setSelectedBranchId(mainBranch.id)
-      } else if (branchesArray.length > 0) {
-        console.log("[v0] Auto-selecting first branch:", branchesArray[0].id)
-        setSelectedBranchId(branchesArray[0].id)
-      }
+      // DO NOT auto-select any branch - let the client choose
+      // Reset selectedBranchId to null to force user selection
+      setSelectedBranchId(null)
 
       if (branchesArray.length === 0) {
         toast({

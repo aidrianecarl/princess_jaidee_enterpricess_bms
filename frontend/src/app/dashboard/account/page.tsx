@@ -42,7 +42,7 @@ export default function ManageAccountPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20 flex flex-col">
       <DashboardHeader user={user} />
-      <main className="flex-1 pt-16 md:pt-20 md:ml-64 w-full overflow-auto">
+      <main className="flex-1 pt-16 md:pt-20 w-full overflow-auto">
         <ManageAccountContent user={user} />
       </main>
       <Toaster />
