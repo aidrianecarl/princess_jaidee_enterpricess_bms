@@ -30,19 +30,21 @@ export default function ManageAccountPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20 flex flex-col">
+      <div className="w-full min-h-screen bg-gradient-to-b from-white to-red-50/20">
         <DashboardHeader user={user} />
-        <main className="flex-1 pt-16 md:pt-20 max-w-7xl mx-auto w-full px-4 py-12">
-          <div className="h-96 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl animate-pulse" />
+        <main className="w-full pt-20 md:pt-24">
+          <div className="px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-full">
+            <div className="h-96 bg-gradient-to-br from-red-100 to-orange-100 rounded-2xl animate-pulse" />
+          </div>
         </main>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-red-50/20 flex flex-col">
+    <div className="w-full min-h-screen bg-gradient-to-b from-white to-red-50/20">
       <DashboardHeader user={user} />
-      <main className="flex-1 pt-16 md:pt-20 w-full overflow-auto">
+      <main className="w-full pt-20 md:pt-24">
         <ManageAccountContent user={user} />
       </main>
       <Toaster />
