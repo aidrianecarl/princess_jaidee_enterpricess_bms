@@ -24,8 +24,12 @@ export const metadata: Metadata = {
   },
   generator: 'aidriane.app',
   icons: {
-    icon: '/princessjd.png',
-    apple: '/princessjd.png',
+    icon: [
+      { url: '/princessjd.png', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/princessjd.png', type: 'image/png' },
+    ],
   },
 }
 
@@ -38,10 +42,6 @@ export default function RootLayout({
   
   return (
     <html lang="en">
-      <head>
-        <link rel="icon" href="/princessjd.png" type="image/png" onLoad={() => console.log("[v0] Favicon loaded successfully")} />
-        <link rel="apple-touch-icon" href="/princessjd.png" />
-      </head>
       <body className={`${inter.className} ${poppins.variable}`}>
         <LayoutClient>{children}</LayoutClient>
       </body>
