@@ -28,51 +28,72 @@ export const generateQuotationPDF = async (quotation: any) => {
   const pageWidth = doc.internal.pageSize.getWidth()
   let yPosition = 10
 
-  // ===== HEADER SECTION =====
-  const logoSize = 28
-  const leftMargin = 15
-  const rightMargin = 15
+  // ================= HEADER =================
+  const logoSize = 22
 
-  let headerTopY = 12
-
-  // ===== RIGHT: Princess JD Logo (TOP-ALIGNED) =====
-  try {
-    const princessJDBase64 = await imageUrlToBase64("/princessjd.png")
-    if (princessJDBase64) {
-      const logoX = pageWidth - rightMargin - logoSize
-      const logoY = headerTopY
-      doc.addImage(princessJDBase64, "PNG", logoX, logoY, logoSize, logoSize)
+  // LEFT: Client Logo
+  if (quotation.logo_url) {
+    try {
+      const clientLogo = await imageUrlToBase64(quotation.logo_url)
+      if (clientLogo) {
+        doc.addImage(clientLogo, "PNG", 15, yPosition, logoSize, logoSize)
+      }
+    } catch (e) {
+      console.log("[v0] Client logo error", e)
     }
-  } catch (error) {
-    console.log("[v0] Error loading Princess JD logo:", error)
   }
 
-  // ===== LEFT: COMPANY INFO (ALIGNED WITH LOGO TOP) =====
-  let textY = headerTopY + 5
+  // RIGHT: Company Logo
+  try {
+    const companyLogo = await imageUrlToBase64("/princessjd.png")
+    if (companyLogo) {
+      doc.addImage(companyLogo, "PNG", pageWidth - 15 - logoSize, yPosition, logoSize, logoSize)
+    }
+  } catch (e) {
+    console.log("[v0] Company logo error", e)
+  }
 
-  doc.setFontSize(14)
+  // CENTER TEXT
+
+
   doc.setFont(undefined, "bold")
-  doc.setTextColor(0, 0, 0)
-  doc.text("PRINCESS JAIDEE ENTERPRISES", leftMargin, textY)
+  doc.setFontSize(10)
+  doc.text(
+    quotation.business_name || "PRINCESS JAIDEE ENTERPRISES",
+    pageWidth / 2,
+    yPosition + 17,
+    { align: "center" }
+  )
 
-  textY += 6
-  doc.setFontSize(8)
   doc.setFont(undefined, "normal")
-  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", leftMargin, textY)
+  doc.setFontSize(8)
+  doc.text(
+    quotation.business_address || "A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City",
+    pageWidth / 2,
+    yPosition + 21,
+    { align: "center" }
+  )
 
-  textY += 4
-  doc.text("0930 821 8871 / 0915 175 9881 / (056) 311 8663", leftMargin, textY)
+  doc.text(
+    quotation.business_city || "Sorsogon City",
+    pageWidth / 2,
+    yPosition + 25,
+    { align: "center" }
+  )
 
-  textY += 4
-  doc.text("Email: pjesorsogonsportswear@gmail.com", leftMargin, textY)
-
-  // ===== SET NEXT Y POSITION PROPERLY =====
-  yPosition = headerTopY + logoSize + 6
+  yPosition += logoSize + 12
 
   // ================= TITLE =================
   doc.setFontSize(14)
   doc.setFont(undefined, "bold")
-  doc.setTextColor(0, 0, 0)
+  doc.setTextColor(0, 102, 153)
+  
+  // Blue banner rectangle
+  doc.setDrawColor(0, 150, 200)
+  doc.setFillColor(0, 150, 200)
+  doc.rect(15, yPosition - 3, pageWidth - 30, 8, "F")
+  
+  doc.setTextColor(255, 255, 255)
   doc.text("REQUEST FOR QUOTATION", pageWidth / 2, yPosition + 2, { align: "center" })
 
   yPosition += 12
@@ -94,13 +115,19 @@ export const generateQuotationPDF = async (quotation: any) => {
   doc.setFont(undefined, "bold")
   doc.text("Supplier Name:", 15, yPosition)
   doc.setFont(undefined, "normal")
-  doc.text("PRINCESS JAIDEE ENTERPRISES", 50, yPosition)
+  doc.text(quotation.customer?.business_name || quotation.customer?.company_name || "N/A", 50, yPosition)
 
   yPosition += 5
   doc.setFont(undefined, "bold")
   doc.text("Address:", 15, yPosition)
   doc.setFont(undefined, "normal")
-  doc.text("A.B. Fajardo Bldg., Calle Nueva St., Brgy. Polvorista, Sorsogon City", 50, yPosition)
+  doc.text(quotation.customer?.bill_to_address || quotation.customer?.address || "N/A", 50, yPosition)
+
+  yPosition += 5
+  doc.setFont(undefined, "bold")
+  doc.text("TIN:", 15, yPosition)
+  doc.setFont(undefined, "normal")
+  doc.text(quotation.customer?.tin || "N/A", 50, yPosition)
 
   yPosition += 10
 
@@ -117,6 +144,7 @@ export const generateQuotationPDF = async (quotation: any) => {
 
   const tableData = items.map((item: any, index: number) => [
     index + 1,
+    "piece",
     item.service?.name || item.name || "Service",
     item.quantity || 1,
     Number(item.unit_price || 0).toLocaleString("en-PH", { minimumFractionDigits: 2 }),
@@ -124,7 +152,7 @@ export const generateQuotationPDF = async (quotation: any) => {
   ])
 
   autoTable(doc, {
-    head: [["ITEM NO.", "DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
+    head: [["ITEM NO.", "UNIT", "DESCRIPTION", "QUANTITY", "UNIT PRICE", "TOTAL AMOUNT"]],
     body: tableData,
     startY: yPosition,
     margin: { left: 15, right: 15 },
@@ -150,10 +178,11 @@ export const generateQuotationPDF = async (quotation: any) => {
 
     columnStyles: {
       0: { halign: "center", cellWidth: 20 },
-      1: { halign: "left" },
-      2: { halign: "center", cellWidth: 25 },
-      3: { halign: "right", cellWidth: 30 },
+      1: { halign: "center", cellWidth: 20 },
+      2: { halign: "left" },
+      3: { halign: "center", cellWidth: 25 },
       4: { halign: "right", cellWidth: 30 },
+      5: { halign: "right", cellWidth: 30 },
     },
 
     didDrawPage: function () {
@@ -227,27 +256,15 @@ export const generateQuotationPDF = async (quotation: any) => {
   // ================= SIGNATURE SECTION =================
   doc.setFontSize(8)
   doc.setFont(undefined, "normal")
-
-  // LEFT: Authorized Canvaser with client name
-  const clientName = quotation.customer?.bill_to_name || quotation.customer?.name || quotation.client_name || "Client Name"
   
   doc.text("_________________________", 15, yPosition)
-  doc.text("Authorized Canvaser", 15, yPosition + 4)
-  doc.text(clientName, 15, yPosition + 8)
+  doc.text("Printed Name over Signature", 15, yPosition + 4)
 
-  // RIGHT: Signature section with Jhonie's signature
-  try {
-    const signatureBase64 = await imageUrlToBase64("/jhonie_signature.png")
-    if (signatureBase64) {
-      doc.addImage(signatureBase64, "PNG", pageWidth - 70, yPosition - 8, 50, 15)
-    }
-  } catch (error) {
-    console.log("[v0] Error loading signature image:", error)
-  }
+  doc.text("_________________________", pageWidth - 60, yPosition)
+  doc.text("Tel. No. /Cellphone No./Email Address", pageWidth - 60, yPosition + 4)
 
-  doc.text("_________________________", pageWidth - 70, yPosition)
-  doc.text("Printed Name over Signature", pageWidth - 70, yPosition + 4)
-  doc.text("JHONIE E. DETERA", pageWidth - 70, yPosition + 8)
+  yPosition += 10
+  doc.text("Date: _________________", pageWidth - 60, yPosition)
 
   // Save PDF
   const fileName = `RFQ_${quotation.quotation_number || quotation.id || "draft"}.pdf`
