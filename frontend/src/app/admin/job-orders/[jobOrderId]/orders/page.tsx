@@ -612,10 +612,10 @@ export default function JobOrderDetailPage() {
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Size</p>
                                           <p className="text-sm text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</p>
                                         </div>
-                                        <div>
+                                        {/* <div>
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Length (in)</p>
                                           <p className="text-sm text-neutral-900 dark:text-white">{player.bottomLength || '—'}</p>
-                                        </div>
+                                        </div> */}
                                       </div>
                                     </div>
                                   ))}
@@ -685,7 +685,7 @@ export default function JobOrderDetailPage() {
                                           </div>
                                           {spec.additionalName && (
                                             <div className="col-span-2 md:col-span-5">
-                                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Additional Notes</p>
+                                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Additional Name</p>
                                               <p className="text-sm text-neutral-900 dark:text-white">{spec.additionalName}</p>
                                             </div>
                                           )}
@@ -721,7 +721,7 @@ export default function JobOrderDetailPage() {
                             )}
 
                             {/* Tarpaulin Specifications */}
-                            {sizeSpecs && item.service?.name?.includes('Tarpaulin') && typeof sizeSpecs === 'object' && Object.keys(sizeSpecs).length > 0 && (
+                            {/* {sizeSpecs && item.service?.name?.includes('Tarpaulin') && typeof sizeSpecs === 'object' && Object.keys(sizeSpecs).length > 0 && (
                               <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
                                 <h4 className="font-bold text-purple-900 mb-4 text-lg">Tarpaulin Specifications</h4>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -751,7 +751,7 @@ export default function JobOrderDetailPage() {
                                   )}
                                 </div>
                               </div>
-                            )}
+                            )} */}
 
                             {/* Notes Section - Display as Text */}
                             {item.notes && (
