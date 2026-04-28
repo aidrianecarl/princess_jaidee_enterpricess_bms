@@ -600,9 +600,13 @@ export default function JobOrderDetailPage() {
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Top Size</p>
                                           <p className="text-sm text-neutral-900 dark:text-white">{player.sizeTop || '—'}</p>
                                         </div>
-                                        <div>
+                                      <div>
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Top Length (in)</p>
-                                          <p className="text-sm text-neutral-900 dark:text-white">{player.topLength || '—'}</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{player.lengthTopInches || '—'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Length (in)</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{player.lengthBottomInches || '—'}</p>
                                         </div>
                                         <div>
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Size</p>
@@ -623,34 +627,73 @@ export default function JobOrderDetailPage() {
                             {sizeSpecs && (typeof sizeSpecs === 'object') && Object.keys(sizeSpecs).length > 0 && (
                               <div className={`p-4 rounded-lg border ${item.service?.name?.includes('Tarpaulin') ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800' : 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800'}`}>
                                 <h4 className={`font-bold mb-4 text-lg ${item.service?.name?.includes('Tarpaulin') ? 'text-purple-900 dark:text-purple-300' : 'text-indigo-900 dark:text-indigo-300'}`}>
-                                  {item.service?.name?.includes('Tarpaulin') ? 'Tarpaulin Size Specification' : 'Uniform Size'}
+                                  {item.service?.name?.includes('Tarpaulin') ? 'Tarpaulin Size Specification' : 'Size Specifications'}
                                 </h4>
-                                <div className={`grid grid-cols-2 md:grid-cols-4 gap-4`}>
-                                  {sizeSpecs.width && (
-                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width</p>
-                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.height && (
-                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height</p>
-                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.top && (
-                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Top Size</p>
-                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.top}</p>
-                                    </div>
-                                  )}
-                                  {sizeSpecs.bottom && (
-                                    <div className="p-3 bg-white dark:bg-neutral-800 rounded">
-                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
-                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
-                                    </div>
-                                  )}
-                                </div>
+                                {/* For Tarpaulin - show width, height, sqft, price */}
+                                {item.service?.name?.includes('Tarpaulin') ? (
+                                  <div className={`grid grid-cols-2 md:grid-cols-4 gap-4`}>
+                                    {sizeSpecs.width && (
+                                      <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                        <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width (ft)</p>
+                                        <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.height && (
+                                      <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                        <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height (ft)</p>
+                                        <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.totalSqft && (
+                                      <div className="p-3 bg-white dark:bg-neutral-800 rounded">
+                                        <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
+                                        <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft}</p>
+                                      </div>
+                                    )}
+                                    {sizeSpecs.totalPrice && (
+                                      <div className="p-3 bg-white dark:bg-neutral-800 rounded border-l-4 border-l-indigo-500">
+                                        <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Price</p>
+                                        <p className="text-lg font-semibold text-indigo-600">₱{Number(sizeSpecs.totalPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  // For Polo/Longsleeve/Tshirt - show items array
+                                  <div className="space-y-3">
+                                    {Array.isArray(sizeSpecs.items) && sizeSpecs.items.map((spec: any, idx: number) => (
+                                      <div key={idx} className="bg-white dark:bg-neutral-800 p-4 rounded border border-indigo-100 dark:border-indigo-900/50">
+                                        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                                          <div>
+                                            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Quantity</p>
+                                            <p className="text-sm font-semibold text-neutral-900 dark:text-white">{spec.qty} {spec.qtyUnit || 'PCS'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Top Size</p>
+                                            <p className="text-sm text-neutral-900 dark:text-white">{spec.sizeTop || '—'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Top Length (in)</p>
+                                            <p className="text-sm text-neutral-900 dark:text-white">{spec.lengthTopInches || '—'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Size</p>
+                                            <p className="text-sm text-neutral-900 dark:text-white">{spec.sizeBottom || '—'}</p>
+                                          </div>
+                                          <div>
+                                            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Length (in)</p>
+                                            <p className="text-sm text-neutral-900 dark:text-white">{spec.lengthBottomInches || '—'}</p>
+                                          </div>
+                                          {spec.additionalName && (
+                                            <div className="col-span-2 md:col-span-5">
+                                              <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Additional Notes</p>
+                                              <p className="text-sm text-neutral-900 dark:text-white">{spec.additionalName}</p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             )}
 
@@ -819,15 +862,23 @@ export default function JobOrderDetailPage() {
 
       {/* Image Zoom Modal */}
       {expandedImage && (
-        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-2xl w-full">
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-auto">
+          <div className="relative max-w-4xl max-h-[90vh] w-full flex items-center justify-center">
             <button
               onClick={() => setExpandedImage(null)}
-              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 p-2 rounded"
+              className="absolute top-4 right-4 text-white hover:text-gray-300 z-50 bg-black/50 p-2 rounded-full"
             >
-              <X size={20} />
+              <X size={24} />
             </button>
-            <img src={expandedImage} alt="Design" className="w-full h-auto rounded-lg" />
+            <img 
+              src={expandedImage} 
+              alt="Design" 
+              className="max-w-full max-h-[85vh] w-auto h-auto rounded-lg object-contain" 
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.src = '/placeholder.svg'
+              }}
+            />
           </div>
         </div>
       )}
