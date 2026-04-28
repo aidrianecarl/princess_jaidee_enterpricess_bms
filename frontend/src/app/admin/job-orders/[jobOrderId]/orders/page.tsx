@@ -42,25 +42,26 @@ interface ItemNotes {
   [key: string]: string | undefined
 }
 
-interface OrderItem {
-  id: number
-  order_id: number
-  service_id?: number
-  service?: {
+  interface OrderItem {
     id: number
-    name: string
-    description?: string
-    image_url?: string
+    order_id: number
+    service_id?: number
+    service?: {
+      id: number
+      name: string
+      description?: string
+      image_url?: string
+    }
+    quantity: number
+    unit_price: string | number
+    line_total?: string | number
+    status: 'pending' | 'ongoing' | 'completed'
+    design_file_url?: string
+    design_consultation?: any
+    notes?: any
+    team_roster?: any
+    size_specifications?: any
   }
-  quantity: number
-  unit_price: string | number
-  line_total?: string | number
-  status: 'pending' | 'ongoing' | 'completed'
-  design_file_url?: string
-  notes?: any
-  team_roster?: any
-  size_specifications?: any
-}
 
 interface Order {
   id: number
@@ -234,6 +235,7 @@ export default function JobOrderDetailPage() {
               design_file_url: item.design_file_url,
               team_roster: item.team_roster,
               size_specifications: item.size_specifications,
+              design_consultation: item.design_consultation,
               notes: item.notes,
             })
           })
@@ -505,6 +507,8 @@ export default function JobOrderDetailPage() {
                   {order.items.map((item) => {
                     const teamRoster = parseJSON(item.team_roster) as TeamMember[] | null
                     const sizeSpecs = parseJSON(item.size_specifications)
+                    const designConsultation = parseJSON(item.design_consultation)
+                    const notes = parseJSON(item.notes)
 
                     return (
                       <div key={item.id} className="border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden bg-white dark:bg-neutral-800 shadow-md hover:shadow-lg transition">
@@ -644,6 +648,62 @@ export default function JobOrderDetailPage() {
                                     <div className="p-3 bg-white dark:bg-neutral-800 rounded">
                                       <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Bottom Size</p>
                                       <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.bottom}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Design Consultation */}
+                            {designConsultation && typeof designConsultation === 'object' && (
+                              <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg border border-emerald-200">
+                                <h4 className="font-bold text-emerald-900 mb-3 flex items-center gap-2 text-lg">
+                                  <span>✨</span> Design Consultation
+                                </h4>
+                                {designConsultation.notes && (
+                                  <div className="mb-3 p-3 bg-white rounded border border-emerald-200">
+                                    <p className="text-xs font-semibold text-emerald-700 uppercase mb-2">Details</p>
+                                    <p className="text-sm text-neutral-900 dark:text-white">{designConsultation.notes}</p>
+                                  </div>
+                                )}
+                                {designConsultation.price && (
+                                  <div className="p-3 bg-white rounded border-l-4 border-l-emerald-500">
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-neutral-700 font-semibold">Consultation Fee:</span>
+                                      <span className="text-emerald-600 font-bold">₱{Number(designConsultation.price).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Tarpaulin Specifications */}
+                            {sizeSpecs && item.service?.name?.includes('Tarpaulin') && typeof sizeSpecs === 'object' && Object.keys(sizeSpecs).length > 0 && (
+                              <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                                <h4 className="font-bold text-purple-900 mb-4 text-lg">Tarpaulin Specifications</h4>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                  {sizeSpecs.width && (
+                                    <div className="p-3 bg-white rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Width (ft)</p>
+                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.width}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.height && (
+                                    <div className="p-3 bg-white rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Height (ft)</p>
+                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.height}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.totalSqft && (
+                                    <div className="p-3 bg-white rounded">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Sq Ft</p>
+                                      <p className="text-lg font-semibold text-neutral-900 dark:text-white">{sizeSpecs.totalSqft}</p>
+                                    </div>
+                                  )}
+                                  {sizeSpecs.totalPrice && (
+                                    <div className="p-3 bg-white rounded border-l-4 border-l-purple-500">
+                                      <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400">Total Price</p>
+                                      <p className="text-lg font-semibold text-purple-600">₱{Number(sizeSpecs.totalPrice).toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                                     </div>
                                   )}
                                 </div>
