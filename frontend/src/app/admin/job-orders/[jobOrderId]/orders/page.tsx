@@ -605,12 +605,12 @@ export default function JobOrderDetailPage() {
                                           <p className="text-sm text-neutral-900 dark:text-white">{player.lengthTopInches || '—'}</p>
                                         </div>
                                         <div>
-                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Length (in)</p>
-                                          <p className="text-sm text-neutral-900 dark:text-white">{player.lengthBottomInches || '—'}</p>
-                                        </div>
-                                        <div>
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Size</p>
                                           <p className="text-sm text-neutral-900 dark:text-white">{player.sizeBottom || '—'}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Length (in)</p>
+                                          <p className="text-sm text-neutral-900 dark:text-white">{player.lengthBottomInches || '—'}</p>
                                         </div>
                                         {/* <div>
                                           <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-400 uppercase mb-1">Bottom Length (in)</p>
