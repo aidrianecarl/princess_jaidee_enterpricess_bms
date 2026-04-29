@@ -94,14 +94,14 @@ export function QuotationList() {
   }
 
   const filteredQuotations = quotations.filter((q) => {
-    if (filter === "draft") return q.status === "draft"
+    // if (filter === "draft") return q.status === "draft"
     if (filter === "pending") return q.status === "pending" && (q.has_price !== 1 && q.has_price !== "1")
     return q.status === filter
   })
 
   const counts = {
     all: quotations.length,
-    draft: quotations.filter((q) => q.status === "draft").length,
+    // draft: quotations.filter((q) => q.status === "draft").length,
     pending: quotations.filter((q) => q.status === "pending").length,
     approved: quotations.filter((q) => q.status === "approved").length,
     rejected: quotations.filter((q) => q.status === "rejected").length,
