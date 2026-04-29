@@ -183,7 +183,7 @@ export function QuotationList() {
   }
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "draft": return "bg-gray-100 text-gray-800"
+      // case "draft": return "bg-gray-100 text-gray-800"
       case "pending": return "bg-yellow-100 text-yellow-800"
       case "approved": return "bg-green-100 text-green-800"
       case "priced": return "bg-blue-100 text-blue-800"
@@ -298,7 +298,8 @@ export function QuotationList() {
       <div className="space-y-4">
         {/* Filter Tabs */}
         <div className="flex gap-2 mb-6 flex-wrap border-b border-gray-200 pb-4">
-          {["draft", "pending"].map((status) => (
+          {/*"draft",*/}
+          {["pending"].map((status) => (
             <button
               key={status}
               onClick={() => setFilter(status)}
