@@ -1313,7 +1313,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
 
             {/* Right side buttons - Save Draft and Send to Admin */}
             <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-              {/* <button
+              <button
                 onClick={handleSaveDraft}
                 disabled={isSaving}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer whitespace-nowrap"
@@ -1321,7 +1321,7 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
                 {isSaving ? <Loader2 size={16} className="animate-spin sm:w-5 sm:h-5" /> : <Save size={16} className="sm:w-5 sm:h-5" />}
                 <span className="hidden sm:inline">{isEditMode ? "Update" : "Save Draft"}</span>
                 <span className="inline sm:hidden">Save</span>
-              </button> */}
+              </button>
               <button
                 onClick={handleSend}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-red-600 font-semibold text-xs sm:text-sm rounded-lg transition hover:shadow-md cursor-pointer whitespace-nowrap"
