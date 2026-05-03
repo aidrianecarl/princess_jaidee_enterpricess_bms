@@ -624,14 +624,14 @@ export function QuotationDocument({ existingQuotation }: { existingQuotation?: a
   }
 
   const handleSaveDraft = async () => {
-    if (!validateForm()) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill all required fields before saving",
-        variant: "destructive",
-      })
-      return
-    }
+    // if (!validateForm()) {
+    //   toast({
+    //     title: "Validation Error",
+    //     description: "Please fill all required fields before saving",
+    //     variant: "destructive",
+    //   })
+    //   return
+    // }
     setShowConfirmDialog(true)
   }
 
