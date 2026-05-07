@@ -7,7 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { QuotationList } from "@/components/dashboard/quotation-list"
 import { StatsCard } from "@/components/dashboard/stats-card"
 import { TermsConditionsModal } from "@/components/dashboard/terms-modal"
-import { RatingModal } from "@/components/dashboard/rating-modal"
+import { EmojiRatingModal } from "@/components/dashboard/emoji-rating-modal"
 import { QuotationSkeleton } from "@/components/dashboard/quotation-skeleton"
 import { FileText, CheckCircle, Clock, DollarSign, Plus } from "lucide-react"
 import { Toaster } from "@/components/ui/toaster"
@@ -140,7 +140,7 @@ function DashboardPage() {
       {showTerms && <TermsConditionsModal onAccept={() => setShowTerms(false)} />}
 
       {user && (
-        <RatingModal
+        <EmojiRatingModal
           isOpen={showRating}
           onClose={() => {
             setShowRating(false)

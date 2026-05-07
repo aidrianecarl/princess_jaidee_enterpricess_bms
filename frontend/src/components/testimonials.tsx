@@ -1,12 +1,11 @@
 "use client"
 
-import { Star } from 'lucide-react'
 import { useState, useEffect } from "react"
 
 interface Rating {
   id: number
-  star_rating: number
-  message: string | null
+  feedback_type: "bad" | "average" | "happy"
+  emoji: string
   customer_id: number
   created_at: string
   user?: {
@@ -57,7 +56,7 @@ export function Testimonials() {
           {
             name: "Maria Santos",
             role: "School Sports Director",
-            rating: 5,
+            emoji: "😊",
             text: "Excellent quality and fast delivery! Our team jerseys look amazing and arrived exactly on time for the championship.",
             avatar: "MS",
             date: new Date().toLocaleDateString("en-US", {
@@ -69,7 +68,7 @@ export function Testimonials() {
           {
             name: "John Rivera",
             role: "Corporate Events Manager",
-            rating: 5,
+            emoji: "😊",
             text: "Professional service from start to finish. The custom design process was smooth and the final product exceeded expectations.",
             avatar: "JR",
             date: new Date().toLocaleDateString("en-US", {
@@ -81,7 +80,7 @@ export function Testimonials() {
           {
             name: "Ana Reyes",
             role: "Basketball Coach",
-            rating: 5,
+            emoji: "😊",
             text: "Best custom apparel provider in the region. Highly recommended for any team or organization needs.",
             avatar: "AR",
             date: new Date().toLocaleDateString("en-US", {
@@ -113,8 +112,8 @@ export function Testimonials() {
         return {
           name: fullName,
           role: "Valued Customer",
-          rating: rating.star_rating,
-          text: rating.message || "Great experience with Princess Jaidee!",
+          emoji: rating.emoji,
+          text: "Shared their feedback about Princess Jaidee!",
           avatar: avatarInitials || "C",
           date: createdDate,
         }
@@ -131,7 +130,7 @@ export function Testimonials() {
         {
           name: "Maria Santos",
           role: "School Sports Director",
-          rating: 5,
+          emoji: "😊",
           text: "Excellent quality and fast delivery! Our team jerseys look amazing and arrived exactly on time for the championship.",
           avatar: "MS",
           date: new Date().toLocaleDateString("en-US", {
@@ -143,7 +142,7 @@ export function Testimonials() {
         {
           name: "John Rivera",
           role: "Corporate Events Manager",
-          rating: 5,
+          emoji: "😊",
           text: "Professional service from start to finish. The custom design process was smooth and the final product exceeded expectations.",
           avatar: "JR",
           date: new Date().toLocaleDateString("en-US", {
@@ -155,7 +154,7 @@ export function Testimonials() {
         {
           name: "Ana Reyes",
           role: "Basketball Coach",
-          rating: 5,
+          emoji: "😊",
           text: "Best custom apparel provider in the region. Highly recommended for any team or organization needs.",
           avatar: "AR",
           date: new Date().toLocaleDateString("en-US", {
@@ -208,11 +207,9 @@ export function Testimonials() {
                   transitionDelay: isVisible ? `${i * 200}ms` : '0ms'
                 }}
               >
-                {/* Stars */}
-                <div className="flex gap-1 mb-2">
-                  {[...Array(testimonial.rating)].map((_, j) => (
-                    <Star key={j} size={18} fill="#fbbf24" className="text-yellow-400" />
-                  ))}
+                {/* Emoji */}
+                <div className="text-5xl mb-4 text-center">
+                  {testimonial.emoji}
                 </div>
 
                 {/* Date */}

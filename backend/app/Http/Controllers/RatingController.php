@@ -49,25 +49,33 @@ class RatingController extends Controller
             foreach ($ratings as $rating) {
                 \Log::info('[v0] Processing rating ID: ' . $rating->id);
                 
-                $name = 'Customer';
+                $firstName = 'Customer';
+                $lastName = '';
+                
                 if ($rating->customer) {
-                    $firstName = $rating->customer->first_name ?? '';
+                    $firstName = $rating->customer->first_name ?? 'Customer';
                     $lastName = $rating->customer->last_name ?? '';
-                    $name = trim($firstName . ' ' . $lastName) ?: 'Customer';
-                    \Log::info('[v0] Customer found: ' . $name);
+                    \Log::info('[v0] Customer found: ' . $firstName . ' ' . $lastName);
                 } else {
                     \Log::info('[v0] No customer data for rating ID: ' . $rating->id);
                 }
 
+                $emoji = match($rating->feedback_type) {
+                    'bad' => '😞',
+                    'average' => '😐',
+                    'happy' => '😊',
+                    default => '😊',
+                };
+
                 $item = [
                     'id' => $rating->id,
                     'customer_id' => $rating->customer_id,
-                    'star_rating' => (int)($rating->star_rating ?? 5),
-                    'message' => $rating->message ?? '',
+                    'feedback_type' => $rating->feedback_type,
+                    'emoji' => $emoji,
                     'created_at' => $rating->created_at ? $rating->created_at->toDateTimeString() : now()->toDateTimeString(),
                     'user' => [
-                        'first_name' => $rating->customer->first_name ?? 'Customer',
-                        'last_name' => $rating->customer->last_name ?? '',
+                        'first_name' => $firstName,
+                        'last_name' => $lastName,
                     ]
                 ];
                 
@@ -106,8 +114,7 @@ class RatingController extends Controller
         Log::info('[v0] Request data: ' . json_encode($request->all()));
 
         $validator = Validator::make($request->all(), [
-            'star_rating' => 'required|integer|min:1|max:5',
-            'message' => 'nullable|string|max:1000',
+            'feedback_type' => 'required|in:bad,average,happy',
         ]);
 
         if ($validator->fails()) {
@@ -140,15 +147,14 @@ class RatingController extends Controller
                 
                 // Update existing rating
                 $existingRating->update([
-                    'star_rating' => $request->star_rating,
-                    'message' => $request->message,
+                    'feedback_type' => $request->feedback_type,
                     'has_rating' => true,
                 ]);
 
                 Log::info('[v0] Rating updated successfully', [
                     'customer_id' => $customerId,
                     'rating_id' => $existingRating->id,
-                    'star_rating' => $request->star_rating,
+                    'feedback_type' => $request->feedback_type,
                 ]);
 
                 return response()->json([
@@ -158,21 +164,19 @@ class RatingController extends Controller
             }
 
             Log::info('[v0] Creating new rating for customer: ' . $customerId);
-            Log::info('[v0] Star rating: ' . $request->star_rating);
-            Log::info('[v0] Message: ' . ($request->message ?? 'NULL'));
+            Log::info('[v0] Feedback type: ' . $request->feedback_type);
 
             // Create new rating
             $rating = Rating::create([
                 'customer_id' => $customerId,
-                'star_rating' => $request->star_rating,
-                'message' => $request->message,
+                'feedback_type' => $request->feedback_type,
                 'has_rating' => true,
             ]);
 
             Log::info('[v0] Rating created successfully', [
                 'customer_id' => $customerId,
                 'rating_id' => $rating->id,
-                'star_rating' => $rating->star_rating,
+                'feedback_type' => $rating->feedback_type,
             ]);
 
             return response()->json([

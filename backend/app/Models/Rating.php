@@ -12,13 +12,11 @@ class Rating extends Model
 
     protected $fillable = [
         'customer_id',
-        'star_rating',
-        'message',
+        'feedback_type',
         'has_rating',
     ];
 
     protected $casts = [
-        'star_rating' => 'integer',
         'has_rating' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -30,5 +28,18 @@ class Rating extends Model
     public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'customer_id', 'id');
+    }
+
+    /**
+     * Get emoji representation of feedback type
+     */
+    public function getEmojiAttribute(): string
+    {
+        return match($this->feedback_type) {
+            'bad' => '😞',
+            'average' => '😐',
+            'happy' => '😊',
+            default => '😊',
+        };
     }
 }
